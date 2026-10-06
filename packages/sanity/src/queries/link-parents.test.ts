@@ -25,6 +25,9 @@ const dataset = [
   { _id: "p-ok", _type: "product", kind: "standard", title: "P", slug: { current: "p" }, status: "active", productLine: { _ref: "line" }, productStyle: [{ _ref: "style" }] },
   { _id: "p-styles-off", _type: "product", kind: "standard", title: "P2", slug: { current: "p2" }, status: "active", productLine: { _ref: "line" }, productStyle: [{ _ref: "style-off" }] },
   { _id: "p-line-off", _type: "product", kind: "standard", title: "P3", slug: { current: "p3" }, status: "active", productLine: { _ref: "line-off" }, productStyle: [{ _ref: "style" }] },
+  { _id: "sol-on", _type: "solution", title: "On", slug: { current: "on" }, status: "active" },
+  { _id: "i-ok", _type: "product", kind: "inspiration", title: "I", slug: { current: "i" }, status: "active", basedOn: { _ref: "p-ok" }, solutions: [{ _ref: "sol-on" }] },
+  { _id: "i-base-line-off", _type: "product", kind: "inspiration", title: "I2", slug: { current: "i2" }, status: "active", basedOn: { _ref: "p-line-off" }, solutions: [{ _ref: "sol-on" }] },
 ];
 
 async function run(query: string, params: Record<string, unknown> = {}, extra: unknown[] = []) {
@@ -42,6 +45,8 @@ test("LINK_PARENTS_ON: rule 1 and R1 per type; open parents pass", async () => {
   assert.equal(await parentsOn("type-under-off"), false, "R1 type → category");
   assert.equal(await parentsOn("opt-under-off"), false, "R1 option → type → category");
   assert.equal(await parentsOn("sol"), true, "types without an exclusive parent pass");
+  assert.equal(await parentsOn("i-ok"), true);
+  assert.equal(await parentsOn("i-base-line-off"), false, "a preset follows its base's line");
 });
 
 test("isCatalogTargetVisible: parentsOn false hides an otherwise-visible target; unset keeps today's answer", () => {

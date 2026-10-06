@@ -200,7 +200,7 @@ export const productLine = defineType({
         STATUS_DESCRIPTION_TAIL,
       options: { list: FULL_STATUS_LIST, layout: 'radio' },
       initialValue: 'active',
-      validation: (Rule) =>
+      validation: (Rule) => [
         Rule.custom(
           restrictingChildrenWarning({
             // Styles under this line that would go dark with it. Products are not
@@ -216,6 +216,23 @@ export const productLine = defineType({
               `Use Active (Internal) instead to hide the line but keep its styles and products reachable.`,
           }),
         ).warning(),
+        // Presets follow their base product (Richard + Eric, 2026-10-06): an inspiration
+        // product whose base sits on this line is hidden too — Discontinued included, which
+        // keeps the standard products' own pages but takes their presets down.
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              basedOn->productLine._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon"])
+            ]{ title }`,
+            describe: (names) =>
+              `Inspiration products based on this line's products are hidden too, including ${names}. ` +
+              `Use Active (Internal) to hide the line but keep them live.`,
+          }),
+        ).warning(),
+      ],
     }),
 
     // ─── TEMPLATE (layout version) ────────────────────────────────────────────

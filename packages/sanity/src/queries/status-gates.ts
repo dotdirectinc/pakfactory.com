@@ -136,11 +136,28 @@ export const PRODUCT_HAS_PARENT_ON = /* groq */ `select(
  *   Discontinued line             → its products are at most Discontinued: the page
  *                                   stays, nothing lists, nothing is orderable.
  *   Active (Internal) line        → passes through (R4) — the point of the value.
- * Inspiration products are exempt: their line is borrowed through `basedOn` and their
- * anchor is their solutions (rule 1), so the line does not gate them here.
+ *
+ * INSPIRATION products follow their BASE product instead (Richard, with Eric, 2026-10-06):
+ * a preset is hidden whenever the standard product it is based on is hidden. The base
+ * must be Active or Active (Internal) — Active (Internal) exists precisely so a hidden
+ * product can still carry presets (R4) — and the base's own line must be open (Active or
+ * Active (Internal)). Not active, Coming soon or Discontinued, on either, hides the
+ * preset; so does a missing base (R6: never visible by default). This replaces the
+ * #789 exemption, under which a preset stayed live on a base or line that was off.
  */
-export const PRODUCT_LINE_OPEN = /* groq */ `(kind == "inspiration" || !defined(productLine->status) || productLine->status in ["active", "active-internal"])`;
-export const PRODUCT_LINE_HAS_PAGE = /* groq */ `(kind == "inspiration" || !defined(productLine->status) || productLine->status in ["active", "active-internal", "discontinued"])`;
+const INSPIRATION_BASE_OPEN = /* groq */ `(
+    defined(basedOn->_id) &&
+    (!defined(basedOn->status) || basedOn->status in ["active", "active-internal"]) &&
+    (!defined(basedOn->productLine->status) || basedOn->productLine->status in ["active", "active-internal"])
+  )`;
+export const PRODUCT_LINE_OPEN = /* groq */ `select(
+    kind == "inspiration" => ${INSPIRATION_BASE_OPEN},
+    !defined(productLine->status) || productLine->status in ["active", "active-internal"]
+  )`;
+export const PRODUCT_LINE_HAS_PAGE = /* groq */ `select(
+    kind == "inspiration" => ${INSPIRATION_BASE_OPEN},
+    !defined(productLine->status) || productLine->status in ["active", "active-internal", "discontinued"]
+  )`;
 
 /**
  * The status a customer sees: an Active or Coming-soon standard product under a
@@ -183,7 +200,8 @@ export const OPTION_ACTIVE = /* groq */ `(status == "active" && ${OPTION_TAXONOM
  * beside `status` wherever chrome links a curated document (nav, hero slides, finder
  * rail, catalog rows), and read by `isCatalogTargetVisible` — the document's own status
  * is checked there; this adds what the document alone cannot know:
- *   product          rule 1 (some parent on) + R1 (its line is open)
+ *   product          rule 1 (some parent on) + R1 (its line is open; a preset: its base
+ *                    product and the base's line are open)
  *   productStyle     R1 — its line has a page, or the style page has no route
  *   solutionStyle    R1 — its solution is Active
  *   customizationType   R1 — its category is open

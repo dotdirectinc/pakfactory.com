@@ -140,6 +140,9 @@ export function solutionStyleProductFilter(p: SolutionStyleFilterParams): string
     // Rule 1 (2026-10-06): an inspiration product whose every solution is off is hidden.
     // Mirrors PRODUCT_HAS_PARENT_ON's inspiration arm in queries/catalog.ts.
     'count(solutions[@->status == "active"]) > 0',
+    // A preset follows its base product: hidden when the base, or the base's line, is off.
+    // Mirrors INSPIRATION_BASE_OPEN in queries/status-gates.ts.
+    'defined(basedOn->_id) && (!defined(basedOn->status) || basedOn->status in ["active", "active-internal"]) && (!defined(basedOn->productLine->status) || basedOn->productLine->status in ["active", "active-internal"])',
     `(${any.join(' || ')})`,
     '!(_id in $excludedIds)',
   ].join(' && ')
