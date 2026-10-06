@@ -20,6 +20,9 @@ export const ADMIN_SPEC_COPY = {
   readOnlyNote:
     "You can review this frame but not decide it — that needs the approver role.",
   decidedNote: "This frame has already been decided.",
+  supersededNote:
+    "A newer sync replaced this frame. Its undecided changes — at their newest values — are in the frame that replaced it.",
+  newSinceLastSync: "New since last sync",
   exclude: "Exclude",
   include: "Include",
   excludedNote: "Excluded — not applied when the frame is approved",

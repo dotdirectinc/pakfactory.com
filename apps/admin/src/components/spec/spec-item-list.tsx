@@ -190,6 +190,7 @@ export function SpecItemList({ items, exclusion = null }: ListProps) {
                 </Button>
               ) : null}
               {r.item.excluded_at ? <span className="w-full text-xs text-muted-foreground">{ADMIN_SPEC_COPY.excludedNote}</span> : null}
+              {r.item.is_new ? <Badge variant="outline">{ADMIN_SPEC_COPY.newSinceLastSync}</Badge> : null}
               {r.item.apply_state ? (
                 <Badge variant={r.item.apply_state === "applied" ? "secondary" : r.item.apply_state === "pending" ? "outline" : "destructive"}>
                   {SANITY.states[r.item.apply_state]}

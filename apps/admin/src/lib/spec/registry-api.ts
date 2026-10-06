@@ -17,7 +17,7 @@ import { createClient } from "@pakfactory/supabase/server";
 // set in every environment, so a new one would only be a second thing to forget.
 const BASE = (process.env.BACKEND_API_BASE_URL ?? "http://localhost:8080").replace(/\/$/, "");
 
-export type ChangesetState = "draft" | "approved" | "discarded";
+export type ChangesetState = "draft" | "approved" | "discarded" | "superseded";
 
 export type ChangesetSummary = {
   id: string;
@@ -49,6 +49,8 @@ export type ChangesetItem = {
   document?: string | null;
   /** Left out of this frame's approval. */
   excluded_at?: string | null;
+  /** This change was not in the frame this one replaced — new since the last sync (2026-10-06). */
+  is_new?: boolean;
 };
 
 export type ChangesetDetail = ChangesetSummary & {
