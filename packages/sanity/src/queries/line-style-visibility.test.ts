@@ -124,8 +124,10 @@ test("product library: a restricted parent nulls out, but an active-internal one
   assert.equal(bySlug["p-active"]?.productLine?.slug, "active");
   assert.equal(bySlug["p-active"]?.productStyle?.slug, "s-active");
 
-  assert.equal(bySlug["p-coming-line"]?.productLine, null);
-  assert.equal(bySlug["p-gone"]?.productLine, null);
+  // R1: a product is never more visible than its one line. Under a Coming soon line
+  // it is hidden; under a Discontinued line its page stays but it leaves every listing.
+  assert.equal(bySlug["p-coming-line"], undefined);
+  assert.equal(bySlug["p-gone"], undefined);
   // R4 — the whole point of the value: the line is hidden, its products are not.
   assert.equal(bySlug["p-internal"]?.productLine?.slug, "internal");
 
