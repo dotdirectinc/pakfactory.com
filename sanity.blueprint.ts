@@ -71,6 +71,13 @@ export default defineBlueprint({
         filter:
           "_type in ['product', 'customizationOption', 'caseStudy'] && defined(slug.current)",
         projection: ALGOLIA_CONTENT_PROJECTION,
+        // One dataset only. Unpinned, a function runs for EVERY dataset in the project, so production
+        // edits would land in the same content_* indexes the backfill fills from this dataset, and admin
+        // search would mix the two. Same pinning as stamp-published-at below.
+        resource: {
+          type: "dataset",
+          id: `${SANITY_PROJECT_ID}.${SANITY_DATASET}`,
+        },
       },
       env: {
         COMMENT:
