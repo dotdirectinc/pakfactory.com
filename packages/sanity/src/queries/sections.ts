@@ -5,6 +5,7 @@
  */
 
 import {
+  LINK_PARENTS_ON,
   LINE_STYLE_ACTIVE,
   LINE_STYLE_HAS_PAGE,
   PRODUCT_LISTED,
@@ -190,6 +191,7 @@ const CATALOG_ROW_ITEM = /* groq */ `{
   _id,
   _type,
   status,
+  "parentsOn": ${LINK_PARENTS_ON},
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": shortDescription,
@@ -260,6 +262,7 @@ const HERO_SPOTLIGHT_SLIDE = /* groq */ `{
     "kind": _type,
     "docType": _type,
     status,
+    "parentsOn": ${LINK_PARENTS_ON},
     "slug": slug.current,
     _type == "caseStudy" => ${HERO_CASE_STUDY},
     _type != "caseStudy" => {
@@ -285,10 +288,9 @@ const HERO_FINDER_LINE = /* groq */ `{
   "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
   "videoSrc": ${FEATURED_VIDEO_URL_GROQ},
   "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY},
-  // Inlined, not imported: catalog.ts already imports PAGE_SECTIONS_PROJECTION from
-  // this file, and importing back the other way is a cycle that breaks module init.
-  // Mirrors LINE_STYLE_LISTED (./catalog) — active-internal stays listed (PROD-2845).
-  "styles": *[_type == "productStyle" && references(^._id) && (!defined(status) || status in ["active", "active-internal"])] | order(title asc)[0...3]{
+  // These become LINKED finder slides (productStyleHref), so the gate is the one for a
+  // link — LINE_STYLE_ACTIVE — not LISTED: an Active (Internal) style has no page.
+  "styles": *[_type == "productStyle" && references(^._id) && ${LINE_STYLE_ACTIVE}] | order(title asc)[0...3]{
     _id,
     "title": coalesce(shortName, title),
     "slug": slug.current,
@@ -318,6 +320,8 @@ const HERO_FINDER_RAIL_ITEM = /* groq */ `{
   _id,
   _type,
   kind,
+  appearsIn,
+  "parentsOn": ${LINK_PARENTS_ON},
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": coalesce(shortDescription, cardSummary, summary, excerpt),
@@ -872,6 +876,8 @@ export type PageSectionCatalogRowItemDoc = {
     _id?: string | null;
     _type?: string | null;
     status?: string | null;
+    /** False when the target's parents hide it (rule 1 / R1) — GROQ `LINK_PARENTS_ON`. */
+    parentsOn?: boolean | null;
     title?: string | null;
     slug?: string | null;
     description?: string | null;
@@ -953,6 +959,8 @@ export type PageSectionHeroCaseStudyDoc = {
 export type PageSectionHeroSpotlightSlideDoc = PageSectionHeroCaseStudyDoc & {
     _key?: string | null;
     _type?: string | null;
+    /** False when the target's parents hide it (rule 1 / R1) — GROQ `LINK_PARENTS_ON`. */
+    parentsOn?: boolean | null;
     kind?:
         | 'campaign'
         | 'caseStudy'
@@ -1030,6 +1038,9 @@ export type PageSectionHeroFinderRailItemDoc = {
     lineIds?: string[] | null;
     status?: string | null;
     hasPage?: boolean | null;
+    appearsIn?: string | null;
+    /** False when the target's parents hide it (rule 1 / R1) — GROQ `LINK_PARENTS_ON`. */
+    parentsOn?: boolean | null;
 };
 
 /** One simple-Finder General bucket entry. */

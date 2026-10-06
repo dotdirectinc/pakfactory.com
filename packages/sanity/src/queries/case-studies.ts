@@ -1,4 +1,10 @@
-import {LINE_STYLE_LISTED} from './catalog';
+import {
+  HAS_DETAIL_PAGE,
+  LINE_STYLE_ACTIVE,
+  LINE_STYLE_LISTED,
+  OPTION_ACTIVE,
+  SOLUTION_ACTIVE,
+} from './status-gates';
 
 /**
  * Case Studies GROQ — field names mirror the `caseStudy` schema (PROD-1893).
@@ -15,6 +21,8 @@ const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 const PRODUCT_LINE_TAXONOMY_ITEM = /* groq */ `{
   _id,
   title,
+  // A chip stays as a label either way; it LINKS only when the page exists.
+  "linkable": ${LINE_STYLE_ACTIVE},
   "slug": slug.current,
   "excerpt": shortDescription,
   "imageUrl": featuredImage.asset->url
@@ -31,6 +39,7 @@ const EXPERTISE_TAXONOMY_ITEM = /* groq */ `{
 const CUSTOMIZATION_TAXONOMY_ITEM = /* groq */ `{
   _id,
   title,
+  "linkable": ${OPTION_ACTIVE} && ${HAS_DETAIL_PAGE},
   "slug": slug.current,
   "categorySlug": type->category->slug.current,
   "excerpt": shortDescription,
@@ -51,6 +60,7 @@ const CUSTOMIZATION_TAXONOMY_ITEM = /* groq */ `{
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
   "title": coalesce(h1, title),
+  "linkable": ${SOLUTION_ACTIVE},
   "slug": slug.current,
   solutionType,
   "excerpt": shortDescription,
@@ -228,6 +238,8 @@ export type CaseStudyTaxonomyItem = {
   categorySlug?: string | null;
   excerpt?: string | null;
   imageUrl?: string | null;
+  /** False when the chip's target has no page (status / R1) — render it as a label only. */
+  linkable?: boolean | null;
 };
 
 export type CaseStudyHighlight = {

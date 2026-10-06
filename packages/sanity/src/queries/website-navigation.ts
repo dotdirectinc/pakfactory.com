@@ -1,3 +1,5 @@
+import {LINK_PARENTS_ON} from './status-gates';
+
 /**
  * Website Navigation singleton — www site chrome (header + footer).
  * Document id: `websiteNavigation` (not page-builder sections).
@@ -20,6 +22,8 @@ const LINKABLE_DOC_PROJECTION = /* groq */ `{
   // Expertise Service still uses hasPage (PROD-2845 out of scope).
   hasPage,
   appearsIn,
+  // Parents decide too (rule 1 / R1) — see LINK_PARENTS_ON.
+  "parentsOn": ${LINK_PARENTS_ON},
   orderRank
 }`;
 
@@ -30,6 +34,8 @@ const PATH_TARGET_PROJECTION = /* groq */ `{
   // Expertise Service still uses hasPage (PROD-2845 out of scope).
   hasPage,
   appearsIn,
+  // Parents decide too (rule 1 / R1) — see LINK_PARENTS_ON.
+  "parentsOn": ${LINK_PARENTS_ON},
   orderRank
 }`;
 
@@ -124,6 +130,8 @@ export type WebsiteNavLinkTarget = {
   hasPage?: boolean | null;
   /** Customization option page gate (PROD-2732) — page-bearing `appearsIn` values. */
   appearsIn?: string | null;
+  /** False when the target's parents hide it (rule 1 / R1) — `LINK_PARENTS_ON`. */
+  parentsOn?: boolean | null;
   /**
    * LexoRank from `@sanity/orderable-document-list` (productLine). Used to sort
    * Products mega-menu links to match Studio drag order.

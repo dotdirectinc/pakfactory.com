@@ -33,6 +33,13 @@ export type CatalogVisibilityTarget = {
   hasPage?: boolean | null;
   /** Customization options — PROD-2732; answers *where* an option appears, not *what state* it is in. */
   appearsIn?: string | null;
+  /**
+   * What the document's own status cannot say: whether its PARENTS let it show — rule 1
+   * (a product with every parent off) and R1 (a child of a closed exclusive parent).
+   * Projected by GROQ `LINK_PARENTS_ON`. Unset reads as true, so projections that do
+   * not carry it keep today's behaviour.
+   */
+  parentsOn?: boolean | null;
 };
 
 /** Mirror GROQ `HAS_DETAIL_PAGE` for customization options. */
@@ -154,6 +161,7 @@ export function isCatalogTargetVisible(
   doc: CatalogVisibilityTarget | null | undefined,
 ): boolean {
   if (!doc?._type) return true;
+  if (doc.parentsOn === false) return false;
 
   switch (doc._type) {
     case 'productLine':

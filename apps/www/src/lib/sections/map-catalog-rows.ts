@@ -34,6 +34,7 @@ function mapItems(
         const visible = isCatalogTargetVisible({
             _type: item._type,
             status: (stegaClean(item.status ?? undefined) as string | undefined) ?? null,
+            parentsOn: item.parentsOn,
         });
         if (!visible) continue;
         const description = item.description?.trim();

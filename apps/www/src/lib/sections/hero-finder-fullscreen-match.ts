@@ -18,6 +18,7 @@ import type {
     HeroFinderStudy,
     HeroImage,
 } from '@/lib/sections/map-hero';
+import {isCatalogTargetVisible} from '@pakfactory/sanity/catalog-visibility';
 import {BLOG_URL} from '@/lib/www-nav';
 import {
     expertiseHref,
@@ -116,6 +117,19 @@ function slideFromRailEntry(
         const itemTitle = trimmed(item?.title);
         const itemId = trimmed(item?._id);
         if (!itemTitle || !itemId) return null;
+        // A curated slide is a call to action: drop it when its target has no page —
+        // own status, or parents (rule 1 / R1) — same contract as every other surface.
+        if (
+            !isCatalogTargetVisible({
+                _type: trimmed(item?._type) ?? null,
+                status: trimmed(item?.status ?? undefined) ?? null,
+                hasPage: item?.hasPage,
+                appearsIn: trimmed(item?.appearsIn ?? undefined) ?? null,
+                parentsOn: item?.parentsOn,
+            })
+        ) {
+            return null;
+        }
         title = overrideTitle || itemTitle;
         description =
             overrideDescription ||

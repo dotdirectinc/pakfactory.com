@@ -168,9 +168,12 @@ export async function POST(request: Request) {
   }
 
   // productLinePage / productDetailPage edits reorder every LP/PDP that references the template.
+  // A solution's status decides whether an inspiration product is visible at all
+  // (rule 1) and whether its breadcrumb links, so solution edits reach products too.
   const touchesProducts =
     !type ||
     CATALOG_PRODUCT_TYPES.has(type) ||
+    type === "solution" ||
     type === "customizationOption" ||
     type === FAQ_TYPE ||
     type === "productCatalogPage" ||
@@ -280,7 +283,16 @@ export async function POST(request: Request) {
   // query, so bust it on every webhook rather than risk a stale Home.
   tags.add(WWW_HOME_PAGE_CACHE_TAG);
 
-  if (!type || type === "websiteNavigation") {
+  // Nav links are gated on their targets' status and parents (isCatalogTargetVisible),
+  // so a catalog edit can add or drop a nav entry — not only a websiteNavigation edit.
+  if (
+    !type ||
+    type === "websiteNavigation" ||
+    CATALOG_PRODUCT_TYPES.has(type) ||
+    CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    type === "solution" ||
+    type === "solutionStyle"
+  ) {
     tags.add(WWW_WEBSITE_NAVIGATION_CACHE_TAG);
   }
 
