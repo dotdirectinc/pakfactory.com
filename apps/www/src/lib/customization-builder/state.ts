@@ -1,10 +1,13 @@
 import type {CustomizationCategory} from '@/lib/catalog/types';
 import {compareCategorySlugs} from '@/lib/catalog/customization-category-order';
+import {orderTypesInCategory} from '@pakfactory/sanity/customization-type-order';
+import {orderOptionsInType} from '@pakfactory/sanity/option-order';
 import {
     DIMENSIONS_STEP_KEY,
     EMPTY_BUILDER_STATE,
     EMPTY_DIMENSIONS,
     EMPTY_FACE,
+    PRINTING_CATEGORY_SLUG,
     dimensionEntryNoteKey,
     type BuilderOption,
     type BuilderStep,
@@ -16,6 +19,7 @@ import {
     type DimensionFace,
     type DimensionsValue,
     type FaceMeasurements,
+    type PrintSideValue,
     type PropertySelectionSummaryItem,
     type SelectionValue,
     type StepAnswer,
@@ -39,7 +43,152 @@ export function createEmptyBuilderState(): CustomizationBuilderState {
         entryNotes: {},
         propertySelections: {},
         propertySelectionSummaries: {},
+        printOutside: '',
+        printInside: '',
     };
+}
+
+export function isPrintingCategoryStep(step: BuilderStep): boolean {
+    return (
+        step.category === PRINTING_CATEGORY_SLUG ||
+        step.key === PRINTING_CATEGORY_SLUG
+    );
+}
+
+export function isPrintedSideComplete(
+    state: CustomizationBuilderState,
+): boolean {
+    return Boolean(state.printOutside && state.printInside);
+}
+
+export function wantsAnyPrint(state: CustomizationBuilderState): boolean {
+    return state.printOutside === 'yes' || state.printInside === 'yes';
+}
+
+/**
+ * Rail / card summary for Print Outside / Print Inside.
+ * Not set | Outside only | Inside only | Both Outside & Inside | None
+ */
+export function formatPrintedSideSummary(
+    state: CustomizationBuilderState,
+): string {
+    const outside = state.printOutside ?? '';
+    const inside = state.printInside ?? '';
+    if (!outside || !inside) return 'Not set';
+    if (outside === 'yes' && inside === 'yes') return 'Both Outside & Inside';
+    if (outside === 'yes' && inside === 'no') return 'Outside only';
+    if (outside === 'no' && inside === 'yes') return 'Inside only';
+    if (outside === 'no' && inside === 'no') return 'None';
+    return 'Not set';
+}
+
+function parsePrintSideValue(value: unknown): PrintSideValue {
+    if (value === 'yes' || value === 'no' || value === '') return value;
+    return '';
+}
+
+/**
+ * Printing step ready when: gate consultation, both No (None), or any Yes
+ * with method / consultation answer.
+ */
+export function isPrintingStepReady(
+    state: CustomizationBuilderState,
+    answer: StepAnswer | undefined,
+): boolean {
+    if (answer?.status === 'not-sure') return true;
+    if (!isPrintedSideComplete(state)) return false;
+    if (!wantsAnyPrint(state)) return true;
+    return isAnswerReady(answer);
+}
+
+export function isStepReady(
+    state: CustomizationBuilderState,
+    step: BuilderStep,
+    dimensionAxisIds?: readonly string[],
+): boolean {
+    const answer = getAnswer(state, step.key);
+    if (step.kind === 'dimensions') {
+        return isAnswerReady(answer, dimensionAxisIds);
+    }
+    if (isPrintingCategoryStep(step)) {
+        return isPrintingStepReady(state, answer);
+    }
+    return isAnswerReady(answer);
+}
+
+/**
+ * Patch Print Outside / Inside. Both No clears methods (None). Picking Yes/No
+ * leaves a prior gate-level consultation answer.
+ */
+export function patchPrintedSide(
+    state: CustomizationBuilderState,
+    patch: {printOutside?: PrintSideValue; printInside?: PrintSideValue},
+    printingStepKey: BuilderStepKey = PRINTING_CATEGORY_SLUG,
+): CustomizationBuilderState {
+    const printOutside = patch.printOutside ?? state.printOutside ?? '';
+    const printInside = patch.printInside ?? state.printInside ?? '';
+    let next: CustomizationBuilderState = {
+        ...state,
+        printOutside,
+        printInside,
+    };
+
+    // Leaving gate consultation when the buyer answers the side toggles.
+    if (getAnswer(next, printingStepKey).status === 'not-sure') {
+        next = {
+            ...next,
+            answers: {
+                ...next.answers,
+                [printingStepKey]: {status: 'unset'},
+            },
+        };
+    }
+
+    if (printOutside === 'no' && printInside === 'no') {
+        const cleared = clearStep(next, printingStepKey);
+        return {
+            ...cleared,
+            printOutside: 'no',
+            printInside: 'no',
+        };
+    }
+
+    return next;
+}
+
+/**
+ * Gate-level Need consultation: specialist for Printing, clear sides + methods.
+ */
+export function selectPrintingConsultation(
+    state: CustomizationBuilderState,
+    printingStepKey: BuilderStepKey = PRINTING_CATEGORY_SLUG,
+): CustomizationBuilderState {
+    const cleared = clearStep(state, printingStepKey);
+    return {
+        ...cleared,
+        printOutside: '',
+        printInside: '',
+        answers: {
+            ...cleared.answers,
+            [printingStepKey]: {status: 'not-sure'},
+        },
+    };
+}
+
+/** Rail subtitle for Printing: consultation, side summary, then methods. */
+export function summarizePrintingStep(
+    state: CustomizationBuilderState,
+    answer: StepAnswer,
+    specialistLabel: string,
+    options?: {propertySummaries?: PropertySummariesByOption},
+): string {
+    if (answer.status === 'not-sure') return specialistLabel;
+    if (!isPrintedSideComplete(state)) return 'Not set';
+    const side = formatPrintedSideSummary(state);
+    if (!wantsAnyPrint(state)) return side;
+    const methods = summarizeAnswer(answer, specialistLabel, options);
+    if (methods === 'Not set') return side;
+    return `${side} · ${methods}`;
 }
 
 /** The options picked in a selection step, in the order they were picked. */
@@ -88,19 +237,16 @@ export function firstUnresolvedStepIndex(
     steps: BuilderStep[],
     dimensionAxisIds?: readonly string[],
 ): number {
-    const index = steps.findIndex((step) => {
-        const answer = getAnswer(state, step.key);
-        if (step.kind === 'dimensions') {
-            return !isAnswerReady(answer, dimensionAxisIds);
-        }
-        return !isAnswerReady(answer);
-    });
+    const index = steps.findIndex(
+        (step) => !isStepReady(state, step, dimensionAxisIds),
+    );
     return index === -1 ? steps.length : index;
 }
 
 /** Any self-serve signal means the item is configured and skips guided. */
 export function isBuilderConfigured(state: CustomizationBuilderState): boolean {
     if (state.guidedComplete) return true;
+    if (isPrintedSideComplete(state)) return true;
     return Object.values(state.answers).some(
         (answer) => answer !== undefined && answer.status !== 'unset',
     );
@@ -116,13 +262,7 @@ export function isBuilderReady(
     dimensionAxisIds?: readonly string[],
 ): boolean {
     if (steps.length === 0) return true;
-    return steps.every((step) => {
-        const answer = getAnswer(state, step.key);
-        if (step.kind === 'dimensions') {
-            return isAnswerReady(answer, dimensionAxisIds);
-        }
-        return isAnswerReady(answer);
-    });
+    return steps.every((step) => isStepReady(state, step, dimensionAxisIds));
 }
 
 export function formatFaceSummary(
@@ -233,11 +373,15 @@ export function buildStepsFromCatalog(
         slug: string;
         title: string;
         description: string;
+        /** From any option in the category — same `typeOrder` on every row. */
+        typeOrder?: string[];
         types: Map<
             string,
             {
                 type: BuilderType;
                 options: BuilderOption[];
+                /** From any option in the type — same `optionOrder` on every row. */
+                optionOrder?: string[];
             }
         >;
     };
@@ -257,6 +401,14 @@ export function buildStepsFromCatalog(
                 types: new Map(),
             };
             categories.set(categorySlug, bucket);
+        }
+
+        if (
+            !bucket.typeOrder &&
+            item.categoryTypeOrder &&
+            item.categoryTypeOrder.length > 0
+        ) {
+            bucket.typeOrder = item.categoryTypeOrder;
         }
 
         const typeId = item.typeId?.trim() || `fallback-${categorySlug}`;
@@ -280,6 +432,14 @@ export function buildStepsFromCatalog(
             bucket.types.set(typeId, typeBucket);
         }
 
+        if (
+            !typeBucket.optionOrder &&
+            item.typeOptionOrder &&
+            item.typeOptionOrder.length > 0
+        ) {
+            typeBucket.optionOrder = item.typeOptionOrder;
+        }
+
         if (typeBucket.options.some((opt) => opt.id === item.id)) continue;
 
         typeBucket.options.push({
@@ -292,6 +452,9 @@ export function buildStepsFromCatalog(
             imageUrl: item.imageUrl ?? null,
             status: 'active',
             ...(item.preselected ? {preselected: true} : {}),
+            ...(item.achievedBy && item.achievedBy.length > 0
+                ? {achievedBy: item.achievedBy}
+                : {}),
         });
     }
 
@@ -300,14 +463,39 @@ export function buildStepsFromCatalog(
     );
 
     for (const category of orderedCategories) {
+        const withOptions = [...category.types.values()].filter(
+            (typeBucket) => typeBucket.options.length > 0,
+        );
+        if (withOptions.length === 0) continue;
+
+        // PROD-2746 — merchandised type sequence from category.typeOrder.
+        // Empty/absent collapses to alphabetical (same contract as the helper).
+        const orderedBuckets = orderTypesInCategory(
+            withOptions.map((typeBucket) => ({
+                _id: typeBucket.type.id,
+                title: typeBucket.type.title,
+                type: typeBucket.type,
+                options: typeBucket.options,
+                optionOrder: typeBucket.optionOrder,
+            })),
+            category.typeOrder,
+        );
+
         const types: BuilderType[] = [];
         const options: BuilderOption[] = [];
-        for (const typeBucket of category.types.values()) {
-            if (typeBucket.options.length === 0) continue;
+        for (const typeBucket of orderedBuckets) {
             types.push(typeBucket.type);
-            options.push(...typeBucket.options);
+            // PROD-2775 — merchandised option sequence from type.optionOrder.
+            const orderedOptions = orderOptionsInType(
+                typeBucket.options.map((opt) => ({
+                    _id: opt.id,
+                    title: opt.title,
+                    option: opt,
+                })),
+                typeBucket.optionOrder,
+            );
+            options.push(...orderedOptions.map((row) => row.option));
         }
-        if (types.length === 0) continue;
 
         steps.push({
             key: category.slug,
@@ -367,7 +555,7 @@ export function clearStep(
         }
     }
 
-    return {
+    const cleared: CustomizationBuilderState = {
         ...state,
         answers: {
             ...state.answers,
@@ -377,6 +565,14 @@ export function clearStep(
         propertySelections,
         propertySelectionSummaries,
     };
+    if (key === PRINTING_CATEGORY_SLUG) {
+        return {
+            ...cleared,
+            printOutside: '',
+            printInside: '',
+        };
+    }
+    return cleared;
 }
 
 /** Drop the notes and Property picks that belonged to options no longer selected. */
@@ -498,6 +694,15 @@ export function fillUnsetWithConsultation(
     for (const key of keys) {
         const current = answers[key];
         if (!current || current.status === 'unset') {
+            // None (both No) or gate-level Not sure already decided printing —
+            // do not overwrite with a second consultation marker on Save / Done.
+            if (
+                key === PRINTING_CATEGORY_SLUG &&
+                isPrintedSideComplete(state) &&
+                !wantsAnyPrint(state)
+            ) {
+                continue;
+            }
             answers[key] = {status: 'not-sure'};
         }
     }
@@ -535,18 +740,47 @@ export function toRequestCustomizations(
     steps?: BuilderStep[],
 ): BuilderRequestCustomization[] {
     const out: BuilderRequestCustomization[] = [];
-    const keys =
-        steps
+    const keys: BuilderStepKey[] = [
+        ...(steps
             ?.filter((step) => step.kind === 'selection')
             .map((step) => step.key) ??
-        Object.keys(state.answers).filter((key) => key !== DIMENSIONS_STEP_KEY);
+            Object.keys(state.answers).filter(
+                (key) => key !== DIMENSIONS_STEP_KEY,
+            )),
+    ];
+
+    // Printing may be ready as None with an unset answer — still emit the side.
+    if (
+        !keys.includes(PRINTING_CATEGORY_SLUG) &&
+        isPrintedSideComplete(state) &&
+        !wantsAnyPrint(state)
+    ) {
+        keys.push(PRINTING_CATEGORY_SLUG);
+    }
 
     for (const key of keys) {
         const answer = state.answers[key];
-        if (!answer || answer.status === 'unset') continue;
-
         const category =
             steps?.find((step) => step.key === key)?.category ?? key;
+        const printing =
+            key === PRINTING_CATEGORY_SLUG ||
+            category === PRINTING_CATEGORY_SLUG;
+
+        if (
+            printing &&
+            isPrintedSideComplete(state) &&
+            answer?.status !== 'not-sure'
+        ) {
+            const sideLabel = formatPrintedSideSummary(state);
+            out.push({
+                id: `${PRINTING_CATEGORY_SLUG}-side`,
+                label: sideLabel,
+                category: PRINTING_CATEGORY_SLUG,
+            });
+            if (!wantsAnyPrint(state)) continue;
+        }
+
+        if (!answer || answer.status === 'unset') continue;
 
         if (answer.status === 'not-sure') {
             out.push({
@@ -644,6 +878,8 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
         entryNotes,
         propertySelections,
         propertySelectionSummaries,
+        printOutside: parsePrintSideValue(raw.printOutside),
+        printInside: parsePrintSideValue(raw.printInside),
     };
 }
 

@@ -17,6 +17,7 @@ import {SanityImage} from '@/components/ui/sanity-image';
 import type {ProductLineFrame, Product} from '@/lib/catalog/types';
 import {
     assembleHeroMediaCards,
+    PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER,
     type ProductLineHeroLayout,
     type ProductLineHeroMediaCard,
 } from '@/lib/catalog/product-line-landing';
@@ -27,7 +28,6 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 const PRODUCT_LINE_HERO_SECTION_ID = 'product-line-hero';
 const HERO_HEADING_ID = 'product-line-hero-heading';
 const FEATURED_ICON_PLACEHOLDER = '/solutions/hero-kit-placeholder.svg';
-const FEATURE_IMAGE_PLACEHOLDER = '/products/hero-feature-placeholder.svg';
 /** Final featured-icon size for stack hero (matches prior PageHeading eyebrow). */
 const FEATURED_ICON_SIZE_STACK_PX = 128;
 
@@ -40,12 +40,14 @@ type ProductLineHeroProps = {
     heroLayout: ProductLineHeroLayout;
     featuredImageUrl: string | null;
     featuredImageAlt: string;
-    /** Hover-play MP4 on bottomBar featured marquee card; unused on stack. */
+    /** Hover-play MP4 on bottomBar featured carousel card; unused on stack. */
     featuredVideoUrl: string | null;
     featuredIconUrl: string | null;
     featuredIconAlt: string;
-    /** Standard products on this line — preferred bottomBar marquee source. */
+    /** Standard products on this line — preferred bottomBar carousel source. */
     products: Product[];
+    /** Pinned hero products (Categorization Featured Products). */
+    featuredProducts?: Product[];
     hasStyles: boolean;
 };
 
@@ -184,8 +186,8 @@ function HeroCtaGroup({
 
 /**
  * Product-line landing hero (PROD-1914 Phase 3).
- * `stack` = featured icon + copy above media; `bottomBar` = media marquee above
- * type (featured icon hidden for now).
+ * `stack` = featured icon + copy above media; `bottomBar` = media carousel above
+ * type (featured icon hidden for now). Click opens StandardProductPreview.
  */
 export function ProductLineHero({
     h1,
@@ -199,6 +201,7 @@ export function ProductLineHero({
     featuredIconUrl,
     featuredIconAlt,
     products,
+    featuredProducts,
     hasStyles,
 }: ProductLineHeroProps) {
     const featuredSrc = featuredImageUrl?.trim() || '';
@@ -217,7 +220,7 @@ export function ProductLineHero({
                 alt: frameWithSrc.alt.trim() || h1,
             }
           : {
-                src: FEATURE_IMAGE_PLACEHOLDER,
+                src: PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER,
                 alt: `${h1} featured image placeholder`,
             };
 
@@ -236,6 +239,7 @@ export function ProductLineHero({
             featuredVideoUrl: featuredVideo || null,
             frames,
             products,
+            featuredProducts,
         });
 
         return (
@@ -382,7 +386,7 @@ function ProductLineHeroBottomBar({
                     'flex min-h-0 flex-1 flex-col pt-8 sm:pt-10 lg:pt-12',
                 )}
             >
-                {/* Grows under breadcrumb / above marquee (all breakpoints). */}
+                {/* Grows under breadcrumb / above carousel (all breakpoints). */}
                 <div className="flex-1" aria-hidden />
 
                 {/* Full-viewport track; vertical dielines stay on this column. */}
@@ -394,7 +398,7 @@ function ProductLineHeroBottomBar({
                     />
                 </div>
 
-                {/* Grows between marquee and heading (all breakpoints). */}
+                {/* Grows between carousel and heading (all breakpoints). */}
                 <div className="flex-1" aria-hidden />
 
                 {/* 40px (pt-10) clearance above the heading — muted→white reads here.

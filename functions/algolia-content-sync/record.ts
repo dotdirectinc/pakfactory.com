@@ -25,7 +25,8 @@ export type AlgoliaContentSource = {
   intro?: string | null;
   publishedAt?: string | null;
   allowIndex?: boolean | null;
-  role?: string | null;
+  /** Computed by the projection (content-indexes.ts INDEXABLE): false → remove. */
+  indexable?: boolean | null;
   operation?: "create" | "update" | "delete" | string;
 };
 
@@ -67,10 +68,7 @@ export function shouldRemoveContentFromAlgolia(
   if (source.operation === "delete" || source.allowIndex === false) {
     return true;
   }
-  if (
-    source._type === "customizationOption" &&
-    source.role === "configurable"
-  ) {
+  if (source.indexable === false) {
     return true;
   }
   if (source._type === "caseStudy" && !source.publishedAt) {

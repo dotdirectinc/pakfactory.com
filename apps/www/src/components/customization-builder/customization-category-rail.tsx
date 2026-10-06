@@ -8,8 +8,11 @@ import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/cop
 import {SelectionSummaryDisplay} from '@/components/customization-builder/ui/selection-summary-display';
 import {
     getAnswer,
-    isAnswerReady,
+    isPrintedSideComplete,
+    isPrintingCategoryStep,
+    isStepReady,
     summarizeAnswer,
+    summarizePrintingStep,
     type BuilderStep,
     type BuilderStepKey,
     type CustomizationBuilderState,
@@ -48,17 +51,27 @@ export function CustomizationCategoryRail({
                     maxReachableIndex !== undefined &&
                     index > maxReachableIndex;
                 const answer = getAnswer(state, item.key);
-                const ready =
-                    item.kind === 'dimensions'
-                        ? isAnswerReady(answer, dimensionAxisIds)
-                        : isAnswerReady(answer);
+                const ready = isStepReady(state, item, dimensionAxisIds);
                 const propertySummaries = state.propertySelectionSummaries;
-                const summaryText = summarizeAnswer(
-                    answer,
-                    CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
-                    {propertySummaries},
-                );
-                const showChip = ready && summaryText !== 'Not set';
+                const printing = isPrintingCategoryStep(item);
+                const sideComplete = isPrintedSideComplete(state);
+                const summaryText = printing
+                    ? summarizePrintingStep(
+                          state,
+                          answer,
+                          CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
+                          {propertySummaries},
+                      )
+                    : summarizeAnswer(
+                          answer,
+                          CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
+                          {propertySummaries},
+                      );
+                // Printing: show side / specialist once decided (even if methods pending).
+                const showChip = printing
+                    ? (answer.status === 'not-sure' || sideComplete) &&
+                      summaryText !== 'Not set'
+                    : ready && summaryText !== 'Not set';
                 const showClear = Boolean(showChip && onClearCategory);
 
                 return (
@@ -118,15 +131,21 @@ export function CustomizationCategoryRail({
                                             numbered && 'pl-6',
                                         )}
                                     >
-                                        <SelectionSummaryDisplay
-                                            answer={answer}
-                                            specialistLabel={
-                                                CUSTOMIZATION_BUILDER_COPY.specialistToAdvise
-                                            }
-                                            propertySummaries={
-                                                propertySummaries
-                                            }
-                                        />
+                                        {printing ? (
+                                            <span className="line-clamp-2">
+                                                {summaryText}
+                                            </span>
+                                        ) : (
+                                            <SelectionSummaryDisplay
+                                                answer={answer}
+                                                specialistLabel={
+                                                    CUSTOMIZATION_BUILDER_COPY.specialistToAdvise
+                                                }
+                                                propertySummaries={
+                                                    propertySummaries
+                                                }
+                                            />
+                                        )}
                                     </div>
                                 ) : !numbered ? (
                                     <p className="line-clamp-2 text-xs text-muted-foreground">

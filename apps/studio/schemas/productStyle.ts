@@ -7,6 +7,9 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
+import { entityFields } from '../lib/entity-id-field'
+import { FULL_STATUS_LIST, isParentOffStatus, STATUS_DESCRIPTION_TAIL } from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 
 /**
  * Product Style — a construction within a line (Magnetic Closure, Straight Tuck
@@ -32,13 +35,22 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * placeholder, and promoting it into `description` would make those styles read as
  * authored when they are not. Safe for a future unset sweep.
  *
- * Deferred: `sections` → PROD-2292. `productOrder` is NOT built — a style's
- * product count is unbounded, so product display order derives from a query, not a
- * maintained array (D31).
+ * Deferred: `sections` → PROD-2292.
  *
- * Ordering the styles GRID is a separate open question with no mechanism: the
- * Line's `styles` array was removed in PROD-2509 and nothing replaced it, so the
- * grid sorts alphabetically today. That is the behaviour, not the intent.
+ * `productOrder` (PROD-2747) IS built, and D31 is why it takes the shape it does.
+ * D31 named this field by name and rejected it — but as "every product in a style
+ * in drag order", an array that is order AND gate, unusable at 200. It then
+ * prescribed the alternative it is built as here: DERIVE THE SET, CURATE THE
+ * HIGHLIGHTS. Membership stays a query (products referencing this style); the array
+ * carries a short sequence for the top and `Rule.max(12)` keeps it that way, so the
+ * ceiling D31 worried about is enforced rather than requested.
+ *
+ * 🔴 Do not "complete" this list. Adding every product is the design D31 rejected.
+ *
+ * Ordering the styles GRID is set on the LINE, not here — `productLine.styleOrder`
+ * (PROD-2739), which replaced the `styles` array removed in PROD-2509. Nothing on
+ * this type records its own position: a style the Line does not list simply follows
+ * the listed ones alphabetically. There is no per-style sort key, deliberately.
  */
 export const productStyle = defineType({
   name: 'productStyle',
@@ -153,25 +165,55 @@ export const productStyle = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle — Active, Coming soon or Discontinued.',
-      options: {
-        list: [
-          { title: 'Active', value: 'active' },
-          { title: 'Coming soon', value: 'coming-soon' },
-          { title: 'Discontinued', value: 'discontinued' },
-        ],
-        layout: 'radio',
-      },
-      initialValue: 'active',
-    }),
-    defineField({
-      name: 'customerFacing',
-      title: 'Customer facing',
-      type: 'boolean',
-      group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
-      initialValue: true,
+        'Is this style offered, and how? Coming soon shows a badged card on the parent ' +
+        'line with no page of its own. Discontinued keeps the page for search and drops ' +
+        'the listing. ' + STATUS_DESCRIPTION_TAIL,
+      options: { list: FULL_STATUS_LIST, layout: 'radio' },
+      initialValue: 'active',
+      // A style does not take its products down with it while they have another
+      // style that is on (R2). Two things it does break, so two warnings: the products
+      // whose PRIMARY style this is (`productStyle[0]` is fixed — no fallback — and
+      // supplies their card style, breadcrumb and inherited FAQs), and the products
+      // for which this is the last style still on, which are hidden (rule 1,
+      // Richard + Eric 2026-10-06).
+      validation: (Rule) => [
+        Rule.custom(
+          restrictingChildrenWarning({
+            when: isParentOffStatus,
+            query: `*[
+              _type == "product" &&
+              productStyle[0]._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon", "active-internal"])
+            ]{ title }`,
+            // The primary is fixed — nothing falls back to the next style (2026-10-06).
+            describe: (names) =>
+              `This is the primary style of ${names}. They keep it as their primary: their ` +
+              `breadcrumb shows it without a link, and they skip this style's FAQs and show their ` +
+              `line's instead until it is active again. Reorder their styles first if another should lead.`,
+          }),
+        ).warning(),
+        // Rule 1 (2026-10-06): a product whose every style is off is hidden.
+        Rule.custom(
+          restrictingChildrenWarning({
+            when: isParentOffStatus,
+            query: `*[
+              _type == "product" &&
+              kind == "standard" &&
+              $id in productStyle[]._ref &&
+              (!defined(status) || status in ["active", "coming-soon"]) &&
+              count(productStyle[
+                _ref != $id &&
+                (!defined(@->status) || @->status in ["active", "active-internal", "discontinued"])
+              ]) == 0
+            ]{ title }`,
+            describe: (names) =>
+              `${names} ${names.includes(' and ') || names.includes(',') ? 'have' : 'has'} no other ` +
+              `active style, so ${names.includes(' and ') || names.includes(',') ? 'they' : 'it'} ` +
+              `will be hidden from the site.`,
+          }),
+        ).warning(),
+      ],
     }),
     // `order` was REMOVED here on 2026-09-01. It set the display order of the style
     // cards within a Product Line's styles grid, and nothing has ever read it — no
@@ -192,7 +234,53 @@ export const productStyle = defineType({
       description: 'Curated override. Empty falls back to the line’s studies.',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
-    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+    faqsField({
+      group: GROUPS.categorization,
+      mode: 'reference',
+      max: 6,
+      min: 3,
+      description:
+        'Curated FAQs for this style — reference shared FAQ documents. Shown on the style page and on standard products whose first style this is and that have none of their own — only while this style is not Coming soon or Not active. Leave empty to use the line’s. Anything here replaces the line’s list entirely.',
+    }),
+    defineField({
+      name: 'productOrder',
+      title: 'Product order',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Drag to pin a few products to the top of this style. Anything not listed follows ' +
+        'alphabetically. Never a gate: every product still appears.',
+      of: [
+        {
+          type: 'reference',
+          // WEAK, for the same reason as `productLine.styleOrder` (PROD-2739):
+          // pinning a product for presentation must never make it undeletable.
+          // A deleted product leaves a dangling entry, which the helper drops.
+          weak: true,
+          to: [{ type: 'product' }],
+          options: {
+            disableNew: true,
+            // Primary style only. `product.productStyle` is an array where `[0]` is
+            // the primary (settled 2026-08-27). Style-page membership is the full
+            // listed array (PROD-2843), but this picker stays primary-only so an
+            // editor cannot pin a secondary-only product that `productOrder`
+            // would still accept — widening the picker is a separate decision.
+            filter: ({ document }: { document: { _id: string; productOrder?: { _ref?: string }[] } }) => {
+              const chosen = (document.productOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              return {
+                filter: 'productStyle[0]._ref == $style && !(_id in $chosen)',
+                params: { style: document._id.replace(/^drafts\./, ''), chosen },
+              }
+            },
+          },
+        },
+      ],
+      // max is load-bearing, not taste — see the docblock. This is a highlights
+      // list; the tail is the query's job.
+      validation: (Rule) => Rule.unique().max(12),
+    }),
 
     // ─── TEMPLATE (layout version) ────────────────────────────────────────────
     defineField({
@@ -229,6 +317,7 @@ export const productStyle = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
+    ...entityFields({ prefix: 'sty', codeKinds: ['STY'], group: GROUPS.content }),
   ],
   preview: {
     select: { title: 'title', display: 'shortName', line: 'productLine.title', image: 'featuredImage' },

@@ -11,6 +11,7 @@ import type {
   WebsiteNavLinkDoc,
 } from '@pakfactory/sanity/queries';
 import {resolveWwwNavHref} from '@/lib/resolve-www-nav-href';
+import {isWwwNavLinkVisible} from '@/lib/www-nav-link-visibility';
 
 const SOCIAL_PLATFORMS = new Set<string>([
   'instagram',
@@ -32,6 +33,7 @@ const AI_ENGINES = new Set<string>([
 function resolveLink(raw: WebsiteNavLinkDoc): FooterLink | null {
   const label = raw.label?.trim();
   if (!label) return null;
+  if (!isWwwNavLinkVisible(raw)) return null;
 
   const resolved = resolveWwwNavHref(raw);
   if (!resolved) return null;

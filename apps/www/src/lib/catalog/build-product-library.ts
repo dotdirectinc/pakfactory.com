@@ -10,6 +10,7 @@ import {
     PRODUCT_CATALOG_INDUSTRY_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID,
+    membershipStyles,
 } from '@/lib/catalog/types';
 import {isSustainabilityProperty} from '@/lib/catalog/customization-filter-taxonomy';
 
@@ -99,11 +100,9 @@ export function buildProductLibraryResult(
             styleMap = new Map();
             stylesByLine.set(lineSlug, styleMap);
         }
-        upsertOption(
-            styleMap,
-            item.productStyle.slug,
-            item.productStyle.title,
-        );
+        for (const style of membershipStyles(item)) {
+            upsertOption(styleMap, style.slug, style.title);
+        }
 
         if (!linesBySlug[lineSlug]) {
             linesBySlug[lineSlug] = {

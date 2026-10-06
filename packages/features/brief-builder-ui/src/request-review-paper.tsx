@@ -23,6 +23,16 @@ export type RequestReviewPageSlice = {
 
 export type RequestReviewPaperDensity = "default" | "tight";
 
+export type LineCustomizationPick = {
+  label: string;
+  properties?: string[];
+};
+
+export type LineCustomizationGroup = {
+  categoryTitle: string;
+  picks: LineCustomizationPick[];
+};
+
 export type RequestReviewPaperProps = {
   draft: RequestDraft;
   lines: RequestLine[];
@@ -30,6 +40,15 @@ export type RequestReviewPaperProps = {
   documentDate: string;
   copy: RequestReviewCopy;
   productTitle?: (slug: string) => string;
+  /** Resolve stored service id (stage slug) to a display label. */
+  serviceLabel?: (id: string) => string;
+  /**
+   * Optional richer customization groups (category + properties).
+   * When omitted, groups fall back to `line.customizations` by category slug.
+   */
+  lineCustomizationGroups?: (line: RequestLine) => LineCustomizationGroup[];
+  /** Optional size line shown first under Customization. */
+  lineDimension?: (line: RequestLine) => string | undefined;
   logoSlot?: ReactNode;
   mode?: "interactive" | "readonly";
   onEditSection?: (key: string) => void;
@@ -87,6 +106,89 @@ function PaperEditLink({
     >
       {copy.paperEdit}
     </Button>
+  );
+}
+
+/** Group flat customizations by category slug when no richer formatter is passed. */
+function fallbackCustomizationGroups(
+  line: RequestLine,
+): LineCustomizationGroup[] {
+  const order: string[] = [];
+  const byCategory = new Map<string, LineCustomizationPick[]>();
+
+  for (const customization of line.customizations) {
+    const key = customization.category?.trim() || "other";
+    if (!byCategory.has(key)) {
+      order.push(key);
+      byCategory.set(key, []);
+    }
+    byCategory.get(key)!.push({label: customization.label});
+  }
+
+  return order.map((key) => ({
+    categoryTitle: key,
+    picks: byCategory.get(key) ?? [],
+  }));
+}
+
+function formatPickLabel(pick: LineCustomizationPick): string {
+  const props = (pick.properties ?? []).filter(Boolean);
+  if (props.length === 0) return pick.label;
+  return `${pick.label} (${props.join(", ")})`;
+}
+
+function LineCustomizationCell({
+  copy,
+  groups,
+  dimension,
+  bodyClass,
+  secondaryClass,
+}: {
+  copy: RequestReviewCopy;
+  groups: LineCustomizationGroup[];
+  /** Real size summary only; omit when unset so empty lines collapse. */
+  dimension?: string;
+  bodyClass: string;
+  secondaryClass: string;
+}) {
+  const dimensionValue = dimension?.trim() ?? "";
+  const dimensionSet = dimensionValue.length > 0;
+
+  if (!dimensionSet && groups.length === 0) {
+    return (
+      <span className={cn(bodyClass, "text-muted-foreground")}>
+        {copy.specialistToAdvise}
+      </span>
+    );
+  }
+
+  return (
+    <div className={cn("space-y-2", bodyClass, "text-muted-foreground")}>
+      <div>
+        <p
+          className={cn(secondaryClass, "font-semibold text-foreground")}
+        >
+          {copy.paperDimensionsLabel}
+        </p>
+        <p className="mt-0.5">
+          {dimensionSet ? dimensionValue : copy.specialistToAdvise}
+        </p>
+      </div>
+      {groups.map((group) => (
+        <div key={group.categoryTitle}>
+          <p
+            className={cn(secondaryClass, "font-semibold text-foreground")}
+          >
+            {group.categoryTitle}
+          </p>
+          <p className="mt-0.5">
+            {group.picks.length > 0
+              ? group.picks.map(formatPickLabel).join(", ")
+              : copy.specialistToAdvise}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -153,6 +255,9 @@ type ReviewSummaryBodyProps = {
   spendDisplay: string;
   briefText: string;
   productTitle: (slug: string) => string;
+  serviceLabel: (id: string) => string;
+  lineCustomizationGroups?: (line: RequestLine) => LineCustomizationGroup[];
+  lineDimension?: (line: RequestLine) => string | undefined;
   mode: "interactive" | "readonly";
   onEditSection?: (key: string) => void;
   compact?: boolean;
@@ -172,6 +277,9 @@ function ReviewSummaryBody({
   spendDisplay,
   briefText,
   productTitle,
+  serviceLabel,
+  lineCustomizationGroups,
+  lineDimension,
   mode,
   onEditSection,
   compact = false,
@@ -182,6 +290,8 @@ function ReviewSummaryBody({
 }: ReviewSummaryBodyProps) {
   const showEdit = mode === "interactive" && onEditSection;
   const d = paperDensityClasses(density);
+  const showServices =
+    draft.servicesEnabled && draft.services.length > 0;
 
   return (
     <>
@@ -277,7 +387,7 @@ function ReviewSummaryBody({
       {lines.length === 0 ? null : (
         <table
           className={cn(
-            "w-full border-collapse text-left",
+            "w-full table-fixed border-collapse text-left",
             d.body,
             showContactBlock
               ? d.sectionTopMargin
@@ -290,7 +400,7 @@ function ReviewSummaryBody({
             <tr className="border-b border-dashed border-[#E9E9E7]">
               <th
                 className={cn(
-                  "w-24 pb-2 align-bottom font-semibold uppercase tracking-[0.06em] text-muted-foreground",
+                  "w-[18%] pb-2 pr-3 align-bottom font-semibold uppercase tracking-[0.06em] text-muted-foreground",
                   d.sectionLabel,
                 )}
               >
@@ -298,7 +408,7 @@ function ReviewSummaryBody({
               </th>
               <th
                 className={cn(
-                  "pb-2 align-bottom font-semibold uppercase tracking-[0.06em] text-muted-foreground",
+                  "w-[32%] pb-2 pr-3 align-bottom font-semibold uppercase tracking-[0.06em] text-muted-foreground",
                   d.sectionLabel,
                 )}
               >
@@ -306,7 +416,7 @@ function ReviewSummaryBody({
               </th>
               <th
                 className={cn(
-                  "pb-2 align-bottom font-semibold uppercase tracking-[0.06em] text-muted-foreground",
+                  "w-[50%] pb-2 align-bottom font-semibold uppercase tracking-[0.06em] text-muted-foreground",
                   d.sectionLabel,
                 )}
               >
@@ -317,30 +427,60 @@ function ReviewSummaryBody({
           <tbody>
             {lines.map((line) => {
               const title = productTitle(line.productSlug);
-              const qty = line.quantities
-                .map((n) => n.toLocaleString("en-US"))
-                .join(", ");
-              const config =
-                [
-                  line.contents,
-                  ...line.customizations.map((customization) => customization.label),
-                  line.notes,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || copy.specialistToAdvise;
+              const qtyValues = line.quantities.map((n) =>
+                n.toLocaleString("en-US"),
+              );
+              const contents = line.contents?.trim() ?? "";
+              const notes = line.notes?.trim() ?? "";
+              const dimension = lineDimension?.(line)?.trim() ?? "";
+              const groups =
+                lineCustomizationGroups?.(line) ??
+                fallbackCustomizationGroups(line);
               return (
                 <tr
                   key={line.id}
                   className="border-b border-dashed border-[#F1F1EF] align-top last:border-b-0"
                 >
-                  <td className={cn(d.tableRowPad, "pr-3 font-medium")}>
-                    {qty}
+                  <td className={cn(d.tableRowPad, "w-[18%] pr-3 font-medium")}>
+                    <div className="flex flex-col">
+                      {qtyValues.map((value, index) => (
+                        <span key={`${line.id}-qty-${index}`}>{value}</span>
+                      ))}
+                    </div>
                   </td>
-                  <td className={cn(d.tableRowPad, "pr-3 font-medium")}>
-                    {title}
+                  <td className={cn(d.tableRowPad, "w-[32%] pr-3 font-medium")}>
+                    <div className="space-y-1">
+                      <p className={d.body}>{title}</p>
+                      {contents ? (
+                        <p
+                          className={cn(
+                            d.secondary,
+                            "font-normal text-muted-foreground",
+                          )}
+                        >
+                          {copy.paperProductPrefix} {contents}
+                        </p>
+                      ) : null}
+                      {notes ? (
+                        <p
+                          className={cn(
+                            d.secondary,
+                            "font-normal text-muted-foreground",
+                          )}
+                        >
+                          {copy.paperDetailPrefix} {notes}
+                        </p>
+                      ) : null}
+                    </div>
                   </td>
-                  <td className={cn(d.tableRowPad, "text-muted-foreground")}>
-                    {config}
+                  <td className={cn(d.tableRowPad, "min-w-0 w-[50%]")}>
+                    <LineCustomizationCell
+                      copy={copy}
+                      groups={groups}
+                      dimension={dimension || undefined}
+                      bodyClass={d.body}
+                      secondaryClass={d.secondary}
+                    />
                   </td>
                 </tr>
               );
@@ -348,6 +488,38 @@ function ReviewSummaryBody({
           </tbody>
         </table>
       )}
+
+      {showServices ? (
+        <div
+          className={cn(
+            "border-t border-dashed border-[#E9E9E7]",
+            d.sectionTopMargin,
+            d.briefTopPad,
+          )}
+        >
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <p
+              className={cn(
+                d.sectionLabel,
+                "min-w-0 font-semibold uppercase tracking-[0.06em] text-muted-foreground",
+              )}
+            >
+              {copy.paperServices}
+            </p>
+            {showEdit ? (
+              <PaperEditLink
+                copy={copy}
+                onClick={() => onEditSection!("services")}
+              />
+            ) : null}
+          </div>
+          <ul className={cn("mt-1 list-none space-y-0.5", d.body)}>
+            {draft.services.map((id) => (
+              <li key={id}>{serviceLabel(id)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {showBriefBlock ? (
       <div
@@ -422,6 +594,9 @@ export function RequestReviewPaper({
   documentDate,
   copy,
   productTitle = (slug) => slug,
+  serviceLabel = (id) => id,
+  lineCustomizationGroups,
+  lineDimension,
   logoSlot,
   mode = "readonly",
   onEditSection,
@@ -461,6 +636,9 @@ export function RequestReviewPaper({
           spendDisplay={spendDisplay}
           briefText={briefText}
           productTitle={productTitle}
+          serviceLabel={serviceLabel}
+          lineCustomizationGroups={lineCustomizationGroups}
+          lineDimension={lineDimension}
           mode={mode}
           onEditSection={onEditSection}
           compact
@@ -501,6 +679,9 @@ export function RequestReviewPaper({
           spendDisplay={spendDisplay}
           briefText={briefText}
           productTitle={productTitle}
+          serviceLabel={serviceLabel}
+          lineCustomizationGroups={lineCustomizationGroups}
+          lineDimension={lineDimension}
           mode={mode}
           onEditSection={onEditSection}
           density={density}

@@ -14,6 +14,7 @@ import {
 } from '../customization-builder/state';
 import type {CustomizationBuilderState} from '../customization-builder/types';
 import {prepareRules, resolveProductCustomizations, PRUNED_PAIRS_MARKER} from './customization-rules';
+import {isConfigurable} from './types';
 import type {CustomizationOption} from './types';
 
 // The Rectangular Tin case (PROD-2595 / PROD-2556), at its smallest:
@@ -24,13 +25,13 @@ const option = (
     title: string,
     typeId: string,
     compatible: string[] = [],
-    configuratorRole: 'configurable' | 'reference' = 'configurable',
+    appearsIn: CatalogRulesOptionDoc['appearsIn'] = 'configurable-with-page',
 ): CatalogRulesOptionDoc => ({
     _id,
     title,
     slug: _id,
     status: 'active',
-    configuratorRole,
+    appearsIn,
     type: null,
     typeId,
     compatibleCustomizations: compatible,
@@ -60,8 +61,12 @@ const rulesDoc = (): CatalogCustomizationRulesDoc => ({
         option('o.matte', 'Matte', 't.sf', ['o.canvas', 'o.metallic', 'o.uv', 'o.htp']),
         option('o.mattenp', 'Matte (for non-paper)', 't.sfnp', ['o.tinplate', 'o.metallic', 'o.uv', 'o.offset']),
         option('o.spotuv', 'Spot UV', 't.spot', ['o.matte', 'o.mattenp', 'o.tinplate', 'o.canvas', 'o.metallic', 'o.uv', 'o.offset', 'o.htp']),
-        // A reference option: never shown to the customer, still a partner.
-        option('o.lining', 'Lining', 't.sfnp', ['o.tinplate'], 'reference'),
+        // A page-only option: never shown to the customer, still a partner.
+        option('o.lining', 'Lining', 't.sfnp', ['o.tinplate'], 'not-configurable-with-page'),
+        // An option the backfill has not reached. `appearsIn` is genuinely absent —
+        // built by hand, because passing `undefined` to `option()` would fire its
+        // default parameter and quietly give it a value.
+        {...option('o.unset', 'Unset', 't.sfnp', ['o.tinplate']), appearsIn: undefined},
     ],
 });
 
@@ -70,7 +75,9 @@ const categoryOf: Record<string, string> = {
     't.sf': 'finishing', 't.sfnp': 'finishing', 't.spot': 'finishing',
 };
 const map = (doc: CatalogRulesOptionDoc, preselected: boolean): CustomizationOption | null =>
-    doc.configuratorRole === 'reference'
+    // Mirrors mapAvailableCustomization: keep only what is definitely configurable,
+    // so an option with no `appearsIn` is dropped rather than offered (PROD-2732).
+    !isConfigurable(doc.appearsIn)
         ? null
         : {
               id: doc._id,
@@ -106,16 +113,37 @@ describe('customization rules — the product offer', () => {
         ]);
     });
 
-    it('keeps reference options out of what the customer sees, but in the snapshot as partners', () => {
+    it('keeps page-only options out of what the customer sees, but in the snapshot as partners', () => {
         const {availableCustomizations, customizationRules} = resolve(['o.tinplate']);
         assert.ok(!idsOf(availableCustomizations).includes('o.lining'));
         assert.ok(customizationRules.ids.includes('o.lining'));
+    });
+
+    // PROD-2732 fail-closed. `isConfigurable(undefined)` is false, so an option the
+    // backfill has not reached is not offered. Written the other way round — drop
+    // when the value equals the page-only one — this option would be offered, and
+    // so would every reference option on an un-backfilled dataset.
+    it('does not offer an option whose appearsIn is unset', () => {
+        const {availableCustomizations, customizationRules} = resolve(['o.tinplate']);
+        assert.ok(!idsOf(availableCustomizations).includes('o.unset'));
+        assert.ok(customizationRules.ids.includes('o.unset'), 'still a partner in the rules graph');
     });
 
     it('marks the preset\'s own pre-selections, while the offer comes from the list it is given', () => {
         const {availableCustomizations} = resolve(['o.tinplate'], {preselectedIds: ['o.offset']});
         assert.equal(availableCustomizations.find((o) => o.id === 'o.offset')?.preselected, true);
         assert.equal(availableCustomizations.find((o) => o.id === 'o.metallic')?.preselected, undefined);
+    });
+
+    // PROD-2773 — inspiration GROQ now passes every listed option as preselectedIds
+    // (the array is the preset set; the Studio boolean is often unset).
+    it('marks every preselectedId when several are passed (inspiration preset list)', () => {
+        const {availableCustomizations} = resolve(['o.tinplate'], {
+            preselectedIds: ['o.offset', 'o.metallic'],
+        });
+        assert.equal(availableCustomizations.find((o) => o.id === 'o.offset')?.preselected, true);
+        assert.equal(availableCustomizations.find((o) => o.id === 'o.metallic')?.preselected, true);
+        assert.equal(availableCustomizations.find((o) => o.id === 'o.tinplate')?.preselected, undefined);
     });
 
     it('applies exceptions: a remove takes an option out, an add puts one in', () => {

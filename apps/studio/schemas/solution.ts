@@ -7,13 +7,26 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
+import { entityFields } from '../lib/entity-id-field'
+import {
+  STATUS_TITLES,
+  TAXONOMY_STATUS_LIST,
+  hasSolutionPage,
+} from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 /**
  * Solution — one document type behind every "Solutions" page: industries,
  * channels, focus areas and use cases (Entities/Solution.md). Same template,
  * same fields; only the grouping label differs. Terms and pages are two lists —
  * a term exists so clients, case studies and products can be tagged; a page is
- * what a term has earned (`hasPage`, authored, never derived).
+ * what a term has earned, authored and never derived.
+ *
+ * PROD-2845 replaced `hasPage` with `status` (Active / Coming soon / Not active),
+ * the one vocabulary every catalog type now uses. The earning rule is unchanged —
+ * `status` starts at Not active — but a term that is not launched can now also say
+ * it is COMING, which a boolean could not express.
  *
  * Both renames from §4.3 are COMPLETE (2026-09-01, Eric's removal plan):
  *   internalTitle → title — `migrate:solution-titles` copied all 30 values and
@@ -121,13 +134,72 @@ export const solution = defineType({
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['solution'])),
     }),
     defineField({
-      name: 'hasPage',
-      title: 'Has a landing page',
-      type: 'boolean',
+      name: 'status',
+      title: 'Status',
+      type: 'string',
       group: GROUPS.content,
       description:
-        'An editorial judgement — business focus, profitability, demand, search value. A solution can exist for tagging without earning a page.',
-      initialValue: false,
+        'Is this solution offered, and how? Active = a page, a nav entry and a filter. ' +
+        'Coming soon = a nav entry that does not link anywhere, for building anticipation. ' +
+        'Not active = nothing anywhere, and its Solution Styles go too. ' +
+        'An editorial judgement — business focus, profitability, demand, search value.',
+      options: { list: TAXONOMY_STATUS_LIST, layout: 'radio' },
+      // Starts OFF, which is what `hasPage: false` meant before this field replaced
+      // it (PROD-2845): a solution exists to be tagged against, and a page is what a
+      // term EARNS. Creating one should never publish an empty landing page.
+      //
+      // There is no Discontinued, deliberately. Telling a customer we no longer
+      // serve an industry is a worse message than silence — the same argument that
+      // took coming-soon and discontinued off Customization Option in PROD-2733.
+      initialValue: 'not-active',
+      validation: (Rule) => [
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "solutionStyle" &&
+              solution._ref == $id &&
+              (!defined(status) || status == "active")
+            ]{ title }`,
+            describe: (names) =>
+              `This also hides every Solution Style beneath it, including ${names}. ` +
+              `Products with another active solution keep their pages — they only lose this chip.`,
+          }),
+        ).warning(),
+        // The primary solution is fixed — no fallback to the next one (Richard + Eric,
+        // 2026-10-06). Everything except Active switches a solution off.
+        Rule.custom(
+          restrictingChildrenWarning({
+            when: (value) => value !== 'active',
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              solutions[0]._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon"])
+            ]{ title }`,
+            describe: (names) =>
+              `This is the primary solution of ${names}. They keep it as their primary: their ` +
+              `breadcrumb shows it without a link, and they inherit no FAQs until it is active ` +
+              `again. Reorder their solutions first if another should lead.`,
+          }),
+        ).warning(),
+        // Rule 1: an inspiration product whose every solution is off is hidden.
+        Rule.custom(
+          restrictingChildrenWarning({
+            when: (value) => value !== 'active',
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              $id in solutions[]._ref &&
+              (!defined(status) || status in ["active", "coming-soon"]) &&
+              count(solutions[_ref != $id && @->status == "active"]) == 0
+            ]{ title }`,
+            describe: (names) =>
+              `${names} ${names.includes(' and ') || names.includes(',') ? 'have' : 'has'} no other ` +
+              `active solution, so ${names.includes(' and ') || names.includes(',') ? 'they' : 'it'} ` +
+              `will be hidden from the site.`,
+          }),
+        ).warning(),
+      ],
     }),
     // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
     // and the existing `blogCategory` pair. (`page.subheadline` is a different
@@ -193,13 +265,15 @@ export const solution = defineType({
         'Pick a Solution Industry Page layout version — section order and default headings. ' +
         'Manage layouts under Main Website → Solution Pages → Solution Industry Pages. ' +
         'Band content stays on the Sections tab, matched by key.',
-      hidden: ({document}) => document?.hasPage !== true,
+      // A solution has a page only when Active — Coming soon is a nav signpost, and
+      // there is no Discontinued state keeping a URL alive for search.
+      hidden: ({document}) => !hasSolutionPage(document?.status),
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
           const doc = ctx.document as
-            | {hasPage?: boolean; solutionType?: string}
+            | {status?: string; solutionType?: string}
             | undefined
-          if (!doc?.hasPage || doc.solutionType !== 'industry') return true
+          if (!hasSolutionPage(doc?.status) || doc?.solutionType !== 'industry') return true
           return value
             ? true
             : 'Industry solutions with a landing page must select a Solution Industry Page layout'
@@ -225,6 +299,86 @@ export const solution = defineType({
       of: [{type: 'reference', to: [{type: 'caseStudy'}], options: {disableNew: true}}],
       validation: (Rule) => Rule.max(6),
     }),
+    defineField({
+      name: 'featuredProducts',
+      title: 'Featured Products',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Pinned products for the industry landing hero. Shown first (this order); ' +
+        'the rest of the hero fills from products tagged to this solution. Empty = ' +
+        'auto-only (unchanged). Cap 16 on the page.',
+      of: [
+        {
+          type: 'reference',
+          to: [{type: 'product'}],
+          options: {
+            disableNew: true,
+            filter: ({
+              document,
+            }: {
+              document: {_id: string; featuredProducts?: {_ref?: string}[]}
+            }) => {
+              const chosen = (document.featuredProducts ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              const solutionId = document._id.replace(/^drafts\./, '')
+              return {
+                filter:
+                  '!(_id in $chosen) && $solution in solutions[]._ref',
+                params: {chosen, solution: solutionId},
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.max(16).unique(),
+    }),
+    defineField({
+      name: 'styleOrder',
+      title: 'Solution style order',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Drag to set the order styles appear in on this solution. Listing a few is fine — ' +
+        'anything not listed follows alphabetically. Never a gate: every style still appears.',
+      of: [
+        {
+          type: 'reference',
+          // 🔴 WEAK ON PURPOSE — the third of these, after productLine.styleOrder
+          // (PROD-2739) and customizationCategory.typeOrder (PROD-2740).
+          //
+          // A strong reference held purely for presentation makes every listed
+          // Style undeletable, with nothing in the Studio connecting the two.
+          // That is what removed `productLine.styles` (PROD-2509). Weak lets the
+          // delete succeed and leaves a dangling entry, which the query drops via
+          // `defined(_id)` so it never reaches the site.
+          weak: true,
+          to: [{type: 'solutionStyle'}],
+          options: {
+            disableNew: true,
+            // Scoped to this solution, and excluding styles already listed. The
+            // second half is not cosmetic: without it the picker keeps offering
+            // what you just added, and the duplicate only announces itself as a
+            // validation error that blocks publish — found in PROD-2739 review.
+            filter: ({
+              document,
+            }: {
+              document: {_id: string; styleOrder?: {_ref?: string}[]}
+            }) => {
+              const chosen = (document.styleOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string');
+              return {
+                filter: 'solution._ref == $solution && !(_id in $chosen)',
+                params: {solution: document._id.replace(/^drafts\./, ''), chosen},
+              };
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.unique(),
+    }),
     faqsField({
       group: GROUPS.categorization,
       mode: 'reference',
@@ -232,7 +386,9 @@ export const solution = defineType({
       min: 3,
       description:
         'Default FAQs for this solution’s landing page. Used when the FAQ ' +
-        'section override is empty. Fill the section’s FAQs to override per band.',
+        'section override is empty. Fill the section’s FAQs to override per band. ' +
+        'Also shown on inspiration products that list this solution first and have ' +
+        'no FAQs of their own — only while this solution is Active.',
     }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
@@ -264,20 +420,49 @@ export const solution = defineType({
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
     ...socialFields({group: GROUPS.social, channel: MEDIA_TAG.solution}),
+    ...entityFields({ prefix: 'sol', codeKinds: ['SOL'], group: GROUPS.content }),
+    // ─── STUDIO LIST ORDER ────────────────────────────────────────────────────
+    /**
+     * Drag-to-order position for the Solutions list (PROD-2745).
+     *
+     * Written by `@sanity/orderable-document-list` when an editor drags a row.
+     * `hidden` and `readOnly` come from the plugin — it never appears on the Edit
+     * form, and the drag handle in the list pane is the only way to set it.
+     *
+     * New solutions rank themselves: the plugin's `initialValue` reads the current
+     * last rank and places a newly created solution after it, so "Reset Order" is
+     * a one-time action, not a chore on every create.
+     *
+     * ⚠️ ORDER ONLY, and Studio only. Nothing on the website reads this field.
+     * `SOLUTIONS_WITH_PAGES_QUERY` and the case-study filter chips are still
+     * `order(title asc)`. Not to be confused with `styleOrder` above, which
+     * orders this solution's STYLES and does feed the site.
+     */
+    orderRankField({ type: 'solution' }),
+  ],
+
+  // Declaring `orderings` REPLACES the Title sort Sanity generates, so Title is
+  // restated here rather than lost (the mistake PROD-2744 made on productLine).
+  orderings: [
+    orderRankOrdering,
+    { title: 'Title', name: 'title', by: [{ field: 'title', direction: 'asc' }] },
   ],
 
   preview: {
     select: {
       title: 'title',
       solutionType: 'solutionType',
-      hasPage: 'hasPage',
+      status: 'status',
       media: 'featuredImage',
     },
-    prepare({ title, solutionType, hasPage, media }) {
+    prepare({ title, solutionType, status, media }) {
       const axis = SOLUTION_TYPE_TITLES[solutionType] ?? 'No type set'
+      // Status in the subtitle so a hidden solution is obvious in a list without
+      // opening it — the lists are where an editor decides what to work on.
+      const state = STATUS_TITLES[status as keyof typeof STATUS_TITLES] ?? 'No status set'
       return {
         title: title || 'Untitled solution',
-        subtitle: [axis, hasPage ? 'Has page' : 'Term only'].join(' · '),
+        subtitle: [axis, state].join(' · '),
         media,
       }
     },

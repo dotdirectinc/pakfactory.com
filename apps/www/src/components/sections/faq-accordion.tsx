@@ -1,6 +1,11 @@
 'use client';
 
 import {
+    PortableText,
+    type PortableTextComponents,
+} from '@portabletext/react';
+import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
+import {
     Accordion,
     AccordionContent,
     AccordionItem,
@@ -12,6 +17,32 @@ import type {ProductFaq} from '@/lib/catalog/types';
 type FaqAccordionProps = {
     items: ProductFaq[];
     variant?: 'cards' | 'rows';
+};
+
+const faqAnswerComponents: PortableTextComponents = {
+    block: {
+        normal: ({children}) => (
+            <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>
+        ),
+    },
+    marks: {
+        strong: ({children}) => (
+            <strong className="font-semibold text-foreground">{children}</strong>
+        ),
+        em: ({children}) => <em>{children}</em>,
+        link: ({value, children}) => {
+            const href: string = value?.href ?? '#';
+            return (
+                <a
+                    href={href}
+                    className="font-medium text-primary underline underline-offset-4 hover:no-underline"
+                    {...externalLinkAttributes(href)}
+                >
+                    {children}
+                </a>
+            );
+        },
+    },
 };
 
 /**
@@ -52,7 +83,14 @@ export function FaqAccordion({items, variant = 'cards'}: FaqAccordionProps) {
                             </span>
                         </AccordionTrigger>
                         <AccordionContent className="pb-6 text-sm leading-relaxed text-muted-foreground">
-                            {item.answerPlain}
+                            {item.answer?.length ? (
+                                <PortableText
+                                    value={item.answer}
+                                    components={faqAnswerComponents}
+                                />
+                            ) : (
+                                item.answerPlain
+                            )}
                         </AccordionContent>
                     </AccordionItem>
                 );

@@ -19,12 +19,13 @@ import {
     buildProductFacetCounts,
     matchesProductItem,
 } from '@/lib/catalog/product-catalog-filter';
+import {
+    unpackProductLibrary,
+    type PackedProductLibrary,
+} from '@/lib/catalog/library-wire';
 import {useCatalogQueryState} from '@/lib/catalog/use-catalog-query-state';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
-import type {
-    CustomizationFacetDef,
-    ProductLibraryResult,
-} from '@/lib/catalog/types';
+import type {CustomizationFacetDef} from '@/lib/catalog/types';
 import {
     PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID,
@@ -33,7 +34,8 @@ import {
 const PAGE_SIZE = 12;
 
 type ProductCatalogPanelProps = {
-    library: ProductLibraryResult;
+    /** Compact wire form from `ProductCatalogView` (PROD-2757); unpacked once here. */
+    packedLibrary: PackedProductLibrary;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
     /** Drop the desktop search strip top border (style landing under a headed section). */
@@ -47,10 +49,14 @@ function toggleValue(list: string[], value: string): string[] {
 }
 
 export function ProductCatalogPanel({
-    library,
+    packedLibrary,
     urlSync = true,
     hideCatalogBorderTop = false,
 }: ProductCatalogPanelProps) {
+    const library = useMemo(
+        () => unpackProductLibrary(packedLibrary),
+        [packedLibrary],
+    );
     const facetIds = useMemo(() => {
         const ids = library.facetCatalog.shared.map((facet) => facet.id);
         ids.push(PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID);
@@ -64,6 +70,7 @@ export function ProductCatalogPanel({
         setSelections,
         toggleFacet,
         reset,
+        urlSyncListener,
     } = useCatalogQueryState({
         urlSync,
         facetIds,
@@ -291,7 +298,8 @@ export function ProductCatalogPanel({
             paddingBlock="none"
             innerClassName="pb-24 flex flex-col gap-8"
         >
-            <SectionReveal className="flex flex-col gap-8">
+            {urlSyncListener}
+            <SectionReveal enabled={false} className="flex flex-col gap-8">
                 {/* Mobile: sticky search + filters */}
                 <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
                     <div className="flex items-center gap-2 py-3">
@@ -341,7 +349,7 @@ export function ProductCatalogPanel({
                     {...filterProps}
                 />
 
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-4">
                     <ProductCatalogFilters
                         resultCount={filtered.length}
                         totalCount={library.items.length}

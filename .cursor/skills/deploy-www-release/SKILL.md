@@ -70,7 +70,9 @@ Verify:
 - Stakeholder staging (same branch, fixed link, Vercel-auth gated): https://staging.pakfactory.com
 ```
 
-🔴 **Ask before transitioning.** Request For Approval (Product project transition id `51`, same as blog skill) is a forward move that summons a reviewer — show confirmation with acceptance criteria marked met / not met / unverified, and wait for an explicit yes. Commenting is always fine without asking. Do not invent other transitions.
+🔴 **The merge is the forward move.** Merging a PR whose branch or title carries a PROD key into `www-new-release` moves the ticket to **BA Acceptance** (PROD automation, `jira-ticket-pr-mapping.mdc`) — never merge without the confirmation block (acceptance criteria met / not met / unverified) and an explicit yes. One PR per ticket.
+
+🔴 **Ask before Request For Approval** — a further forward move, same gate. Resolve its ID **by name** with `getTransitionsForJiraIssue` (`41` Story/Bug, `7` Task; the old `51` is In Progress on a Story/Bug). Commenting is always fine without asking. Do not invent other transitions. Keep PROD keys out of the `www-new-release` → `staging` launch PR title, or confirm each ticket first.
 
 ## Phase 5 — Push + PR
 

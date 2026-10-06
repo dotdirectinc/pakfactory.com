@@ -9,11 +9,12 @@ import { cn } from '@pakfactory/ui/lib/utils'
 const Logo = ({ className }: { className?: string }) => {
   return (
     <div className={cn('flex items-center', className)}>
+      {/* Rendered size (h-8), not the 4338×1031 source — sizes the srcset to ~256/384w instead of 3840w. */}
       <Image
         src="/logo.png"
         alt='PakFactory'
-        width={4338}
-        height={1031}
+        width={135}
+        height={32}
         className='h-8 w-auto'
         priority
       />

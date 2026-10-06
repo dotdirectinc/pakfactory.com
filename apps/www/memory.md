@@ -48,28 +48,21 @@ When adding a new env var, update **both** `.env.example` and `turbo.json` `@pak
 - Include `_type == "faq"` so an FAQ answer edit refreshes every page that shows it — catalog (lines, styles, products, customizations), solutions and expertise. **The production webhook's filter needs `"faq"` added in the Sanity dashboard**; the route handles it but the webhook must send it.
 - Dev test webhook (`development` → `staging.pakfactory.com`) sends **no `_type`** (projection `{"sweep": true}`), so every publish clears everything and skips IndexNow / `publishedAt` stamping. Staging's firewall rule exempts only `/api/revalidate`.
 
+## Draft mode strings are stega-encoded
+
+In draft mode (entered from Studio Presentation; it sticks in the browser on staging), the drafts client has `stega.enabled`, so **every Studio string arrives with invisible zero-width characters appended**. You can see them in the page `<title>`. IDs are safe: stega skips `_id`, `_ref`, `…Id` and `slug.current`. **Enum-like strings are not.** A raw `listSource === 'page'` never matched, and every "This page" section rendered empty on staging while local (published) looked fine (#676, 2026-09-28).
+
+- Comparing a Studio string to a literal? `stegaClean` it first (`import {stegaClean} from 'next-sanity'`). Done centrally in `shouldInheritSectionList` and `map-section-chrome` (`align`, `paddingBlock`).
+- "Missing on staging, fine locally" → check the page title for zero-width characters before anything else.
+- Private window or `/case-studies/api/draft-mode/disable` = what visitors see.
+
 ## Website navigation singleton (chrome)
 
 Site header + footer read Sanity `websiteNavigation` (not page sections). Header **MegaMenu** (PROD-2611) consumes each primary item’s **Mega-menu groups** + optional **Promo** (Featured hidden when empty) + optional **Footer CTA** (second row under the grid, e.g. “See all products”). Flat items (no real mega groups) stay simple links. Desktop panel is a persistent **4-column** grid (cols 1–2 primary split, no divider; col 3 secondary; col 4 promo rail) with `rounded-b-md` sheet.
 
-After schema/seed updates (e.g. clearing Solutions group descriptors), humans re-run with an explicit dataset:
+Edit the navigation in Studio → Main Website → Navigation (Footer CTA per item there too). `seed:website-navigation` was **retired 2026-10-06** — it built the Solutions groups from solution `hasPage`, which PROD-2845 replaced with `status`, and `createOrReplace` would have overwritten the editors' singleton. Nav links are gated at read time by `isCatalogTargetVisible` (status + parents).
 
-```bash
-pnpm seed:website-navigation -- --dataset development
-pnpm seed:website-navigation -- --dataset development --confirm
-```
-
-Or set Footer CTA per item in Studio → Navigation. Agents must not run seeds.
-
-**Seed (humans only — agents must not run):** fetches live `productLine` + `hasPage` solutions and builds Products / Solutions mega groups. Prefer `path` links for product lines (`productLine` is not Studio-linkable) and `internal` refs for solutions. Solutions groups are seeded **without** `descriptor` (label only). Footer/social/AI preserved. `createOrReplace` overwrites the singleton. `--dataset` is **required** (no env fallback); without `--confirm` the run is a dry run.
-
-```bash
-pnpm seed:website-navigation -- --dataset development              # preview JSON + catalog counts
-pnpm seed:website-navigation -- --dataset development --confirm    # write + attempt publish
-pnpm seed:website-navigation -- --dataset production --confirm --yes-production
-```
-
-Then in Studio → Main Website → Navigation: confirm Products / Solutions groups; attach **Solutions promo image** if desired; publish. Refresh www (`pnpm dev:www`). Revalidate tag: `www-website-navigation`.
+In Studio → Main Website → Navigation: confirm Products / Solutions groups; attach **Solutions promo image** if desired; publish. Refresh www (`pnpm dev:www`). Revalidate tag: `www-website-navigation`.
 
 ## Solution LP sections (CMS template path)
 
@@ -82,7 +75,8 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 | Singleton | Route |
 | --- | --- |
 | `productStylePage` | below grid on `/products/[line]/[style]` |
-| `productDetailPage` | PDP template × `product.sections` (select on product Template tab) |
+| `productDetailPage` | standard PDP template × `product.sections` (empty → Default coalesce) |
+| `solutionProductDetailPage` | inspiration PDP template × `product.sections` (empty → Default coalesce by kind) |
 | `customizationDetailPage` | below chrome on `/customizations/[category]/[handle]` |
 | `solutionStylePage` | below grid on `/solutions/[slug]/[style]` |
 
@@ -90,12 +84,16 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 
 **Studio**
 
-- Main Website → Solution Pages → **Solution Industry Page** / **Solution Style Page**
+- Main Website → Solution Pages → **Solution Industry Page** / **Solution Style Page** / **Solution Product Detail Page**
 - Main Website → Product Pages → **Product Detail Page** (plus Catalog / Line / Style)
 - Main Website → Customization Pages → **Customization Detail Page**
 - Solution → Template tab → Solution Industry Page (**required** for industry + `hasPage`)
-- Product → Template tab → Product Detail Page (optional; empty → hardcoded PDP bands only)
-- Solution / Product → Sections tab → page-specific content (keys aligned with the template)
+- Product → Template tab → Product Detail Page (standard) or Solution Product Detail Page (inspiration); empty → Default coalesce by kind (PROD-2763)
+- Product → Sections tab → page-specific content (keys aligned with the template)
+
+**PDP body (PROD-2763):** Specs + Customization stay hardcoded. After Customization, `SectionRenderer` runs merged template × product sections. Defaults seed: `productsRow` (Related, inherit `relatedProducts` / siblings) → `testimonialsRow` (Google Places) → `faqSection` (inherit product FAQs) → `generalCta`. Human seed: `pnpm --filter @pakfactory/studio run seed:pdp-detail-pages -- --dataset development --confirm`.
+
+**Featured Products (PROD-2763):** Industry solution + product line Categorization lists. Featured pins first; auto fill remaining hero slots (solution cap 16; line bottom-bar Embla carousel + `CarouselNavButtons`; click opens `SolutionProductPreview`). Empty featured = previous auto-only behavior. Line hero uses **standard** products only.
 
 **General CTA:** CTAs → **General** (`generalCta`) is the only conversion band (former footer strip + Expertise closing CTA). Studio: **theme** (colors only), **align**, **paddingBlock**, dieline borders, optional **body**, **Button** link. Empty link → `FOOTER_CTA`. Chrome footer no longer renders this strip. Human seeds: [`apps/studio/memory.md`](../studio/memory.md) § General CTA closing band + Expertise closing band reseed. Empty/missing section → no band.
 
@@ -110,9 +108,9 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 7. Logo wall: Industry Page may carry shared default clients; Beauty curatedItems override when set. After seed both show 6 mock clients.
 8. Confirm bands: `logoWall`, `inspirationsGrid`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `videoCaseStudiesRow`, `testimonialsRow`, `faqSection` (+ shared chrome on the template).
 9. Unwired type (e.g. `richText`) → page loads; dev shows amber placeholder; prod skips until wired.
-10. **Reviews** (`testimonialsRow`) — chrome from CMS; quote items from live Google Places (PROD-2587). Places Place Details returns **max 5** review bodies (product wants ≥10 → [PROD-2591](https://dotdirect.atlassian.net/browse/PROD-2591) GBP registration). Long quotes truncate at 160 chars with **Read more** → review `googleMapsUri`. Studio **Content** tab: read-only Google reviews notice + **Layout** radio (defaults to **Carousel**, including unset; **Marquee** = dual-row auto-scroll + pause) + **Rating summary** radio (**Under reviews** footer default, or **Replace eyebrow** = Google aggregate instead of `[ Reviews ]`). Marquee cards ~`24rem`. **View all reviews** via Heading section link (`SectionHeading` CTA: `end` when left-aligned, under heading when center), or defaults to place `googleMapsLinks.reviewsUri` / `googleMapsUri` when the CMS link is empty. Shared 24h Place-ID cache (`GOOGLE_PLACES_PLACE_ID` + `GOOGLE_PLACES_API_KEY`); section is Suspense-wrapped so Places latency does not block above-fold. Missing env / API error / zero 4–5★ → section hidden. PDP still uses mocks until wired.
+10. **Reviews** (`testimonialsRow`) — chrome from CMS; quote items from live Google Places (PROD-2587). Places Place Details returns **max 5** review bodies (product wants ≥10 → [PROD-2591](https://dotdirect.atlassian.net/browse/PROD-2591) GBP registration). Long quotes truncate at 160 chars with **Read more** → review `googleMapsUri`. Studio **Content** tab: read-only Google reviews notice + **Layout** radio (defaults to **Carousel**, including unset; **Marquee** = dual-row auto-scroll + pause) + **Rating summary** radio (**Under reviews** footer default, or **Replace eyebrow** = Google aggregate instead of `[ Reviews ]`). Marquee cards ~`24rem`. **View all reviews** via Heading section link (`SectionHeading` CTA: `end` when left-aligned, under heading when center), or defaults to place `googleMapsLinks.reviewsUri` / `googleMapsUri` when the CMS link is empty. Shared 24h Place-ID cache (`GOOGLE_PLACES_PLACE_ID` + `GOOGLE_PLACES_API_KEY`); section is Suspense-wrapped so Places latency does not block above-fold. Missing env / API error / zero 4–5★ → section hidden.
 
-Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`, `generalCta`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit`).
+Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`, `productsRow`, `generalCta`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit` / `applyProductsRowInherit`).
 
 **Catalog FAQs inherit down the tree — line → style → product** (Richard, 2026-09-28; #675). A page shows the **nearest level with any FAQ**, and that list replaces everything above it: one FAQ curated on a product = that one only, nothing merges. Nothing is copied into the dataset — it resolves at render:
 
@@ -125,13 +123,11 @@ Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudi
 
 **Heading tokens:** section `heading` / `intro` / `link.query` may include `%h1%` / `%title%` / `%description%` / `%shortName%` / `%shortDescription%` / `%slug%`; `applySectionTokens` runs after template merge using the host solution (`descriptionText` + `slug` from GROQ). Catalog CTAs: Site path `/products` + Query `industry=%slug%` (root-relative — current host on staging or prod). **List inherit:** `listSource` / `curatedSource` — `shouldInheritSectionList` skips fill when `custom`; host-agnostic for Product LPs later.
 
-**Seed:** [`apps/studio/memory.md`](../studio/memory.md) § Beauty Solution LP seed.
+**Seed:** retired 2026-10-06 — see [`apps/studio/memory.md`](../studio/memory.md) § Demo seeds (retired).
 
 ## Beauty LP seed parity (WP4 / Phase B)
 
-Human runbook (agents do not `--confirm`): [`apps/studio/memory.md`](../studio/memory.md) § Beauty Solution LP seed.
-
-After a human runs `seed:beauty-solution-lp -- --dataset development --confirm`:
+The seed is retired (2026-10-06, [`apps/studio/memory.md`](../studio/memory.md) § Demo seeds). The checklist below still describes what a correctly configured solution LP looks like:
 
 1. `/solutions/beauty-cosmetics` uses **merged** `solutionIndustryPage` + Beauty content sections (not fixture bands).
 2. Beauty **Template** tab points at Solution Industry Page; section `_key`s match the singleton.

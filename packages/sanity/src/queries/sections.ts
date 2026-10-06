@@ -4,13 +4,25 @@
  * (+ cheap scalars) for allowlisted inventory until later mappers land.
  */
 
-import {FEATURED_VIDEO_URL_FIELD} from './featured-video';
+import {
+  LINK_PARENTS_ON,
+  LINE_STYLE_ACTIVE,
+  LINE_STYLE_HAS_PAGE,
+  PRODUCT_LISTED,
+  SOLUTION_ACTIVE,
+  SOLUTION_STYLE_ACTIVE,
+} from './status-gates';
+import {
+    FEATURED_VIDEO_URL_FIELD,
+    FEATURED_VIDEO_URL_GROQ,
+} from './featured-video';
 
 export {FEATURED_VIDEO_URL_FIELD};
 
-/** FAQ ref card — matches product FAQ projection shape. */
+/** FAQ ref card — matches product FAQ projection shape. Blocks for UI; plain for JSON-LD. */
 const FAQ_REF = /* groq */ `{
   question,
+  answer,
   "answerPlain": pt::text(answer)
 }`;
 
@@ -52,6 +64,24 @@ const SECTION_CHROME = /* groq */ `
   curatedSource,
   link ${LINK_OBJECT}
 `;
+
+/**
+ * A curated card or row item that points at a catalogue document is shown only while
+ * that document has a page to link to — the same gates the automatic lists use. An
+ * editor's pick never outranks the target's status (or a product's parents, rule 1 +
+ * R1 — PRODUCT_LISTED carries both). Typed cards always pass.
+ */
+const CURATED_REF_VISIBLE = /* groq */ `(
+  !defined(_ref) ||
+  select(
+    @->_type == "product" => @->{"ok": ${PRODUCT_LISTED}}.ok,
+    @->_type == "productStyle" => @->{"ok": ${LINE_STYLE_ACTIVE} && (!defined(productLine->status) || productLine->status in ["active", "discontinued"])}.ok,
+    @->_type == "solutionStyle" => @->{"ok": ${SOLUTION_STYLE_ACTIVE} && solution->status == "active"}.ok,
+    @->_type == "productLine" => @->{"ok": ${LINE_STYLE_HAS_PAGE}}.ok,
+    @->_type == "solution" => @->{"ok": ${SOLUTION_ACTIVE}}.ok,
+    true
+  ) == true
+)`;
 
 /**
  * Mixed inspirations cards — typed `inspirationsCard` or catalogue ref
@@ -96,7 +126,10 @@ const VIDEO_CASE_STUDY_CARD = /* groq */ `{
     "kind": "typed",
     brand,
     title,
-    "imageSrc": image.asset->url,
+    "image": image{
+      ...,
+      "alt": coalesce(alt, asset->altText)
+    },
     "imageAlt": coalesce(image.alt, image.asset->altText),
     "logoSrc": logo.asset->url,
     "logoAlt": coalesce(logo.alt, brand),
@@ -114,9 +147,15 @@ const VIDEO_CASE_STUDY_CARD = /* groq */ `{
     title,
     "slug": slug.current,
     "brand": client->name,
-    "imageSrc": coalesce(
-      cardImage.asset->url,
-      heroMedia.videoThumbnail.asset->url
+    "image": select(
+      defined(cardImage.asset) => cardImage{
+        ...,
+        "alt": coalesce(^.cardImageAlt, alt, asset->altText, ^.title)
+      },
+      defined(heroMedia.videoThumbnail.asset) => heroMedia.videoThumbnail{
+        ...,
+        "alt": coalesce(alt, asset->altText, ^.title)
+      }
     ),
     "imageAlt": coalesce(cardImageAlt, cardImage.asset->altText, title),
     "logoSrc": client->logo.asset->url,
@@ -145,12 +184,238 @@ export const EXPERTISE_SERVICE_DIMENSION = /* groq */ `{
 }`;
 
 /**
+ * Catalogue row card (productLinesRow / solutionsRow, PROD-2666). Visibility
+ * fields ride along so www can drop hidden targets (`isCatalogTargetVisible`).
+ */
+const CATALOG_ROW_ITEM = /* groq */ `{
+  _id,
+  _type,
+  status,
+  "parentsOn": ${LINK_PARENTS_ON},
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": shortDescription,
+  "imageSrc": featuredImage.asset->url,
+  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title)
+}`;
+
+/** Hero button: section link + one-line note (PROD-2666). */
+const HERO_CTA = /* groq */ `{
+  label,
+  note,
+  linkType,
+  externalUrl,
+  relativePath,
+  "internalLink": internalLink->${LINKABLE_DOC}
+}`;
+
+/** Home hero copy shared by all three hero sections (PROD-2666). */
+const HERO_COPY = /* groq */ `
+  eyebrow,
+  intro,
+  showReviews,
+  "primaryCta": primaryCta ${HERO_CTA},
+  "secondaryCta": secondaryCta ${HERO_CTA}
+`;
+
+/**
+ * Case study as a hero feature — media, client, first highlight stat and the
+ * product lines it covers (`lineIds` lets the Finder hero match line × industry).
+ */
+const HERO_CASE_STUDY = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "summary": cardSummary,
+  "clientName": client->name,
+  "logoSrc": client->logo.asset->url,
+  "imageSrc": coalesce(
+    heroMedia.image.asset->url,
+    cardImage.asset->url,
+    heroMedia.videoThumbnail.asset->url
+  ),
+  "imageAlt": coalesce(heroMedia.alt, cardImageAlt, cardImage.asset->altText, title),
+  "videoSrc": previewVideo.asset->url,
+  "statTitle": highlights[0].title,
+  "statBody": highlights[0].description,
+  "chips": products[0...3]->{"label": coalesce(shortName, title)}.label,
+  "lineIds": products[]._ref
+}`;
+
+/**
+ * Mixed spotlight slide — typed `heroSpotlightCampaign` or a catalogue ref
+ * (caseStudy / productLine / productStyle / solution). Visibility fields ride
+ * along so www can drop hidden catalogue targets (`isCatalogTargetVisible`).
+ */
+const HERO_SPOTLIGHT_SLIDE = /* groq */ `{
+  _key,
+  _type,
+  _type == "heroSpotlightCampaign" => {
+    "kind": "campaign",
+    title,
+    description,
+    "imageSrc": image.asset->url,
+    "imageAlt": coalesce(image.alt, image.asset->altText, title),
+    link ${LINK_OBJECT}
+  },
+  defined(_ref) => @->{
+    "kind": _type,
+    "docType": _type,
+    status,
+    "parentsOn": ${LINK_PARENTS_ON},
+    "slug": slug.current,
+    _type == "caseStudy" => ${HERO_CASE_STUDY},
+    _type != "caseStudy" => {
+      _id,
+      "title": coalesce(shortName, title),
+      "description": shortDescription,
+      "lineSlug": productLine->slug.current,
+      "imageSrc": featuredImage.asset->url,
+      "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title)
+    }
+  }
+}`;
+
+/** Finder hero product-line option — plus recent studies and styles for the line. */
+const HERO_FINDER_LINE = /* groq */ `{
+  _id,
+  _type,
+  status,
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": shortDescription,
+  "imageSrc": featuredImage.asset->url,
+  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+  "videoSrc": ${FEATURED_VIDEO_URL_GROQ},
+  "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY},
+  // These become LINKED finder slides (productStyleHref), so the gate is the one for a
+  // link — LINE_STYLE_ACTIVE — not LISTED: an Active (Internal) style has no page.
+  "styles": *[_type == "productStyle" && references(^._id) && ${LINE_STYLE_ACTIVE}] | order(title asc)[0...3]{
+    _id,
+    "title": coalesce(shortName, title),
+    "slug": slug.current,
+    "description": shortDescription,
+    "imageSrc": featuredImage.asset->url,
+    "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+    "lineSlug": ^.slug.current,
+    "videoSrc": ${FEATURED_VIDEO_URL_GROQ}
+  }
+}`;
+
+/** Finder hero industry option — its curated related case studies. */
+const HERO_FINDER_INDUSTRY = /* groq */ `{
+  _id,
+  _type,
+  status,
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": shortDescription,
+  "imageSrc": featuredImage.asset->url,
+  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+  "studies": relatedCaseStudies[]->${HERO_CASE_STUDY}
+}`;
+
+/** Compact catalogue card for a default-rail / general-bucket reference. */
+const HERO_FINDER_RAIL_ITEM = /* groq */ `{
+  _id,
+  _type,
+  kind,
+  appearsIn,
+  "parentsOn": ${LINK_PARENTS_ON},
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": coalesce(shortDescription, cardSummary, summary, excerpt),
+  "imageSrc": coalesce(
+    featuredImage.asset->url,
+    heroMedia.image.asset->url,
+    cardImage.asset->url,
+    mainImage.asset->url
+  ),
+  "imageAlt": coalesce(
+    featuredImage.alt,
+    featuredImage.asset->altText,
+    heroMedia.alt,
+    cardImageAlt,
+    mainImage.alt,
+    title
+  ),
+  "videoSrc": coalesce(
+    previewVideo.asset->url,
+    ${FEATURED_VIDEO_URL_GROQ}
+  ),
+  "clientName": client->name,
+  "statTitle": highlights[0].title,
+  "statBody": highlights[0].description,
+  "lineIds": products[]._ref,
+  status,
+  hasPage
+}`;
+
+/** One simple-Finder General bucket entry (ref + optional feature media). */
+const HERO_FINDER_GENERAL_ENTRY = /* groq */ `{
+  _key,
+  "item": item->${HERO_FINDER_RAIL_ITEM},
+  "featureImageSrc": featureImage.asset->url,
+  "featureImageAlt": coalesce(featureImage.alt, featureImage.asset->altText),
+  "featureVideoUrl": select(
+    featureVideo.source == "upload" => featureVideo.file.asset->url,
+    featureVideo.source == "url" => featureVideo.url,
+    defined(featureVideo.asset) => featureVideo.asset->url,
+    null
+  )
+}`;
+
+/** Flexible General-deck rail item (editor-ordered array). */
+const HERO_FINDER_RAIL_ENTRY = /* groq */ `{
+  _key,
+  kindLabel,
+  source,
+  title,
+  description,
+  "item": item->${HERO_FINDER_RAIL_ITEM},
+  link ${LINK_OBJECT},
+  bannerType,
+  "bannerImageSrc": bannerImage.asset->url,
+  "bannerImageAlt": coalesce(bannerImage.alt, bannerImage.asset->altText),
+  "bannerVideoUrl": select(
+    bannerVideo.source == "upload" => bannerVideo.file.asset->url,
+    bannerVideo.source == "url" => bannerVideo.url,
+    defined(bannerVideo.asset) => bannerVideo.asset->url,
+    null
+  )
+}`;
+
+/**
  * Projection body for `sections[]{ … }` — use as:
  * `"sections": sections[]${PAGE_SECTIONS_PROJECTION}`
  */
 export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   _key,
   _type,
+  _type in ["heroSpotlight", "heroSpotlightFullBleed"] => {
+    ${HERO_COPY},
+    heading,
+    "spotlight": spotlight[]${HERO_SPOTLIGHT_SLIDE}
+  },
+  _type in ["heroFinder", "heroFinderFullscreen"] => {
+    ${HERO_COPY},
+    headingLead,
+    headingJoin,
+    headingTrail,
+    "productLines": productLines[]->${HERO_FINDER_LINE},
+    "industries": industries[]->${HERO_FINDER_INDUSTRY},
+    _type == "heroFinder" => {
+      railOrder,
+      "generalProducts": generalProducts[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalIndustries": generalIndustries[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalCustomizations": generalCustomizations[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalExpertise": generalExpertise[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalCaseStudies": generalCaseStudies[]${HERO_FINDER_GENERAL_ENTRY}
+    },
+    _type == "heroFinderFullscreen" => {
+      "defaultRail": defaultRail[]${HERO_FINDER_RAIL_ENTRY}
+    }
+  },
   _type == "faqSection" => {
     ${SECTION_CHROME},
     "faqs": faqs[]->${FAQ_REF}
@@ -165,7 +430,12 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     "mediaAlt": coalesce(media.alt, media.asset->altText)
   },
   _type == "stats" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": items[]{
+      _key,
+      value,
+      label
+    }
   },
   _type == "steps" => {
     ${SECTION_CHROME},
@@ -207,21 +477,37 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   },
   _type == "inspirationsGrid" => {
     ${SECTION_CHROME},
-    "cards": cards[]${INSPIRATIONS_CARD}
+    "cards": cards[${CURATED_REF_VISIBLE}]${INSPIRATIONS_CARD}
+  },
+  _type == "inspirationIndustry" => {
+    ${SECTION_CHROME},
+    "industries": industries[]->{
+      title,
+      "slug": slug.current
+    }
   },
   _type == "videoCaseStudiesRow" => {
     ${SECTION_CHROME},
     "cards": cards[]${VIDEO_CASE_STUDY_CARD}
   },
   _type == "productLinesRow" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": curatedItems[]->${CATALOG_ROW_ITEM}
   },
   _type == "productStylesRow" => {
     ${SECTION_CHROME},
-    "cards": cards[]${INSPIRATIONS_CARD}
+    "cards": cards[${CURATED_REF_VISIBLE}]${INSPIRATIONS_CARD}
   },
   _type == "productsRow" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": curatedItems[${CURATED_REF_VISIBLE}]->{
+      _id,
+      title,
+      "slug": slug.current,
+      sku,
+      "imageSrc": media[0].asset->url,
+      "imageAlt": coalesce(media[0].alt, media[0].asset->altText, title)
+    }
   },
   _type == "bundlesRow" => {
     ${SECTION_CHROME}
@@ -233,7 +519,8 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     ${SECTION_CHROME}
   },
   _type == "solutionsRow" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": curatedItems[]->${CATALOG_ROW_ITEM}
   },
   _type == "expertiseSequence" => {
     ${SECTION_CHROME},
@@ -347,6 +634,8 @@ export type PageSectionChromeFields = {
 
 export type PageSectionFaqDoc = {
     question?: string | null;
+    /** Portable Text blocks for rich FAQ answers (bold, links). */
+    answer?: unknown[] | null;
     answerPlain?: string | null;
 };
 
@@ -438,6 +727,16 @@ export type PageSectionInspirationsGridDoc = PageSectionChromeFields & {
     cards?: PageSectionInspirationsCardDoc[] | null;
 };
 
+/** Product-line Inspiration browser — optional curated industry pills. */
+export type PageSectionInspirationIndustryDoc = PageSectionChromeFields & {
+    _type: 'inspirationIndustry';
+    _key: string;
+    industries?: {
+        title?: string | null;
+        slug?: string | null;
+    }[] | null;
+};
+
 /** Same chrome + cards shape as inspirationsGrid; product-line Styles band. */
 export type PageSectionProductStylesRowDoc = PageSectionChromeFields & {
     _type: 'productStylesRow';
@@ -450,6 +749,19 @@ export type PageSectionVideoCaseStudyMetricDoc = {
     body?: string | null;
 };
 
+/**
+ * Sanity image field projection for video case-study posters — includes
+ * hotspot/crop so www can bake a focal crop into the CDN base URL.
+ */
+export type PageSectionVideoCaseStudyImageDoc = {
+    asset?: {_ref?: string | null; _type?: string | null; url?: string | null} | null;
+    hotspot?: unknown;
+    crop?: unknown;
+    alt?: string | null;
+    /** Pre-resolved asset URL when hotspot data is unavailable (inherit stubs). */
+    url?: string | null;
+};
+
 /** Flattened mixed card from `videoCaseStudiesRow.cards[]` (typed or ref). */
 export type PageSectionVideoCaseStudyCardDoc = {
     _key?: string | null;
@@ -459,7 +771,8 @@ export type PageSectionVideoCaseStudyCardDoc = {
     brand?: string | null;
     title?: string | null;
     slug?: string | null;
-    imageSrc?: string | null;
+    /** Full image field (hotspot/crop) for portrait crop base URLs. */
+    image?: PageSectionVideoCaseStudyImageDoc | null;
     imageAlt?: string | null;
     logoSrc?: string | null;
     logoAlt?: string | null;
@@ -558,6 +871,219 @@ export type PageSectionTestimonialsRowDoc = PageSectionChromeFields & {
     aggregatePlacement?: 'footer' | 'eyebrow' | null;
 };
 
+/** Catalogue row card — product line or solution (PROD-2666). */
+export type PageSectionCatalogRowItemDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    status?: string | null;
+    /** False when the target's parents hide it (rule 1 / R1) — GROQ `LINK_PARENTS_ON`. */
+    parentsOn?: boolean | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+};
+
+export type PageSectionProductLinesRowDoc = PageSectionChromeFields & {
+    _type: 'productLinesRow';
+    _key: string;
+    items?: (PageSectionCatalogRowItemDoc | null)[] | null;
+};
+
+export type PageSectionSolutionsRowDoc = PageSectionChromeFields & {
+    _type: 'solutionsRow';
+    _key: string;
+    items?: (PageSectionCatalogRowItemDoc | null)[] | null;
+};
+
+/** Product card in a `productsRow` (PDP related strip, PROD-2763). */
+export type PageSectionProductsRowItemDoc = {
+    _id?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    sku?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+};
+
+export type PageSectionProductsRowDoc = PageSectionChromeFields & {
+    _type: 'productsRow';
+    _key: string;
+    items?: (PageSectionProductsRowItemDoc | null)[] | null;
+};
+
+export type PageSectionStatDoc = {
+    _key?: string | null;
+    value?: string | null;
+    label?: string | null;
+};
+
+export type PageSectionStatsDoc = PageSectionChromeFields & {
+    _type: 'stats';
+    _key: string;
+    items?: PageSectionStatDoc[] | null;
+};
+
+/** Hero button (label + note + link target). */
+export type PageSectionHeroCtaDoc = Omit<PageSectionLinkDoc, 'query'> & {
+    note?: string | null;
+};
+
+/** Copy fields shared by the three Home hero sections (PROD-2666). */
+export type PageSectionHeroCopyFields = {
+    eyebrow?: string | null;
+    intro?: string | null;
+    showReviews?: boolean | null;
+    primaryCta?: PageSectionHeroCtaDoc | null;
+    secondaryCta?: PageSectionHeroCtaDoc | null;
+};
+
+export type PageSectionHeroCaseStudyDoc = {
+    _id?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    summary?: string | null;
+    clientName?: string | null;
+    logoSrc?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    videoSrc?: string | null;
+    statTitle?: string | null;
+    statBody?: string | null;
+    chips?: (string | null)[] | null;
+    lineIds?: (string | null)[] | null;
+};
+
+/** Flattened spotlight slide — campaign (typed) or catalogue ref. */
+export type PageSectionHeroSpotlightSlideDoc = PageSectionHeroCaseStudyDoc & {
+    _key?: string | null;
+    _type?: string | null;
+    /** False when the target's parents hide it (rule 1 / R1) — GROQ `LINK_PARENTS_ON`. */
+    parentsOn?: boolean | null;
+    kind?:
+        | 'campaign'
+        | 'caseStudy'
+        | 'productLine'
+        | 'productStyle'
+        | 'solution'
+        | string
+        | null;
+    docType?: string | null;
+    status?: string | null;
+    description?: string | null;
+    lineSlug?: string | null;
+    link?: PageSectionLinkDoc | null;
+};
+
+export type PageSectionHeroSpotlightDoc = PageSectionHeroCopyFields & {
+    _type: 'heroSpotlight' | 'heroSpotlightFullBleed';
+    _key: string;
+    heading?: string | null;
+    spotlight?: PageSectionHeroSpotlightSlideDoc[] | null;
+};
+
+export type PageSectionHeroFinderLineDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    status?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    /** Playable MP4 from `featuredVideo` (upload/url); YouTube yields null. */
+    videoSrc?: string | null;
+    studies?: PageSectionHeroCaseStudyDoc[] | null;
+    styles?: PageSectionHeroFinderStyleDoc[] | null;
+};
+
+export type PageSectionHeroFinderStyleDoc = {
+    _id?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    lineSlug?: string | null;
+    videoSrc?: string | null;
+};
+
+export type PageSectionHeroFinderIndustryDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    status?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    studies?: PageSectionHeroCaseStudyDoc[] | null;
+};
+
+export type PageSectionHeroFinderRailItemDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    /** Product catalog kind (`standard` | `inspiration`); other types omit. */
+    kind?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    videoSrc?: string | null;
+    clientName?: string | null;
+    statTitle?: string | null;
+    statBody?: string | null;
+    lineIds?: string[] | null;
+    status?: string | null;
+    hasPage?: boolean | null;
+    appearsIn?: string | null;
+    /** False when the target's parents hide it (rule 1 / R1) — GROQ `LINK_PARENTS_ON`. */
+    parentsOn?: boolean | null;
+};
+
+/** One simple-Finder General bucket entry. */
+export type PageSectionHeroFinderGeneralEntryDoc = {
+    _key?: string | null;
+    item?: PageSectionHeroFinderRailItemDoc | null;
+    featureImageSrc?: string | null;
+    featureImageAlt?: string | null;
+    featureVideoUrl?: string | null;
+};
+
+/** One flexible General-deck rail entry (editor-ordered). */
+export type PageSectionHeroFinderRailEntryDoc = {
+    _key?: string | null;
+    kindLabel?: string | null;
+    source?: 'catalogue' | 'campaign' | string | null;
+    title?: string | null;
+    description?: string | null;
+    item?: PageSectionHeroFinderRailItemDoc | null;
+    link?: PageSectionLinkDoc | null;
+    bannerType?: 'image' | 'video' | string | null;
+    bannerImageSrc?: string | null;
+    bannerImageAlt?: string | null;
+    bannerVideoUrl?: string | null;
+};
+
+export type PageSectionHeroFinderDoc = PageSectionHeroCopyFields & {
+    _type: 'heroFinder' | 'heroFinderFullscreen';
+    _key: string;
+    headingLead?: string | null;
+    headingJoin?: string | null;
+    headingTrail?: string | null;
+    productLines?: PageSectionHeroFinderLineDoc[] | null;
+    industries?: PageSectionHeroFinderIndustryDoc[] | null;
+    railOrder?: 'business' | 'random' | string | null;
+    generalProducts?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalIndustries?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalCustomizations?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalExpertise?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalCaseStudies?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    defaultRail?: PageSectionHeroFinderRailEntryDoc[] | null;
+};
+
 /** Shallow / unwired section until a renderer maps it. */
 export type PageSectionStubDoc = PageSectionChromeFields & {
     _type: string;
@@ -565,12 +1091,19 @@ export type PageSectionStubDoc = PageSectionChromeFields & {
 };
 
 export type PageSectionDoc =
+    | PageSectionProductLinesRowDoc
+    | PageSectionSolutionsRowDoc
+    | PageSectionProductsRowDoc
+    | PageSectionStatsDoc
+    | PageSectionHeroSpotlightDoc
+    | PageSectionHeroFinderDoc
     | PageSectionFaqSectionDoc
     | PageSectionLogoWallDoc
     | PageSectionMediaFeatureDoc
     | PageSectionExpertiseSequenceDoc
     | PageSectionCaseStudiesRowDoc
     | PageSectionInspirationsGridDoc
+    | PageSectionInspirationIndustryDoc
     | PageSectionProductStylesRowDoc
     | PageSectionVideoCaseStudiesRowDoc
     | PageSectionTestimonialsRowDoc

@@ -48,8 +48,8 @@ export {CUSTOMIZATION_COMPARISON_ID};
 const SLOT_COUNT = 3;
 /** Matches Tailwind `md` — desktop dropdown; below = mobile drawer. */
 const MD_UP_QUERY = '(min-width: 768px)';
-/** 40px from viewport top; below header chrome where they overlap (z-40 under header z-50). */
-const FLOAT_DOCK_TOP = 'top-10';
+/** 8px from viewport top — closer under header chrome (z-40 under header z-50). */
+const FLOAT_DOCK_TOP = 'top-2';
 const FLOAT_DOCK_Z = 'z-40';
 /** 8pt spacer matching float dock content (thumb + select). */
 const FLOAT_DOCK_SPACER_CLASS = 'h-20';
@@ -143,12 +143,14 @@ export function CustomizationComparison({
             (entries) => {
                 const entry = entries[0];
                 if (!entry) return;
+                // Show sticky once ~half the compare hero has scrolled past the
+                // top — not when the hero is still below the fold (ratio 0).
                 setHeroPastViewport(
-                    !entry.isIntersecting &&
-                        entry.boundingClientRect.bottom <= 0,
+                    entry.boundingClientRect.top < 0 &&
+                        entry.intersectionRatio < 0.5,
                 );
             },
-            {root: null, rootMargin: '0px', threshold: 0},
+            {root: null, rootMargin: '0px', threshold: [0, 0.25, 0.5, 0.75, 1]},
         );
         heroIo.observe(heroEl);
 
@@ -362,32 +364,31 @@ function DetailHeroColumn({
                         className="object-cover"
                     />
                 ) : null}
-                <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-muted/40 to-transparent" />
-                <div className="relative z-10 flex h-full min-h-0 flex-col justify-end gap-4 p-4">
-                    <div className="pointer-events-auto w-full min-w-0">
-                        {!locked ? (
-                            <ColumnSwapSelect
-                                cap={cap}
-                                slotIndex={slotIndex}
-                                slots={slots}
-                                swapCandidates={swapCandidates}
-                                onReplaceSlot={onReplaceSlot}
-                                surface="overlay"
-                            />
-                        ) : (
-                            <div className="flex h-8 w-full min-w-0 items-center rounded-control border border-border bg-background/80 px-2 text-xs font-medium text-foreground shadow-none backdrop-blur-sm">
-                                <span className="min-w-0 truncate">
-                                    {cap.title}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                </div>
             </div>
             <div className="flex min-w-0 flex-col gap-1 px-4 pb-4 pt-0">
-                <p className="text-base font-semibold leading-snug tracking-tight text-foreground">
-                    {cap.title}
-                </p>
+                {/* Reserved label row so titles share one baseline across columns. */}
+                <div className="flex min-h-5 items-center">
+                    {locked ? (
+                        <p className="text-xs font-medium tracking-wide text-muted-foreground">
+                            Current
+                        </p>
+                    ) : null}
+                </div>
+                <div className="flex min-h-8 min-w-0 items-center">
+                    {locked ? (
+                        <p className="min-w-0 truncate text-base font-semibold leading-none tracking-tight text-foreground">
+                            {cap.title}
+                        </p>
+                    ) : (
+                        <ColumnSwapSelect
+                            cap={cap}
+                            slotIndex={slotIndex}
+                            slots={slots}
+                            swapCandidates={swapCandidates}
+                            onReplaceSlot={onReplaceSlot}
+                        />
+                    )}
+                </div>
                 {cap.description ? (
                     <p className="text-sm leading-snug text-muted-foreground">
                         {cap.description}
@@ -475,7 +476,6 @@ function CompareFloatDock({
                                                     onReplaceSlot={
                                                         onReplaceSlot
                                                     }
-                                                    surface="dock"
                                                 />
                                             </div>
                                         )}
@@ -644,14 +644,12 @@ function ColumnSwapSelect({
     slots,
     swapCandidates,
     onReplaceSlot,
-    surface,
 }: {
     cap: CustomizationDetail;
     slotIndex: number;
     slots: Array<CustomizationDetail | null>;
     swapCandidates: CustomizationDetail[];
     onReplaceSlot: (slotIndex: number, next: CustomizationDetail) => void;
-    surface: 'overlay' | 'muted' | 'dock';
 }) {
     const isMdUp = useIsMdUp();
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -672,118 +670,18 @@ function ColumnSwapSelect({
         [swapCandidates, cap.id, otherSelectedIds],
     );
 
-    const dockTitleClass =
+    // PROD-2630 — title + chevron beside it (same as sticky float dock).
+    const titleTriggerClass =
         'truncate text-base font-semibold leading-none tracking-tight text-foreground';
 
     const pick = (next: CustomizationDetail) => {
         onReplaceSlot(slotIndex, next);
     };
 
-    if (surface === 'dock') {
-        if (selectOptions.length <= 1) {
-            return (
-                <div className="flex h-8 min-w-0 items-center">
-                    <p className={dockTitleClass}>{cap.title}</p>
-                </div>
-            );
-        }
-
-        if (!isMdUp) {
-            return (
-                <>
-                    <button
-                        type="button"
-                        className={cn(
-                            'flex h-8 w-full min-w-0 items-center justify-start gap-1',
-                            'border-0 bg-transparent px-0 shadow-none outline-none',
-                            'focus-visible:ring-0',
-                            dockTitleClass,
-                        )}
-                        aria-label={`Switch option in column ${slotIndex + 1}`}
-                        onClick={() => setDrawerOpen(true)}
-                    >
-                        <span className="min-w-0 truncate">{cap.title}</span>
-                        <Icon
-                            icon={ChevronDown}
-                            size="sm"
-                            className="shrink-0 opacity-50"
-                        />
-                    </button>
-                    <ComparePickerDrawer
-                        open={drawerOpen}
-                        onOpenChange={setDrawerOpen}
-                        title="Compare"
-                        options={selectOptions}
-                        selectedId={cap.id}
-                        onSelect={pick}
-                    />
-                </>
-            );
-        }
-
-        return (
-            <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                    <button
-                        type="button"
-                        className={cn(
-                            'flex h-8 w-full min-w-0 items-center justify-start gap-1',
-                            'border-0 bg-transparent px-0 shadow-none outline-none',
-                            'focus-visible:ring-0',
-                            dockTitleClass,
-                        )}
-                        aria-label={`Switch option in column ${slotIndex + 1}`}
-                    >
-                        <span className="min-w-0 truncate">{cap.title}</span>
-                        <Icon
-                            icon={ChevronDown}
-                            size="sm"
-                            className="shrink-0 opacity-50"
-                        />
-                    </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                    align="start"
-                    className="max-h-72 min-w-64 overflow-y-auto"
-                >
-                    <DropdownMenuRadioGroup
-                        value={cap.id}
-                        onValueChange={(id) => {
-                            const next = selectOptions.find((c) => c.id === id);
-                            if (next) pick(next);
-                        }}
-                    >
-                        {selectOptions.map((c) => (
-                            <DropdownMenuRadioItem key={c.id} value={c.id}>
-                                <span className="flex min-w-0 items-center gap-2">
-                                    <CompareMenuThumb cap={c} />
-                                    <span className="line-clamp-2">{c.title}</span>
-                                </span>
-                            </DropdownMenuRadioItem>
-                        ))}
-                    </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        );
-    }
-
-    const triggerClass =
-        surface === 'overlay'
-            ? 'h-8 w-full min-w-0 rounded-control border-border bg-background/80 px-2 text-xs font-medium text-foreground shadow-none backdrop-blur-sm hover:bg-background/90'
-            : 'h-8 w-full min-w-0';
-
     if (selectOptions.length <= 1) {
         return (
-            <div
-                className={cn(
-                    'flex h-8 w-full min-w-0 items-center rounded-control border border-border px-2 text-xs font-medium',
-                    surface === 'overlay'
-                        ? 'bg-background/80 text-foreground backdrop-blur-sm'
-                        : 'bg-muted/60 text-foreground',
-                )}
-                aria-hidden
-            >
-                <span className="min-w-0 truncate">{cap.title}</span>
+            <div className="flex h-8 min-w-0 items-center">
+                <p className={titleTriggerClass}>{cap.title}</p>
             </div>
         );
     }
@@ -794,9 +692,10 @@ function ColumnSwapSelect({
                 <button
                     type="button"
                     className={cn(
-                        'flex w-full items-center justify-between gap-2',
-                        triggerClass,
-                        'border border-border',
+                        'flex h-8 w-full min-w-0 items-center justify-start gap-1',
+                        'border-0 bg-transparent px-0 shadow-none outline-none',
+                        'focus-visible:ring-0',
+                        titleTriggerClass,
                     )}
                     aria-label={`Switch option in column ${slotIndex + 1}`}
                     onClick={() => setDrawerOpen(true)}
@@ -821,28 +720,48 @@ function ColumnSwapSelect({
     }
 
     return (
-        <Select
-            value={cap.id}
-            onValueChange={(id) => {
-                const next = selectOptions.find((c) => c.id === id);
-                if (next) pick(next);
-            }}
-        >
-            <SelectTrigger
-                size="sm"
-                className={triggerClass}
-                aria-label={`Switch option in column ${slotIndex + 1}`}
+        <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+                <button
+                    type="button"
+                    className={cn(
+                        'flex h-8 w-full min-w-0 items-center justify-start gap-1',
+                        'border-0 bg-transparent px-0 shadow-none outline-none',
+                        'focus-visible:ring-0',
+                        titleTriggerClass,
+                    )}
+                    aria-label={`Switch option in column ${slotIndex + 1}`}
+                >
+                    <span className="min-w-0 truncate">{cap.title}</span>
+                    <Icon
+                        icon={ChevronDown}
+                        size="sm"
+                        className="shrink-0 opacity-50"
+                    />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+                align="start"
+                className="max-h-72 min-w-64 overflow-y-auto"
             >
-                <SelectValue placeholder={cap.title}>{cap.title}</SelectValue>
-            </SelectTrigger>
-            <SelectContent className="max-h-72" position="item-aligned">
-                {selectOptions.map((c) => (
-                    <SelectItem key={c.id} value={c.id} textValue={c.title}>
-                        <span className="line-clamp-2">{c.title}</span>
-                    </SelectItem>
-                ))}
-            </SelectContent>
-        </Select>
+                <DropdownMenuRadioGroup
+                    value={cap.id}
+                    onValueChange={(id) => {
+                        const next = selectOptions.find((c) => c.id === id);
+                        if (next) pick(next);
+                    }}
+                >
+                    {selectOptions.map((c) => (
+                        <DropdownMenuRadioItem key={c.id} value={c.id}>
+                            <span className="flex min-w-0 items-center gap-2">
+                                <CompareMenuThumb cap={c} />
+                                <span className="line-clamp-2">{c.title}</span>
+                            </span>
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 

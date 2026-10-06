@@ -12,7 +12,7 @@ import type {CustomizationFacetDef} from '@/lib/catalog/types';
 
 /** Desktop filter rail: stable gutter + centered thin thumb (PROD-2599). */
 const FILTER_RAIL_CLASS = cn(
-    'hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto lg:[scrollbar-gutter:stable]',
+    'hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto lg:pr-4 lg:[scrollbar-gutter:stable]',
     '[&::-webkit-scrollbar]:w-3',
     '[&::-webkit-scrollbar-thumb]:rounded-full',
     '[&::-webkit-scrollbar-thumb]:border-2',

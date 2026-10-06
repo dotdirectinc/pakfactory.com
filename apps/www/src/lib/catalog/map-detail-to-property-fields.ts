@@ -2,7 +2,10 @@ import type {
     CustomizationDetail,
     CustomizationPropertyValue,
 } from '@/lib/catalog/types';
-import {swatchColorForSlug} from '@/lib/catalog/swatch-colors';
+import {
+    isCustomColorSlug,
+    swatchColorForSlug,
+} from '@/lib/catalog/swatch-colors';
 
 export type PropertyValuesPerItem = 'one' | 'many';
 
@@ -13,6 +16,8 @@ export type PropertyFieldOption = {
     imageAlt?: string;
     /** Design-system CSS var when no image (e.g. var(--swatch-gold)). */
     color?: string;
+    /** Custom Color wheel / consultation treatment. */
+    appearance?: 'customColor';
 };
 
 export type PropertyFieldDescriptor = {
@@ -31,10 +36,12 @@ function groupKey(value: CustomizationPropertyValue): string | null {
 /**
  * Map a customization Option detail → selectable Property fields.
  * Stated declared Properties are excluded. Shared ui property controllers only.
+ * Skips a field when its only value title matches the option title (echo).
  */
 export function mapDetailToPropertyFields(
     detail: CustomizationDetail,
 ): PropertyFieldDescriptor[] {
+    const optionTitle = detail.title.trim().toLowerCase();
     const declared = detail.declaredProperties;
     const hasDeclared = declared.length > 0;
     const selectableKeys = new Set(
@@ -72,16 +79,33 @@ export function mapDetailToPropertyFields(
         const options: PropertyFieldOption[] = values.map((v) => {
             const imageUrl = v.imageUrl;
             const hasImage = Boolean(imageUrl);
-            const color = hasImage ? undefined : swatchColorForSlug(v.slug);
+            const isCustom = isCustomColorSlug(v.slug);
+            const color =
+                hasImage || isCustom
+                    ? undefined
+                    : swatchColorForSlug(v.slug);
             return {
                 id: v.slug,
                 title: v.title,
                 ...(imageUrl !== undefined ? {imageUrl} : {}),
                 ...(v.imageAlt ? {imageAlt: v.imageAlt} : {}),
                 ...(color ? {color} : {}),
+                ...(isCustom ? {appearance: 'customColor' as const} : {}),
             };
         });
-        const kind = options.some((o) => Boolean(o.imageUrl) || Boolean(o.color))
+        // Sole value that only restates the option name — hide from Configuration.
+        if (
+            options.length === 1 &&
+            options[0]!.title.trim().toLowerCase() === optionTitle
+        ) {
+            continue;
+        }
+        const kind = options.some(
+            (o) =>
+                Boolean(o.imageUrl) ||
+                Boolean(o.color) ||
+                o.appearance === 'customColor',
+        )
             ? 'swatch'
             : 'chip';
         fields.push({

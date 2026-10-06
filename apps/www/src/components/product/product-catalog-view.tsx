@@ -1,10 +1,8 @@
-import {Suspense} from 'react';
-
 import {
     ProductCatalogPageChrome,
-    ProductCatalogPanelLoading,
 } from '@/components/product/product-catalog-page-loading';
 import {ProductCatalogPanel} from '@/components/product/product-catalog-panel';
+import {packProductLibrary} from '@/lib/catalog/library-wire';
 import type {ProductLibraryResult} from '@/lib/catalog/types';
 
 export {
@@ -51,13 +49,11 @@ export function ProductCatalogView({
                     ) : null}
                 </div>
             ) : null}
-            <Suspense fallback={<ProductCatalogPanelLoading />}>
-                <ProductCatalogPanel
-                    library={library}
-                    urlSync={urlSync}
-                    hideCatalogBorderTop={hideCatalogBorderTop}
-                />
-            </Suspense>
+            <ProductCatalogPanel
+                packedLibrary={packProductLibrary(library)}
+                urlSync={urlSync}
+                hideCatalogBorderTop={hideCatalogBorderTop}
+            />
         </>
     );
 }

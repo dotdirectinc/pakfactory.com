@@ -2,17 +2,16 @@
 
 import {useMemo, useState, type MouseEvent} from 'react';
 import Link from 'next/link';
-import {Bookmark, Download, Search} from 'lucide-react';
+import {Bookmark, Download} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
-import {Input} from '@pakfactory/ui/components/input';
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {
     initialPropertySelection,
     OptionPropertyControllers,
     type PropertySelectionMap,
 } from '@/components/customization/option-property-controllers';
-import {TypePropertyController} from '@/components/customization/type-property-controller';
 import {Icon} from '@/components/ui/icon';
+import {StatusNotice} from '@/components/ui/status-badge';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
 import {
     mapDetailToPropertyFields,
@@ -20,7 +19,6 @@ import {
 } from '@/lib/catalog/map-detail-to-property-fields';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
-import type {UiDescriptor} from '@pakfactory/ui/components/customization/types';
 
 type CustomizationConfigPanelProps = {
     detail: CustomizationDetail;
@@ -33,27 +31,10 @@ function titlesForIds(field: PropertyFieldDescriptor, ids: string[]): string[] {
         .filter((t): t is string => Boolean(t));
 }
 
-function fieldMatchesQuery(
-    field: PropertyFieldDescriptor,
-    query: string,
-): boolean {
-    const q = query.trim().toLowerCase();
-    if (!q) return true;
-    if (field.label.toLowerCase().includes(q)) return true;
-    return field.options.some((o) => o.title.toLowerCase().includes(q));
-}
-
-/** Phase 1 smoke: Type-panel listbox via shared PropertyController. */
-function typePanelListbox(detail: CustomizationDetail): UiDescriptor {
-    return {
-        kind: 'listbox',
-        choices: [detail.title],
-        value: detail.title,
-    };
-}
-
 /**
  * Right-rail Property controllers for customization Option detail (PROD-1299).
+ * Configuration band is omitted when there are no selectable properties
+ * (including after echo-title filtering).
  */
 export function CustomizationConfigPanel({
     detail,
@@ -61,12 +42,6 @@ export function CustomizationConfigPanel({
     const fields = useMemo(() => mapDetailToPropertyFields(detail), [detail]);
     const [selection, setSelection] = useState<PropertySelectionMap>(() =>
         initialPropertySelection(fields),
-    );
-    const [query, setQuery] = useState('');
-
-    const visibleFields = useMemo(
-        () => fields.filter((field) => fieldMatchesQuery(field, query)),
-        [fields, query],
     );
 
     const selectionSummary = useMemo(() => {
@@ -79,6 +54,7 @@ export function CustomizationConfigPanel({
     }, [fields, selection]);
 
     const customizeHref = `${WWW_ROUTES.products}?customize=${encodeURIComponent(detail.categoryValue)}/${encodeURIComponent(detail.slug)}`;
+    const specSheetUrl = detail.specSheetUrl?.trim() || null;
 
     const setPropertyValue = (propertyKey: string, ids: string[]) => {
         setSelection((prev) => ({...prev, [propertyKey]: ids}));
@@ -88,56 +64,28 @@ export function CustomizationConfigPanel({
         stubBookmarkAction(event);
     };
 
-    const onDownloadSpec = (event: MouseEvent<HTMLButtonElement>) => {
-        event.preventDefault();
-    };
+    const lifecycle = detail.status;
+    const showOrderCtas = !lifecycle || lifecycle === 'active';
+    const hasConfig = fields.length > 0;
 
     return (
         <div className="mt-8 flex flex-col gap-6">
-            <div className="flex flex-col gap-4 border-t border-dashed border-border pt-4">
-                <h2 className="text-base font-semibold text-foreground">
-                    Configuration
-                </h2>
-
-                <div className="relative min-w-0">
-                    <Icon
-                        icon={Search}
-                        size="sm"
-                        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
-                    />
-                    <Input
-                        type="search"
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Search a specific option."
-                        aria-label="Search a specific option"
-                        className="rounded-md py-2 pl-9"
-                    />
-                </div>
-
-                {fields.length > 0 ? (
+            {hasConfig ? (
+                <div className="flex flex-col gap-4 border-t border-dashed border-border pt-4">
+                    <h2 className="text-base font-semibold text-foreground">
+                        Configuration
+                    </h2>
                     <div className="flex flex-col gap-4">
                         <OptionPropertyControllers
-                            fields={visibleFields}
+                            fields={fields}
                             value={selection}
                             onChange={setPropertyValue}
                         />
-                        {visibleFields.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                No options match your search.
-                            </p>
-                        ) : null}
                     </div>
-                ) : (
-                    <TypePropertyController
-                        label={detail.typeTitle ?? 'Option'}
-                        ui={typePanelListbox(detail)}
-                        controlId={`type-${detail.slug}`}
-                    />
-                )}
-            </div>
+                </div>
+            ) : null}
 
-            {fields.length > 0 ? (
+            {hasConfig ? (
                 <div className="flex flex-col gap-2 border-t border-dashed border-border pt-4">
                     <p className="text-base font-semibold text-foreground">
                         Your selection
@@ -163,34 +111,49 @@ export function CustomizationConfigPanel({
                 </div>
             ) : null}
 
-            <div className="flex flex-col gap-2">
-                <Button asChild className="h-auto w-full px-6 py-3 text-base">
-                    <Link href={customizeHref}>
-                        Choose a packaging item to customize
-                    </Link>
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="h-auto w-full px-6 py-3 text-base shadow-none"
-                    onClick={onBookmark}
-                >
-                    <Icon icon={Bookmark} size="sm" />
-                    Bookmark
-                </Button>
-                <div className="flex justify-end">
+            {showOrderCtas ? (
+                <div className="flex flex-col gap-2">
+                    <Button asChild className="h-auto w-full px-6 py-3 text-base">
+                        <Link href={customizeHref}>
+                            Choose a packaging item to customize
+                        </Link>
+                    </Button>
                     <Button
                         type="button"
-                        variant="link"
-                        size="sm"
-                        className="h-auto gap-1 px-0 text-muted-foreground"
-                        onClick={onDownloadSpec}
+                        variant="outline"
+                        className="h-auto w-full px-6 py-3 text-base shadow-none"
+                        onClick={onBookmark}
                     >
-                        <Icon icon={Download} size="sm" />
-                        Download spec sheet
+                        <Icon icon={Bookmark} size="sm" />
+                        Bookmark
                     </Button>
+                    {specSheetUrl ? (
+                        <div className="flex justify-end">
+                            <Button
+                                asChild
+                                variant="link"
+                                size="sm"
+                                className="h-auto gap-1 px-0 text-muted-foreground"
+                            >
+                                <a
+                                    href={specSheetUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Icon icon={Download} size="sm" />
+                                    Download spec sheet
+                                </a>
+                            </Button>
+                        </div>
+                    ) : null}
                 </div>
-            </div>
+            ) : (
+                <StatusNotice
+                    status={lifecycle}
+                    contactHref={WWW_ROUTES.contact}
+                    className="mt-0"
+                />
+            )}
         </div>
     );
 }
@@ -212,14 +175,12 @@ export function CustomizationConfigPanelSkeleton() {
                 aria-hidden
             >
                 <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-10 w-full rounded-md" />
                 <Skeleton className="h-24 w-full rounded-md" />
                 <Skeleton className="h-24 w-full rounded-md" />
             </div>
             <div className="flex flex-col gap-2" aria-hidden>
                 <Skeleton className="h-12 w-full rounded-md" />
                 <Skeleton className="h-12 w-full rounded-md" />
-                <Skeleton className="ml-auto h-4 w-36" />
             </div>
         </div>
     );

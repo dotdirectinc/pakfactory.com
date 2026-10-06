@@ -8,6 +8,7 @@ import type {
     BuilderStep,
     BuilderStepKey,
     CustomizationBuilderState,
+    PrintSideValue,
     PropertySelectionSummaryItem,
     StepAnswer,
 } from '@/lib/customization-builder';
@@ -35,6 +36,11 @@ type CustomizationWorkspaceViewProps = {
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) => void;
+    onPrintedSideChange: (patch: {
+        printOutside?: PrintSideValue;
+        printInside?: PrintSideValue;
+    }) => void;
+    onPrintingConsultation: () => void;
 };
 
 export function CustomizationWorkspaceView({
@@ -55,6 +61,8 @@ export function CustomizationWorkspaceView({
     onClearCategory,
     onEntryNoteChange,
     onPropertySelectionsChange,
+    onPrintedSideChange,
+    onPrintingConsultation,
 }: CustomizationWorkspaceViewProps) {
     return (
         <BuilderThreeColumn
@@ -75,6 +83,8 @@ export function CustomizationWorkspaceView({
             onClearCategory={onClearCategory}
             onEntryNoteChange={onEntryNoteChange}
             onPropertySelectionsChange={onPropertySelectionsChange}
+            onPrintedSideChange={onPrintedSideChange}
+            onPrintingConsultation={onPrintingConsultation}
         />
     );
 }

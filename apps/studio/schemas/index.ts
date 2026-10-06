@@ -24,6 +24,7 @@ import { productLinePage } from './productLinePage'
 import { productCatalogPage } from './productCatalogPage'
 import { productStylePage } from './productStylePage'
 import { productDetailPage } from './productDetailPage'
+import { solutionProductDetailPage } from './solutionProductDetailPage'
 import { customizationCatalogPage } from './customizationCatalogPage'
 import { customizationDetailPage } from './customizationDetailPage'
 import { solutionStylePage } from './solutionStylePage'
@@ -58,6 +59,7 @@ import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
 import { migrationRun } from './migrationRun'
 import { featuredVideo } from './featuredVideo'
+import { productModel3d } from './productModel3d'
 import {
   pageBuilderBlocks,
   pageBuilderHome,
@@ -69,6 +71,7 @@ export const schemaTypes = [
   // Shared objects
   socialLink,
   featuredVideo,
+  productModel3d,
 
   // Customization layer
   customizationCategory,
@@ -97,6 +100,7 @@ export const schemaTypes = [
   productCatalogPage,
   productStylePage,
   productDetailPage,
+  solutionProductDetailPage,
   customizationCatalogPage,
   customizationDetailPage,
   expertiseStage,

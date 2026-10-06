@@ -100,6 +100,11 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["sharp"],
   experimental: {
     optimizePackageImports: ["lucide-react", "react-aria-components"],
+    // PROD-2756: inline the stylesheet into the HTML (production builds only).
+    // As a separate request it shares the connection with ~20 async JS chunks
+    // and, on slow mobile links, finishes ~1.5 s late — and first paint waits
+    // for it. Inlined, it arrives with the HTML head.
+    inlineCss: true,
   },
   outputFileTracingIncludes: {
     "/api/wm": [

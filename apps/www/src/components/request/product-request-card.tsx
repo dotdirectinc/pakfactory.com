@@ -26,13 +26,15 @@ import {REQUEST_COPY} from '@/lib/copy/request';
 import {
     createEmptyBuilderState,
     buildStepsFromCatalog,
-    DIMENSIONS_STEP_KEY,
-    getAnswer,
     seedFromCustomizations,
-    summarizeAnswer,
     toRequestCustomizations,
     type CustomizationBuilderState,
 } from '@/lib/customization-builder';
+import {
+    lineCustomizationGroups,
+    type LineCustomizationPick,
+} from '@/lib/request/line-customization-groups';
+import {lineDimensionDisplay} from '@/lib/request/line-dimension-display';
 import {
     fileRejectionReason,
     useAttachmentUpload,
@@ -82,52 +84,10 @@ function formatQuantityList(quantities: number[]): string {
     return quantities.map((n) => n.toLocaleString('en-US')).join(', ');
 }
 
-function humanizeCategorySlug(category: string): string {
-    if (!category) return category;
-    return category
-        .split(/[-_]/)
-        .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
-}
-
-function resolveCategoryLabel(
-    category: string,
-    available: RequestLine['availableCustomizations'],
-): string {
-    const titled = available?.find(
-        (option) => option.category === category && option.categoryTitle,
-    )?.categoryTitle;
-    return titled?.trim() || humanizeCategorySlug(category);
-}
-
-function buildSpecRows(line: RequestLine): SpecRow[] {
-    const rows: SpecRow[] = [];
-    const builder = resolveBuilderState(line);
-    const dimensionsAnswer = getAnswer(builder, DIMENSIONS_STEP_KEY);
-    if (dimensionsAnswer.status !== 'unset') {
-        rows.push({
-            key: DIMENSIONS_STEP_KEY,
-            label: 'Dimensions',
-            value: summarizeAnswer(
-                dimensionsAnswer,
-                CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
-            ),
-        });
-    }
-
-    const available = line.availableCustomizations;
-    for (const customization of line.customizations) {
-        const value = customization.label?.trim();
-        if (!value) continue;
-        rows.push({
-            key: customization.id,
-            label: resolveCategoryLabel(customization.category, available),
-            value,
-        });
-    }
-
-    return rows;
+function formatPickLabel(pick: LineCustomizationPick): string {
+    const props = (pick.properties ?? []).filter(Boolean);
+    if (props.length === 0) return pick.label;
+    return `${pick.label} (${props.join(', ')})`;
 }
 
 function buildNotesRows(line: RequestLine): SpecRow[] {
@@ -221,8 +181,12 @@ export function ProductRequestCard({
 
     const room = MAX_REF_IMAGES - draftImages.length;
     const qtyList = formatQuantityList(line.quantities);
-    const specRows = buildSpecRows(line);
+    const dimensionsValue = lineDimensionDisplay(line);
+    const customizationGroups = lineCustomizationGroups(line);
     const notesRows = buildNotesRows(line);
+    const dimensionSet = Boolean(dimensionsValue?.trim());
+    const showCustomizationDetail =
+        dimensionSet || customizationGroups.length > 0;
 
     function onPickFiles(event: React.ChangeEvent<HTMLInputElement>) {
         const picked = Array.from(event.target.files ?? []);
@@ -329,25 +293,52 @@ export function ProductRequestCard({
                         key: 'customization',
                         label: REQUEST_COPY.customizationRowLabel,
                         action: editAction(() => setCustomizeOpen(true)),
-                        children:
-                            specRows.length > 0 ? (
-                                <ul className="flex flex-col gap-1">
-                                    {specRows.map((row) => (
-                                        <li key={row.key}>
-                                            <span className="text-muted-foreground">
-                                                {row.label}:{' '}
-                                            </span>
-                                            <span className="font-medium text-foreground">
-                                                {row.value}
-                                            </span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <span className="text-muted-foreground">
-                                    {REQUEST_COPY.notAdded}
-                                </span>
-                            ),
+                        children: showCustomizationDetail ? (
+                            <div className="flex flex-col gap-2">
+                                <div>
+                                    <p className="font-medium text-foreground">
+                                        Dimensions
+                                    </p>
+                                    <p className="mt-0.5 text-muted-foreground">
+                                        {dimensionSet
+                                            ? dimensionsValue
+                                            : REQUEST_COPY.specialistToAdvise}
+                                    </p>
+                                </div>
+                                {customizationGroups.map((group) => (
+                                    <div key={group.categoryTitle}>
+                                        <p className="font-medium text-foreground">
+                                            {group.categoryTitle}
+                                        </p>
+                                        {group.picks.length > 0 ? (
+                                            <ul className="mt-0.5 flex flex-col text-muted-foreground">
+                                                {group.picks.map(
+                                                    (pick, index) => (
+                                                        <li
+                                                            key={`${group.categoryTitle}-${pick.label}-${index}`}
+                                                        >
+                                                            {formatPickLabel(
+                                                                pick,
+                                                            )}
+                                                        </li>
+                                                    ),
+                                                )}
+                                            </ul>
+                                        ) : (
+                                            <p className="mt-0.5 text-muted-foreground">
+                                                {
+                                                    REQUEST_COPY.specialistToAdvise
+                                                }
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <span className="text-muted-foreground">
+                                {REQUEST_COPY.specialistToAdvise}
+                            </span>
+                        ),
                     },
                     {
                         key: 'notes',

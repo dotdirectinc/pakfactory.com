@@ -66,7 +66,11 @@ export function buildProductSpecRows(product: Product): ProductSpecRow[] {
                 items: [
                     {
                         label: style.title,
-                        href: productStyleHref(line.slug, style.slug),
+                        // A style with no page (Coming soon, Not active, Active (Internal))
+                        // is still named — just not linked.
+                        ...(style.hasPage === false
+                            ? {}
+                            : {href: productStyleHref(line.slug, style.slug)}),
                     },
                 ],
             },

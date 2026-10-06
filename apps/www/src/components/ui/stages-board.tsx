@@ -215,6 +215,7 @@ function MediaLayer({
                 <CoverVideo
                     src={videoSrc}
                     poster={imageSrc || undefined}
+                    posterWidth={1200}
                     active={active}
                     onError={() => setVideoFailed(true)}
                 />

@@ -6,9 +6,14 @@ import Link from 'next/link';
 import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {SanityImage} from '@/components/ui/sanity-image';
+import {isSanityCdnUrl} from '@/lib/sanity/image';
+import {
+    MEDIA_DISSOLVE_MS,
+    mediaDissolveTransitionClass,
+} from '@/lib/ui/media-dissolve';
+
 const CARD_WIDTH = 550;
-/** Match `--motion-slow` — fade out before pause/reset. */
-const VIDEO_FADE_MS = 500;
 
 export type VideoCaseStudyMetric = {
     title: string;
@@ -70,7 +75,7 @@ export function VideoCaseStudyCard({
         fadeOutTimerRef.current = setTimeout(() => {
             resetVideoEl();
             fadeOutTimerRef.current = null;
-        }, VIDEO_FADE_MS);
+        }, MEDIA_DISSOLVE_MS);
     };
 
     const startVideo = () => {
@@ -115,16 +120,30 @@ export function VideoCaseStudyCard({
                 className,
             )}
         >
-            <Image
-                src={card.image.src}
-                alt=""
-                fill
-                sizes="550px"
-                draggable={false}
-                onDragStart={(e) => e.preventDefault()}
-                aria-hidden
-                className="object-cover"
-            />
+            {isSanityCdnUrl(card.image.src) ? (
+                <SanityImage
+                    src={card.image.src}
+                    alt=""
+                    fill
+                    portrait
+                    sizes="550px"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
+                    aria-hidden
+                    className="object-cover"
+                />
+            ) : (
+                <Image
+                    src={card.image.src}
+                    alt=""
+                    fill
+                    sizes="550px"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
+                    aria-hidden
+                    className="object-cover"
+                />
+            )}
 
             {mp4Src ? (
                 <video
@@ -136,8 +155,8 @@ export function VideoCaseStudyCard({
                     preload="none"
                     aria-hidden
                     className={cn(
-                        'absolute inset-0 size-full object-cover transition-opacity duration-[var(--motion-slow)] ease-in-out',
-                        'motion-reduce:transition-none',
+                        'absolute inset-0 size-full object-cover',
+                        mediaDissolveTransitionClass,
                         playing ? 'opacity-100' : 'opacity-0',
                     )}
                 />

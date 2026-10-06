@@ -21,27 +21,36 @@ export const metadata: Metadata = {
     description: 'Browse packaging products and styles.',
 };
 
-async function ProductsCatalogBody() {
-    const [library, page] = await Promise.all([
-        listProductLibrary(),
-        getProductCatalogPage(),
-    ]);
-    const sections = (page?.sections ?? null) as PageSection[] | null;
+async function ProductCatalogGrid() {
+    const library = await listProductLibrary();
 
     return (
-        <>
-            <ProductCatalogView library={library} urlSync showPageChrome={false} />
-            <SectionRenderer sections={sections} />
-        </>
+        <ProductCatalogView
+            library={library}
+            urlSync
+            showPageChrome={false}
+            hideCatalogBorderTop
+        />
     );
+}
+
+async function ProductCatalogPageSections() {
+    const page = await getProductCatalogPage();
+    const sections = (page?.sections ?? null) as PageSection[] | null;
+    if (!sections?.length) return null;
+
+    return <SectionRenderer sections={sections} />;
 }
 
 export default function ProductsIndexPage() {
     return (
         <>
             <ProductCatalogPageChrome />
-            <Suspense fallback={<ProductCatalogPanelLoading />}>
-                <ProductsCatalogBody />
+            <Suspense fallback={<ProductCatalogPanelLoading hideCatalogBorderTop />}>
+                <ProductCatalogGrid />
+            </Suspense>
+            <Suspense fallback={null}>
+                <ProductCatalogPageSections />
             </Suspense>
         </>
     );

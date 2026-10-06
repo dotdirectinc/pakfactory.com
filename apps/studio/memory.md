@@ -38,8 +38,6 @@ Full switching runbook: [`scripts/sanity/RUNBOOK.md`](../../scripts/sanity/RUNBO
 | Deploy hosted Studio | `pnpm --filter @pakfactory/studio run deploy` |
 | Full blog seed | `pnpm --filter @pakfactory/studio run seed` |
 | Blog singleton pages | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` |
-| Beauty Solution LP + Solution Industry Page (WP4 / Phase B) | `pnpm --filter @pakfactory/studio run seed:beauty-solution-lp -- --dataset development` |
-| Beauty Pouches style products (catalog grid fixtures) | `pnpm --filter @pakfactory/studio run seed:beauty-style-products -- --dataset development` |
 
 **HTTP 431 on `:3333`:** Vite/Node rejects oversized cookies. `dev`/`start` set `NODE_OPTIONS=--max-http-header-size=128000`. If it still 431s, clear site data for `http://localhost:3333` (or use a private window) and restart Studio.
 
@@ -71,6 +69,8 @@ Full switching runbook: [`scripts/sanity/RUNBOOK.md`](../../scripts/sanity/RUNBO
 
 Industry LP **order + chrome** live on listable `solutionIndustryPage` documents (Main Website → Solution Pages → Solution Industry Pages). Each industry `solution` with `hasPage` **must** select one on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). Logo wall may also carry a **shared default** client list on the layout (Beauty seed); per-solution curatedItems override when set. Seeded Default id: `solutionIndustryPage`.
 
+**Featured Products** (Categorization on the `solution` host, not the layout — ADR-020 / PROD-2763): pinned products appear first in the industry hero; auto tagged products fill remaining slots (cap 16, dedupe). Empty = auto-only.
+
 Optional **Preview image** on each layout (Studio list + Template picker only).
 
 **Human seed:** run Beauty seed below with `--confirm` (creates/updates Default layout + Beauty wiring + solutionStyles). Agents author the script only — never `--confirm`.
@@ -78,6 +78,8 @@ Optional **Preview image** on each layout (Studio list + Template picker only).
 ## Product Line Page layouts
 
 Product Line LP **hero shell + section order/chrome** live on listable `productLinePage` documents (Main Website → Product Pages → Product Line Pages) — not a pinned singleton. Each customer-facing `productLine` **must** select one on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). www merges template × line sections; `productStylesRow` with `listSource` = Line styles inherits each line’s styles. Shell (`heroLayout`: `stack` \| `bottomBar`) is a field on the layout doc.
+
+**Featured Products** (Categorization on the `productLine` host — PROD-2763): pinned products appear first in the bottom-bar hero marquee; standard line products with media fill the rest (dedupe). Empty = auto-only.
 
 Seeded layout ids:
 
@@ -104,11 +106,29 @@ Creates/updates **Default** + **Bottom bar** layouts with a `productStylesRow` (
 
 Humans may also create layouts in Studio, set **Hero layout**, optionally upload **Preview image**, publish, then set `template` on each customer-facing line. Re-running the seed with `--confirm` retitles existing docs to Default / Bottom bar when those ids are updated.
 
+**Inspiration by industry (CMS):** Solutions-tab section `inspirationIndustry`. On Product Line Page layouts (Default / Bottom bar), insert **Inspiration by industry** after the styles row (or where the band should sit). Leave **Industries** empty to show all industries that have inspiration products for the host line; optionally curate and reorder. Heading tokens (`%title%`, etc.) resolve on www. Agents do not patch layout documents — editors add/publish in Studio.
+
 ## Product Detail Page layouts
 
-PDP **order + chrome** live on listable `productDetailPage` documents (Main Website → Product Pages → Product Detail Pages). Each `product` may select one on the **Template** tab; band **content** stays on the product **Sections** tab (matched by `_key`). Seeded Default id: `productDetailPage`. Empty template → current hardcoded PDP bands only.
+PDP **order + chrome** live on listable layout documents. Band **content** stays on the product **Sections** tab (matched by `_key`).
+
+| Doc | Studio path | Role |
+| --- | --- | --- |
+| `productDetailPage` | Product Pages → Product Detail Pages | standard product PDPs (`product.template` → Default id `productDetailPage`) |
+| `solutionProductDetailPage` | Solution Pages → Solution Product Detail Pages | inspiration PDPs (`kind == "inspiration"` → Default id `solutionProductDetailPage`) |
+
+Empty template → www coalesces by kind (PROD-2763). Specs + Customization stay route-owned on www; CMS bands render **after** Customization via `SectionRenderer` (Related `productsRow` → Reviews `testimonialsRow` → FAQs `faqSection` → `generalCta`).
 
 Optional **Preview image** on each layout (Studio chrome only).
+
+Seed Defaults (human only):
+
+```bash
+pnpm --filter @pakfactory/studio run seed:pdp-detail-pages -- --dataset development
+pnpm --filter @pakfactory/studio run seed:pdp-detail-pages -- --dataset development --confirm
+```
+
+Appends missing bands with stable keys (`pdp-related-products`, `pdp-reviews`, `pdp-faqs`, `general-cta-closing`). Agents do not run `--confirm`.
 
 ## Product / Customization / Style catalog pages (PROD-2589 / PROD-2607 / Wave 2)
 
@@ -119,7 +139,8 @@ Listable layout types; entity-picked slots use `template` with Default-id fallba
 | `productCatalogPage` | Product Pages → Product Catalog Pages | hub `/products` — **Default id live** |
 | `productLinePage` / `…bottomBar` | Product Pages → Product Line Pages | listable line LP layouts (`productLine.template`) |
 | `productStylePage` | Product Pages → Product Style Pages | listable style catalog bands (`productStyle.template` → Default fallback) |
-| `productDetailPage` | Product Pages → Product Detail Pages | listable PDP layouts (`product.template`) |
+| `productDetailPage` | Product Pages → Product Detail Pages | listable standard PDP layouts (`product.template` → Default fallback) |
+| `solutionProductDetailPage` | Solution Pages → Solution Product Detail Pages | listable inspiration PDP layouts (`product.template` → Default fallback) |
 | `customizationCatalogPage` | Customization Pages → Catalog Pages | hub `/customizations` — **Default id live** |
 | `customizationDetailPage` | Customization Pages → Detail Pages | listable detail bands (`customizationOption.template` → Default fallback) |
 | `solutionIndustryPage` | Solution Pages → Solution Industry Pages | listable industry LP layouts |
@@ -129,11 +150,11 @@ The faceted grids / detail chrome stay route-owned. CMS `sections[]` render **be
 
 For style / customization detail: select a layout on the entity’s **Template** tab; empty → seeded Default bands. For catalog hubs: only edit/publish the Default id until an active-layout settings pointer ships — extra docs are prep only.
 
-For PDPs: select a **Product Detail Page** layout on the product’s Template tab; band content stays on the product Sections tab (matched by `_key`). Empty template → current hardcoded PDP bands only.
+For PDPs: select a layout on the product’s Template tab (standard → Product Detail Page; inspiration → Solution Product Detail Page); band content stays on the product Sections tab (matched by `_key`). Empty template → seeded Default bands by kind (www coalesce).
 
 ## Product Style / Solution Style / Customization Detail layouts
 
-Shared below-grid (or below-chrome) bands live on listable layout docs. Each `productStyle` / `solutionStyle` / `customizationOption` (when `hasPage`) may select one on the **Template** tab. Seeded Default ids: `productStylePage`, `solutionStylePage`, `customizationDetailPage`. www coalesce: entity `template->sections` else Default.
+Shared below-grid (or below-chrome) bands live on listable layout docs. Each `productStyle` / `solutionStyle` / `customizationOption` (when `appearsIn` is page-bearing) may select one on the **Template** tab. Seeded Default ids: `productStylePage`, `solutionStylePage`, `customizationDetailPage`. www coalesce: entity `template->sections` else Default.
 
 Optional **Preview image** on each layout (Studio list + Template picker only).
 
@@ -165,86 +186,25 @@ pnpm --filter @pakfactory/studio run seed:expertise-strategy -- --dataset develo
 
 Verify `/expertise/packaging-design` (and strategy) shows the dark left-aligned closing band; button opens the request flow.
 
-## Beauty Solution LP seed (WP4 / Phase B)
+## Demo seeds (retired)
 
-Authors dependency docs, **`solutionIndustryPage`** (incl. shared logo wall clients), Beauty `sections[]` / `template` / `relatedCaseStudies`, and six Beauty **`solutionStyle`** docs (inspirationsGrid refs). **Required** for `/solutions/beauty-cosmetics` after Phase C (no local fixture fallback). Requires the six published `expertiseStage` docs.
+**Retired 2026-10-06 (PROD-2898):** the Beauty / Test Kids / hero-products seeds and
+`seed:website-navigation` were deleted. They wrote or required solution `hasPage`, which
+PROD-2845 replaced with `status`, so re-running one would put the removed field back.
+Recover from git history if a demo fixture is ever needed again — and port it to `status`
+first. Real content now comes from the catalog fill (Notion) and Studio.
 
-```bash
-# Dry-run (planned mutations only)
-pnpm --filter @pakfactory/studio run seed:beauty-solution-lp -- --dataset development
-
-# Write (needs SANITY_API_WRITE_TOKEN)
-pnpm --filter @pakfactory/studio run seed:beauty-solution-lp -- --dataset development --confirm
-
-# Production (two gates)
-pnpm --filter @pakfactory/studio run seed:beauty-solution-lp -- --dataset production --confirm --yes-production
-```
-
-After `--confirm`:
-
-1. Studio → Main Website → Solution Pages → **Solution Industry Page** → publish if draft; confirm 8 sections; **Logo wall** shows 6 clients (shared default).
-2. Studio → Solutions → Beauty & Cosmetics → **Template** tab → Solution Industry Page; **Solution Styles** tab → 6 styles; **Sections** → content with matching keys (inspirations = style refs; logo wall = clients; Reviews = chrome-only); publish if draft.
-3. Reorder a section on Solution Industry Page → `/solutions/beauty-cosmetics` order updates without editing Beauty’s section order.
-4. FAQ band: empty section FAQs → uses Categorization `faqs`; section FAQs filled → those only (override).
-5. Inspirations: empty section cards → related `solutionStyle` children; section cards filled → those only.
-6. Video case studies: empty section cards → Categorization `relatedCaseStudies`; section cards filled → those only.
-7. www: `pnpm dev:www` → Beauty should render via merged template + content (`SectionRenderer`).
-
-Parity checklist: [`apps/www/memory.md`](../www/memory.md) § Solution LP sections / Beauty LP seed parity.
-
-## Beauty Pouches style products seed
-
-Fixture **inspiration** products for Beauty’s `beauty-pouches` `solutionStyle` keyword filter so `/solutions/beauty-cosmetics/beauty-pouches` shows a catalog grid. Does **not** create the style or industry LP — run Beauty LP seed first.
-
-Requires: `solution.beauty-cosmetics` + `solutionStyle.beauty-beauty-pouches`, and at least one **standard** product (for inspiration `basedOn`). Prefers a standard with ≥3 `availableCustomizations`.
-
-```bash
-pnpm --filter @pakfactory/studio run seed:beauty-style-products -- --dataset development
-pnpm --filter @pakfactory/studio run seed:beauty-style-products -- --dataset development --confirm
-```
-
-Creates 3 docs: `product.beauty-pouches-seed-1` … `-3` (titles `Beauty Pouches — Seed N`, sku `BEAUTY-POUCHES-00N`, Beauty in `solutions[]`).
-
-**Cleanup GROQ:**
+Cleanup GROQ for what they left in a dataset (`[Test]` / seed prefixes):
 
 ```
-*[_id match "product.beauty-pouches-seed-*" || sku match "BEAUTY-POUCHES-*"]
+*[_id match "product.beauty-pouches-seed-*" || sku match "BEAUTY-POUCHES-*" || _id match "*test-kids*"]
 ```
-
-**Verify:** www → http://localhost:3003/solutions/beauty-cosmetics/beauty-pouches (revalidate ~60s or hard refresh).
 
 ## Section insert menu (entity tabs)
 
 www `sections[]` insert tabs are **entity-named** (Solutions · Case studies · Products · Customizations · Expertise · Resources · Clients · Layout · CTAs) — not Proof / Catalogue / Market. Studio titles use `{Entity} row` for strip sections; `_type` stays stable. Thumbnails: `static/section-thumbnails/{_type}.webp` + `SECTION_PREVIEW_TYPES` (Beauty-first set shipped as placeholder chrome — replace with real band crops when design ready).
 
 **In-section form:** All · Heading · Content · Layout (`sectionFieldGroups()`). Heading/intro/`link.query` support **Insert page field** chips (`%h1%`, `%title%`, `%description%`, `%shortName%`, `%shortDescription%`, `%slug%`) — www resolves from the host Solution (and later other hosts). Section chrome links: **Internal · Site path · External**; prefer Site path `/products` + Query `industry=%slug%` (env-safe, no hardcoded domain). **List source:** Page field / Derive chip vs Custom (`listSource` / `curatedSource`) on FAQ, case studies, inspirations, video CS, and sourced rows — empty custom does not silently inherit. Canon: [ADR-020 §8–10](../../docs/adr/0020-component-to-section-playbook.md).
-
-## Test Kids Packaging seed (hero style products)
-
-Fixture industry for Industry LP **hero tiles** from `solutionStyle` membership. All ids/slugs/skus use a **test-kids** / **TEST-KIDS** prefix for easy cleanup. Leaves Beauty styles alone.
-
-Requires: `solutionIndustryPage` template + at least one **standard** product (for inspiration `basedOn`). Prefers a standard with ≥3 `availableCustomizations` so hero preview can show preselected options.
-
-```bash
-pnpm --filter @pakfactory/studio run seed:test-kids-solution-lp -- --dataset development
-pnpm --filter @pakfactory/studio run seed:test-kids-solution-lp -- --dataset development --confirm
-```
-
-Creates:
-
-- `solution.test-kids-packaging` (hasPage + template + `relatedCaseStudies`)
-- 6 `solutionStyle.test-kids-*`
-- 14 `product.test-kids-*` inspiration products (preselected customizations copied from `basedOn`)
-- 3 `faq.test-kids-*`
-- 4 `caseStudy.test-kids-*` + matching `client.test-kids-*` stubs
-
-**Cleanup GROQ:**
-
-```
-*[_id match "solution.test-kids-*" || _id match "solutionStyle.test-kids-*" || _id match "product.test-kids-*" || _id match "faq.test-kids-*" || _id match "caseStudy.test-kids-*" || _id match "client.test-kids-*" || sku match "TEST-KIDS-*"]
-```
-
-**Verify:** Studio → Solutions → Test Kids Packaging → Solution Styles (match counts) + Categorization (`relatedCaseStudies`); www → `/solutions/test-kids-packaging` hero tiles open with customizations; case-study / video rows inherit from `relatedCaseStudies`.
 
 ## Presentation preview
 

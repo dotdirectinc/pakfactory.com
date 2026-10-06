@@ -22,8 +22,12 @@
  * ── What it writes ───────────────────────────────────────────────────────────
  *
  *   · Only the fields listed in each document's `_fill.owned`. `set`, never `unset`,
- *     never delete, never replace a whole document. Re-running is safe: a second run
- *     is a no-op revision.
+ *     never delete, never replace a whole document.
+ *   · Only what CHANGED (PROD-2628, "smart refill"). Each existing document — published and
+ *     draft separately — is compared with the value the fill would write, field by field,
+ *     and only the fields that differ are set. A document with nothing to change is not
+ *     written at all: no revision, no webhook, no CDN revalidation. A re-run writes nothing.
+ *     New documents are created in full, as before.
  *   · A patch also lands on an existing `drafts.<id>`, otherwise the stale draft reverts
  *     the fill the moment an editor presses Publish.
  *   · `publish: false` on a NEW document writes `drafts.<id>` only. An existing published
@@ -109,7 +113,11 @@ const client = createClient({
 
 /** Dependencies first: a strong reference to a document not yet written is rejected. */
 // solutionStyle after solution / productLine / productStyle: it references all three (PROD-2605).
-const TYPE_ORDER = ['property', 'propertyValue', 'customizationType', 'productLine', 'productStyle', 'solution', 'solutionStyle', 'customizationOption', 'product']
+// customizationCategory first: the fill patches it only for its registry identity (entityId /
+// entityCode, PROD-2628) and it references nothing in the set.
+// Write order: a document is written before anything that references it. Glossary terms come
+// before options because an option's `glossaryTerm` points at one (the glossary seed set).
+const TYPE_ORDER = ['customizationCategory', 'property', 'propertyValue', 'customizationType', 'productLine', 'productStyle', 'solution', 'solutionStyle', 'glossaryTerm', 'customizationOption', 'product']
 const BATCH = 50
 
 function fail(msg) {
@@ -133,6 +141,15 @@ function loadReviewSet() {
   }
   if (mismatched.length) {
     fail(`The review set does not match its manifest:\n  ${mismatched.join('\n  ')}\nRe-run generate and review again.`)
+  }
+  // A document file for a type this script does not know would be skipped without a word, and its
+  // documents never written. Refuse instead: the set and the uploader must agree on every type.
+  const unknownTypes = Object.keys(manifest.files)
+    .filter((rel) => rel.startsWith('documents/'))
+    .map((rel) => rel.slice('documents/'.length).replace(/\.json$/, ''))
+    .filter((type) => !TYPE_ORDER.includes(type))
+  if (unknownTypes.length) {
+    fail(`The review set has documents of a type this uploader does not write: ${unknownTypes.join(', ')}.\nAdd the type to TYPE_ORDER (in reference order) before uploading.`)
   }
   const docs = TYPE_ORDER.flatMap((type) => {
     const rel = `documents/${type}.json`
@@ -205,7 +222,8 @@ async function main() {
   const present = new Map()
   for (let i = 0; i < plannedIds.length; i += 500) {
     const slice = plannedIds.slice(i, i + 500)
-    const rows = await client.fetch(`*[_id in $ids || _id in $drafts]{ _id, _type, title }`, {
+    // Full content, not just id/type/title: the smart refill compares every owned field.
+    const rows = await client.fetch(`*[_id in $ids || _id in $drafts]`, {
       ids: slice,
       drafts: slice.map((id) => `drafts.${id}`),
     })
@@ -294,6 +312,50 @@ async function main() {
   const toUpload = assets.filter((a) => !assetIdFor.has(a.driveFileId))
   console.log(`    images: ${assetIdFor.size} already uploaded, ${toUpload.length} to upload`)
 
+  // A value exactly as it will be written. Leniently (for comparing, and in a dry run) an image
+  // not uploaded yet resolves to a marker no stored value can equal — so it counts as a change.
+  const docById = new Map(docs.map((d) => [d._id, d]))
+  const resolveWith = (lenient) => {
+    const resolve = (v) => {
+      if (Array.isArray(v)) return v.map(resolve)
+      if (!v || typeof v !== 'object') return v
+      const out = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, resolve(x)]))
+      if (typeof out._ref === 'string' && out._ref.startsWith('drive:')) {
+        const id = assetIdFor.get(out._ref.slice(6))
+        if (!id && !lenient) throw new Error(`no uploaded asset for ${out._ref}`)
+        out._ref = id ?? `not-uploaded-yet:${out._ref}`
+      } else if (typeof out._ref === 'string' && !willExistPublished.has(out._ref)) {
+        const target = docById.get(out._ref)
+        out._weak = true
+        if (target) out._strengthenOnPublish = { type: target._type }
+      }
+      return out
+    }
+    return resolve
+  }
+  const resolveValue = resolveWith(false)
+  const resolveLenient = resolveWith(true)
+
+  // ── Smart refill: which owned fields actually differ ─────────────────────────
+  // Compared as canonical JSON (object keys sorted; array order kept, since order is content).
+  const canon = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x))
+  const changedFields = (d, stored) => d._fill.owned.filter((k) => d[k] !== undefined && canon(resolveLenient(d[k])) !== canon(stored?.[k]))
+  const publishing = new Set(toPublish)
+  const refill = { create: 0, changed: 0, unchanged: 0, fields: new Map() }
+  for (const d of docs) {
+    const pub = present.get(d._id)
+    const draft = present.get(`drafts.${d._id}`)
+    if (d._fill.action === 'create' && !pub && !draft) { refill.create++; continue }
+    if (publishing.has(d._id)) { refill.changed++; continue } // published out of draft this run: always written
+    const changed = new Set([...(pub ? changedFields(d, pub) : []), ...(draft ? changedFields(d, draft) : [])])
+    if (!changed.size) { refill.unchanged++; continue }
+    refill.changed++
+    for (const k of changed) refill.fields.set(`${d._type}.${k}`, (refill.fields.get(`${d._type}.${k}`) ?? 0) + 1)
+  }
+  const topFields = [...refill.fields].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, n]) => `${k} ${n}`).join(' · ')
+  console.log(`\n    smart refill: ${refill.create} to create · ${refill.changed} to update · ${refill.unchanged} unchanged — not written`)
+  if (topFields) console.log(`    fields that change: ${topFields}`)
+
   if (!apply) {
     const weak = docs.flatMap((d) => [...collectRefs(d)].filter((r) => !willExistPublished.has(r))).length
     console.log(`    references that would be written weak (target stays draft): ${weak}`)
@@ -318,21 +380,6 @@ async function main() {
   // ── 4. Documents ────────────────────────────────────────────────────────────
   // A strong reference to a document with no published version is rejected — in a draft
   // as much as in a published document — so those are written weak, as Studio does.
-  const resolveValue = (v) => {
-    if (Array.isArray(v)) return v.map(resolveValue)
-    if (!v || typeof v !== 'object') return v
-    const out = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, resolveValue(x)]))
-    if (typeof out._ref === 'string' && out._ref.startsWith('drive:')) {
-      const id = assetIdFor.get(out._ref.slice(6))
-      if (!id) throw new Error(`no uploaded asset for ${out._ref}`)
-      out._ref = id
-    } else if (typeof out._ref === 'string' && !willExistPublished.has(out._ref)) {
-      const target = docs.find((d) => d._id === out._ref)
-      out._weak = true
-      if (target) out._strengthenOnPublish = { type: target._type }
-    }
-    return out
-  }
 
   const draftContent = new Map()
   for (let i = 0; i < toPublish.length; i += 200) {
@@ -340,7 +387,11 @@ async function main() {
     for (const r of rows) draftContent.set(r._id, r)
   }
 
-  const log = { dataset: DATASET, startedAt: new Date().toISOString(), written: [], published: [], strengthened: [] }
+  const log = { dataset: DATASET, startedAt: new Date().toISOString(), written: [], unchanged: [], published: [], strengthened: [] }
+  // What each published document holds when the patch loop compares it: its fetched content,
+  // or — for one phase 1 publishes out of draft — the draft content phase 1 wrote.
+  const fullContent = new Map()
+  for (const [id, row] of present) if (!id.startsWith('drafts.')) fullContent.set(id, row)
   let tx = client.transaction()
   let pending = 0
   const flush = async () => {
@@ -361,6 +412,7 @@ async function main() {
     tx.createIfNotExists({ ...content, _id: id })
     tx.delete(`drafts.${id}`)
     present.set(id, { _id: id, _type: full._type, title: full.title })
+    fullContent.set(id, { ...content, _id: id })
     present.delete(`drafts.${id}`)
     log.published.push(id)
     pending += 2
@@ -375,6 +427,7 @@ async function main() {
     const set = Object.fromEntries(owned.filter((k) => d[k] !== undefined).map((k) => [k, resolveValue(d[k])]))
 
     const targets = []
+    let changed = null
     if (d._fill.action === 'create' && !pub && !draft) {
       // A new document gets everything the set holds for it (slug, index defaults …),
       // not only the owned fields — `initialValue` never runs for an API write.
@@ -382,11 +435,21 @@ async function main() {
       targets.push(d._fill.publish ? _id : `drafts.${_id}`)
       tx.createIfNotExists({ _id: targets[0], _type, ...resolveValue(fields) })
     } else {
-      if (pub) targets.push(d._id)
-      if (draft) targets.push(`drafts.${d._id}`)
-      for (const id of targets) tx.patch(id, (p) => p.set(set))
+      // Smart refill: each target gets only the fields that differ from what it holds; a
+      // target with none is not written. A document published out of draft in phase 1 is
+      // compared with what phase 1 just wrote (its draft's content), so it gets the same test.
+      changed = {}
+      for (const [id, stored] of [[d._id, pub && (fullContent.get(d._id) ?? pub)], [`drafts.${d._id}`, draft]]) {
+        if (!stored) continue
+        const keys = changedFields(d, stored)
+        if (!keys.length) continue
+        targets.push(id)
+        changed[id] = keys
+        tx.patch(id, (p) => p.set(Object.fromEntries(keys.map((k) => [k, set[k]]))))
+      }
+      if (!targets.length) { log.unchanged.push(d._id); continue }
     }
-    log.written.push({ _id: d._id, _type: d._type, action: d._fill.action, targets })
+    log.written.push({ _id: d._id, _type: d._type, action: d._fill.action, targets, ...(changed ? { changed } : {}) })
     pending += targets.length
     if (pending >= BATCH) await flush()
   }
@@ -407,7 +470,7 @@ async function main() {
   log.finishedAt = new Date().toISOString()
   const logPath = join(REVIEW, `upload-${DATASET}-${log.finishedAt.replace(/[:.]/g, '-')}.json`)
   writeFileSync(logPath, `${JSON.stringify(log, null, 2)}\n`)
-  console.log(`\n    ✓ ${plural(log.written.length, 'document')} written to dataset=${DATASET}`)
+  console.log(`\n    ✓ ${plural(log.written.length, 'document')} written to dataset=${DATASET} · ${plural(log.unchanged.length, 'document')} unchanged, not written`)
   console.log(`    log → ${logPath}`)
   console.log(`    next: open Studio on ${DATASET} and spot-check; run \`sanity documents validate --dataset ${DATASET}\`.\n`)
 }

@@ -1,4 +1,4 @@
-import { defineField, defineType } from 'sanity'
+import { defineField, defineType, type ValidationContext } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
 import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { DIMENSION_INPUTS, AXIS_LABEL, usesAxis, type DimensionAxis } from '@pakfactory/sanity/dimension-inputs'
@@ -8,7 +8,18 @@ import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
+import { productModel3dField } from '../lib/product-model-3d-field'
+import { CATALOG_STATUS, FULL_STATUS_LIST } from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
+import {
+  AVAILABILITY_CATALOG_QUERY,
+  offeredOptionIds,
+  resolveProductAvailability,
+  type AvailabilityCatalog,
+  type ProductRulesInput,
+} from '../lib/product-availability'
+import { entityFields } from '../lib/entity-id-field'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -25,8 +36,9 @@ import { AvailableCustomizationsInput } from '../components/AvailableCustomizati
  * kept EDITABLE — decision b, PROD-2295: they flip to readOnly when the
  * Registry/SPECs system ships.
  *
- * Layout template: products select a `productDetailPage` layout version via
- * `template` (Main Website → Product Pages → Product Detail Pages).
+ * Layout template: standard products select a `productDetailPage`; inspiration
+ * products select a `solutionProductDetailPage` (PROD-2763). Empty template →
+ * www coalesces to the matching Default id.
  */
 
 const SOURCE_OWNED_NOTE =
@@ -35,6 +47,38 @@ const SOURCE_OWNED_NOTE =
 const kindOf = (doc: unknown): string | undefined => (doc as { kind?: string } | undefined)?.kind
 const isStandard = (doc: unknown) => kindOf(doc) === 'standard'
 const isInspiration = (doc: unknown) => kindOf(doc) === 'inspiration'
+
+/**
+ * Release check, warn only (R5): an Active or Coming-soon product whose PRIMARY parent
+ * is switched off. The primary is fixed — the site never falls back to the next one
+ * (Richard + Eric, 2026-10-06) — so until someone reorders, the breadcrumb shows it
+ * unlinked and the product skips its FAQs (a standard product falls through to its
+ * line's; an inspiration product shows none). On release the primary should be Active.
+ */
+const primaryParentOffWarning =
+  (field: 'productStyle' | 'solutions', applies: (doc: unknown) => boolean) =>
+  async (value: unknown, context: ValidationContext): Promise<true | string> => {
+    const doc = context.document as { status?: string } | undefined
+    if (!applies(doc)) return true
+    if (doc?.status && !['active', 'coming-soon'].includes(doc.status)) return true
+    const first = Array.isArray(value) ? (value[0] as { _ref?: string } | undefined)?._ref : undefined
+    if (!first) return true
+    const status = await context
+      .getClient({ apiVersion: '2024-01-01' })
+      .fetch<string | null>(`*[_id == $id][0].status`, { id: first })
+    const on =
+      field === 'solutions'
+        ? status === 'active'
+        : !status || ['active', 'active-internal', 'discontinued'].includes(status)
+    if (on) return true
+    const noun = field === 'solutions' ? 'solution' : 'style'
+    const faqs =
+      field === 'solutions' ? 'it inherits no FAQs' : "it shows its line's FAQs instead of this style's"
+    return (
+      `The primary ${noun} (the first one) is not active, so this product's breadcrumb shows it ` +
+      `without a link and ${faqs}. Drag an active ${noun} to the top, or reactivate it.`
+    )
+  }
 
 /**
  * Min/max number pair per measurement axis, each shown only when the product's
@@ -127,62 +171,58 @@ export const product = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: `Lifecycle — Active, Coming soon or Discontinued. Never unpublishes the product. ${SOURCE_OWNED_NOTE}`,
-      options: {
-        layout: 'radio',
-        list: [
-          { title: 'Active', value: 'active' },
-          { title: 'Coming soon', value: 'coming-soon' },
-          { title: 'Discontinued', value: 'discontinued' },
-        ],
-      },
-      initialValue: 'active',
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: 'customerFacing',
-      title: 'Customer facing',
-      type: 'boolean',
-      group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
-      initialValue: true,
-      // WARNING, never an error. A customer-facing product under a hidden line or
-      // style is the one rule a human can break silently: nothing in the Studio shows
-      // an ancestor's visibility while you edit the child, and the result is a page
-      // whose whole path above it is unreachable. Everything else about the scaffold
-      // pattern is enforced structurally.
-      //
-      // Warning and not error because the state is legitimate mid-edit — you unhide a
-      // line and its products one save at a time — and because an error here would
-      // block publishing a product over the state of a DIFFERENT document.
-      //
-      // Reads the PUBLISHED ancestors deliberately: a strong reference resolves
-      // against the published dataset, so published visibility is what decides
-      // whether a route can exist. An unpublished draft edit is not yet that fact.
-      validation: (Rule) =>
-        Rule.custom(async (value, context) => {
-          if (value === false) return true
-          const doc = context.document as
-            | { kind?: string; productLine?: { _ref?: string }; productStyle?: { _ref?: string }[] }
-            | undefined
-          // Only a standard product has a line/style ancestry; both are hidden on presets.
-          if (doc?.kind !== 'standard') return true
-          const refs = [doc.productLine?._ref, ...(doc.productStyle ?? []).map((r) => r?._ref)].filter(
-            (r): r is string => Boolean(r),
+        'Is this product offered, and how? Coming soon lists it with a badge and blocks ' +
+        'ordering. Discontinued keeps the page for search and drops it from listings. ' +
+        'Not active removes it everywhere. Active (Internal) also removes it everywhere but ' +
+        `keeps it usable as the basis for inspiration products. Never unpublishes the product. ${SOURCE_OWNED_NOTE}`,
+      options: { layout: 'radio', list: FULL_STATUS_LIST },
+      initialValue: 'active',
+      validation: (Rule) => [
+        Rule.required(),
+
+        // ─── The one ERROR in this model, and the one place it is right ─────────
+        //
+        // Standard and Inspiration are the same document type, separated by `kind`,
+        // so there is ONE status field with ONE option list — Sanity cannot vary
+        // radio options by a sibling field, and there is no second field left to
+        // hang the restriction on now that `customerFacing` is gone.
+        //
+        // An ERROR rather than a warning, which is the opposite of every cascade
+        // rule here. Those warn because they describe a SECOND document that Studio
+        // validation cannot see, and because blocking makes top-down reorganisation
+        // impossible. Neither applies: this is one document contradicting itself,
+        // and there is no legitimate mid-edit state where the pair should be allowed.
+        Rule.custom((value, context) => {
+          const doc = context.document as { kind?: string } | undefined
+          if (doc?.kind !== 'inspiration' || value !== CATALOG_STATUS.activeInternal) return true
+          return (
+            'Active (Internal) is for products kept in the catalogue as structure — something ' +
+            'an inspiration product can be based on. Nothing is ever based on an inspiration ' +
+            'product, so the value has no job here. Use Not active to take it off the site.'
           )
-          if (refs.length === 0) return true
-          const client = context.getClient({ apiVersion: '2024-01-01' })
-          const hidden = await client.fetch<{ title?: string }[]>(
-            `*[_id in $refs && customerFacing == false]{title}`,
-            { refs },
-          )
-          if (hidden.length === 0) return true
-          const names = hidden.map((h) => h.title ?? 'untitled').join(', ')
-          return `This product is customer facing, but ${names} ${
-            hidden.length === 1 ? 'is not' : 'are not'
-          }. The product page would sit under a path with no reachable route above it.`
-        }).warning(),
+        }),
+
+        // R5 — warn, never block. An inspiration product offers whatever the product
+        // in "Based on" offers, so restricting the base leaves the preset describing
+        // something that is no longer sold. Active (Internal) is deliberately absent
+        // from the restricting set: keeping a base usable while hidden is exactly
+        // what that value exists for.
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              basedOn._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon"])
+            ]{ title }`,
+            describe: (names) =>
+              `${names} ${names.includes(' and ') || names.includes(',') ? 'are' : 'is'} based on ` +
+              `this product and will be hidden from the site with it. ` +
+              `Use Active (Internal) to take this off the site while keeping them live.`,
+          }),
+        ).warning(),
+      ],
     }),
     // One representative image, one gallery — the same pair on Product Line and
     // Product Style. `featuredImage` replaces the old positional rule, where the
@@ -196,7 +236,8 @@ export const product = defineType({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      description: 'The one image that represents this product — cards, listings, nav and the social fallback. Not part of the gallery.',
+      description:
+        'The one image that represents this product — cards, listings, nav and the social fallback. On the product detail gallery it appears as the last slide when set.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
     })),
     // Hover-play video for catalog / product-line hero tiles. Shared featuredVideo
@@ -204,14 +245,23 @@ export const product = defineType({
     featuredVideoField({
       group: GROUPS.content,
       description:
-        'Optional hover-play video for catalog / product-line hero tiles. Upload or a direct S3/CDN MP4/MOV; YouTube is stored but tiles keep Featured image. Mobile and reduced-motion keep Featured image.',
+        'Optional hover-play video for catalog / product-line hero tiles. Prefer VP9 WebM with alpha (transparent) or H.264 MP4; YouTube is stored but tiles keep Featured image. Mobile and reduced-motion keep Featured image.',
+    }),
+    // Marketing “View in 3D” bridge (PROD-2777 graduation). Available on both
+    // Product types (standard + inspiration). www uses the public GLB URL as-is;
+    // PakStudio will own assets + customize later.
+    productModel3dField({
+      group: GROUPS.content,
+      description:
+        'Optional GLB for “View in 3D” in product preview modals (standard and inspiration). Paste a public URL (Supabase site-assets, S3, or CDN). Optimize under ~5 MB (quantize + WebP; no meshopt/draco). Interactive customize and long-term asset ownership move to PakStudio — this field is for marketing preview until then.',
     }),
     defineField({
       name: 'media',
       title: 'Media',
       type: 'array',
       group: GROUPS.content,
-      description: 'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
+      description:
+        'Additional images for the product detail gallery. They appear first in the rail; Featured image is appended last when set. Cards and social still use Featured image.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
     // Renamed from `description` (PROD-2454) — the field was already
@@ -254,12 +304,26 @@ export const product = defineType({
       title: 'Template',
       type: 'reference',
       group: GROUPS.template,
-      to: [{type: 'productDetailPage'}],
-      options: {disableNew: true},
+      to: [
+        {type: 'productDetailPage'},
+        {type: 'solutionProductDetailPage'},
+      ],
+      options: {
+        disableNew: true,
+        filter: ({document}) => ({
+          filter: '_type == $templateType',
+          params: {
+            templateType: isInspiration(document)
+              ? 'solutionProductDetailPage'
+              : 'productDetailPage',
+          },
+        }),
+      },
       description:
-        'Pick a Product Detail Page layout version — section order and default headings. ' +
-        'Manage layouts under Main Website → Product Pages → Product Detail Pages. ' +
-        'Band content stays on the Sections tab, matched by key.',
+        'Pick a PDP layout version — section order and default headings. ' +
+        'Standard products use Product Detail Pages; inspiration products use Solution Product ' +
+        'Detail Pages (Main Website → Product / Solution Pages). Band content stays on the ' +
+        'Sections tab, matched by key.',
     }),
 
     // ─── CATEGORIZATION (classification refs + curated lists) ─────────────────
@@ -330,13 +394,15 @@ export const product = defineType({
           },
         },
       ],
-      validation: (Rule) =>
+      validation: (Rule) => [
         Rule.custom((val, context) => {
           const arr = val as unknown[] | undefined
           if (isStandard(context.document) && (!Array.isArray(arr) || arr.length === 0))
             return 'At least one product style is required for standard products.'
           return true
         }),
+        Rule.custom(primaryParentOffWarning('productStyle', isStandard)).warning(),
+      ],
     }),
     defineField({
       name: 'basedOn',
@@ -364,13 +430,15 @@ export const product = defineType({
       description:
         'Which solutions this product serves — industry, channel, focus or use case. The first entry is the primary and names the breadcrumb parent, so drag to change which one leads. Required for inspiration products.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
-      validation: (Rule) =>
+      validation: (Rule) => [
         Rule.unique().custom((val, context) => {
           const list = Array.isArray(val) ? val : []
           if (isInspiration(context.document) && list.length === 0)
             return 'At least one solution is required for inspiration presets — the first names the breadcrumb parent.'
           return true
         }),
+        Rule.custom(primaryParentOffWarning('solutions', isInspiration)).warning(),
+      ],
     }),
     defineField({
       name: 'relatedProducts',
@@ -380,7 +448,14 @@ export const product = defineType({
       description: 'Curated override. Empty falls back to a derived list.',
       of: [{ type: 'reference', to: [{ type: 'product' }] }],
     }),
-    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+    faqsField({
+      group: GROUPS.categorization,
+      mode: 'reference',
+      max: 6,
+      min: 3,
+      description:
+        'Curated FAQs for this product — reference shared FAQ documents. Leave empty to inherit from the primary (first) parent while it is active: a standard product shows its first style’s FAQs, else its line’s; an inspiration product shows its first solution’s. If the primary is not active it is skipped and no other style or solution stands in — a standard product then shows its line’s, an inspiration product none. Anything here replaces the inherited list entirely — nothing merges.',
+    }),
 
     // ─── SPECS (source-owned facts — editable for now, decision b) ────────────
     defineField({
@@ -625,7 +700,7 @@ export const product = defineType({
       // whole. Anything it cannot edit it still lists, at the bottom, rather
       // than leaving it somewhere an editor cannot see it. PROD-2529.
       components: { input: AvailableCustomizationsInput },
-      description: `Reads differently by Product type. On a standard product: what it offers. On an inspiration product: which options are already chosen — it offers whatever the product in "Based on" offers, so only the pre-selections are stored here. Which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" does not appear, and nor does an option that only has a library page. ${SOURCE_OWNED_NOTE}`,
+      description: `Reads differently by Product type. On a standard product: what it offers. On an inspiration product: which options are already chosen — it offers whatever the product in "Based on" offers, including the options its Customization tab derives (Finishing, Printing), so only the pre-selections are stored here. On a standard product, which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" does not appear there, since the rules derive it. An option that only has a library page never appears. ${SOURCE_OWNED_NOTE}`,
       // Two rules, two levels. A repeated option is always a mistake, so it is an
       // error. A pre-selected flag on a Standard product is inert rather than
       // wrong — warn, and do not clear it: a field switch that silently edits
@@ -654,7 +729,9 @@ export const product = defineType({
         }).warning(),
         // A preset offers what the box it is built from offers, and no more —
         // both kinds carry the same available set, the preset just arrives with
-        // some choices already made. The picker enforces this by only drawing
+        // some choices already made. "Offers" is the base's FULL answer: its
+        // direct list plus what the rules derive from it, so a pre-selected
+        // finish or print is not stray (PROD-2776). The picker enforces this by only drawing
         // the base's options, but a script or a push from the product data
         // source does not go through the picker, so the rule has to exist here
         // as well as in the UI.
@@ -671,16 +748,27 @@ export const product = defineType({
           if (!baseRef) return true
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
-            const offered = await client.fetch<string[] | null>(
-              `coalesce(*[_id == "drafts." + $baseRef][0], *[_id == $baseRef][0]).availableCustomizations[].customization._ref`,
+            const { catalog, base } = await client.fetch<{
+              catalog: AvailabilityCatalog
+              base: ProductRulesInput | null
+            }>(
+              `{
+                "catalog": ${AVAILABILITY_CATALOG_QUERY},
+                "base": coalesce(*[_id == "drafts." + $baseRef][0], *[_id == $baseRef][0]){
+                  _id,
+                  "availableCustomizations": availableCustomizations[].customization._ref,
+                  "customizationExceptions": customizationExceptions[]{ "optionId": customization._ref, mode, reason }
+                }
+              }`,
               { baseRef },
             )
-            const allowed = new Set(offered ?? [])
+            if (!base) return true // base not landed yet — see above
+            const allowed = offeredOptionIds(resolveProductAvailability(catalog, base))
             const stray = (list as { customization?: { _ref?: string } }[]).filter(
               (e) => e?.customization?._ref && !allowed.has(e.customization._ref),
             ).length
             if (stray > 0) {
-              return `${stray} option(s) here are not offered by the product this preset is based on. A preset cannot offer what the box it is built from cannot be made with — add them to the base product first, or remove them here.`
+              return `${stray} option(s) here are not offered by the product this preset is based on, directly or through the customization rules. A preset cannot offer what the box it is built from cannot be made with — add them to the base product first, or remove them here.`
             }
           } catch {
             return true // never block on a lookup failure
@@ -704,7 +792,10 @@ export const product = defineType({
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
             const rows = await client.fetch<{ _id: string; title: string | null }[]>(
-              `*[_id in $ids && configuratorRole != "configurable"]{ _id, title }`,
+              // PROD-2732: names the one non-pickable value rather than "not
+              // configurable", so an option whose `appearsIn` is unset is not
+              // accused of something the backfill has simply not reached.
+              `*[_id in $ids && appearsIn == "not-configurable-with-page"]{ _id, title }`,
               { ids },
             )
             if (rows.length === 0) return true
@@ -950,16 +1041,24 @@ export const product = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
+    ...entityFields({ prefix: 'prd', codeKinds: ['PRD', 'INS'], group: GROUPS.content }),
   ],
 
   preview: {
-    select: { title: 'title', sku: 'sku', status: 'status', kind: 'kind', media: 'media.0' },
-    prepare({ title, sku, status, kind, media }) {
+    select: {
+      title: 'title',
+      sku: 'sku',
+      status: 'status',
+      kind: 'kind',
+      featuredImage: 'featuredImage',
+      mediaFallback: 'media.0',
+    },
+    prepare({ title, sku, status, kind, featuredImage, mediaFallback }) {
       const badge = status && status !== 'active' ? `[${status.toUpperCase()}] ` : ''
       return {
         title: title || 'Untitled product',
         subtitle: `${badge}${sku ?? 'no SKU'} · ${kind ?? ''}`.trim(),
-        media,
+        media: featuredImage || mediaFallback,
       }
     },
   },

@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import type {RequestServiceOption} from '@/lib/request/service-option';
 
 const BriefBuilder = dynamic(
     () =>
@@ -13,6 +14,7 @@ const BriefBuilder = dynamic(
 type BriefBuilderLazyProps = {
     mode?: 'builder' | 'express' | 'products' | 'services';
     deferStart?: boolean;
+    serviceOptions?: RequestServiceOption[];
 };
 
 /** Code-split BriefBuilder for /request/* routes (PROD-2456). */

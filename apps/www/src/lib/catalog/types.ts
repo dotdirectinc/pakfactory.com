@@ -1,10 +1,52 @@
 import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+import type {PortableTextBlock} from '@portabletext/types';
 import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
 
 export type ProductKind = 'standard' | 'inspiration';
 
 /** Category slug from Sanity `customizationCategory.slug` (not a fixed union). */
 export type CustomizationCategory = string;
+
+/** Technical option that can deliver this customer-facing option (PROD-2629). */
+export type AchievedByOption = {
+    id: string;
+    title: string;
+    slug?: string;
+    typeTitle?: string;
+    categorySlug?: string;
+    description?: string;
+    imageUrl?: string | null;
+    hasPage?: boolean;
+};
+
+/**
+ * Where a customization option meets a customer (PROD-2732). Replaces the
+ * `configuratorRole` + `hasPage` pair.
+ *
+ * 🔴 Both predicates test for the values they WANT. An option with no `appearsIn`
+ * — not yet backfilled, or written over the API — must read as neither pickable
+ * nor page-bearing, so a missing value hides it instead of leaking it.
+ */
+export type AppearsIn =
+    | 'configurable-with-page'
+    | 'not-configurable-with-page'
+    | 'configurable-no-page';
+
+/** Does a customer pick this option in the configurator? */
+export function isConfigurable(appearsIn: string | null | undefined): boolean {
+    return (
+        appearsIn === 'configurable-with-page' ||
+        appearsIn === 'configurable-no-page'
+    );
+}
+
+/** Does this option have its own detail page in the customization library? */
+export function hasDetailPage(appearsIn: string | null | undefined): boolean {
+    return (
+        appearsIn === 'configurable-with-page' ||
+        appearsIn === 'not-configurable-with-page'
+    );
+}
 
 export type CustomizationOption = {
     id: string;
@@ -13,6 +55,16 @@ export type CustomizationOption = {
     category: CustomizationCategory;
     categoryTitle?: string;
     categoryDescription?: string;
+    /**
+     * Curated type ids for this option's category (PROD-2740 / PROD-2746).
+     * Pass to `orderTypesInCategory` — order only, never a gate.
+     */
+    categoryTypeOrder?: string[];
+    /**
+     * Curated option ids for this option's type (PROD-2748 / PROD-2775).
+     * Pass to `orderOptionsInType` — order only, never a gate.
+     */
+    typeOptionOrder?: string[];
     typeId?: string;
     typeSlug?: string;
     typeTitle?: string;
@@ -25,10 +77,11 @@ export type CustomizationOption = {
     description?: string;
     imageUrl?: string | null;
     preselected?: boolean;
-    /** Prefer configuratorRole. */
-    role?: 'configurable' | 'reference';
-    configuratorRole?: 'configurable' | 'reference';
+    /** PROD-2732 — replaces `role` + `configuratorRole`. Absent on an un-backfilled document. */
+    appearsIn?: AppearsIn;
     status?: string;
+    /** Reverse of Sanity `achieves` — candidates, not a recipe (ADR-017). */
+    achievedBy?: AchievedByOption[];
 };
 
 /**
@@ -61,6 +114,20 @@ export type ProductStyleRef = {
     imageAlt?: string;
     /** The style's own FAQs. Empty → the style page uses its line's (see `resolveStyleFaqs`). */
     faqs?: ProductFaq[];
+    /**
+     * False when the style has no page (Coming soon, Not active, Active (Internal)) —
+     * never link to it. Absent means it has one.
+     */
+    hasPage?: false;
+};
+
+/**
+ * Library card style — slug + title only (PROD-2599). Full style copy stays on
+ * landing / PDP projections. Also used for membership arrays (PROD-2843).
+ */
+export type ProductLibraryStyleRef = {
+    slug: string;
+    title: string;
 };
 
 export type ProductDimensionRange = {
@@ -89,6 +156,8 @@ export type ProductProperty = {
 export type ProductFaq = {
     question: string;
     answerPlain: string;
+    /** Portable Text blocks when available; render these for bold/links. */
+    answer?: PortableTextBlock[];
 };
 
 export type TestimonialSource = 'google' | 'trustpilot';
@@ -130,21 +199,55 @@ export type Product = {
     slug: string;
     sku: string;
     kind: ProductKind;
+    /**
+     * PDP gallery slides: Media extras first, Featured image last when set
+     * (deduped by URL). Index 0 is the default main well.
+     */
     media: CatalogMedia[];
     /**
-     * Hover-play MP4 from Sanity `featuredVideo` (product-line hero marquee).
+     * Hover-play video URL from Sanity `featuredVideo` (product-line hero marquee).
      */
     featuredVideoUrl?: string | null;
+    /**
+     * Public GLB URL from Sanity `model3d.url`. Plain URL contract for preview
+     * modals — PakStudio may supply this later without the CMS field.
+     */
+    model3dUrl?: string | null;
+    /** Optional glTF animation clip name for Open/Close in the 3D viewer. */
+    model3dAnimationName?: string | null;
     description: string;
     productLine: ProductLineRef;
     productStyle: ProductStyleRef;
+    /**
+     * All listed styles in Sanity order (PROD-2843). Used for style-card image
+     * fallback on the line landing. Display / breadcrumb / FAQs use `productStyle`.
+     */
+    productStyles?: ProductLibraryStyleRef[];
     availableCustomizations: CustomizationOption[];
     /**
      * The rules this product's options were resolved with (PROD-2556), for the builder to
      * narrow on as the customer chooses. Absent when the dataset has no rules yet.
      */
     customizationRules?: CustomizationRulesSnapshot;
-    primarySolution?: string;
+    /** Inspiration PDP breadcrumb parent — the primary solution, `solutions[0]` (fixed). */
+    breadcrumbParent?: {title: string; slug: string};
+    /** First industry solution, else the primary — line-page grouping and Related Products. */
+    industry?: {title: string; slug: string};
+    /**
+     * All industry solutions tagged on the product (line Inspiration band).
+     * Absent on lean card projections that only return `industry`.
+     */
+    industries?: {title: string; slug: string}[];
+    /**
+     * First matching Solution Style under `breadcrumbParent` (PROD-2763).
+     * Absent when no style filter matches.
+     */
+    breadcrumbStyle?: {title: string; slug: string};
+    /**
+     * Which PDP crumbs link. The primary parent is fixed (2026-10-06), so an off or
+     * page-less one still shows as text instead of a 404 link. Absent = all link.
+     */
+    breadcrumbLinks?: {line: boolean; style: boolean; parent: boolean};
     moq?: number;
     /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
     dimensionInput?: string;
@@ -206,7 +309,7 @@ export type ProductLine = {
     imageUrl?: string | null;
     imageAlt?: string;
     /**
-     * Featured hero MP4 from Sanity `featuredVideo`. Used for bottomBar
+     * Featured hero video URL from Sanity `featuredVideo`. Used for bottomBar
      * marquee hover-play; stack shows a static featured image.
      */
     featuredVideoUrl?: string | null;
@@ -223,6 +326,13 @@ export type ProductLine = {
     frames?: ProductLineFrame[];
     expertise?: ProductLineExpertiseRef[];
     featuredStudies?: ProductLineCaseStudyRef[];
+    /** Pinned hero products (Categorization); prepended before auto line products. */
+    featuredProducts?: Product[];
+    /**
+     * Inspiration-kind products for this line (Inspiration section).
+     * Separate from `products` (standard-only hero / styles).
+     */
+    inspirationProducts?: Product[];
     relatedLines?: ProductLineRelatedRef[];
     faqs?: ProductFaq[];
     /**
@@ -261,9 +371,23 @@ export type CustomizationLibraryItem = {
     /** Sanity customizationCategory.slug */
     categoryValue: string;
     categoryLabel?: string;
+    /**
+     * Rest thumb = Featured image else first Media (ADR-023 card rules).
+     * Prefer `featuredImageUrl` / `mediaImages` for hover logic.
+     */
     imageUrl?: string | null;
     imageAlt?: string | null;
-    /** Full media list for card gallery (hero = images[0] / imageUrl). */
+    /** Featured image URL when set (role-named still). */
+    featuredImageUrl?: string | null;
+    featuredImageAlt?: string | null;
+    /** Sanity `media` frames only — not Featured (hover may use [1]). */
+    mediaImages?: {src: string; alt?: string}[];
+    /** Playable Featured video URL; YouTube yields null. */
+    featuredVideoUrl?: string | null;
+    /**
+     * @deprecated Prefer featuredImageUrl + mediaImages for card hover.
+     * Kept as rest-thumb alias for quick view / older callers.
+     */
     images?: {src: string; alt?: string}[];
     // One-way from products that list this option in availableCustomizations.
     productLines: ProductLineRef[];
@@ -306,15 +430,6 @@ export const PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID = 'product-type';
  */
 export const PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID = 'product-style';
 
-/**
- * Library card style — slug + title only (PROD-2599). Full style copy stays on
- * landing / PDP projections.
- */
-export type ProductLibraryStyleRef = {
-    slug: string;
-    title: string;
-};
-
 /** Enriched product card for the faceted `/products` library (PROD-1845). */
 export type ProductLibraryItem = {
     _id: string;
@@ -324,7 +439,13 @@ export type ProductLibraryItem = {
     /** Sanity `product.kind` — drives the Product type facet. */
     kind: ProductKind;
     productLine: ProductLineRef;
+    /** Primary style — card display (productStyle[0]). */
     productStyle: ProductLibraryStyleRef;
+    /**
+     * All listed styles in Sanity order — catalog facet / style-page membership
+     * (PROD-2843). Includes the primary when it passes LINE_STYLE_LISTED.
+     */
+    productStyles: ProductLibraryStyleRef[];
     imageUrl?: string | null;
     imageAlt?: string | null;
     images?: {src: string; alt?: string}[];
@@ -335,6 +456,16 @@ export type ProductLibraryItem = {
     /** property.slug → propertyValue.slug[] */
     attrs: Record<string, string[]>;
 };
+
+/**
+ * Styles used for catalog membership (PROD-2843). Falls back to the primary
+ * when `productStyles` is missing (stale cache) or empty.
+ */
+export function membershipStyles(
+    item: Pick<ProductLibraryItem, 'productStyle' | 'productStyles'>,
+): ProductLibraryStyleRef[] {
+    return item.productStyles?.length ? item.productStyles : [item.productStyle];
+}
 
 /** Line meta for the catalog entry card (first spot when one line is filtered). */
 export type ProductLibraryLineMeta = {
@@ -380,10 +511,27 @@ export type CustomizationPropertyValue = {
 
 export type CustomizationDeclaredProperty = {
     usage: 'stated' | 'selectable';
+    /**
+     * Stated rows only (Studio showOnDetailPage, PROD-2610). `false` = a hidden fact: it still
+     * filters listings, but Specs & performance and the compare matrix do not print it. Absent =
+     * shown, as Studio defaults it.
+     */
+    showOnDetailPage?: false;
     propertyId?: string;
     propertySlug?: string;
     propertyTitle?: string;
     valuesPerItem?: 'one' | 'many';
+};
+
+/** “See it in use” tile — solution (large), case study (small), or option media fallback. */
+export type CustomizationShowcaseTile = {
+    kind: 'solution' | 'caseStudy' | 'media';
+    src: string;
+    alt: string;
+    title: string;
+    description?: string;
+    href?: string;
+    linkLabel?: string;
 };
 
 /** Full customization option detail (PROD-1299). */
@@ -397,9 +545,42 @@ export type CustomizationDetail = {
     categoryLabel: string;
     typeTitle?: string;
     typeSlug?: string;
-    /** Short copy for the identity column / meta. */
+    /**
+     * Plain text from linked glossary definition (PROD-2779).
+     * On-page hero prefers `glossaryDefinition` PT; this is for SEO fallbacks.
+     * Empty when no glossary term is linked — do not fill from shortDescription.
+     */
     description?: string;
+    /**
+     * Linked glossaryTerm.definition portable text for the CDP hero (PROD-2779).
+     * When absent, hero description stays empty so missing content is obvious.
+     */
+    glossaryDefinition?: PortableTextBlock[];
+    /** SEO meta description only — use in generateMetadata, never on-page body. */
+    metaDescription?: string;
+    /** Studio `benefits.title` — Overview heading. */
+    benefitsTitle?: string;
+    /** Studio `benefits.body` portable text — Overview body. */
+    benefitsBody?: PortableTextBlock[];
+    /**
+     * Gallery slides: Featured image first (when set), then Media extras (ADR-023).
+     * Index 0 is the poster for Featured video hover.
+     */
     media: CatalogMedia[];
+    /** Playable MP4/MOV from Studio Featured video; YouTube yields null. */
+    featuredVideoUrl?: string | null;
+    /** Optional Specs PDF — when set, config rail shows Download spec sheet. */
+    specSheetUrl?: string | null;
+    /**
+     * Large “See it in use” tiles — solutions via products (else option media fallback).
+     * Cap 3. Empty + empty case studies → hide showcase section.
+     */
+    showcaseSolutions: CustomizationShowcaseTile[];
+    /**
+     * Small “See it in use” tiles — case studies that tag this option.
+     * Cap 5 so promotions can fill large slots; bento uses at most 2 as small.
+     */
+    showcaseCaseStudies: CustomizationShowcaseTile[];
     properties: CustomizationPropertyValue[];
     declaredProperties: CustomizationDeclaredProperty[];
     productLines: ProductLineRef[];

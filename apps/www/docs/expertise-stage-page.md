@@ -112,11 +112,15 @@ Presentation follows the data, not a layout field:
 
 ## Content
 
-Stage content is seeded by a human-run script per stage: [`seed-expertise-strategy.mjs`](../../studio/scripts/seed-expertise-strategy.mjs) and [`seed-expertise-design.mjs`](../../studio/scripts/seed-expertise-design.mjs) (`pnpm --filter @pakfactory/studio run seed:expertise-<stage> -- --dataset development [--confirm]`). Both run through the shared runner [`lib/expertise-stage-seed.mjs`](../../studio/scripts/lib/expertise-stage-seed.mjs); a new stage adds only a content file. For Design, editors also curate the work gallery cards and add service images. Editors still add these in Studio:
-- the engagement photo (`mediaFeature` renders nothing without media)
-- the stage diagram
-- the OG image
-- the logo wall
+Stage content is seeded by a human-run script per stage: [`seed-expertise-strategy.mjs`](../../studio/scripts/seed-expertise-strategy.mjs) and [`seed-expertise-design.mjs`](../../studio/scripts/seed-expertise-design.mjs) (`pnpm --filter @pakfactory/studio run seed:expertise-<stage> -- --dataset development [--confirm]`). Both run through the shared runner [`lib/expertise-stage-seed.mjs`](../../studio/scripts/lib/expertise-stage-seed.mjs); a new stage adds only a content file. The Design seed adds up to 6 uploaded Solution Styles (with images, never `[Test]` or the old seeded ids) to the gallery as its products row; none are added while the dataset has none. Editors still add these in Studio:
+- the engagement photo on the template's `mediaFeature` (field `media`; the band renders nothing without it)
+- the stage **Hero image** (optional 21:9 band; Design has none) and **OG image**
+- the hero link (**Hero link label** + **Hero link target**; seeded for Strategy and Design)
+- **service images** on each Expertise Service (Expertise → Services → Image); the Design "What our designers do" cards show them
+- the products-row cards on the Design template's gallery, if curated by hand: typed cards need a link that is **not** `/case-studies/…` or they land in the case-study row
+- the **Expertise Page** hub (Main Website → Expertise Pages) with the stage order; the lifecycle path follows it
+
+Status 2026-09-29: Strategy content complete on `development` (PROD-2577). Design waits on images from PROD-2406 / PROD-2407 (PROD-2578); its products row currently uses `[test]` solution styles.
 
 ## Files
 

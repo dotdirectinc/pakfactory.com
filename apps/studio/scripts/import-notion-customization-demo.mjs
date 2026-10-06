@@ -479,16 +479,20 @@ async function main() {
     if (existing) {
       // Patch, never replace — see the header. Only fields Notion has an opinion
       // about, and `properties` is unioned so a richer existing list never shrinks.
-      // D55 (PROD-2482) split `role`. Both keys are written while `role` is
-      // deprecated-but-deployed, so a re-run of this import cannot quietly revert
-      // an Option to the pre-split shape. `hasPage` comes from Notion's own
-      // `Detail Page` column — the value D54 said had nowhere to go.
+      // PROD-2732 merged `configuratorRole` + `hasPage` into `appearsIn`. Every
+      // Notion row is a thing a customer picks, so the only question Notion
+      // answers is its `Detail Page` column — the value D54 said had nowhere to
+      // go, and which D55 then gave a field.
+      //
+      // 🔴 THIS IMPORT MUST WRITE `appearsIn`. It is required in the schema and
+      // has no `initialValue` over the API, so an import that omits it leaves the
+      // field undefined — and an undefined `appearsIn` is excluded from the
+      // library, its own page and the configurator. A re-import written against
+      // the old two fields would silently empty the customization library.
       const set = {
         title: row.title,
         type: ref(typeId),
-        role: 'configurable',
-        configuratorRole: 'configurable',
-        hasPage: Boolean(row.detailPage),
+        appearsIn: row.detailPage ? 'configurable-with-page' : 'configurable-no-page',
         status: 'active',
       }
       if (benefits) set.benefits = benefits
@@ -515,9 +519,9 @@ async function main() {
         slug: { _type: 'slug', current: slug },
         type: ref(typeId),
         status: 'active',
-        role: 'configurable', // deprecated by D55, still written while deployed
-        configuratorRole: 'configurable',
-        hasPage: Boolean(row.detailPage), // Notion `Detail Page`, per D55
+        // PROD-2732. Notion rows are always customer-pickable; `Detail Page`
+        // decides which of the two Configurable values applies.
+        appearsIn: row.detailPage ? 'configurable-with-page' : 'configurable-no-page',
         ...(benefits ? { benefits } : {}),
         ...(propertiesField.length ? { properties: propertiesField } : {}),
         ...(row.metaDescription ? { metaDescription: row.metaDescription } : {}),

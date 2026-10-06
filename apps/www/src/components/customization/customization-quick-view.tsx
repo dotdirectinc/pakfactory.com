@@ -99,12 +99,14 @@ export function CustomizationQuickView({
                                 </div>
 
                                 <div className="mt-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2 pt-4 sm:flex-nowrap">
-                                    <Link
-                                        href={item.href}
-                                        className="text-sm font-medium text-foreground underline underline-offset-4 hover:text-foreground/80"
-                                    >
-                                        Learn more
-                                    </Link>
+                                    {item.href ? (
+                                        <Link
+                                            href={item.href}
+                                            className="text-sm font-medium text-foreground underline underline-offset-4 hover:text-foreground/80"
+                                        >
+                                            Learn more
+                                        </Link>
+                                    ) : null}
                                     <Button
                                         type="button"
                                         className="h-10 cursor-pointer rounded-xl px-5 text-sm font-medium"

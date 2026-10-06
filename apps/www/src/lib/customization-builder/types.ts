@@ -46,6 +46,9 @@ export type PropertySelectionSummaryItem = {
     imageUrl?: string;
 };
 
+/** Print Outside / Print Inside gate on the Printing step (Yes / No). */
+export type PrintSideValue = '' | 'yes' | 'no';
+
 export type CustomizationBuilderState = {
     answers: Partial<Record<string, StepAnswer>>;
     /** True after the guided walk finishes (or when reopening a configured line). */
@@ -65,6 +68,10 @@ export type CustomizationBuilderState = {
     propertySelectionSummaries?: Partial<
         Record<string, PropertySelectionSummaryItem[]>
     >;
+    /** Printing-step gate: artwork on the outside face. */
+    printOutside?: PrintSideValue;
+    /** Printing-step gate: artwork on the inside face. */
+    printInside?: PrintSideValue;
 };
 
 export type BuilderChoice = {
@@ -98,6 +105,17 @@ export type BuilderOption = {
     imageUrl: string | null;
     status: 'active';
     preselected?: boolean;
+    /** Reverse of Sanity `achieves` — candidates that can deliver this option. */
+    achievedBy?: {
+        id: string;
+        title: string;
+        slug?: string;
+        typeTitle?: string;
+        categorySlug?: string;
+        description?: string;
+        imageUrl?: string | null;
+        hasPage?: boolean;
+    }[];
 };
 
 export type BuilderStep = {
@@ -114,6 +132,9 @@ export type BuilderMode = 'guided' | 'workspace';
 
 /** Dimensions always leads; selection steps follow category order from the product. */
 export const DIMENSIONS_STEP_KEY: BuilderStepKey = 'dimensions';
+
+/** Sanity `customizationCategory.slug` for the Printing step (gate + method/color). */
+export const PRINTING_CATEGORY_SLUG = 'printing';
 
 /** Default rectangular L×W×H until product axes are applied. */
 export const EMPTY_FACE: FaceMeasurements = {
@@ -143,6 +164,8 @@ export const EMPTY_BUILDER_STATE: CustomizationBuilderState = {
     entryNotes: {},
     propertySelections: {},
     propertySelectionSummaries: {},
+    printOutside: '',
+    printInside: '',
 };
 
 export type CatalogOptionLike = Pick<
@@ -152,6 +175,8 @@ export type CatalogOptionLike = Pick<
     | 'category'
     | 'categoryTitle'
     | 'categoryDescription'
+    | 'categoryTypeOrder'
+    | 'typeOptionOrder'
     | 'typeId'
     | 'typeSlug'
     | 'typeTitle'
@@ -163,6 +188,6 @@ export type CatalogOptionLike = Pick<
     | 'description'
     | 'imageUrl'
     | 'preselected'
-    | 'configuratorRole'
-    | 'role'
+    | 'appearsIn'
+    | 'achievedBy'
 >;

@@ -12,7 +12,7 @@ import {
 } from '@/components/request/request-wizard-scroll';
 import type {WizardRailRowData} from '@/components/request/wizard-rail-row';
 import {ACCOUNT_COPY} from '@/lib/copy/account';
-import {REQUEST_COPY, SERVICE_OPTIONS} from '@/lib/copy/request';
+import {LEGACY_SERVICE_LABELS, REQUEST_COPY} from '@/lib/copy/request';
 import type {
     BuyerRequestDetail,
     BuyerRequestShipTo,
@@ -63,8 +63,9 @@ function ShipToField({
     );
 }
 
+/** Legacy coarse ids or post-Studio stage slugs stored on the request. */
 function serviceLabel(id: string): string {
-    return SERVICE_OPTIONS.find((option) => option.id === id)?.label ?? id;
+    return LEGACY_SERVICE_LABELS[id] ?? id;
 }
 
 /**

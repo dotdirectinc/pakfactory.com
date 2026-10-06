@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import {
-  BLOG_GLOBAL_SETTINGS_QUERY,
-  type CaseStudyDetail,
-} from "@pakfactory/sanity/queries";
-import { getPublishedSanityClient } from "@/lib/sanity/client";
-import { isSanityConfigured } from "@/lib/sanity/env";
+import type { CaseStudyDetail } from "@pakfactory/sanity/queries";
+import { fetchWwwGlobalSettings } from "@/lib/www-global-settings";
 
 /** Recommended Open Graph image size (Studio Social fields target 1200×630). */
 export const OG_IMAGE_WIDTH = 1200;
@@ -51,17 +47,13 @@ export function resolveCaseStudiesListingOgImageUrl(
   return firstOgImageUrl(pageOgImageUrl, defaultOgImageUrl);
 }
 
-/** Global Settings `defaultOgImage` for www OG fallbacks. */
+/**
+ * Global Settings `defaultOgImage` for www OG fallbacks. Reads the cached
+ * Global Settings entry the root layout already loads (PROD-2755).
+ */
 export async function fetchDefaultOgImageUrl(): Promise<string | null> {
-  if (!isSanityConfigured()) return null;
-  try {
-    const settings = await getPublishedSanityClient().fetch<{
-      defaultOgImageUrl?: string | null;
-    } | null>(BLOG_GLOBAL_SETTINGS_QUERY);
-    return settings?.defaultOgImageUrl?.trim() || null;
-  } catch {
-    return null;
-  }
+  const settings = await fetchWwwGlobalSettings();
+  return settings?.defaultOgImageUrl?.trim() || null;
 }
 
 /** Shared Open Graph + Twitter shape for case-study templates. */

@@ -1,7 +1,6 @@
 import 'server-only';
 
 import {cache} from 'react';
-import {unstable_cache} from 'next/cache';
 import {
     CATALOG_PRODUCT_LIBRARY_FIELDS,
     SOLUTION_BY_SLUG_QUERY,
@@ -31,6 +30,7 @@ import {
 } from '@pakfactory/sanity/solution-style-filter';
 import {buildProductLibraryResult} from '@/lib/catalog/build-product-library';
 import {getSolutionStylePage} from '@/lib/catalog/catalog';
+import {mergeFeaturedThenFill} from '@/lib/catalog/merge-featured-then-fill';
 import {
     mapSanityProduct,
     mapSanityProductLibraryItem,
@@ -76,6 +76,8 @@ import {
     WWW_SOLUTIONS_CACHE_TAG,
     wwwSolutionTag,
 } from '@/lib/www-cache';
+import {sanityCache, sanityReadFailed} from '@/lib/sanity/sanity-cache';
+import {isSolutionActive} from '@pakfactory/sanity/catalog-visibility';
 
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
@@ -94,13 +96,7 @@ async function fetchTaggedProducts(
             .filter((item): item is Product => item != null)
             .filter(isCompleteProduct);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity tagged products failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity tagged products failed:', err);
     }
 }
 
@@ -121,13 +117,7 @@ async function fetchHeroTaggedProducts(
             .filter((item): item is Product => item != null)
             .filter(isCompleteProduct);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity hero tagged products failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity hero tagged products failed:', err);
     }
 }
 
@@ -145,7 +135,7 @@ async function fetchSolutionBySlug(
         const doc = await (await draftAwareClient()).fetch<
             SolutionBySlugDoc | null
         >(SOLUTION_BY_SLUG_QUERY, {slug});
-        if (!doc || doc.hasPage !== true) return null;
+        if (!doc || !isSolutionActive(doc.status)) return null;
         const mapped = mapSanitySolution(doc);
         if (!mapped) return null;
 
@@ -189,7 +179,17 @@ async function fetchSolutionBySlug(
             curated.length > 0
                 ? curated
                 : await fetchTaggedProducts(slug);
-        const heroProducts = await fetchHeroTaggedProducts(slug);
+        const featuredHero = (doc.featuredProducts ?? [])
+            .map(mapSanityProduct)
+            .filter((item): item is Product => item != null)
+            .filter(isCompleteProduct);
+        const autoHero = await fetchHeroTaggedProducts(slug);
+        const heroProducts = mergeFeaturedThenFill(
+            featuredHero,
+            autoHero,
+            (product) => product.slug,
+            16,
+        );
 
         return {
             page: {...mapped, relatedProducts: tagged},
@@ -197,10 +197,7 @@ async function fetchSolutionBySlug(
             heroProducts,
         };
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[solutions] Sanity solution by slug failed:', err);
-        }
-        return null;
+        throw sanityReadFailed('[solutions] Sanity solution by slug failed:', err);
     }
 }
 
@@ -217,13 +214,7 @@ async function fetchSolutionLineProducts(
             .map(mapSanityProduct)
             .filter((item): item is Product => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity solution line products failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity solution line products failed:', err);
     }
 }
 
@@ -236,10 +227,7 @@ async function fetchSolutionPageSlugs(): Promise<SolutionPageSlugDoc[]> {
             )) ?? []
         );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[solutions] Sanity page slugs failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity page slugs failed:', err);
     }
 }
 
@@ -253,10 +241,7 @@ async function fetchSolutionsWithPages(): Promise<SolutionCard[]> {
             .map(mapSanitySolutionCard)
             .filter((item): item is SolutionCard => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[solutions] Sanity solutions with pages failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity solutions with pages failed:', err);
     }
 }
 
@@ -273,7 +258,7 @@ async function getSolutionBySlugResult(
     const key = normalizeSlug(slug);
     return readThrough(
         () => fetchSolutionBySlug(key),
-        unstable_cache(
+        sanityCache(
             () => fetchSolutionBySlug(key),
             [wwwSolutionTag(key), 'v9-hero-featured-image'],
             {
@@ -287,7 +272,7 @@ async function getSolutionBySlugResult(
 /**
  * Industry Solution LP payload for `/solutions/[slug]`.
  * Hero from Sanity page fields; body from merged template × content sections.
- * Requires a hasPage solution in Sanity (no local fixture fallback).
+ * Requires an Active solution in Sanity (no local fixture fallback).
  * `cache()` dedupes metadata + page within one request.
  */
 export const getSolutionLandingContent = cache(
@@ -322,7 +307,7 @@ export async function getSolutionLineCatalog(
 
     const products = await readThrough(
         () => fetchSolutionLineProducts(solutionKey, lineKey),
-        unstable_cache(
+        sanityCache(
             () => fetchSolutionLineProducts(solutionKey, lineKey),
             [`${wwwSolutionTag(solutionKey)}:line:${lineKey}`],
             {
@@ -357,13 +342,7 @@ async function fetchSolutionStylesForSolution(
             .map(mapSanitySolutionStyleCard)
             .filter((item): item is SolutionStyleCard => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity styles for solution failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity styles for solution failed:', err);
     }
 }
 
@@ -380,13 +359,7 @@ async function fetchSolutionStylePageParams(): Promise<
             )) ?? []
         );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity style page params failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity style page params failed:', err);
     }
 }
 
@@ -431,13 +404,7 @@ async function fetchStyleProductLibrary(
             valueTitles,
         });
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity style product library failed:',
-                err,
-            );
-        }
-        return emptyProductLibrary();
+        throw sanityReadFailed('[solutions] Sanity style product library failed:', err);
     }
 }
 
@@ -450,7 +417,7 @@ async function fetchSolutionStyleCatalog(
         const doc = await (await draftAwareClient()).fetch<
             SolutionStyleBySlugsDoc | null
         >(SOLUTION_STYLE_BY_SLUGS_QUERY, {solutionSlug, styleSlug});
-        if (!doc?.solution?._id || doc.solution.hasPage !== true) return null;
+        if (!doc?.solution?._id || !isSolutionActive(doc.solution.status)) return null;
 
         const style = mapSanitySolutionStylePage(doc);
         const parentSlug = doc.solution.slug?.trim();
@@ -479,13 +446,7 @@ async function fetchSolutionStyleCatalog(
             ...(pageSections.length > 0 ? {pageSections} : {}),
         };
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity style catalog failed:',
-                err,
-            );
-        }
-        return null;
+        throw sanityReadFailed('[solutions] Sanity style catalog failed:', err);
     }
 }
 
@@ -498,7 +459,7 @@ export async function getSolutionStyleCatalog(
 
     return readThrough(
         () => fetchSolutionStyleCatalog(solutionKey, styleKey),
-        unstable_cache(
+        sanityCache(
             () => fetchSolutionStyleCatalog(solutionKey, styleKey),
             [`${wwwSolutionTag(solutionKey)}:style:${styleKey}`],
             {
@@ -515,7 +476,7 @@ export async function listSolutionStylesForSolution(
     const key = normalizeSlug(solutionSlug);
     return readThrough(
         () => fetchSolutionStylesForSolution(key),
-        unstable_cache(
+        sanityCache(
             () => fetchSolutionStylesForSolution(key),
             [`${wwwSolutionTag(key)}:styles`],
             {
@@ -529,7 +490,7 @@ export async function listSolutionStylesForSolution(
 export async function listSolutionsWithPages(): Promise<SolutionCard[]> {
     return readThrough(
         fetchSolutionsWithPages,
-        unstable_cache(
+        sanityCache(
             fetchSolutionsWithPages,
             [WWW_SOLUTIONS_CACHE_TAG, 'with-pages'],
             {
@@ -545,7 +506,7 @@ export async function listSolutionPageSlugs(): Promise<
 > {
     const docs = await readThrough(
         fetchSolutionPageSlugs,
-        unstable_cache(
+        sanityCache(
             fetchSolutionPageSlugs,
             [WWW_SOLUTIONS_CACHE_TAG, 'page-slugs'],
             {
@@ -574,7 +535,7 @@ export async function listSolutionStylePageParams(): Promise<
 > {
     const docs = await readThrough(
         fetchSolutionStylePageParams,
-        unstable_cache(
+        sanityCache(
             fetchSolutionStylePageParams,
             [WWW_SOLUTIONS_CACHE_TAG, 'style-page-params'],
             {

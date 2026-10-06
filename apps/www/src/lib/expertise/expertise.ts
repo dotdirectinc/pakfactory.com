@@ -1,6 +1,5 @@
 import 'server-only';
 
-import {unstable_cache} from 'next/cache';
 import {
     EXPERTISE_PAGE_FEATURED_QUERY,
     EXPERTISE_STAGE_BY_SLUG_QUERY,
@@ -27,6 +26,7 @@ import {
     WWW_EXPERTISE_CACHE_TAG,
     wwwExpertiseTag,
 } from '@/lib/www-cache';
+import {sanityCache, sanityReadFailed} from '@/lib/sanity/sanity-cache';
 
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
@@ -52,10 +52,7 @@ async function fetchExpertiseStageCards(): Promise<ExpertiseStageCard[]> {
             .map(mapSanityExpertiseStageCard)
             .filter((item): item is ExpertiseStageCard => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[expertise] Sanity stage cards failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[expertise] Sanity stage cards failed:', err);
     }
 }
 
@@ -69,10 +66,7 @@ async function fetchExpertiseStageSlugs(): Promise<ExpertiseStageSlugDoc[]> {
             []
         );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[expertise] Sanity stage slugs failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[expertise] Sanity stage slugs failed:', err);
     }
 }
 
@@ -89,17 +83,14 @@ async function fetchExpertiseStageBySlug(
         if (!doc) return null;
         return mapSanityExpertiseStage(doc);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[expertise] Sanity stage by slug failed:', err);
-        }
-        return null;
+        throw sanityReadFailed('[expertise] Sanity stage by slug failed:', err);
     }
 }
 
 export async function listExpertiseStageCards(): Promise<ExpertiseStageCard[]> {
     return readThrough(
         () => fetchExpertiseStageCards(),
-        unstable_cache(() => fetchExpertiseStageCards(), ['www-expertise-cards'], {
+        sanityCache(() => fetchExpertiseStageCards(), ['www-expertise-cards'], {
             revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
             tags: [WWW_EXPERTISE_CACHE_TAG],
         }),
@@ -111,7 +102,7 @@ export async function listExpertiseStageSlugs(): Promise<
 > {
     return readThrough(
         () => fetchExpertiseStageSlugs(),
-        unstable_cache(
+        sanityCache(
             () => fetchExpertiseStageSlugs(),
             ['www-expertise-slugs'],
             {
@@ -128,7 +119,7 @@ export async function getExpertiseStage(
     const key = normalizeSlug(slug);
     return readThrough(
         () => fetchExpertiseStageBySlug(key),
-        unstable_cache(
+        sanityCache(
             () => fetchExpertiseStageBySlug(key),
             [wwwExpertiseTag(key)],
             {
