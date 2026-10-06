@@ -304,7 +304,6 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   moq,
   dimensionInput,
   dimensionRange,
-  "primarySolution": primarySolution->slug.current,
   "breadcrumbParent": coalesce(
     solutions[@->solutionType == "industry"][0]->{
       title,
@@ -1226,7 +1225,6 @@ export type CatalogProductDoc = {
     depthMin?: number | null;
     depthMax?: number | null;
   } | null;
-  primarySolution?: string | null;
   /**
    * First industry solution (fallback: solutions[0]) for inspiration PDP crumbs.
    */

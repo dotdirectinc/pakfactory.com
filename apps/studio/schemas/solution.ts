@@ -290,7 +290,7 @@ export const solution = defineType({
               const solutionId = document._id.replace(/^drafts\./, '')
               return {
                 filter:
-                  '!(_id in $chosen) && (primarySolution._ref == $solution || $solution in solutions[]._ref)',
+                  '!(_id in $chosen) && $solution in solutions[]._ref',
                 params: {chosen, solution: solutionId},
               }
             },

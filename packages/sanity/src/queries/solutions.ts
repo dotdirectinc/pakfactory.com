@@ -195,10 +195,7 @@ export const SOLUTION_LINE_PRODUCTS_QUERY = /* groq */ `*[
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
-  (
-    primarySolution->slug.current == $solutionSlug ||
-    $solutionSlug in solutions[]->slug.current
-  ) &&
+  $solutionSlug in solutions[]->slug.current &&
   coalesce(productLine, basedOn->productLine)->slug.current == $lineSlug
 ] | order(title asc) {
   ${CATALOG_PRODUCT_CARD_FIELDS}
@@ -214,10 +211,7 @@ export const SOLUTION_TAGGED_PRODUCTS_QUERY = /* groq */ `*[
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
-  (
-    primarySolution->slug.current == $solutionSlug ||
-    $solutionSlug in solutions[]->slug.current
-  )
+  $solutionSlug in solutions[]->slug.current
 ] | order(title asc) [0...12] {
   ${CATALOG_PRODUCT_CARD_FIELDS}
 }`;
@@ -233,10 +227,7 @@ export const SOLUTION_HERO_PRODUCTS_QUERY = /* groq */ `*[
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
-  (
-    primarySolution->slug.current == $solutionSlug ||
-    $solutionSlug in solutions[]->slug.current
-  )
+  $solutionSlug in solutions[]->slug.current
 ] | order(title asc) [0...16] ${SOLUTION_HERO_PRODUCT_PROJ}`;
 
 /** Slugs + formats for solutions that earn a landing page (static params). */
