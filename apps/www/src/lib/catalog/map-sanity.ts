@@ -588,6 +588,15 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         productLine,
         productStyle,
         availableCustomizations,
+        ...(doc.breadcrumbLinks
+            ? {
+                  breadcrumbLinks: {
+                      line: doc.breadcrumbLinks.line !== false,
+                      style: doc.breadcrumbLinks.style !== false,
+                      parent: doc.breadcrumbLinks.parent !== false,
+                  },
+              }
+            : {}),
         ...(doc.breadcrumbParent?.title?.trim() &&
         doc.breadcrumbParent?.slug?.trim()
             ? {

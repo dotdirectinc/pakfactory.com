@@ -152,7 +152,7 @@ export const solution = defineType({
       // serve an industry is a worse message than silence — the same argument that
       // took coming-soon and discontinued off Customization Option in PROD-2733.
       initialValue: 'not-active',
-      validation: (Rule) =>
+      validation: (Rule) => [
         Rule.custom(
           restrictingChildrenWarning({
             query: `*[
@@ -162,9 +162,44 @@ export const solution = defineType({
             ]{ title }`,
             describe: (names) =>
               `This also hides every Solution Style beneath it, including ${names}. ` +
-              `Products tagged to this solution keep their own pages — they only lose this chip.`,
+              `Products with another active solution keep their pages — they only lose this chip.`,
           }),
         ).warning(),
+        // The primary solution is fixed — no fallback to the next one (Richard + Eric,
+        // 2026-10-06). Everything except Active switches a solution off.
+        Rule.custom(
+          restrictingChildrenWarning({
+            when: (value) => value !== 'active',
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              solutions[0]._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon"])
+            ]{ title }`,
+            describe: (names) =>
+              `This is the primary solution of ${names}. They keep it as their primary: their ` +
+              `breadcrumb shows it without a link, and they inherit no FAQs until it is active ` +
+              `again. Reorder their solutions first if another should lead.`,
+          }),
+        ).warning(),
+        // Rule 1: an inspiration product whose every solution is off is hidden.
+        Rule.custom(
+          restrictingChildrenWarning({
+            when: (value) => value !== 'active',
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              $id in solutions[]._ref &&
+              (!defined(status) || status in ["active", "coming-soon"]) &&
+              count(solutions[_ref != $id && @->status == "active"]) == 0
+            ]{ title }`,
+            describe: (names) =>
+              `${names} ${names.includes(' and ') || names.includes(',') ? 'have' : 'has'} no other ` +
+              `active solution, so ${names.includes(' and ') || names.includes(',') ? 'they' : 'it'} ` +
+              `will be hidden from the site.`,
+          }),
+        ).warning(),
+      ],
     }),
     // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
     // and the existing `blogCategory` pair. (`page.subheadline` is a different
@@ -353,7 +388,7 @@ export const solution = defineType({
         'Default FAQs for this solution’s landing page. Used when the FAQ ' +
         'section override is empty. Fill the section’s FAQs to override per band. ' +
         'Also shown on inspiration products that list this solution first and have ' +
-        'no FAQs of their own.',
+        'no FAQs of their own — only while this solution is Active.',
     }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────

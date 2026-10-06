@@ -1,4 +1,4 @@
-import { defineField, defineType } from 'sanity'
+import { defineField, defineType, type ValidationContext } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
 import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { DIMENSION_INPUTS, AXIS_LABEL, usesAxis, type DimensionAxis } from '@pakfactory/sanity/dimension-inputs'
@@ -47,6 +47,35 @@ const SOURCE_OWNED_NOTE =
 const kindOf = (doc: unknown): string | undefined => (doc as { kind?: string } | undefined)?.kind
 const isStandard = (doc: unknown) => kindOf(doc) === 'standard'
 const isInspiration = (doc: unknown) => kindOf(doc) === 'inspiration'
+
+/**
+ * Release check, warn only (R5): an Active or Coming-soon product whose PRIMARY parent
+ * is switched off. The primary is fixed — the site never falls back to the next one
+ * (Richard + Eric, 2026-10-06) — so until someone reorders, the breadcrumb shows it
+ * unlinked and the product inherits no FAQs. On release the primary should be Active.
+ */
+const primaryParentOffWarning =
+  (field: 'productStyle' | 'solutions', applies: (doc: unknown) => boolean) =>
+  async (value: unknown, context: ValidationContext): Promise<true | string> => {
+    const doc = context.document as { status?: string } | undefined
+    if (!applies(doc)) return true
+    if (doc?.status && !['active', 'coming-soon'].includes(doc.status)) return true
+    const first = Array.isArray(value) ? (value[0] as { _ref?: string } | undefined)?._ref : undefined
+    if (!first) return true
+    const status = await context
+      .getClient({ apiVersion: '2024-01-01' })
+      .fetch<string | null>(`*[_id == $id][0].status`, { id: first })
+    const on =
+      field === 'solutions'
+        ? status === 'active'
+        : !status || ['active', 'active-internal', 'discontinued'].includes(status)
+    if (on) return true
+    const noun = field === 'solutions' ? 'solution' : 'style'
+    return (
+      `The primary ${noun} (the first one) is not active, so this product's breadcrumb shows it ` +
+      `without a link and it inherits no FAQs. Drag an active ${noun} to the top, or reactivate it.`
+    )
+  }
 
 /**
  * Min/max number pair per measurement axis, each shown only when the product's
@@ -362,13 +391,15 @@ export const product = defineType({
           },
         },
       ],
-      validation: (Rule) =>
+      validation: (Rule) => [
         Rule.custom((val, context) => {
           const arr = val as unknown[] | undefined
           if (isStandard(context.document) && (!Array.isArray(arr) || arr.length === 0))
             return 'At least one product style is required for standard products.'
           return true
         }),
+        Rule.custom(primaryParentOffWarning('productStyle', isStandard)).warning(),
+      ],
     }),
     defineField({
       name: 'basedOn',
@@ -396,13 +427,15 @@ export const product = defineType({
       description:
         'Which solutions this product serves — industry, channel, focus or use case. The first entry is the primary and names the breadcrumb parent, so drag to change which one leads. Required for inspiration products.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
-      validation: (Rule) =>
+      validation: (Rule) => [
         Rule.unique().custom((val, context) => {
           const list = Array.isArray(val) ? val : []
           if (isInspiration(context.document) && list.length === 0)
             return 'At least one solution is required for inspiration presets — the first names the breadcrumb parent.'
           return true
         }),
+        Rule.custom(primaryParentOffWarning('solutions', isInspiration)).warning(),
+      ],
     }),
     defineField({
       name: 'relatedProducts',
@@ -418,7 +451,7 @@ export const product = defineType({
       max: 6,
       min: 3,
       description:
-        'Curated FAQs for this product — reference shared FAQ documents. Leave empty to inherit: a standard product shows its first style’s FAQs, else its line’s; an inspiration product shows its first solution’s. Anything here replaces the inherited list entirely — nothing merges.',
+        'Curated FAQs for this product — reference shared FAQ documents. Leave empty to inherit from the primary (first) parent while it is active: a standard product shows its first style’s FAQs, else its line’s; an inspiration product shows its first solution’s. If that primary is not active, nothing is inherited — no other parent stands in. Anything here replaces the inherited list entirely — nothing merges.',
     }),
 
     // ─── SPECS (source-owned facts — editable for now, decision b) ────────────

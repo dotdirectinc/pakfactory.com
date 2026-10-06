@@ -212,12 +212,47 @@ export const SOLUTION_ACTIVE = /* groq */ `status == "active"`;
  */
 export const CUSTOMIZATION_TAXONOMY_ACTIVE = /* groq */ `(!defined(status) || status == "active")`;
 
+/**
+ * A product's PARENTS — its styles (standard) or its solutions (inspiration) — and when
+ * one counts as switched off. Richard + Eric, 2026-10-06, refining the sheet's R2:
+ *
+ *   1. Every parent off → the product is HIDDEN (no page, no listing). One parent is
+ *      just the smallest case of "every". Extends R2's tail rule to standard products.
+ *   2. The primary (`productStyle[0]` / `solutions[0]`) is FIXED. No fallback to the
+ *      next parent — it also drives the registry's offer set, so substituting would
+ *      make the page disagree with pricing.
+ *   3. An off primary passes NO FAQs down (see PRODUCT_FAQS_INHERITED).
+ *
+ * "Off" is Coming soon or Not active. Discontinued keeps its page, so it stays on, and
+ * Active (Internal) passes through (R4). For a solution only Active is on — it has no
+ * Discontinued or Active (Internal), and unset means "never earned a page"
+ * (SOLUTION_ACTIVE). Whitelists, per R6. Written against `@` so they slot into a
+ * reference-array filter.
+ */
+export const PARENT_STYLE_ON = /* groq */ `(!defined(@->status) || @->status in ["active", "active-internal", "discontinued"])`;
+export const PARENT_SOLUTION_ON = /* groq */ `@->status == "active"`;
+
+/** The PRIMARY parent (fixed, `[0]`) is on — gates FAQ inheritance (rule 3). */
+const PRIMARY_STYLE_ON = /* groq */ `(!defined(productStyle[0]->status) || productStyle[0]->status in ["active", "active-internal", "discontinued"])`;
+const PRIMARY_SOLUTION_ON = /* groq */ `solutions[0]->status == "active"`;
+
+/** Rule 1: at least one parent is on. Inspiration products are anchored by solutions, standard by styles. */
+export const PRODUCT_HAS_PARENT_ON = /* groq */ `select(
+    kind == "inspiration" => count(solutions[${PARENT_SOLUTION_ON}]) > 0,
+    count(productStyle[${PARENT_STYLE_ON}]) > 0
+  )`;
+
+/** Product gates = own status AND rule 1. Use these, not the bare status gates, on products. */
+export const PRODUCT_LISTED = /* groq */ `(${LISTED_STATUS} && ${PRODUCT_HAS_PARENT_ON})`;
+export const PRODUCT_HAS_PAGE = /* groq */ `(${HAS_PAGE_STATUS} && ${PRODUCT_HAS_PARENT_ON})`;
+export const PRODUCT_ORDERABLE = /* groq */ `(${ORDERABLE_STATUS} && ${PRODUCT_HAS_PARENT_ON})`;
+
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
 /** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
 const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
   _type == "product" &&
-  ${ORDERABLE_STATUS} &&
+  ${PRODUCT_ORDERABLE} &&
   ^._id in availableCustomizations[].customization._ref &&
   // Never offer a line a customer cannot browse into. Tested on the product, not by filtering
   // \`.line\` afterwards: \`{…}.line[cond]\` applies the filter to each line object, not the list.
@@ -278,16 +313,21 @@ const FAQ_ITEM_PROJ = /* groq */ `{
 /**
  * A product's FAQs. The nearest source with ANY FAQ wins outright — nothing merges.
  *
- * - Inspiration: its own FAQs, else its FIRST solution's (`solutions[0]`, the one that names
- *   the breadcrumb parent). Nothing further — an inspiration never falls back to the catalog
- *   (Richard, 2026-10-05).
- * - Standard: inherited down the catalog — product → its style → its line (Richard,
- *   2026-09-28). The style is the product's first (`productStyle[0]`), the one its card
- *   shows; the line is the product's own, falling back to that style's line.
+ * - Own FAQs always win.
+ * - Inspiration: else its primary solution's (`solutions[0]`) — only while that solution
+ *   is Active. Nothing further (Richard, 2026-10-05).
+ * - Standard: else its primary style's (`productStyle[0]`), else its line's (2026-09-28)
+ *   — only while the primary style is on.
+ * - An OFF primary passes nothing down, and nothing takes its place: no second parent,
+ *   and for a standard product no line either (Richard + Eric, 2026-10-06 — rule 3 in
+ *   the PARENT_* note above). The FAQ section is empty until the primary is fixed.
  */
 const PRODUCT_FAQS_INHERITED = /* groq */ `"faqs": select(
     count(faqs) > 0 => faqs[]->${FAQ_ITEM_PROJ},
-    kind == "inspiration" => solutions[0]->faqs[]->${FAQ_ITEM_PROJ},
+    kind == "inspiration" => select(
+      ${PRIMARY_SOLUTION_ON} => solutions[0]->faqs[]->${FAQ_ITEM_PROJ}
+    ),
+    !${PRIMARY_STYLE_ON} => null,
     count(productStyle[0]->faqs) > 0 => productStyle[0]->faqs[]->${FAQ_ITEM_PROJ},
     coalesce(productLine, productStyle[0]->productLine)->faqs[]->${FAQ_ITEM_PROJ}
   )`;
@@ -322,6 +362,17 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   },
   "productLine": coalesce(productLine, basedOn->productLine)->${LINE_REF_PROJ},
   "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ},
+  // Which PDP breadcrumb crumbs have a page to link to. The primary is fixed (no
+  // fallback), so an off primary still shows — as plain text, never a 404 link.
+  // Line/style: R4 keeps an Active (Internal) parent as a breadcrumb LABEL only.
+  "breadcrumbLinks": {
+    "line": coalesce(coalesce(productLine, basedOn->productLine)->{"ok": ${LINE_STYLE_HAS_PAGE}}.ok, false),
+    "style": coalesce(coalesce(productStyle[0], basedOn->productStyle[0])->{"ok": ${LINE_STYLE_HAS_PAGE}}.ok, false),
+    "parent": coalesce(coalesce(
+      solutions[@->solutionType == "industry"][0],
+      solutions[0]
+    )->{"ok": ${SOLUTION_ACTIVE}}.ok, false)
+  },
   "availableCustomizations": availableCustomizations[defined(customization)]{
     preselected,
     "customization": customization->${OPTION_PROJ}
@@ -465,7 +516,7 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
 export const CATALOG_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  ${LISTED_STATUS}
+  ${PRODUCT_LISTED}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_CARD_FIELDS}
 }`;
@@ -523,7 +574,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
 export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  ${LISTED_STATUS}
+  ${PRODUCT_LISTED}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LIBRARY_FIELDS}
 }`;
@@ -531,7 +582,7 @@ export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   _type == "product" &&
   slug.current == $slug &&
-  ${HAS_PAGE_STATUS}
+  ${PRODUCT_HAS_PAGE}
 ][0]{
   ${CATALOG_PRODUCT_PDP_FIELDS}
 }`;
@@ -660,7 +711,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     productLine._ref == ^._id &&
     ${KIND_STANDARD} &&
     defined(slug.current) &&
-    ${LISTED_STATUS}
+    ${PRODUCT_LISTED}
   ] | order(title asc) {
     ${CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS}
   },
@@ -669,7 +720,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     coalesce(productLine, basedOn->productLine)._ref == ^._id &&
     ${KIND_INSPIRATION} &&
     defined(slug.current) &&
-    ${LISTED_STATUS}
+    ${PRODUCT_LISTED}
   ] | order(title asc) {
     ${CATALOG_PRODUCT_LINE_INSPIRATION_FIELDS}
   }
@@ -930,7 +981,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   },
   "showcaseFromSolutions": *[
     _type == "product" &&
-    (status == "active" || !defined(status)) &&
+    ${PRODUCT_ORDERABLE} &&
     ^._id in availableCustomizations[].customization._ref
   ].solutions[]->{
     _id,
@@ -1231,6 +1282,12 @@ export type CatalogProductDoc = {
   breadcrumbParent?: {
     title?: string | null;
     slug?: string | null;
+  } | null;
+  /** Which PDP crumbs have a page to link to (CATALOG_PRODUCT_FIELDS only). */
+  breadcrumbLinks?: {
+    line?: boolean | null;
+    style?: boolean | null;
+    parent?: boolean | null;
   } | null;
   /** PDP by-slug only — Solution Style breadcrumb membership (PROD-2763). */
   productLineId?: string | null;

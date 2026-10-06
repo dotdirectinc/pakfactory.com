@@ -16,6 +16,10 @@ import {
 // style condition (PROD-2605). Every test here parses the query — and runs it — with groq-js.
 
 const products = [
+  // The tagged solutions must exist and be Active: an inspiration product whose every
+  // solution is off is hidden (rule 1, 2026-10-06).
+  { _id: "sol", _type: "solution", title: "Bakery", status: "active" },
+  { _id: "other", _type: "solution", title: "Other", status: "active" },
   { _id: "p.box", _type: "product", kind: "inspiration", title: "Cookie Box", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
   { _id: "p.bag", _type: "product", kind: "inspiration", title: "Paper Bakery Bag", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.bag" }, productStyle: [{ _ref: "style.gusset" }, { _ref: "style.handle" }] },
   { _id: "p.other", _type: "product", kind: "inspiration", title: "Cookie Tin", solutions: [{ _ref: "other" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },

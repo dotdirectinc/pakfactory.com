@@ -10,6 +10,9 @@ import {
   isListedCatalogStatus,
   isOrderableStatus,
   isSolutionActive,
+  isSolutionParentOn,
+  isStyleParentOn,
+  productHasParentOn,
   isHasPageStatus,
   isLineStyleHasPage,
   lineStyleHasPage,
@@ -234,5 +237,36 @@ describe('catalogTargetNavState — the nav, and only the nav', () => {
       assert.equal(catalogTargetNavState(doc), 'unlinked');
       assert.equal(isCatalogTargetVisible(doc), false);
     }
+  });
+});
+
+describe('product parents (Richard + Eric, 2026-10-06)', () => {
+  it('a style is off only when Coming soon or Not active', () => {
+    for (const on of [undefined, null, 'active', 'active-internal', 'discontinued']) {
+      assert.equal(isStyleParentOn(on), true, String(on));
+    }
+    for (const off of ['coming-soon', 'not-active', 'some-future-value']) {
+      assert.equal(isStyleParentOn(off), false, off);
+    }
+  });
+
+  it('a solution is on only when Active', () => {
+    assert.equal(isSolutionParentOn('active'), true);
+    for (const off of [undefined, null, 'coming-soon', 'not-active']) {
+      assert.equal(isSolutionParentOn(off), false, String(off));
+    }
+  });
+
+  it('rule 1: hidden only when EVERY parent is off', () => {
+    assert.equal(productHasParentOn({kind: 'standard', styleStatuses: ['not-active']}), false);
+    assert.equal(productHasParentOn({kind: 'standard', styleStatuses: ['not-active', 'coming-soon']}), false);
+    assert.equal(productHasParentOn({kind: 'standard', styleStatuses: ['not-active', 'active-internal']}), true);
+    assert.equal(productHasParentOn({kind: 'inspiration', solutionStatuses: ['not-active']}), false);
+    assert.equal(productHasParentOn({kind: 'inspiration', solutionStatuses: ['not-active', 'active']}), true);
+    // An inspiration product is anchored by its solutions, never its (hidden) styles.
+    assert.equal(
+      productHasParentOn({kind: 'inspiration', styleStatuses: ['active'], solutionStatuses: ['not-active']}),
+      false,
+    );
   });
 });

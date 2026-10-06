@@ -94,6 +94,14 @@ export const RESTRICTING_STATUSES: readonly CatalogStatus[] = [
   CATALOG_STATUS.notActive,
 ]
 
+/**
+ * Does this status switch a product's PARENT off (Richard + Eric, 2026-10-06)? Coming
+ * soon and Not active only — mirrors `PARENT_STYLE_ON` / `PARENT_SOLUTION_ON` in
+ * packages/sanity. Discontinued keeps its page and still anchors the product.
+ */
+export const isParentOffStatus = (value: unknown): boolean =>
+  value === CATALOG_STATUS.comingSoon || value === CATALOG_STATUS.notActive
+
 /** Does this status restrict the documents beneath it? Unset reads as Active. */
 export const isRestrictingStatus = (value: unknown): boolean =>
   typeof value === 'string' && RESTRICTING_STATUSES.includes(value as CatalogStatus)
