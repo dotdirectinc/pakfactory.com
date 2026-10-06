@@ -146,7 +146,7 @@ export function ProductCustomizationsMansoryPreview({
                         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                             {gridItems.map((item, index) => (
                                 <li
-                                    key={item.href}
+                                    key={item.id}
                                     className={cn(
                                         'min-w-0',
                                         (index + 1) % 5 === 0 &&
@@ -154,7 +154,7 @@ export function ProductCustomizationsMansoryPreview({
                                     )}
                                 >
                                     <CatalogCard
-                                        href={item.href}
+                                        href={item.href ?? WWW_ROUTES.customizations}
                                         title={item.label}
                                         align="left"
                                         size="sm"

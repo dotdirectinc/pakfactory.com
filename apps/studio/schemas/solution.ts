@@ -351,7 +351,9 @@ export const solution = defineType({
       min: 3,
       description:
         'Default FAQs for this solution’s landing page. Used when the FAQ ' +
-        'section override is empty. Fill the section’s FAQs to override per band.',
+        'section override is empty. Fill the section’s FAQs to override per band. ' +
+        'Also shown on inspiration products that list this solution first and have ' +
+        'no FAQs of their own.',
     }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────

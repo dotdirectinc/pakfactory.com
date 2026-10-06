@@ -1,9 +1,11 @@
 import type {CustomizationOption} from '@/lib/catalog/types';
-import {customizationCategoryHref} from '@/lib/www-routes';
+import {customizationOptionHref} from '@/lib/catalog/customization-option-href';
 
 export type CustomizationPreviewItem = {
+    id: string;
     label: string;
-    href: string;
+    /** Detail page; absent when the option has none (PROD-2758) — render as a non-link. */
+    href?: string;
     category: string;
     categoryTitle?: string;
     typeTitle?: string;
@@ -25,9 +27,11 @@ export function mapCustomizationPreviewItems(
         const slug = option.slug?.trim();
         if (!slug || seen.has(option.id)) continue;
         seen.add(option.id);
+        const href = customizationOptionHref({...option, slug});
         items.push({
+            id: option.id,
             label: option.label,
-            href: customizationCategoryHref(option.category, slug),
+            ...(href ? {href} : {}),
             category: option.category,
             categoryTitle: option.categoryTitle,
             typeTitle: option.typeTitle ?? option.categoryTitle,
