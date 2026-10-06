@@ -75,13 +75,14 @@ export default async function SpecChangesetPage({
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium text-foreground">{ADMIN_SPEC_COPY.everyChange}</h2>
         <p className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.everyChangeLead}</p>
-        <SpecItemList items={items} />
+        <SpecItemList items={items} exclusion={cs.excludable && canApprove(me) ? { changesetId: cs.id } : null} />
       </section>
 
       {cs.state === "draft" ? (
         <SpecDecisionBar
           changesetId={cs.id}
           itemCount={items.length}
+          excludedCount={items.filter((i) => i.excluded_at).length}
           canDecide={canApprove(me)}
           blockedBy={blocked}
         />

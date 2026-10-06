@@ -9,6 +9,8 @@ import { ADMIN_SPEC_COPY } from "@/lib/copy/spec";
 type Props = {
   changesetId: string;
   itemCount: number;
+  /** Rows left out of the approval (sync frames). */
+  excludedCount?: number;
   canDecide: boolean;
   /** Frames that must be approved before this one. Empty when it is ready. */
   blockedBy: string[];
@@ -20,7 +22,8 @@ type Props = {
  * afterwards — a changeset is applied or discarded as a whole, and the reverse of
  * an approval is a new changeset, not a button.
  */
-export function SpecDecisionBar({ changesetId, itemCount, canDecide, blockedBy }: Props) {
+export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, canDecide, blockedBy }: Props) {
+  const included = itemCount - excludedCount;
   const [pending, startTransition] = useTransition();
   const [isDeciding, setIsDeciding] = useState<null | "approve" | "discard">(null);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +90,9 @@ export function SpecDecisionBar({ changesetId, itemCount, canDecide, blockedBy }
         {confirming === "approve" ? (
           <>
             <span className="text-sm text-foreground">
-              Approve {itemCount.toLocaleString()} changes? This cannot be undone.
+              {excludedCount > 0
+                ? `Approve ${included.toLocaleString()} of ${itemCount.toLocaleString()} changes (${excludedCount.toLocaleString()} excluded)? This cannot be undone.`
+                : `Approve ${itemCount.toLocaleString()} changes? This cannot be undone.`}
             </span>
             <Button size="sm" disabled={pending} onClick={() => decide("approve")}>
               {isDeciding === "approve" ? ADMIN_SPEC_COPY.approving : "Yes, approve"}
@@ -108,9 +113,10 @@ export function SpecDecisionBar({ changesetId, itemCount, canDecide, blockedBy }
           </>
         ) : (
           <>
-            <Button size="sm" disabled={pending} onClick={() => setConfirming("approve")}>
-              {ADMIN_SPEC_COPY.approve}
+            <Button size="sm" disabled={pending || included === 0} onClick={() => setConfirming("approve")}>
+              {excludedCount > 0 ? `${ADMIN_SPEC_COPY.approve} (${included.toLocaleString()} of ${itemCount.toLocaleString()})` : ADMIN_SPEC_COPY.approve}
             </Button>
+            {included === 0 ? <span className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.allExcluded}</span> : null}
             {/* Ghost, not outline: discarding throws away a generated frame, and it should
                 never look like the neighbouring, ordinary alternative to approving. */}
             <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming("discard")}>
