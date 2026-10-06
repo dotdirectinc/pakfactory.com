@@ -23,6 +23,10 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     selectOption: 'Select an option',
     navLabel: 'Customization categories',
     typeListLabel: 'Category types',
+    /** Middle-panel option filter (selection steps). */
+    searchPlaceholder: 'Search {category}…',
+    searchNoMatches: 'No matches for this search.',
+    searchLabel: 'Search options',
     detailLabel: 'Detail',
     external: 'External',
     internal: 'Internal',
