@@ -240,7 +240,7 @@ export const productStyle = defineType({
       max: 6,
       min: 3,
       description:
-        'Curated FAQs for this style — reference shared FAQ documents. Shown on the style page and on standard products whose first style this is and that have none of their own. Leave empty to use the line’s. Anything here replaces the line’s list entirely.',
+        'Curated FAQs for this style — reference shared FAQ documents. Shown on the style page and on standard products whose first style this is and that have none of their own — only while this style is not Coming soon or Not active. Leave empty to use the line’s. Anything here replaces the line’s list entirely.',
     }),
     defineField({
       name: 'productOrder',

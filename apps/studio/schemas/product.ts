@@ -451,7 +451,7 @@ export const product = defineType({
       max: 6,
       min: 3,
       description:
-        'Curated FAQs for this product — reference shared FAQ documents. Leave empty to inherit: a standard product shows its first style’s FAQs, else its line’s; an inspiration product shows its first solution’s. Anything here replaces the inherited list entirely — nothing merges.',
+        'Curated FAQs for this product — reference shared FAQ documents. Leave empty to inherit from the primary (first) parent while it is active: a standard product shows its first style’s FAQs, else its line’s; an inspiration product shows its first solution’s. If that primary is not active, nothing is inherited — no other parent stands in. Anything here replaces the inherited list entirely — nothing merges.',
     }),
 
     // ─── SPECS (source-owned facts — editable for now, decision b) ────────────

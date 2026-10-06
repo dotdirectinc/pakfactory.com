@@ -435,7 +435,7 @@ export const productLine = defineType({
       max: 6,
       min: 3,
       description:
-        'Curated FAQs for this line — reference shared FAQ documents. Shown on the line page, and on its styles and standard products that have no FAQs of their own.',
+        'Curated FAQs for this line — reference shared FAQ documents. Shown on the line page, and on its styles and standard products that have no FAQs of their own — but not on a product whose first style is switched off.',
     }),
 
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
