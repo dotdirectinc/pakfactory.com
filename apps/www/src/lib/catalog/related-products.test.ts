@@ -26,7 +26,7 @@ describe('pickRelatedProducts (PROD-2780)', () => {
         slug: 'custom-cosmetic-straight-tuck-end-box',
         kind: 'inspiration',
         productStyle: {slug: 'straight-tuck-end', title: 'Straight Tuck End'},
-        breadcrumbParent: {
+        industry: {
             slug: 'beauty-cosmetics',
             title: 'Beauty & Cosmetics',
         },
@@ -41,7 +41,7 @@ describe('pickRelatedProducts (PROD-2780)', () => {
                 slug: 'straight-tuck-end',
                 title: 'Straight Tuck End',
             },
-            breadcrumbParent: {
+            industry: {
                 slug: 'beauty-cosmetics',
                 title: 'Beauty & Cosmetics',
             },
@@ -51,7 +51,7 @@ describe('pickRelatedProducts (PROD-2780)', () => {
             slug: 'custom-cosmetic-gable-box',
             kind: 'inspiration',
             productStyle: {slug: 'gable', title: 'Gable'},
-            breadcrumbParent: {
+            industry: {
                 slug: 'beauty-cosmetics',
                 title: 'Beauty & Cosmetics',
             },
@@ -64,7 +64,7 @@ describe('pickRelatedProducts (PROD-2780)', () => {
                 slug: 'straight-tuck-end',
                 title: 'Straight Tuck End',
             },
-            breadcrumbParent: {slug: 'bakery-cake', title: 'Bakery & Cake'},
+            industry: {slug: 'bakery-cake', title: 'Bakery & Cake'},
         }),
         product({
             title: 'Standard STE',
@@ -83,7 +83,7 @@ describe('pickRelatedProducts (PROD-2780)', () => {
                 slug: 'straight-tuck-end',
                 title: 'Straight Tuck End',
             },
-            breadcrumbParent: {
+            industry: {
                 slug: 'beauty-cosmetics',
                 title: 'Beauty & Cosmetics',
             },

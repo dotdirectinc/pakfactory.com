@@ -13,14 +13,14 @@ export function pickRelatedProducts(
 ): Product[] {
     const styleSlug = host.productStyle.slug;
     const lineSlug = host.productLine.slug;
-    const industrySlug = host.breadcrumbParent?.slug;
+    const industrySlug = host.industry?.slug;
 
     const pool = candidates.filter(
         (item) => item.slug !== host.slug && item.kind === host.kind,
     );
 
     const sameIndustry = (item: Product) =>
-        !industrySlug || item.breadcrumbParent?.slug === industrySlug;
+        !industrySlug || item.industry?.slug === industrySlug;
 
     const styleFirst = pool.filter(
         (item) =>
@@ -28,7 +28,7 @@ export function pickRelatedProducts(
     );
 
     const fill = industrySlug
-        ? pool.filter((item) => item.breadcrumbParent?.slug === industrySlug)
+        ? pool.filter((item) => item.industry?.slug === industrySlug)
         : pool.filter((item) => item.productLine.slug === lineSlug);
 
     const seen = new Set<string>();
@@ -50,12 +50,12 @@ export function filterCuratedRelatedProducts(
     curated: Product[],
     cap: number = RELATED_PRODUCTS_CAP,
 ): Product[] {
-    const industrySlug = host.breadcrumbParent?.slug;
+    const industrySlug = host.industry?.slug;
     return curated
         .filter(
             (item) =>
                 item.kind === host.kind &&
-                (!industrySlug || item.breadcrumbParent?.slug === industrySlug),
+                (!industrySlug || item.industry?.slug === industrySlug),
         )
         .slice(0, cap);
 }

@@ -628,6 +628,14 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
                   },
               }
             : {}),
+        ...(doc.industry?.title?.trim() && doc.industry?.slug?.trim()
+            ? {
+                  industry: {
+                      title: doc.industry.title.trim(),
+                      slug: doc.industry.slug.trim(),
+                  },
+              }
+            : {}),
         ...(doc.breadcrumbParent?.title?.trim() &&
         doc.breadcrumbParent?.slug?.trim()
             ? {

@@ -116,10 +116,10 @@ export function assembleInspirationIndustries(
             if (!slug || !title || bySlug.has(slug)) continue;
             bySlug.set(slug, title);
         }
-        // Fallback: breadcrumbParent when industries[] was not projected.
+        // Fallback: the card's `industry` when industries[] was not projected.
         if ((product.industries?.length ?? 0) === 0) {
-            const slug = product.breadcrumbParent?.slug?.trim();
-            const title = product.breadcrumbParent?.title?.trim();
+            const slug = product.industry?.slug?.trim();
+            const title = product.industry?.title?.trim();
             if (slug && title && !bySlug.has(slug)) bySlug.set(slug, title);
         }
     }
@@ -167,7 +167,7 @@ export function filterInspirationProductsByIndustry(
         if (product.industries?.some((industry) => industry.slug === slug)) {
             return true;
         }
-        return product.breadcrumbParent?.slug === slug;
+        return product.industry?.slug === slug;
     });
 }
 

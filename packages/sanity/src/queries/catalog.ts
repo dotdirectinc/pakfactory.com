@@ -260,7 +260,16 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   moq,
   dimensionInput,
   dimensionRange,
-  "breadcrumbParent": coalesce(
+  // The PRIMARY solution — fixed, never substituted (Richard + Eric, 2026-10-06). The
+  // same solution FAQs inherit from; when it has no page the crumb shows as text.
+  "breadcrumbParent": solutions[0]->{
+    title,
+    "slug": slug.current
+  },
+  // The product's industry — first industry solution, else the primary. Groups the
+  // line page's inspiration band and filters Related Products (PROD-2780); deliberately
+  // NOT the breadcrumb, which follows the primary.
+  "industry": coalesce(
     solutions[@->solutionType == "industry"][0]->{
       title,
       "slug": slug.current
@@ -284,10 +293,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   "breadcrumbLinks": {
     "line": coalesce(coalesce(productLine, basedOn->productLine)->{"ok": ${LINE_STYLE_HAS_PAGE}}.ok, false),
     "style": coalesce(coalesce(productStyle[0], basedOn->productStyle[0])->{"ok": ${LINE_STYLE_HAS_PAGE}}.ok, false),
-    "parent": coalesce(coalesce(
-      solutions[@->solutionType == "industry"][0],
-      solutions[0]
-    )->{"ok": ${SOLUTION_ACTIVE}}.ok, false)
+    "parent": coalesce(solutions[0]->{"ok": ${SOLUTION_ACTIVE}}.ok, false)
   },
   "availableCustomizations": availableCustomizations[defined(customization)]{
     preselected,
@@ -308,8 +314,9 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   ${PRODUCT_EFFECTIVE_STATUS},
   "description": coalesce(shortDescription, pt::text(description)),
   moq,
-  // Industry for Related Products style→industry fill (PROD-2780).
-  "breadcrumbParent": coalesce(
+  // Industry for Related Products style→industry fill (PROD-2780) and the line page's
+  // inspiration grouping. Cards carry no breadcrumb.
+  "industry": coalesce(
     solutions[@->solutionType == "industry"][0]->{
       title,
       "slug": slug.current
@@ -1229,10 +1236,13 @@ export type CatalogProductDoc = {
     depthMin?: number | null;
     depthMax?: number | null;
   } | null;
-  /**
-   * First industry solution (fallback: solutions[0]) for inspiration PDP crumbs.
-   */
+  /** The primary solution (`solutions[0]`) — inspiration PDP crumbs. PDP fields only. */
   breadcrumbParent?: {
+    title?: string | null;
+    slug?: string | null;
+  } | null;
+  /** First industry solution, else the primary — grouping and Related Products. */
+  industry?: {
     title?: string | null;
     slug?: string | null;
   } | null;
@@ -1271,7 +1281,7 @@ export type CatalogProductDoc = {
   properties?: CatalogProductPropertyDoc[] | null;
   /**
    * Industry solutions on the product (line inspiration band / library).
-   * Card fields only expose breadcrumbParent (first industry).
+   * Card fields only expose `industry` (first industry, else the primary).
    */
   industries?: (CatalogProductLibraryIndustryDoc | null)[] | null;
   faqs?: CatalogProductFaqDoc[] | null;

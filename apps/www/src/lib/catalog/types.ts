@@ -224,13 +224,13 @@ export type Product = {
      * narrow on as the customer chooses. Absent when the dataset has no rules yet.
      */
     customizationRules?: CustomizationRulesSnapshot;
-    /**
-     * Inspiration PDP breadcrumb parent — first industry solution, else solutions[0].
-     */
+    /** Inspiration PDP breadcrumb parent — the primary solution, `solutions[0]` (fixed). */
     breadcrumbParent?: {title: string; slug: string};
+    /** First industry solution, else the primary — line-page grouping and Related Products. */
+    industry?: {title: string; slug: string};
     /**
      * All industry solutions tagged on the product (line Inspiration band).
-     * Absent on lean card projections that only return breadcrumbParent.
+     * Absent on lean card projections that only return `industry`.
      */
     industries?: {title: string; slug: string}[];
     /**
