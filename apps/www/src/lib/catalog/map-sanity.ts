@@ -27,6 +27,7 @@ import type {
     ProductKind,
     ProductLibraryItem,
     ProductLibraryLineMeta,
+    ProductLibraryStyleRef,
     ProductLine,
     ProductLineCaseStudyRef,
     ProductLineExpertiseRef,
@@ -450,6 +451,25 @@ export function mapSanityOptionDoc(
     return mapAvailableCustomization({preselected, customization: option});
 }
 
+/** Listed style refs for membership (PROD-2843) — slug + title, order preserved. */
+function mapLibraryStyleRefs(
+    rows:
+        | ({title?: string | null; slug?: string | null} | null)[]
+        | null
+        | undefined,
+): ProductLibraryStyleRef[] {
+    const out: ProductLibraryStyleRef[] = [];
+    const seen = new Set<string>();
+    for (const row of rows ?? []) {
+        const styleSlug = row?.slug?.trim();
+        const title = row?.title?.trim();
+        if (!styleSlug || !title || seen.has(styleSlug)) continue;
+        seen.add(styleSlug);
+        out.push({slug: styleSlug, title});
+    }
+    return out;
+}
+
 export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
     const slug = doc.slug?.trim();
     if (!slug || !doc.title) return null;
@@ -458,8 +478,13 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
     const lineTitle = doc.productLine?.title?.trim();
     if (!lineSlug || !lineTitle) return null;
 
-    const styleSlug = doc.productStyle?.slug?.trim();
-    const styleTitle = doc.productStyle?.title?.trim();
+    // Membership styles first so a restricted primary still keeps the product
+    // when a secondary style is listed (PROD-2843).
+    const membershipStyles = mapLibraryStyleRefs(doc.productStyles);
+    const styleSlug =
+        doc.productStyle?.slug?.trim() || membershipStyles[0]?.slug;
+    const styleTitle =
+        doc.productStyle?.title?.trim() || membershipStyles[0]?.title;
     if (!styleSlug || !styleTitle) return null;
 
     const kind: ProductKind =
@@ -474,6 +499,11 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         cardImage: doc.productStyle?.cardImage,
     });
     if (!productStyle) return null;
+
+    const productStyles =
+        membershipStyles.length > 0
+            ? membershipStyles
+            : [{slug: productStyle.slug, title: productStyle.title}];
 
     // PROD-2530 / PROD-2773 — when rules are absent, an inspiration's own
     // availableCustomizations list is its preset set (full offer comes from
@@ -587,6 +617,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
             : {}),
         productLine,
         productStyle,
+        ...(doc.productStyles != null ? {productStyles} : {}),
         availableCustomizations,
         ...(doc.breadcrumbParent?.title?.trim() &&
         doc.breadcrumbParent?.slug?.trim()
@@ -669,6 +700,17 @@ export function mapSanityProductLibraryItem(
         industries.push({slug, title});
     }
 
+    const membershipStyles = mapLibraryStyleRefs(doc.productStyles);
+    const productStyles =
+        membershipStyles.length > 0
+            ? membershipStyles
+            : [
+                  {
+                      slug: product.productStyle.slug,
+                      title: product.productStyle.title,
+                  },
+              ];
+
     return {
         item: {
             _id: doc._id,
@@ -677,11 +719,12 @@ export function mapSanityProductLibraryItem(
             sku: product.sku,
             kind: product.kind,
             productLine: product.productLine,
-            // Library payload: slug + title only (PROD-2599).
+            // Primary for display; productStyles for membership (PROD-2843).
             productStyle: {
                 slug: product.productStyle.slug,
                 title: product.productStyle.title,
             },
+            productStyles,
             imageUrl: first?.src ?? null,
             imageAlt: first?.alt ?? product.title,
             ...(product.status && product.status !== 'active' ? {status: product.status} : {}),

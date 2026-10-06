@@ -345,13 +345,21 @@ const LINE_MOCKS: Record<string, RigidBoxesMock> = {
     },
 };
 
+function productBelongsToStyle(product: Product, styleSlug: string): boolean {
+    if (product.productStyles?.some((style) => style.slug === styleSlug)) {
+        return true;
+    }
+    return product.productStyle.slug === styleSlug;
+}
+
 function firstProductImageInStyle(
     products: Product[],
     styleSlug: string,
 ): {src: string; alt: string} | null {
     for (const product of products) {
         if (!isStandardProduct(product)) continue;
-        if (product.productStyle.slug !== styleSlug) continue;
+        // Union membership — secondary styles count (PROD-2843).
+        if (!productBelongsToStyle(product, styleSlug)) continue;
         for (const media of product.media) {
             if (media.src) {
                 return {src: media.src, alt: media.alt || product.title};

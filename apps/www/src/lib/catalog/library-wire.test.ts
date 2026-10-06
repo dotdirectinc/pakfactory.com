@@ -20,6 +20,9 @@ const rigid = {slug: 'rigid-boxes', title: 'Rigid Boxes'};
 function product(
     overrides: Partial<ProductLibraryItem> & Pick<ProductLibraryItem, 'slug'>,
 ): ProductLibraryItem {
+    const productStyle =
+        overrides.productStyle ?? {slug: 'shipping', title: 'Shipping Boxes'};
+    const {productStyles: membership, ...rest} = overrides;
     return {
         _id: `product-${overrides.slug}`,
         title: overrides.slug.toUpperCase(),
@@ -28,10 +31,11 @@ function product(
         // map-sanity always sets the key (null when there is no image).
         imageUrl: null,
         productLine: corrugated,
-        productStyle: {slug: 'shipping', title: 'Shipping Boxes'},
         industries: [],
         attrs: {},
-        ...overrides,
+        ...rest,
+        productStyle,
+        productStyles: membership ?? [productStyle],
     };
 }
 
@@ -45,6 +49,10 @@ const productLibrary: ProductLibraryResult = {
             kind: 'inspiration',
             productLine: rigid,
             productStyle: {slug: 'magnetic', title: 'Magnetic'},
+            productStyles: [
+                {slug: 'magnetic', title: 'Magnetic'},
+                {slug: 'book-style', title: 'Book Style'},
+            ],
             imageUrl: 'https://cdn.sanity.io/images/x/y/b.png',
             imageAlt: 'A different alt',
             moq: 500,
@@ -90,8 +98,38 @@ describe('product library wire format', () => {
     it('stores each line, style and industry once', () => {
         const packed = packProductLibrary(productLibrary);
         assert.equal(packed.lines.length, 2);
-        assert.equal(packed.styles.length, 2);
+        assert.equal(packed.styles.length, 3);
         assert.equal(packed.industries.length, 2);
+    });
+
+    it('preserves secondary style membership (PROD-2843)', () => {
+        const restored = unpackProductLibrary(packProductLibrary(productLibrary));
+        const multi = restored.items.find((item) => item.slug === 'b');
+        assert.deepEqual(multi?.productStyle, {
+            slug: 'magnetic',
+            title: 'Magnetic',
+        });
+        assert.deepEqual(multi?.productStyles, [
+            {slug: 'magnetic', title: 'Magnetic'},
+            {slug: 'book-style', title: 'Book Style'},
+        ]);
+    });
+
+    it('falls back to primary when productStyles is missing (stale cache)', () => {
+        const legacy = {
+            ...product({slug: 'legacy'}),
+        } as ProductLibraryItem;
+        // Simulate a pre-PROD-2843 cached row.
+        delete (legacy as {productStyles?: unknown}).productStyles;
+        const restored = unpackProductLibrary(
+            packProductLibrary({
+                ...productLibrary,
+                items: [legacy],
+            }),
+        );
+        assert.deepEqual(restored.items[0]?.productStyles, [
+            restored.items[0]!.productStyle,
+        ]);
     });
 
     it('is smaller than the plain library', () => {

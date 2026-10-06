@@ -116,6 +116,15 @@ export type ProductStyleRef = {
     faqs?: ProductFaq[];
 };
 
+/**
+ * Library card style — slug + title only (PROD-2599). Full style copy stays on
+ * landing / PDP projections. Also used for membership arrays (PROD-2843).
+ */
+export type ProductLibraryStyleRef = {
+    slug: string;
+    title: string;
+};
+
 export type ProductDimensionRange = {
     lengthMin?: number;
     lengthMax?: number;
@@ -204,6 +213,11 @@ export type Product = {
     description: string;
     productLine: ProductLineRef;
     productStyle: ProductStyleRef;
+    /**
+     * All listed styles in Sanity order (PROD-2843). Used for style-card image
+     * fallback on the line landing. Display / breadcrumb / FAQs use `productStyle`.
+     */
+    productStyles?: ProductLibraryStyleRef[];
     availableCustomizations: CustomizationOption[];
     /**
      * The rules this product's options were resolved with (PROD-2556), for the builder to
@@ -406,15 +420,6 @@ export const PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID = 'product-type';
  */
 export const PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID = 'product-style';
 
-/**
- * Library card style — slug + title only (PROD-2599). Full style copy stays on
- * landing / PDP projections.
- */
-export type ProductLibraryStyleRef = {
-    slug: string;
-    title: string;
-};
-
 /** Enriched product card for the faceted `/products` library (PROD-1845). */
 export type ProductLibraryItem = {
     _id: string;
@@ -424,7 +429,13 @@ export type ProductLibraryItem = {
     /** Sanity `product.kind` — drives the Product type facet. */
     kind: ProductKind;
     productLine: ProductLineRef;
+    /** Primary style — card display (productStyle[0]). */
     productStyle: ProductLibraryStyleRef;
+    /**
+     * All listed styles in Sanity order — catalog facet / style-page membership
+     * (PROD-2843). Includes the primary when it passes LINE_STYLE_LISTED.
+     */
+    productStyles: ProductLibraryStyleRef[];
     imageUrl?: string | null;
     imageAlt?: string | null;
     images?: {src: string; alt?: string}[];
@@ -435,6 +446,16 @@ export type ProductLibraryItem = {
     /** property.slug → propertyValue.slug[] */
     attrs: Record<string, string[]>;
 };
+
+/**
+ * Styles used for catalog membership (PROD-2843). Falls back to the primary
+ * when `productStyles` is missing (stale cache) or empty.
+ */
+export function membershipStyles(
+    item: Pick<ProductLibraryItem, 'productStyle' | 'productStyles'>,
+): ProductLibraryStyleRef[] {
+    return item.productStyles?.length ? item.productStyles : [item.productStyle];
+}
 
 /** Line meta for the catalog entry card (first spot when one line is filtered). */
 export type ProductLibraryLineMeta = {

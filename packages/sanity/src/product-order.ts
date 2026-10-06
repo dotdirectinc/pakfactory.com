@@ -90,11 +90,7 @@ export function orderProductsInStyle<T extends OrderableProduct>(
  * this function on that filtered list with the style's `productOrder`, before
  * `buildProductLibraryResult`.
  *
- * 🔴 And a finding that is NOT this function's to fix. That filter matches on the
- * PRIMARY style only — the library projects `coalesce(productStyle[0],
- * basedOn->productStyle[0])`. `product.productStyle` is an array, so 192 products
- * reference a style in position 1 or 2 and appear on no style page for it at all.
- * Paper Merchandise Bags has 27 products linked and renders 13. Whether that is a
- * bug or intended is a product decision (PROD-2747); the Studio picker is filtered
- * to primary-only so nothing an editor can pin is a silent no-op either way.
+ * Membership is the full listed `productStyles[]` array (PROD-2843 — union). The
+ * Studio `productOrder` picker stays primary-only on purpose so nothing an editor
+ * pins is a silent no-op; widening the picker is a separate decision.
  */

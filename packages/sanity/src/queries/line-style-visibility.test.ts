@@ -56,6 +56,10 @@ const dataset = [
   product("p-bad-style", "active", "s-coming"),
   product("p-gone", "gone", "s-active"),
   product("p-internal", "internal", "s-active"),
+  // PROD-2843 — primary + secondary; membership is the full listed set.
+  product("p-multi", "active", "s-active", {
+    productStyle: [{_ref: "s-active"}, {_ref: "s-internal"}],
+  }),
 ];
 
 async function run(query: string, params: Record<string, unknown> = {}) {
@@ -131,4 +135,30 @@ test("product library: a restricted parent nulls out, but an active-internal one
 
   assert.equal(bySlug["p-bad-style"]?.productLine?.slug, "active");
   assert.equal(bySlug["p-bad-style"]?.productStyle, null);
+});
+
+test("product library: productStyles is the listed union; primary stays productStyle (PROD-2843)", async () => {
+  const rows = (await run(CATALOG_PRODUCT_LIBRARY_QUERY)) as {
+    slug: string;
+    productStyle: {slug: string} | null;
+    productStyles: {slug: string}[] | null;
+  }[];
+  const multi = rows.find((row) => row.slug === "p-multi");
+  assert.ok(multi, "multi-style fixture missing from library query");
+  assert.equal(multi.productStyle?.slug, "s-active");
+  assert.deepEqual(
+    (multi.productStyles ?? []).map((s) => s.slug).sort(),
+    ["s-active", "s-internal"],
+  );
+
+  const primaryOnly = rows.find((row) => row.slug === "p-active");
+  assert.deepEqual(
+    (primaryOnly?.productStyles ?? []).map((s) => s.slug),
+    ["s-active"],
+  );
+
+  // Coming-soon primary is not listed — productStyles stays empty (no secondaries).
+  const bad = rows.find((row) => row.slug === "p-bad-style");
+  assert.equal(bad?.productStyle, null);
+  assert.deepEqual(bad?.productStyles ?? [], []);
 });

@@ -69,6 +69,7 @@ import type {
     ProductsSegmentResult,
 } from '@/lib/catalog/types';
 import {PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
+import {membershipStyles} from '@/lib/catalog/types';
 import {
     draftAwareClient,
     readThrough,
@@ -359,7 +360,8 @@ const getCachedCustomizationLibrary = sanityCache(
 
 const getCachedProductLibrary = sanityCache(
     fetchSanityProductLibrary,
-    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-library`],
+    // v2: productStyles[] membership for multi-style catalog (PROD-2843).
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-library-v2-styles`],
     {
         revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
         tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
@@ -438,7 +440,7 @@ export async function listProductStyleLibrary(
     const scoped = library.items.filter(
         (item) =>
             item.productLine.slug === lineKey &&
-            item.productStyle.slug === styleKey,
+            membershipStyles(item).some((style) => style.slug === styleKey),
     );
     const items = productsOfKind(scoped, PRODUCT_LINE_PRODUCT_KIND);
     const lineMetas = Object.values(library.linesBySlug).filter(
