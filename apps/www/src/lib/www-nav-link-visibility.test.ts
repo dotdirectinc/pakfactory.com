@@ -44,7 +44,7 @@ describe('isWwwNavInternalLinkVisible', () => {
         assert.equal(
             isWwwNavInternalLinkVisible({
                 _type: 'productStyle',
-                customerFacing: false,
+                status: 'active-internal',
             }),
             false,
         );
@@ -52,7 +52,6 @@ describe('isWwwNavInternalLinkVisible', () => {
             isWwwNavInternalLinkVisible({
                 _type: 'productStyle',
                 status: 'discontinued',
-                customerFacing: true,
             }),
             false,
         );
@@ -103,7 +102,6 @@ describe('isWwwNavInternalLinkVisible', () => {
         assert.equal(
             isWwwNavInternalLinkVisible({
                 _type: 'customizationOption',
-                hasPage: true,
                 status: 'active',
             }),
             false,
@@ -112,7 +110,7 @@ describe('isWwwNavInternalLinkVisible', () => {
             isWwwNavInternalLinkVisible({
                 _type: 'customizationOption',
                 appearsIn: 'configurable-with-page',
-                status: 'discontinued',
+                status: 'not-active',
             }),
             false,
         );
@@ -126,21 +124,23 @@ describe('isWwwNavInternalLinkVisible', () => {
         assert.equal(isWwwNavInternalLinkVisible(null), true);
     });
 
-    it('gates solutions by hasPage and expertise stages by listed status', () => {
+    it('gates solutions by status and expertise stages by listed status', () => {
         assert.equal(
             isWwwNavInternalLinkVisible({
                 _type: 'solution',
-                hasPage: true,
+                status: 'active',
             }),
             true,
         );
         assert.equal(
             isWwwNavInternalLinkVisible({
                 _type: 'solution',
-                hasPage: false,
+                status: 'not-active',
             }),
             false,
         );
+        // No unset arm — `status` replaced `hasPage`, which defaulted to false.
+        assert.equal(isWwwNavInternalLinkVisible({_type: 'solution'}), false);
         assert.equal(
             isWwwNavInternalLinkVisible({
                 _type: 'expertiseStage',
@@ -194,7 +194,6 @@ describe('isWwwNavLinkVisible', () => {
                 pathTarget: {
                     _type: 'productLine',
                     status: 'coming-soon',
-                    customerFacing: true,
                 },
             }),
             false,
@@ -210,7 +209,6 @@ describe('isWwwNavLinkVisible', () => {
                 pathTarget: {
                     _type: 'productLine',
                     status: 'active',
-                    customerFacing: true,
                 },
             }),
             true,

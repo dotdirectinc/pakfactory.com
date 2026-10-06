@@ -122,25 +122,40 @@ const OPTION_FIELDS = /* groq */ `
 `;
 
 /**
- * `customerFacing: false` = "no page, no route, no listing; the document exists only to be
- * referenced" (the field's own description on product / productLine / productStyle). Notion's
- * "Hidden" sets it, and from 2026-09-28 every catalog document is PUBLISHED — so this, not the
- * draft state, is what keeps a hidden product, line or style off the site. A missing value is
- * customer-facing (`null != false`).
- */
-export const CUSTOMER_FACING = /* groq */ `customerFacing != false`;
-
-/**
- * Lifecycle (Richard's baseline, 2026-09-28 — PROD-2605). Products, lines, styles and
- * solutions only — customization options are Active / Not active (PROD-2733) and test
- * `status == "active"` directly. With customer facing on:
- *   active        normal — page, listed, orderable
- *   coming-soon   page that says "coming soon", LISTED with a badge, not orderable
- *   discontinued  page still exists (indexable, "no longer available"), NOT listed, not orderable
- * An unset status reads as active. The configurator only ever offers active options.
+ * ONE status vocabulary for the whole catalog (PROD-2845):
+ *
+ *   active            normal — page, listed, orderable
+ *   coming-soon       a marketing state; what it shows differs by type, see below
+ *   discontinued      page stays (indexable, "no longer available"), NOT listed, not orderable
+ *   not-active        nothing anywhere; the document exists only to be referenced
+ *   active-internal   nothing anywhere EITHER, but still works as structure — its
+ *                     children keep their own status, it still answers as a catalog
+ *                     filter, it is still a valid `basedOn` target
+ *
+ * This replaced `customerFacing` (product / line / style) and `hasPage` (solution).
+ * `customerFacing` is GONE — do not reintroduce it, and do not add a second boolean
+ * beside `status`: the whole point is that one field answers "is this offered, and how?".
+ *
+ * 🔴 EVERY GATE BELOW IS A WHITELIST. It names the states that ARE visible, never the
+ * ones that are not. That is what let `not-active` and `active-internal` join the
+ * vocabulary without touching the product gates at all — a value nobody whitelisted is
+ * hidden by construction. Write `status != "not-active"` instead and the next value
+ * added leaks to customers the day it is added.
+ *
+ * ⚠️ An UNSET status preserves each type's pre-PROD-2845 meaning, which is not the same
+ * answer everywhere:
+ *   product / line / style  unset reads as ACTIVE — it always has, and 13 production
+ *                           lines still carry no status.
+ *   solution                unset reads as NO PAGE — its predecessor `hasPage` defaulted
+ *                           to false, so a term had to earn its page. See SOLUTION_ACTIVE.
+ *   category / type         unset reads as ACTIVE — these had no gate at all before, so
+ *                           an un-migrated document behaves exactly as it does today.
  */
 export const LISTED_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon"])`;
 export const HAS_PAGE_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon", "discontinued"])`;
+
+/** A product can be ordered only while Active — coming-soon lists with a badge but cannot be bought. */
+export const ORDERABLE_STATUS = /* groq */ `(!defined(status) || status == "active")`;
 
 /**
  * A customization option with its own detail page in the library (PROD-2732).
@@ -159,28 +174,59 @@ export const HAS_PAGE_STATUS = /* groq */ `(!defined(status) || status in ["acti
 export const HAS_DETAIL_PAGE = /* groq */ `appearsIn in ["configurable-with-page", "not-configurable-with-page"]`;
 
 /**
- * Product LINES and STYLES are grouping pages, not products (PROD-2620; coming-soon
- * tightened 2026-09-29): `discontinued` and `coming-soon` are HIDDEN — no page, no route,
- * no listing — same as `customerFacing: false`. Products still use {@link LISTED_STATUS}
- * so a coming-soon *product* can list with a badge. Unset status reads as active.
- * A style's page exists only while its line lists it (`getStyle` in www), so the `styles`
- * list below is also the style route gate.
+ * Product LINES and STYLES are grouping pages, not products — so "listed" and "has a
+ * page" come apart on them in BOTH directions, and PROD-2845 had to split the single
+ * `LINE_STYLE_VISIBLE` that used to serve both:
+ *
+ *   active-internal   LISTED (it still answers as a catalog filter) but NO page.
+ *                     This is how a specialty line like "Food Containers & Utensils"
+ *                     keeps its products reachable while having no page of its own —
+ *                     and it is why its children are NOT restricted (R4).
+ *   discontinued      has a PAGE (kept indexable for search) but is NOT listed.
+ *   coming-soon       neither. It appears in the nav as an unlinked signpost, which is
+ *                     a chrome decision made in `catalog-visibility.ts`, not here.
+ *
+ * Picking the wrong one of these two is the easiest mistake to make in this file:
+ * a route gated on LISTED 404s a discontinued line that should still rank, and a
+ * listing gated on HAS_PAGE advertises a line nobody can browse into.
  */
+export const LINE_STYLE_LISTED = /* groq */ `(!defined(status) || status in ["active", "active-internal"])`;
+
+/** Both at once — listed AND has a page. The right gate for a LINK out to a line. */
 export const LINE_STYLE_ACTIVE = /* groq */ `(!defined(status) || status == "active")`;
-export const LINE_STYLE_VISIBLE = /* groq */ `${LINE_STYLE_ACTIVE} && ${CUSTOMER_FACING}`;
+export const LINE_STYLE_HAS_PAGE = /* groq */ `(!defined(status) || status in ["active", "discontinued"])`;
+
+/**
+ * Solution / Solution Style — Active is the whole visible set.
+ *
+ * No `!defined(status)` arm, deliberately, and this is the one gate in the file that
+ * omits it. `status` replaced `hasPage`, which defaulted to FALSE: a solution existed to
+ * be tagged against and a page was what a term EARNED. An un-migrated solution must
+ * therefore read as having no page, exactly as it did before.
+ */
+export const SOLUTION_ACTIVE = /* groq */ `status == "active"`;
+
+/**
+ * Customization Category / Type — these had NO off switch before PROD-2845, so an
+ * un-migrated document keeps behaving as it does today rather than vanishing.
+ */
+export const CUSTOMIZATION_TAXONOMY_ACTIVE = /* groq */ `(!defined(status) || status == "active")`;
 
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
 /** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
 const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
   _type == "product" &&
-  (status == "active" || !defined(status)) &&
-  ${CUSTOMER_FACING} &&
+  ${ORDERABLE_STATUS} &&
   ^._id in availableCustomizations[].customization._ref &&
-  // Never offer a line whose page is gone (PROD-2620). Tested on the product, not by filtering
+  // Never offer a line a customer cannot browse into. Tested on the product, not by filtering
   // \`.line\` afterwards: \`{…}.line[cond]\` applies the filter to each line object, not the list.
-  !(coalesce(productLine, basedOn->productLine)->status in ["discontinued", "coming-soon"]) &&
-  coalesce(productLine, basedOn->productLine)->customerFacing != false
+  // LINE_STYLE_ACTIVE and not LISTED, because this renders as a LINK: an active-internal
+  // line is listed as a filter but has no page to send anyone to.
+  (
+    !defined(coalesce(productLine, basedOn->productLine)->status) ||
+    coalesce(productLine, basedOn->productLine)->status == "active"
+  )
 ]{
   "line": coalesce(productLine, basedOn->productLine)->{
     _id,
@@ -413,16 +459,14 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
   // Membership ids for Solution Style breadcrumb resolution (PROD-2763).
   "productLineId": coalesce(productLine._ref, basedOn->productLine._ref),
   "productStyleIds": coalesce(productStyle[]._ref, basedOn->productStyle[]._ref, []),
-  "solutionIds": coalesce(solutions[]._ref, []),
-  customerFacing
+  "solutionIds": coalesce(solutions[]._ref, [])
 `;
 
 /** Active (or unset status) products for catalog index / params. */
 export const CATALOG_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  ${LISTED_STATUS} &&
-  ${CUSTOMER_FACING}
+  ${LISTED_STATUS}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_CARD_FIELDS}
 }`;
@@ -446,7 +490,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   },
   "productLine": *[
     _id == coalesce(^.productLine._ref, ^.basedOn->productLine._ref) &&
-    ${LINE_STYLE_VISIBLE}
+    ${LINE_STYLE_LISTED}
   ][0]{
     _id,
     title,
@@ -457,7 +501,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   },
   "productStyle": *[
     _id == coalesce(^.productStyle[0]._ref, ^.basedOn->productStyle[0]._ref) &&
-    ${LINE_STYLE_VISIBLE}
+    ${LINE_STYLE_LISTED}
   ][0]${STYLE_LIBRARY_REF_PROJ},
   "industries": solutions[@->solutionType == "industry"]->{
     title,
@@ -480,8 +524,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
 export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  ${LISTED_STATUS} &&
-  ${CUSTOMER_FACING}
+  ${LISTED_STATUS}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LIBRARY_FIELDS}
 }`;
@@ -489,8 +532,7 @@ export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   _type == "product" &&
   slug.current == $slug &&
-  ${HAS_PAGE_STATUS} &&
-  ${CUSTOMER_FACING}
+  ${HAS_PAGE_STATUS}
 ][0]{
   ${CATALOG_PRODUCT_PDP_FIELDS}
 }`;
@@ -544,18 +586,18 @@ const LINE_STYLE_CARD_PROJ = /* groq */ `{
  *
  * References in `styleOrder` are WEAK, so a deleted style dereferences to null
  * rather than blocking the delete; `defined(_id)` drops it before projection.
- * A style that is listed but no longer visible (discontinued, not customer-facing)
- * is filtered by the same LINE_STYLE_VISIBLE the tail uses, so the two tiers agree.
+ * A pinned style that is no longer listed (discontinued, not active) is filtered by the
+ * same LINE_STYLE_LISTED the tail uses, so the two tiers agree.
  */
 const LINE_STYLES = /* groq */ `(
     coalesce(
-      (styleOrder[]->)[defined(_id) && ${LINE_STYLE_VISIBLE}]${LINE_STYLE_CARD_PROJ},
+      (styleOrder[]->)[defined(_id) && ${LINE_STYLE_LISTED}]${LINE_STYLE_CARD_PROJ},
       []
     )
     + *[
         _type == "productStyle" &&
         productLine._ref == ^._id &&
-        ${LINE_STYLE_VISIBLE} &&
+        ${LINE_STYLE_LISTED} &&
         !(_id in coalesce(^.styleOrder, [])[]._ref)
       ] | order(title asc) ${LINE_STYLE_CARD_PROJ}
   )`;
@@ -619,8 +661,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     productLine._ref == ^._id &&
     ${KIND_STANDARD} &&
     defined(slug.current) &&
-    ${LISTED_STATUS} &&
-    ${CUSTOMER_FACING}
+    ${LISTED_STATUS}
   ] | order(title asc) {
     ${CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS}
   },
@@ -629,8 +670,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     coalesce(productLine, basedOn->productLine)._ref == ^._id &&
     ${KIND_INSPIRATION} &&
     defined(slug.current) &&
-    ${LISTED_STATUS} &&
-    ${CUSTOMER_FACING}
+    ${LISTED_STATUS}
   ] | order(title asc) {
     ${CATALOG_PRODUCT_LINE_INSPIRATION_FIELDS}
   }
@@ -639,7 +679,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
 export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   _type == "productLine" &&
   defined(slug.current) &&
-  ${LINE_STYLE_VISIBLE}
+  ${LINE_STYLE_LISTED}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
@@ -647,7 +687,7 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
 export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
   slug.current == $slug &&
-  ${LINE_STYLE_VISIBLE}
+  ${LINE_STYLE_HAS_PAGE}
 ][0]{
   ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
@@ -659,7 +699,7 @@ export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
 export const CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
   slug.current == $slug &&
-  ${LINE_STYLE_VISIBLE}
+  ${LINE_STYLE_HAS_PAGE}
 ][0]._id`;
 
 const PROPERTY_VALUE_PROJ = /* groq */ `{
@@ -1198,7 +1238,6 @@ export type CatalogProductDoc = {
   productLineId?: string | null;
   productStyleIds?: (string | null)[] | null;
   solutionIds?: (string | null)[] | null;
-  customerFacing?: boolean | null;
   /** Hover-play video URL from `featuredVideo` (upload/URL); empty for YouTube-only. */
   featuredVideoUrl?: string | null;
   /** Direct public GLB URL from `model3d.url`; null when unset. */

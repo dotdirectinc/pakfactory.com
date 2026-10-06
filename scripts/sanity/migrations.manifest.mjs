@@ -487,6 +487,28 @@ export const MIGRATIONS = [
        count(*[_type == "customizationOption" && type->title == "Spot Coating" &&
          ^._id in compatibleCustomizations[]._ref]) > 0)]) == 0`,
   },
+  {
+    id: '20261005-status-unification',
+    ticket: 'PROD-2845',
+    title: 'One status replaces customerFacing and hasPage across the catalog',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:status-unification',
+    script: 'apps/studio/scripts/migrate-status-unification.mjs',
+    args: 'flags',
+    after: ['20260930-customization-status'],
+    // Asserts the retired KEYS are gone, which is the shape that stays true forever —
+    // the status values themselves keep changing as editors work, so probing those
+    // would read an ordinary edit as an un-run migration.
+    //
+    // 🔴 This migration must land in the SAME deploy as the schema change. The old
+    // `customerFacing` read unset-as-visible while every new gate is a whitelist, so a
+    // release between the two makes hidden documents public. The probe cannot catch
+    // that window — it only tells you the data has caught up, not that it did so in time.
+    //
+    // Drafts included: a stale draft carrying `customerFacing` republishes the key.
+    probe: `count(*[_type in ["product", "productLine", "productStyle", "solution"] &&
+      (defined(customerFacing) || (_type == "solution" && defined(hasPage)))]) == 0`,
+  },
 ]
 
 /**

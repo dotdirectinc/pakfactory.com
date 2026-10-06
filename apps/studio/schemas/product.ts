@@ -9,6 +9,8 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { productModel3dField } from '../lib/product-model-3d-field'
+import { CATALOG_STATUS, FULL_STATUS_LIST } from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
 import {
   AVAILABILITY_CATALOG_QUERY,
@@ -137,62 +139,58 @@ export const product = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: `Lifecycle — Active, Coming soon or Discontinued. Never unpublishes the product. ${SOURCE_OWNED_NOTE}`,
-      options: {
-        layout: 'radio',
-        list: [
-          { title: 'Active', value: 'active' },
-          { title: 'Coming soon', value: 'coming-soon' },
-          { title: 'Discontinued', value: 'discontinued' },
-        ],
-      },
-      initialValue: 'active',
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: 'customerFacing',
-      title: 'Customer facing',
-      type: 'boolean',
-      group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing, no nav link; the document exists only to be referenced. On by default. Not the same as Status — this one decides whether a page exists at all.',
-      initialValue: true,
-      // WARNING, never an error. A customer-facing product under a hidden line or
-      // style is the one rule a human can break silently: nothing in the Studio shows
-      // an ancestor's visibility while you edit the child, and the result is a page
-      // whose whole path above it is unreachable. Everything else about the scaffold
-      // pattern is enforced structurally.
-      //
-      // Warning and not error because the state is legitimate mid-edit — you unhide a
-      // line and its products one save at a time — and because an error here would
-      // block publishing a product over the state of a DIFFERENT document.
-      //
-      // Reads the PUBLISHED ancestors deliberately: a strong reference resolves
-      // against the published dataset, so published visibility is what decides
-      // whether a route can exist. An unpublished draft edit is not yet that fact.
-      validation: (Rule) =>
-        Rule.custom(async (value, context) => {
-          if (value === false) return true
-          const doc = context.document as
-            | { kind?: string; productLine?: { _ref?: string }; productStyle?: { _ref?: string }[] }
-            | undefined
-          // Only a standard product has a line/style ancestry; both are hidden on presets.
-          if (doc?.kind !== 'standard') return true
-          const refs = [doc.productLine?._ref, ...(doc.productStyle ?? []).map((r) => r?._ref)].filter(
-            (r): r is string => Boolean(r),
+        'Is this product offered, and how? Coming soon lists it with a badge and blocks ' +
+        'ordering. Discontinued keeps the page for search and drops it from listings. ' +
+        'Not active removes it everywhere. Active (Internal) also removes it everywhere but ' +
+        `keeps it usable as the basis for inspiration products. Never unpublishes the product. ${SOURCE_OWNED_NOTE}`,
+      options: { layout: 'radio', list: FULL_STATUS_LIST },
+      initialValue: 'active',
+      validation: (Rule) => [
+        Rule.required(),
+
+        // ─── The one ERROR in this model, and the one place it is right ─────────
+        //
+        // Standard and Inspiration are the same document type, separated by `kind`,
+        // so there is ONE status field with ONE option list — Sanity cannot vary
+        // radio options by a sibling field, and there is no second field left to
+        // hang the restriction on now that `customerFacing` is gone.
+        //
+        // An ERROR rather than a warning, which is the opposite of every cascade
+        // rule here. Those warn because they describe a SECOND document that Studio
+        // validation cannot see, and because blocking makes top-down reorganisation
+        // impossible. Neither applies: this is one document contradicting itself,
+        // and there is no legitimate mid-edit state where the pair should be allowed.
+        Rule.custom((value, context) => {
+          const doc = context.document as { kind?: string } | undefined
+          if (doc?.kind !== 'inspiration' || value !== CATALOG_STATUS.activeInternal) return true
+          return (
+            'Active (Internal) is for products kept in the catalogue as structure — something ' +
+            'an inspiration product can be based on. Nothing is ever based on an inspiration ' +
+            'product, so the value has no job here. Use Not active to take it off the site.'
           )
-          if (refs.length === 0) return true
-          const client = context.getClient({ apiVersion: '2024-01-01' })
-          const hidden = await client.fetch<{ title?: string }[]>(
-            `*[_id in $refs && customerFacing == false]{title}`,
-            { refs },
-          )
-          if (hidden.length === 0) return true
-          const names = hidden.map((h) => h.title ?? 'untitled').join(', ')
-          return `This product is customer facing, but ${names} ${
-            hidden.length === 1 ? 'is not' : 'are not'
-          }. The product page would sit under a path with no reachable route above it.`
-        }).warning(),
+        }),
+
+        // R5 — warn, never block. An inspiration product offers whatever the product
+        // in "Based on" offers, so restricting the base leaves the preset describing
+        // something that is no longer sold. Active (Internal) is deliberately absent
+        // from the restricting set: keeping a base usable while hidden is exactly
+        // what that value exists for.
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              basedOn._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon"])
+            ]{ title }`,
+            describe: (names) =>
+              `${names} ${names.includes(' and ') || names.includes(',') ? 'are' : 'is'} based on ` +
+              `this product and would be left offering customizations it no longer sells. ` +
+              `Use Active (Internal) to take this off the site while keeping it as their basis.`,
+          }),
+        ).warning(),
+      ],
     }),
     // One representative image, one gallery — the same pair on Product Line and
     // Product Style. `featuredImage` replaces the old positional rule, where the

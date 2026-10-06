@@ -17,7 +17,6 @@ const LINKABLE_DOC_PROJECTION = /* groq */ `{
   "collectionSlug": primaryCollection->slug.current,
   "pageSlug": primaryLandingPage->slug.current,
   status,
-  customerFacing,
   hasPage,
   appearsIn,
   orderRank
@@ -27,7 +26,6 @@ const LINKABLE_DOC_PROJECTION = /* groq */ `{
 const PATH_TARGET_PROJECTION = /* groq */ `{
   _type,
   status,
-  customerFacing,
   hasPage,
   appearsIn,
   orderRank
@@ -35,7 +33,7 @@ const PATH_TARGET_PROJECTION = /* groq */ `{
 
 /**
  * Resolve curated `linkType: path` catalog URLs to a document so chrome can
- * apply the same status / customerFacing / page gates as internal links.
+ * apply the same status / page gates as internal links.
  * Bare listing paths (`/products`, `/customizations`, …) stay null.
  */
 const PATH_TARGET_RESOLVE = /* groq */ `select(
@@ -120,7 +118,6 @@ export type WebsiteNavLinkTarget = {
   /** Catalog lifecycle — used to hide nav links (PROD-2620). */
   status?: string | null;
   /** Notion "Hidden" — unset counts as visible. */
-  customerFacing?: boolean | null;
   /** Solutions / expertise services public page gate. */
   hasPage?: boolean | null;
   /** Customization option page gate (PROD-2732) — page-bearing `appearsIn` values. */

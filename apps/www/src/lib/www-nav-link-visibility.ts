@@ -1,16 +1,20 @@
 import type {WebsiteNavLinkDoc} from '@pakfactory/sanity/queries';
 import {
+    catalogTargetNavState,
     isCatalogTargetVisible,
-    isCustomerFacingVisible,
-    isLineStyleActiveStatus,
+    isLineStyleActive,
+    isLineStyleListed,
     isListedCatalogStatus,
+    isSolutionActive,
 } from '@pakfactory/sanity/catalog-visibility';
 
 export {
+    catalogTargetNavState,
     isCatalogTargetVisible,
-    isCustomerFacingVisible,
-    isLineStyleActiveStatus,
+    isLineStyleActive,
+    isLineStyleListed,
     isListedCatalogStatus,
+    isSolutionActive,
 };
 
 /**

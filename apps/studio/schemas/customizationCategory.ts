@@ -1,6 +1,8 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { entityFields } from '../lib/entity-id-field'
+import { ON_OFF_STATUS_LIST } from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 export const customizationCategory = defineType({
@@ -25,6 +27,37 @@ export const customizationCategory = defineType({
       description: 'URL-safe identifier, generated from the title. Nothing links to it, so changing it is safe.',
       options: { source: 'title' },
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      group: 'content',
+      description:
+        'Is this category offered? Not active removes it from the customization library ' +
+        'filters and takes its Types and their Options with it. Use it instead of deleting ' +
+        'the document, so the references that name them keep resolving.',
+      options: { list: ON_OFF_STATUS_LIST, layout: 'radio' },
+      // Starts ON, unlike Solution: a category is pure structure with no page to earn,
+      // and an empty one renders no filter anyway. There is no Coming soon or
+      // Discontinued — a category is offered, or it is internal (PROD-2733's argument,
+      // applied one level up).
+      initialValue: 'active',
+      // Before PROD-2845 this type had NO off switch at all. Deleting was the only way
+      // to remove one, and strong references from the options beneath refuse that.
+      validation: (Rule) =>
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "customizationType" &&
+              category._ref == $id &&
+              (!defined(status) || status == "active")
+            ]{ title }`,
+            describe: (names) =>
+              `This also removes every Type beneath it, including ${names}, and their options ` +
+              `from the configurator.`,
+          }),
+        ).warning(),
     }),
     defineField({
       name: 'description',

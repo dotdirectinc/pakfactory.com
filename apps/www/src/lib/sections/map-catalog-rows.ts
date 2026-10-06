@@ -34,7 +34,6 @@ function mapItems(
         const visible = isCatalogTargetVisible({
             _type: item._type,
             status: (stegaClean(item.status ?? undefined) as string | undefined) ?? null,
-            customerFacing: item.customerFacing,
             hasPage: item.hasPage,
         });
         if (!visible) continue;

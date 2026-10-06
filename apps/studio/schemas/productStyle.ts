@@ -8,6 +8,8 @@ import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { entityFields } from '../lib/entity-id-field'
+import { FULL_STATUS_LIST, STATUS_DESCRIPTION_TAIL } from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 
 /**
  * Product Style — a construction within a line (Magnetic Closure, Straight Tuck
@@ -163,25 +165,31 @@ export const productStyle = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle — Active, Coming soon or Discontinued.',
-      options: {
-        list: [
-          { title: 'Active', value: 'active' },
-          { title: 'Coming soon', value: 'coming-soon' },
-          { title: 'Discontinued', value: 'discontinued' },
-        ],
-        layout: 'radio',
-      },
-      initialValue: 'active',
-    }),
-    defineField({
-      name: 'customerFacing',
-      title: 'Customer facing',
-      type: 'boolean',
-      group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing, no nav link; the document exists only to be referenced. On by default. Not the same as Status — this one decides whether a page exists at all.',
-      initialValue: true,
+        'Is this style offered, and how? Coming soon shows a badged card on the parent ' +
+        'line with no page of its own. Discontinued keeps the page for search and drops ' +
+        'the listing. ' + STATUS_DESCRIPTION_TAIL,
+      options: { list: FULL_STATUS_LIST, layout: 'radio' },
+      initialValue: 'active',
+      // A style does NOT take its products down with it — a product names several
+      // styles but exactly one line, and the line is what keeps it reachable (R2).
+      // So this warns about the one thing restricting a style really does break:
+      // the products whose PRIMARY style this is. `productStyle[0]` supplies the
+      // style on their cards, their breadcrumb, and the FAQs they inherit.
+      validation: (Rule) =>
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "product" &&
+              productStyle[0]._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon", "active-internal"])
+            ]{ title }`,
+            describe: (names) =>
+              `This is the primary style of ${names}. Those products stay visible, but the ` +
+              `style shown on their cards and breadcrumbs, and the FAQs they inherit, all come ` +
+              `from here. Reorder their styles first if another should lead.`,
+          }),
+        ).warning(),
     }),
     // `order` was REMOVED here on 2026-09-01. It set the display order of the style
     // cards within a Product Line's styles grid, and nothing has ever read it — no

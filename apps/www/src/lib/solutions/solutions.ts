@@ -77,6 +77,7 @@ import {
     wwwSolutionTag,
 } from '@/lib/www-cache';
 import {sanityCache, sanityReadFailed} from '@/lib/sanity/sanity-cache';
+import {isSolutionActive} from '@pakfactory/sanity/catalog-visibility';
 
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
@@ -134,7 +135,7 @@ async function fetchSolutionBySlug(
         const doc = await (await draftAwareClient()).fetch<
             SolutionBySlugDoc | null
         >(SOLUTION_BY_SLUG_QUERY, {slug});
-        if (!doc || doc.hasPage !== true) return null;
+        if (!doc || !isSolutionActive(doc.status)) return null;
         const mapped = mapSanitySolution(doc);
         if (!mapped) return null;
 
@@ -416,7 +417,7 @@ async function fetchSolutionStyleCatalog(
         const doc = await (await draftAwareClient()).fetch<
             SolutionStyleBySlugsDoc | null
         >(SOLUTION_STYLE_BY_SLUGS_QUERY, {solutionSlug, styleSlug});
-        if (!doc?.solution?._id || doc.solution.hasPage !== true) return null;
+        if (!doc?.solution?._id || !isSolutionActive(doc.solution.status)) return null;
 
         const style = mapSanitySolutionStylePage(doc);
         const parentSlug = doc.solution.slug?.trim();

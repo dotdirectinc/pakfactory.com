@@ -5,6 +5,7 @@ import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { uniqueSlugWithinParent } from '../lib/slug-rules'
 import { entityFields } from '../lib/entity-id-field'
+import { TAXONOMY_STATUS_LIST } from '../lib/catalog-status'
 
 /**
  * Solution Style — the second level under a Solution (Entities/Solution Style.md).
@@ -109,6 +110,25 @@ export const solutionStyle = defineType({
             'the URL is /solutions/<solution>/<slug>, so two identical slugs under one solution resolve to the same page',
           ),
         ),
+    }),
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'Is this collection offered? Active = a page under its solution. ' +
+        'Not active = nothing anywhere. Coming soon behaves the same as Not active today ' +
+        'and is reserved for when this collection earns a visible pre-launch state.',
+      options: { list: TAXONOMY_STATUS_LIST, layout: 'radio' },
+      // Starts OFF for the same reason as its parent Solution: a collection is built
+      // before it is launched, and creating one should never publish an empty page.
+      //
+      // A restricted parent hides this regardless of what is set here (R1), so there
+      // is no cascade warning on this field — it has nothing beneath it. Products are
+      // MATCHED by `filter`, never owned, so restricting this collection touches none
+      // of them (R3).
+      initialValue: 'not-active',
     }),
     defineField({
       name: 'shortDescription',

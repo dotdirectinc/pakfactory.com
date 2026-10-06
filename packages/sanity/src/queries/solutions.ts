@@ -6,7 +6,7 @@
 
 import {KIND_INSPIRATION} from '../product-kind';
 import type {SolutionStyleFilter} from '../solution-style-filter';
-import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, CUSTOMER_FACING, LISTED_STATUS} from './catalog';
+import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, LISTED_STATUS, SOLUTION_ACTIVE} from './catalog';
 import {
     PAGE_SECTIONS_PROJECTION,
     type PageSectionDoc,
@@ -120,7 +120,7 @@ const SOLUTION_HERO_PRODUCT_PROJ = /* groq */ `{
   ]
 }`;
 
-/** Solution landing page by slug (caller gates on hasPage). */
+/** Solution landing page by slug (caller gates on status). */
 export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   _type == "solution" &&
   slug.current == $slug
@@ -130,7 +130,7 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   h1,
   shortName,
   solutionType,
-  hasPage,
+  status,
   "slug": slug.current,
   shortDescription,
   description,
@@ -195,7 +195,6 @@ export const SOLUTION_LINE_PRODUCTS_QUERY = /* groq */ `*[
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
-  ${CUSTOMER_FACING} &&
   (
     primarySolution->slug.current == $solutionSlug ||
     $solutionSlug in solutions[]->slug.current
@@ -215,7 +214,6 @@ export const SOLUTION_TAGGED_PRODUCTS_QUERY = /* groq */ `*[
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
-  ${CUSTOMER_FACING} &&
   (
     primarySolution->slug.current == $solutionSlug ||
     $solutionSlug in solutions[]->slug.current
@@ -235,7 +233,6 @@ export const SOLUTION_HERO_PRODUCTS_QUERY = /* groq */ `*[
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
-  ${CUSTOMER_FACING} &&
   (
     primarySolution->slug.current == $solutionSlug ||
     $solutionSlug in solutions[]->slug.current
@@ -245,7 +242,7 @@ export const SOLUTION_HERO_PRODUCTS_QUERY = /* groq */ `*[
 /** Slugs + formats for solutions that earn a landing page (static params). */
 export const SOLUTION_PAGE_SLUGS_QUERY = /* groq */ `*[
   _type == "solution" &&
-  hasPage == true &&
+  ${SOLUTION_ACTIVE} &&
   defined(slug.current)
 ] | order(title asc) {
   "slug": slug.current,
@@ -257,7 +254,7 @@ export const SOLUTION_PAGE_SLUGS_QUERY = /* groq */ `*[
 /** Index cards for solutions that earn a landing page. */
 export const SOLUTIONS_WITH_PAGES_QUERY = /* groq */ `*[
   _type == "solution" &&
-  hasPage == true &&
+  ${SOLUTION_ACTIVE} &&
   defined(slug.current)
 ] | order(title asc) {
   title,
@@ -306,7 +303,7 @@ export type SolutionBySlugDoc = {
     h1?: string | null;
     shortName?: string | null;
     solutionType?: string | null;
-    hasPage?: boolean | null;
+    status?: string | null;
     slug: string | null;
     shortDescription?: string | null;
     description?: unknown[] | null;
@@ -354,14 +351,14 @@ const SOLUTION_STYLE_FILTER_FIELDS = /* groq */ `
 `;
 
 /**
- * Solution Style by parent + style slug. Parent must have `hasPage` (PROD-2520).
+ * Solution Style by parent + style slug. Parent must be Active (PROD-2520; status since PROD-2845).
  * Filter refs feed `@pakfactory/sanity/solution-style-filter` on the FE.
  */
 export const SOLUTION_STYLE_BY_SLUGS_QUERY = /* groq */ `*[
   _type == "solutionStyle" &&
   slug.current == $styleSlug &&
   solution->slug.current == $solutionSlug &&
-  solution->hasPage == true
+  solution->status == "active"
 ][0]{
   _id,
   title,
@@ -380,7 +377,7 @@ export const SOLUTION_STYLE_BY_SLUGS_QUERY = /* groq */ `*[
     _id,
     title,
     shortName,
-    hasPage,
+    status,
     "slug": slug.current,
     allowIndex,
     allowFollow
@@ -408,7 +405,7 @@ const SOLUTION_STYLE_CARD = /* groq */ `{
 }`;
 
 /**
- * Style cards under a hasPage parent (collection band on the solution LP), in
+ * Style cards under an Active parent (collection band on the solution LP), in
  * MERCHANDISED order (PROD-2742).
  *
  * Two tiers: the styles named in the solution's `styleOrder`, in the order they
@@ -431,7 +428,7 @@ const SOLUTION_STYLE_CARD = /* groq */ `{
 export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
   _type == "solution" &&
   slug.current == $solutionSlug &&
-  hasPage == true
+  ${SOLUTION_ACTIVE}
 ][0]{
   "styles": (
     coalesce(
@@ -448,7 +445,7 @@ export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
 }.styles`;
 
 /**
- * Styles under a hasPage solution (merchandised order) **with** filter fields —
+ * Styles under an Active solution (merchandised order) **with** filter fields —
  * used to resolve the inspiration PDP breadcrumb Solution Style (PROD-2763).
  * Same order as {@link SOLUTION_STYLES_FOR_SOLUTION_QUERY}; cards alone lack filters.
  */
@@ -463,7 +460,7 @@ const SOLUTION_STYLE_BREADCRUMB_PROJ = /* groq */ `{
 export const SOLUTION_STYLES_FOR_BREADCRUMB_QUERY = /* groq */ `*[
   _type == "solution" &&
   slug.current == $solutionSlug &&
-  hasPage == true
+  ${SOLUTION_ACTIVE}
 ][0]{
   _id,
   "styles": (
@@ -485,7 +482,7 @@ export const SOLUTION_STYLE_PAGE_PARAMS_QUERY = /* groq */ `*[
   _type == "solutionStyle" &&
   defined(slug.current) &&
   defined(solution->slug.current) &&
-  solution->hasPage == true
+  solution->status == "active"
 ]{
   "solutionSlug": solution->slug.current,
   "styleSlug": slug.current
@@ -495,7 +492,7 @@ export type SolutionStyleParentDoc = {
     _id: string;
     title: string;
     shortName?: string | null;
-    hasPage?: boolean | null;
+    status?: string | null;
     slug: string | null;
     allowIndex?: boolean | null;
     allowFollow?: boolean | null;
