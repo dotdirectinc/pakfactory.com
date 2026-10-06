@@ -52,7 +52,8 @@ const isInspiration = (doc: unknown) => kindOf(doc) === 'inspiration'
  * Release check, warn only (R5): an Active or Coming-soon product whose PRIMARY parent
  * is switched off. The primary is fixed — the site never falls back to the next one
  * (Richard + Eric, 2026-10-06) — so until someone reorders, the breadcrumb shows it
- * unlinked and the product inherits no FAQs. On release the primary should be Active.
+ * unlinked and the product skips its FAQs (a standard product falls through to its
+ * line's; an inspiration product shows none). On release the primary should be Active.
  */
 const primaryParentOffWarning =
   (field: 'productStyle' | 'solutions', applies: (doc: unknown) => boolean) =>
@@ -71,9 +72,11 @@ const primaryParentOffWarning =
         : !status || ['active', 'active-internal', 'discontinued'].includes(status)
     if (on) return true
     const noun = field === 'solutions' ? 'solution' : 'style'
+    const faqs =
+      field === 'solutions' ? 'it inherits no FAQs' : "it shows its line's FAQs instead of this style's"
     return (
       `The primary ${noun} (the first one) is not active, so this product's breadcrumb shows it ` +
-      `without a link and it inherits no FAQs. Drag an active ${noun} to the top, or reactivate it.`
+      `without a link and ${faqs}. Drag an active ${noun} to the top, or reactivate it.`
     )
   }
 
@@ -451,7 +454,7 @@ export const product = defineType({
       max: 6,
       min: 3,
       description:
-        'Curated FAQs for this product — reference shared FAQ documents. Leave empty to inherit from the primary (first) parent while it is active: a standard product shows its first style’s FAQs, else its line’s; an inspiration product shows its first solution’s. If that primary is not active, nothing is inherited — no other parent stands in. Anything here replaces the inherited list entirely — nothing merges.',
+        'Curated FAQs for this product — reference shared FAQ documents. Leave empty to inherit from the primary (first) parent while it is active: a standard product shows its first style’s FAQs, else its line’s; an inspiration product shows its first solution’s. If the primary is not active it is skipped and no other style or solution stands in — a standard product then shows its line’s, an inspiration product none. Anything here replaces the inherited list entirely — nothing merges.',
     }),
 
     // ─── SPECS (source-owned facts — editable for now, decision b) ────────────

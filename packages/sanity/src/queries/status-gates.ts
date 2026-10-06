@@ -107,7 +107,8 @@ export const CUSTOMIZATION_TAXONOMY_ACTIVE = /* groq */ `(!defined(status) || st
  *   2. The primary (`productStyle[0]` / `solutions[0]`) is FIXED. No fallback to the
  *      next parent — it also drives the registry's offer set, so substituting would
  *      make the page disagree with pricing.
- *   3. An off primary passes NO FAQs down (see PRODUCT_FAQS_INHERITED).
+ *   3. An off primary passes NO FAQs down and no other parent of its kind stands in. A
+ *      standard product still falls through to its line (see PRODUCT_FAQS_INHERITED).
  *
  * "Off" is Coming soon or Not active. Discontinued keeps its page, so it stays on, and
  * Active (Internal) passes through (R4). For a solution only Active is on — it has no
