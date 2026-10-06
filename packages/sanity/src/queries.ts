@@ -566,3 +566,11 @@ export const ALL_PRODUCT_PAGES_WITH_PRODUCTS_QUERY = /* groq */ `*[_type == "pro
     "thumbAlt": coalesce(media[0].alt, title)
   }
 }`;
+
+/** Status gates (PROD-2845 + 2026-10-06 visibility rules) for consumers outside www — e.g. admin search. */
+export {
+    HAS_DETAIL_PAGE,
+    OPTION_ACTIVE,
+    PRODUCT_HAS_PAGE,
+    PRODUCT_LISTED,
+} from './queries/status-gates';

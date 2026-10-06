@@ -1,3 +1,4 @@
+import { HAS_DETAIL_PAGE, OPTION_ACTIVE, PRODUCT_HAS_PAGE } from "@pakfactory/sanity/queries";
 import { blogPostHref, wwwPath } from "./content-origins";
 import type { AdminSearchHit } from "./types";
 import { getAdminSanityClient } from "@/lib/sanity/client";
@@ -42,10 +43,14 @@ function matchTerm(query: string): string {
   return tokens.map((t) => `${t}*`).join(" ");
 }
 
+// Same gates as the content indexes (Algolia is primary; this is the fallback) — a
+// product or option customers cannot reach is not offered as a search result.
 const PRODUCT_SEARCH = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
+  !(_id in path("drafts.**")) &&
   allowIndex != false &&
+  ${PRODUCT_HAS_PAGE} &&
   (
     title match $term ||
     shortName match $term ||
@@ -62,8 +67,10 @@ const CUSTOMIZATION_SEARCH = /* groq */ `*[
   _type == "customizationOption" &&
   defined(slug.current) &&
   defined(type->category->slug.current) &&
+  !(_id in path("drafts.**")) &&
   allowIndex != false &&
-  role != "configurable" &&
+  ${OPTION_ACTIVE} &&
+  ${HAS_DETAIL_PAGE} &&
   (
     title match $term ||
     shortName match $term ||
