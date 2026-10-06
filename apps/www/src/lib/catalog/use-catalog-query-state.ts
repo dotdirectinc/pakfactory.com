@@ -1,7 +1,17 @@
 'use client';
 
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {usePathname, useSearchParams} from 'next/navigation';
+import {
+    createElement,
+    Suspense,
+    useCallback,
+    useMemo,
+    useRef,
+    useState,
+    type ReactNode,
+} from 'react';
+import {usePathname} from 'next/navigation';
+
+import {SearchParamsListener} from '@/lib/catalog/search-params-listener';
 
 import {useCatalogSearchDraft} from '@/lib/catalog/use-catalog-search-draft';
 
@@ -52,6 +62,11 @@ export type CatalogQueryState = {
     }) => void;
     /** Call when filters change so progressive reveal resets. */
     onFilterCommit?: () => void;
+    /**
+     * Render this inside the panel. It applies URL filters after hydration and
+     * on back/forward (PROD-2799); `null` when `urlSync` is false.
+     */
+    urlSyncListener: ReactNode;
 };
 
 function parseList(raw: string | null): string[] {
@@ -130,7 +145,12 @@ function selectionsEqual(
 
 /**
  * Catalog filter state with optional URL mirroring via `history.replaceState`
- * (no server round trip). Back/forward re-seeds from `useSearchParams`.
+ * (no server round trip).
+ *
+ * State starts at the default (unfiltered) view on the server and during
+ * hydration, so static catalog pages ship their first page of cards in the HTML
+ * (PROD-2799). URL filters — deep links, back/forward, same-page navigation —
+ * arrive through `urlSyncListener`, which isolates `useSearchParams`.
  */
 export function useCatalogQueryState({
     urlSync = true,
@@ -139,25 +159,15 @@ export function useCatalogQueryState({
     initialExtras,
 }: UseCatalogQueryStateOptions): CatalogQueryState {
     const pathname = usePathname();
-    const searchParams = useSearchParams();
     const facetIdList = useMemo(() => [...new Set(facetIds)], [facetIds]);
     const facetIdKey = facetIdList.join('\0');
 
-    const [query, setQuery] = useState(() =>
-        urlSync ? (searchParams.get(PARAM_Q) ?? '') : '',
-    );
+    const [query, setQuery] = useState('');
     const [selections, setSelectionsState] = useState<Record<string, string[]>>(
-        () =>
-            urlSync
-                ? readSelectionsFromParams(searchParams, facetIdList)
-                : {},
+        {},
     );
     const [extras, setExtrasState] = useState<Record<string, string>>(() =>
-        readExtrasFromParams(
-            urlSync ? searchParams : new URLSearchParams(),
-            extraParams,
-            initialExtras,
-        ),
+        readExtrasFromParams(new URLSearchParams(), extraParams, initialExtras),
     );
 
     const writingRef = useRef(false);
@@ -210,32 +220,43 @@ export function useCatalogQueryState({
         [urlSync, pathname, facetIdList, extraParams],
     );
 
-    // Back / forward (and any external searchParams change we did not write).
-    useEffect(() => {
-        if (!urlSync) return;
-        if (writingRef.current) return;
+    // URL → state: after hydration, on back/forward, and on any external
+    // searchParams change we did not write ourselves.
+    const applyUrl = useCallback(
+        (searchParams: URLSearchParams) => {
+            if (!urlSync) return;
+            if (writingRef.current) return;
 
-        const nextQuery = searchParams.get(PARAM_Q) ?? '';
-        const nextSelections = readSelectionsFromParams(
-            searchParams,
-            facetIdList,
-        );
-        const nextExtras = readExtrasFromParams(
-            searchParams,
-            extraParams,
-            initialExtras,
-        );
+            const nextQuery = searchParams.get(PARAM_Q) ?? '';
+            const nextSelections = readSelectionsFromParams(
+                searchParams,
+                facetIdList,
+            );
+            const nextExtras = readExtrasFromParams(
+                searchParams,
+                extraParams,
+                initialExtras,
+            );
 
-        setQuery((prev) => (prev === nextQuery ? prev : nextQuery));
-        setSelectionsState((prev) =>
-            selectionsEqual(prev, nextSelections) ? prev : nextSelections,
-        );
-        setExtrasState((prev) =>
-            extrasEqual(prev, nextExtras) ? prev : nextExtras,
-        );
-        // facetIdKey tracks facetIdList identity for the dependency array.
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- facetIdKey stands in for facetIdList
-    }, [urlSync, searchParams, facetIdKey, extraParams, initialExtras]);
+            setQuery((prev) => (prev === nextQuery ? prev : nextQuery));
+            setSelectionsState((prev) =>
+                selectionsEqual(prev, nextSelections) ? prev : nextSelections,
+            );
+            setExtrasState((prev) =>
+                extrasEqual(prev, nextExtras) ? prev : nextExtras,
+            );
+        },
+        // facetIdKey stands in for facetIdList (a new array each render).
+        [urlSync, facetIdKey, extraParams, initialExtras],
+    );
+
+    const urlSyncListener = urlSync
+        ? createElement(
+              Suspense,
+              {fallback: null},
+              createElement(SearchParamsListener, {onChange: applyUrl}),
+          )
+        : null;
 
     const commitSearch = useCallback(
         (q: string) => {
@@ -331,5 +352,6 @@ export function useCatalogQueryState({
         toggleFacet,
         setSelections,
         reset,
+        urlSyncListener,
     };
 }
