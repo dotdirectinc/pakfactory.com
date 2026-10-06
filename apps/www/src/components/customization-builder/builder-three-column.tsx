@@ -6,17 +6,21 @@ import {CustomizationCategoryRail} from '@/components/customization-builder/cust
 import {CustomizationDimensionOption} from '@/components/customization-builder/customization-dimension-option';
 import {CustomizationFinishOption} from '@/components/customization-builder/customization-finish-option';
 import {OptionDetail} from '@/components/customization-builder/option-detail';
+import {PrintedSideGate} from '@/components/customization-builder/printed-side-gate';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
     answerSelections,
     dimensionEntryNoteKey,
     getAnswer,
+    isPrintingCategoryStep,
+    wantsAnyPrint,
     type BuilderOption,
     type BuilderStep,
     type BuilderStepKey,
     type CustomizationBuilderState,
     type DimensionFace,
+    type PrintSideValue,
     type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
@@ -47,6 +51,11 @@ type BuilderThreeColumnProps = {
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) => void;
+    onPrintedSideChange?: (patch: {
+        printOutside?: PrintSideValue;
+        printInside?: PrintSideValue;
+    }) => void;
+    onPrintingConsultation?: () => void;
 };
 
 export function BuilderThreeColumn({
@@ -71,12 +80,20 @@ export function BuilderThreeColumn({
     onClearCategory,
     onEntryNoteChange,
     onPropertySelectionsChange,
+    onPrintedSideChange,
+    onPrintingConsultation,
 }: BuilderThreeColumnProps) {
     const step = steps.find((item) => item.key === activeKey) ?? steps[0];
     if (!step) return null;
 
     const answer = getAnswer(state, step.key);
+    const printingStep = isPrintingCategoryStep(step);
     const consultationSelected = answer.status === 'not-sure';
+    // Any Yes (even if the other side is still unset) → Method / Color list.
+    const methodsEligible = wantsAnyPrint(state);
+    const showPrintingOptions = printingStep && methodsEligible;
+    // Alone under pills when no Yes; list owns the end card when methods show.
+    const showGateConsultation = printingStep && !methodsEligible;
     const face: DimensionFace | null =
         step.kind === 'dimensions'
             ? activeTypeId === 'internal'
@@ -132,19 +149,45 @@ export function BuilderThreeColumn({
                         onClearCategory={onClearCategory}
                     />
                 </div>
-                <CategoryTypeList
-                    kind={step.kind}
-                    types={step.types}
-                    options={step.options}
-                    activeTypeId={activeTypeId}
-                    activeOptionId={activeOptionId}
-                    selectedOptionIds={selectedOptionIds}
-                    disabledOptionIds={disabledOptionIds}
-                    consultationSelected={consultationSelected}
-                    onSelectConsultation={onSelectConsultation}
-                    onSelectType={onSelectType}
-                    onSelectOption={onSelectOption}
-                />
+                <div className="flex min-h-0 min-w-0 flex-col overflow-y-auto border-b border-border md:border-b-0 md:border-r">
+                    {printingStep &&
+                    onPrintedSideChange &&
+                    onPrintingConsultation ? (
+                        <div className="shrink-0">
+                            <PrintedSideGate
+                                printOutside={state.printOutside ?? ''}
+                                printInside={state.printInside ?? ''}
+                                onChange={onPrintedSideChange}
+                                onNeedConsultation={onPrintingConsultation}
+                                consultationSelected={
+                                    consultationSelected &&
+                                    showGateConsultation
+                                }
+                                showConsultation={showGateConsultation}
+                            />
+                        </div>
+                    ) : null}
+                    {!printingStep || showPrintingOptions ? (
+                        <CategoryTypeList
+                            kind={step.kind}
+                            types={step.types}
+                            options={step.options}
+                            activeTypeId={activeTypeId}
+                            activeOptionId={activeOptionId}
+                            selectedOptionIds={selectedOptionIds}
+                            disabledOptionIds={disabledOptionIds}
+                            consultationSelected={consultationSelected}
+                            onSelectConsultation={onSelectConsultation}
+                            onSelectType={onSelectType}
+                            onSelectOption={onSelectOption}
+                            className={
+                                printingStep
+                                    ? 'border-0 border-r-0 md:border-r-0'
+                                    : undefined
+                            }
+                        />
+                    ) : null}
+                </div>
                 <div className="min-h-0 min-w-0 overflow-y-auto px-5 py-5">
                     {step.kind === 'dimensions' ? (
                         <CustomizationDimensionOption
@@ -155,7 +198,8 @@ export function BuilderThreeColumn({
                             onChange={(next) => onAnswerChange(step.key, next)}
                             {...noteProps}
                         />
-                    ) : step.category === 'finishing' ? (
+                    ) : printingStep && !showPrintingOptions ? null : step.category ===
+                      'finishing' ? (
                         <CustomizationFinishOption
                             option={selectedOption}
                             consultationSelected={consultationSelected}

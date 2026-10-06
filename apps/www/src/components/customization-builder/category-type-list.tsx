@@ -21,6 +21,8 @@ type CategoryTypeListProps = {
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
     onSelectOption: (option: BuilderOption) => void;
+    /** Override nav chrome (e.g. when nested under Printed Side gate). */
+    className?: string;
 };
 
 export function CategoryTypeList({
@@ -35,10 +37,14 @@ export function CategoryTypeList({
     onSelectConsultation,
     onSelectType,
     onSelectOption,
+    className,
 }: CategoryTypeListProps) {
     return (
         <nav
-            className="min-h-0 min-w-0 overflow-y-auto border-b border-border md:border-b-0 md:border-r"
+            className={cn(
+                'min-h-0 min-w-0 overflow-y-auto border-b border-border md:border-b-0 md:border-r',
+                className,
+            )}
             aria-label={CUSTOMIZATION_BUILDER_COPY.typeListLabel}
         >
             <div className="flex flex-col gap-4 px-3 py-3">
