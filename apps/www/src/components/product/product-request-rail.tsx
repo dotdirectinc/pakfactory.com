@@ -1,135 +1,44 @@
 'use client';
 
-import {useMemo, useState} from 'react';
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {AddToRequestButton} from '@/components/product/add-to-request-button';
 import {ContentsField} from '@/components/product/contents-field';
 import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
-import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
-import {showToastCard} from '@/components/ui/toast-card';
-import type {Product} from '@/lib/catalog/types';
+import {useProductPdpDraft} from '@/components/product/product-pdp-draft';
 import {REQUEST_COPY} from '@/lib/copy/request';
-import {
-    createEmptyBuilderState,
-    buildStepsFromCatalog,
-    seedFromCustomizations,
-    toRequestCustomizations,
-    type CustomizationBuilderState,
-} from '@/lib/customization-builder';
-import {useRequest} from '@/lib/request/request-provider';
-import type {RequestReferenceImage} from '@/lib/request/request.storage';
-import {WWW_ROUTES} from '@/lib/www-routes';
 
-type ProductRequestRailProps = {
-    product: Product;
-};
-
-export function ProductRequestRail({product}: ProductRequestRailProps) {
-    const {addLine, draft} = useRequest();
+/**
+ * PDP buy-box rail — quantity, contents, customization, Add to request.
+ * Draft state lives in {@link ProductPdpDraftProvider} (page-level sticky bar).
+ */
+export function ProductRequestRail() {
+    const {
+        product,
+        volumes,
+        contents,
+        detailsOptIn,
+        notes,
+        referenceImages,
+        builderState,
+        draftId,
+        ready,
+        addVolume,
+        removeVolume,
+        setContents,
+        setDetailsOptIn,
+        setNotes,
+        setReferenceImages,
+        setBuilderState,
+        handleAdd,
+    } = useProductPdpDraft();
     const isInspiration = product.kind === 'inspiration';
-    const initialBuilder = useMemo(() => {
-        // A preset starts from the options it names. Without any, the builder starts empty —
-        // seeding from the whole offer would pick every option now that a step holds several.
-        const preselected = product.availableCustomizations.filter(
-            (item) => item.preselected === true,
-        );
-        if (isInspiration && preselected.length) {
-            return seedFromCustomizations(preselected);
-        }
-        return createEmptyBuilderState();
-    }, [isInspiration, product.availableCustomizations]);
-    const [volumes, setVolumes] = useState<number[]>([]);
-    const [contents, setContents] = useState('');
-    const [detailsOptIn, setDetailsOptIn] = useState(false);
-    const [notes, setNotes] = useState('');
-    const [referenceImages, setReferenceImages] = useState<RequestReferenceImage[]>(
-        [],
-    );
-    const [builderState, setBuilderState] =
-        useState<CustomizationBuilderState>(initialBuilder);
-
-    const contentsReady = Boolean(contents.trim());
-    const ready = volumes.length > 0 && contentsReady;
-
-    function addVolume(volume: number) {
-        setVolumes((prev) =>
-            prev.includes(volume) ? prev : [...prev, volume].sort((a, b) => a - b),
-        );
-    }
-
-    function removeVolume(volume: number) {
-        setVolumes((prev) => prev.filter((item) => item !== volume));
-    }
-
-    function handleAdd() {
-        if (!ready) return;
-        const customizations = toRequestCustomizations(
-            builderState,
-            CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
-            buildStepsFromCatalog(product.availableCustomizations),
-        );
-        addLine({
-            productSlug: product.slug,
-            productTitle: product.title,
-            productSku: product.sku,
-            productLineTitle: product.productLine.title,
-            ...(product.moq ? {productMoq: product.moq} : {}),
-            productMedia: product.media,
-            availableCustomizations: product.availableCustomizations,
-            ...(product.customizationRules
-                ? {customizationRules: product.customizationRules}
-                : {}),
-            ...(product.dimensionInput
-                ? {dimensionInput: product.dimensionInput}
-                : {}),
-            ...(product.dimensionRange
-                ? {dimensionRange: product.dimensionRange}
-                : {}),
-            quantities: volumes,
-            contents,
-            customizations,
-            customizationBuilder: builderState,
-            ...(detailsOptIn && notes.trim() ? {notes} : {}),
-            ...(detailsOptIn && referenceImages.length
-                ? {referenceImages}
-                : {}),
-        });
-        showToastCard({
-            title: REQUEST_COPY.addedToYourRequest,
-            action: {
-                label: REQUEST_COPY.viewYourRequest,
-                href: WWW_ROUTES.request,
-            },
-            dismissLabel: REQUEST_COPY.close,
-        });
-        setVolumes([]);
-        setContents('');
-        if (!detailsOptIn) {
-            for (const image of referenceImages) {
-                if (image.url.startsWith('blob:')) {
-                    URL.revokeObjectURL(image.url);
-                }
-            }
-        }
-        setDetailsOptIn(false);
-        setNotes('');
-        setReferenceImages([]);
-        const preselected = product.availableCustomizations.filter(
-            (item) => item.preselected === true,
-        );
-        setBuilderState(
-            isInspiration && preselected.length
-                ? seedFromCustomizations(preselected)
-                : createEmptyBuilderState(),
-        );
-    }
 
     return (
         <div className="mt-8 space-y-6">
             <section className="rounded-2xl bg-muted p-6">
                 <h2 className="text-base font-semibold text-brand-blue">
-                    Quantity
+                    {REQUEST_COPY.quantityLabel}
                     <span className="text-destructive" aria-hidden>
                         {' '}
                         *
@@ -155,7 +64,7 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
                     onNotesChange={setNotes}
                     referenceImages={referenceImages}
                     onReferenceImagesChange={setReferenceImages}
-                    draftId={draft.id}
+                    draftId={draftId}
                 />
             </section>
 
