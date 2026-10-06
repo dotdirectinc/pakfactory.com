@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@pakfactory/ui/components/button";
+import { setExclusionAction } from "@/app/(admin)/spec/actions";
 import { Input } from "@pakfactory/ui/components/input";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { ChangesetItem } from "@/lib/spec/registry-api";
-import { ADMIN_SPEC_SANITY_ITEM_COPY as SANITY } from "@/lib/copy/spec";
+import { ADMIN_SPEC_COPY, ADMIN_SPEC_SANITY_ITEM_COPY as SANITY } from "@/lib/copy/spec";
 
 type Block = { _type?: string; listItem?: string; children?: { text?: string }[] };
 const isBlock = (b: unknown): b is Block => Boolean(b) && typeof b === "object" && Array.isArray((b as Block).children);
@@ -102,8 +105,28 @@ function SanityCompare({ item }: { item: ChangesetItem }) {
  * THIS line here", and a filter over the whole set answers it in one step, where paging
  * would make them hunt. The largest frame is ~1,300 rows, which a browser handles.
  */
-export function SpecItemList({ items }: { items: ChangesetItem[] }) {
+type ListProps = {
+  items: ChangesetItem[];
+  /** Set on a pending sync frame the viewer may decide: rows offer Exclude / Include. */
+  exclusion?: { changesetId: string } | null;
+};
+
+export function SpecItemList({ items, exclusion = null }: ListProps) {
   const [query, setQuery] = useState("");
+  const [busy, startToggle] = useTransition();
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Per document: every row of it in this frame moves together (the database does the same).
+  function toggle(document: string, excluded: boolean) {
+    if (!exclusion) return;
+    setToggleError(null);
+    startToggle(async () => {
+      const res = await setExclusionAction(exclusion.changesetId, document, excluded);
+      if (!res.ok) setToggleError(res.error);
+      router.refresh();
+    });
+  }
 
   const rows = useMemo(
     () =>
@@ -124,6 +147,8 @@ export function SpecItemList({ items }: { items: ChangesetItem[] }) {
 
   return (
     <div className="flex flex-col gap-2">
+      {exclusion ? <p className="text-xs text-muted-foreground">{ADMIN_SPEC_COPY.excludeHint}</p> : null}
+      {toggleError ? <p role="alert" className="text-sm text-destructive">{toggleError}</p> : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Input
           value={query}
@@ -146,13 +171,25 @@ export function SpecItemList({ items }: { items: ChangesetItem[] }) {
       ) : (
         <ol className="max-h-[32rem] divide-y divide-border overflow-y-auto rounded-md border border-border">
           {filtered.map((r) => (
-            <li key={r.key} className="flex flex-wrap items-baseline gap-2 px-3 py-1.5 text-sm">
+            <li key={r.key} className={`flex flex-wrap items-baseline gap-2 px-3 py-1.5 text-sm ${r.item.excluded_at ? "opacity-60" : ""}`}>
               {r.op !== "insert" ? (
                 <span className="shrink-0 text-xs uppercase tracking-wide text-destructive">
                   {r.op}
                 </span>
               ) : null}
-              <span className="text-foreground">{r.text}</span>
+              <span className={r.item.excluded_at ? "text-muted-foreground line-through" : "text-foreground"}>{r.text}</span>
+              {exclusion && r.item.document ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto h-6 px-2 text-xs"
+                  disabled={busy}
+                  onClick={() => toggle(r.item.document!, !r.item.excluded_at)}
+                >
+                  {r.item.excluded_at ? ADMIN_SPEC_COPY.include : ADMIN_SPEC_COPY.exclude}
+                </Button>
+              ) : null}
+              {r.item.excluded_at ? <span className="w-full text-xs text-muted-foreground">{ADMIN_SPEC_COPY.excludedNote}</span> : null}
               {r.item.apply_state ? (
                 <Badge variant={r.item.apply_state === "applied" ? "secondary" : r.item.apply_state === "pending" ? "outline" : "destructive"}>
                   {SANITY.states[r.item.apply_state]}

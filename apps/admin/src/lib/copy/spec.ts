@@ -20,6 +20,12 @@ export const ADMIN_SPEC_COPY = {
   readOnlyNote:
     "You can review this frame but not decide it — that needs the approver role.",
   decidedNote: "This frame has already been decided.",
+  exclude: "Exclude",
+  include: "Include",
+  excludedNote: "Excluded — not applied when the frame is approved",
+  excludeHint:
+    "Exclude leaves a record out of this approval — all of its rows here together. It will be proposed again only if its source changes again.",
+  allExcluded: "Every change is excluded — include at least one, or discard the frame.",
   blockedLead:
     "This frame refers to rows other frames create, so it cannot be approved yet. Approve these first:",
   unreachable:

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { decideChangeset, dismissSyncRun, requestSyncRun } from "@/lib/spec/registry-api";
+import { decideChangeset, dismissSyncRun, requestSyncRun, setDocumentExclusion } from "@/lib/spec/registry-api";
 
 export type DecisionResult = { ok: true } | { ok: false; error: string };
 
@@ -46,5 +46,13 @@ export async function dismissSyncAction(id: string): Promise<DecisionResult> {
   const res = await dismissSyncRun(id);
   if (!res.ok) return { ok: false, error: res.error };
   revalidatePath("/spec");
+  return { ok: true };
+}
+
+/** Exclude (or include) every row of one document in a pending sync frame (PROD-2751). */
+export async function setExclusionAction(changesetId: string, document: string, excluded: boolean): Promise<DecisionResult> {
+  const res = await setDocumentExclusion(changesetId, document, excluded);
+  if (!res.ok) return { ok: false, error: res.error };
+  revalidatePath(`/spec/${changesetId}`);
   return { ok: true };
 }

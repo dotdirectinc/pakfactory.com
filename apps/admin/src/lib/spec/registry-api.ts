@@ -45,9 +45,17 @@ export type ChangesetItem = {
   target_ref?: string | null;
   apply_state?: "pending" | "applied" | "stale" | "failed" | null;
   apply_error?: string | null;
+  /** The record this row is about — what Exclude acts on (sync frames, PROD-2751). */
+  document?: string | null;
+  /** Left out of this frame's approval. */
+  excluded_at?: string | null;
 };
 
-export type ChangesetDetail = ChangesetSummary & { items: ChangesetItem[] };
+export type ChangesetDetail = ChangesetSummary & {
+  items: ChangesetItem[];
+  /** A pending sync frame: its documents can be excluded before approving. */
+  excludable?: boolean;
+};
 
 export type SpecMe = {
   authenticated: boolean;
@@ -202,4 +210,12 @@ export async function requestSyncRun(kind: SyncKind, dataset: string) {
 /** Hide a finished run from the panel. The backend keeps the row. */
 export async function dismissSyncRun(id: string) {
   return call<SyncRun>(`/api/v1/sync-runs/${encodeURIComponent(id)}/dismiss`, { method: "POST" });
+}
+
+/** Leave a document out of a pending sync frame's approval, or bring it back. */
+export async function setDocumentExclusion(changesetId: string, document: string, excluded: boolean) {
+  return call<{ document: string; excluded: boolean; rows: number }>(
+    `/api/v1/changesets/${encodeURIComponent(changesetId)}/exclusions`,
+    { method: "POST", body: { document, excluded } },
+  );
 }
