@@ -540,7 +540,7 @@ export const HISTORIC = [
   'migrate-product-to-single-refs',
   'migrate-remove-404-promobanner',
   'migrate-rename-commercial-types',
-  'migrate-solution-haspage',
+  'migrate-solution-haspage', // script deleted 2026-10-06 (PROD-2898): its field, solution.hasPage, was replaced by status (PROD-2845). Kept here for provenance.
   'migrate-solution-remove-usecase-leftovers',
   'migrate-solution-titles',
   'migrate-unset-legacy-applies',
