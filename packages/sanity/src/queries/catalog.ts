@@ -13,6 +13,8 @@ import {
 import {MODEL_3D_FIELDS} from './product-model-3d';
 import {
   CARD_IMAGE_FROM_CATALOG,
+  CATALOG_IMAGE_ALT,
+  CATALOG_IMAGE_SRC,
   CATALOG_MEDIA_ARRAYS,
   OPTION_MEDIA_FIELDS,
   PRIMARY_PRODUCT_IMAGE_GROQ,
@@ -879,8 +881,8 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     title,
     "slug": slug.current,
     shortDescription,
-    "src": featuredImage.asset->url,
-    "alt": title
+    "src": ${CATALOG_IMAGE_SRC},
+    "alt": coalesce(${CATALOG_IMAGE_ALT}, title)
   },
   "peers": *[
     _type == "customizationOption" &&

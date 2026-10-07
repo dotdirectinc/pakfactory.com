@@ -205,8 +205,9 @@ export type Product = {
     sku: string;
     kind: ProductKind;
     /**
-     * PDP gallery slides: Media extras first, Featured image last when set
-     * (deduped by URL). Index 0 is the default main well.
+     * PDP gallery slides (ADR-024): primary product still first, then other
+     * product stills, then lifestyle (`kind: 'lifestyle'`). Index 0 is the
+     * default main well / card thumb when product-only.
      */
     media: CatalogMedia[];
     /**

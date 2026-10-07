@@ -115,7 +115,8 @@ const FORMAT_REF = /* groq */ `{
 }`;
 
 /**
- * Industry LP hero tiles — product projection (featuredImage preferred, then gallery).
+ * Industry LP hero tiles — product stills on `media` / `images`; lifestyle stills
+ * via `lifestyleImages` from {@link CATALOG_MEDIA_ARRAYS} (www picks `[0]` for tiles).
  * Used by auto query and curated `featuredProducts` on the solution doc (PROD-2763).
  */
 const SOLUTION_HERO_PRODUCT_PROJ = /* groq */ `{
@@ -135,7 +136,11 @@ const SOLUTION_HERO_PRODUCT_PROJ = /* groq */ `{
         "alt": ${IMAGE_ALT}
       }
     ]
-  )
+  ),
+  lifestyleImages[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  }
 }`;
 
 /** Solution landing page by slug (caller gates on status). */
