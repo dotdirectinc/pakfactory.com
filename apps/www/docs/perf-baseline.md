@@ -16,7 +16,7 @@ pnpm --filter @pakfactory/www perf:baseline --base http://localhost:3000 --skip-
 | Crawl | `/`, the links on it, and the links on those pages (depth 2, up to `--max-urls`, default 400), each fetched twice. Records status, TTFB, compressed and HTML size, `cache-control`, `x-vercel-cache`. Ends with a 404 probe. | `--skip-crawl` |
 | RSC | The payload size of each measured page with an `RSC: 1` request. | `--skip-rsc` |
 | Media | Sanity images in the page markup (`src`, `srcset`, `poster`) without size parameters, and the size of every referenced MP4. | `--skip-media` |
-| Lighthouse 13 | Mobile and `--preset=desktop` runs on the 14 baseline pages (`--pages a,b,…` to override). Uses `npx lighthouse@13` and the local Chrome. About 20 minutes (28 runs, run one at a time). | `--skip-lighthouse` |
+| Lighthouse 13 | Mobile and `--preset=desktop` runs on the 14 baseline pages (`--pages a,b,…` to override). Uses `npx lighthouse@13` and the local Chrome. Runs one at a time, about 40 s each: about 20 minutes for the 14 default pages (28 runs). | `--skip-lighthouse` |
 
 Output goes to `<os tmp>/pf-perf-baseline/<timestamp>/` (or `--out <dir>`): `summary.md`, `results.json` and the raw Lighthouse reports.
 

@@ -448,7 +448,8 @@ if (!opts.skip.has("media")) {
   results.media = await mediaAudit(opts);
 }
 if (!opts.skip.has("lighthouse")) {
-  console.log("Lighthouse (28 runs one at a time, about 20 minutes)…");
+  const runs = opts.pages.length * 2;
+  console.log(`Lighthouse (${runs} runs one at a time, about ${Math.max(1, Math.round((runs * 40) / 60))} min)…`);
   results.lighthouse = lighthouse(opts);
 }
 results.finishedAt = new Date().toISOString();
