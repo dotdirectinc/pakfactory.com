@@ -11,6 +11,8 @@ type Props = {
   itemCount: number;
   /** Rows left out of the approval (sync frames). */
   excludedCount?: number;
+  /** The frame has Sanity-bound rows: they are written after approval (PROD-2751). */
+  writesToSanity?: boolean;
   canDecide: boolean;
   /** Frames that must be approved before this one. Empty when it is ready. */
   blockedBy: string[];
@@ -22,7 +24,7 @@ type Props = {
  * afterwards — a changeset is applied or discarded as a whole, and the reverse of
  * an approval is a new changeset, not a button.
  */
-export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, canDecide, blockedBy }: Props) {
+export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, writesToSanity = false, canDecide, blockedBy }: Props) {
   const included = itemCount - excludedCount;
   const [pending, startTransition] = useTransition();
   const [isDeciding, setIsDeciding] = useState<null | "approve" | "discard">(null);
@@ -93,6 +95,7 @@ export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, can
               {excludedCount > 0
                 ? `Approve ${included.toLocaleString()} of ${itemCount.toLocaleString()} changes (${excludedCount.toLocaleString()} excluded)? This cannot be undone.`
                 : `Approve ${itemCount.toLocaleString()} changes? This cannot be undone.`}
+              {writesToSanity ? ` ${ADMIN_SPEC_COPY.sanityWriteNote}` : ""}
             </span>
             <Button size="sm" disabled={pending} onClick={() => decide("approve")}>
               {isDeciding === "approve" ? ADMIN_SPEC_COPY.approving : "Yes, approve"}

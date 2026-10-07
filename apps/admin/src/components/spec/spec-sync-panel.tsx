@@ -6,13 +6,15 @@ import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
 import { dismissSyncAction, requestSyncAction } from "@/app/(admin)/spec/actions";
-import type { SyncRun } from "@/lib/spec/registry-api";
+import type { SyncRun, SyncWriteProblem } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SYNC_COPY as COPY } from "@/lib/copy/spec";
 
 type Props = {
   runs: SyncRun[];
   /** The grant holds `catalog.sync` — approvers and admins. */
   canSync: boolean;
+  /** Approved changes that did not reach Sanity (empty when all were written). */
+  problems?: SyncWriteProblem[];
 };
 
 const POLL_MS = 3000;
@@ -35,7 +37,7 @@ const when = (iso: string) =>
  * the two sides and loads what differs as draft frames. While a run is open the page refreshes
  * itself, so the new frames appear without a reload.
  */
-export function SpecSyncPanel({ runs, canSync }: Props) {
+export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
   const [dataset, setDataset] = useState("development");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -100,6 +102,26 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
         <p className="text-sm text-muted-foreground">{COPY.noPermission}</p>
       )}
       {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+
+      {problems.length ? (
+        <div role="alert" className="flex flex-col gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+          <p className="font-medium text-destructive">{COPY.problemsTitle(problems.length)}</p>
+          <p className="text-muted-foreground">{COPY.problemsLead}</p>
+          <ul className="flex flex-col gap-1">
+            {problems.slice(0, 10).map((p) => (
+              <li key={p.item_id} className="flex flex-col">
+                <span className="text-foreground">
+                  {p.title} · {p.fields.join(", ")} — {COPY.problemStates[p.state]}
+                  {p.error ? <span className="text-muted-foreground"> ({p.error})</span> : null}
+                </span>
+                <Link href={`/spec/${p.changeset_id}`} className="text-xs text-muted-foreground underline-offset-2 hover:underline">
+                  {p.frame}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-medium text-foreground">{COPY.recent}</h3>

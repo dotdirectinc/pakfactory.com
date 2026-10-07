@@ -1,4 +1,4 @@
-import { listAllChangesets, listSyncRuns } from "@/lib/spec/registry-api";
+import { listAllChangesets, listSyncRuns, listSyncWriteProblems } from "@/lib/spec/registry-api";
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecChangesetTable } from "@/components/spec/spec-changeset-table";
 import { SpecSyncPanel } from "@/components/spec/spec-sync-panel";
@@ -9,7 +9,7 @@ export const metadata = { title: "Spec registry" };
 export default async function SpecPage() {
   // 404s staff without a grant before anything is fetched or rendered.
   const me = await requireRegistryGrant();
-  const [res, runs] = await Promise.all([listAllChangesets(), listSyncRuns()]);
+  const [res, runs, problems] = await Promise.all([listAllChangesets(), listSyncRuns(), listSyncWriteProblems()]);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
@@ -21,7 +21,7 @@ export default async function SpecPage() {
       </div>
 
       {/* A backend without sync runs (not yet deployed) hides the panel rather than failing the page. */}
-      {runs.ok ? <SpecSyncPanel runs={runs.data} canSync={me.capabilities.includes("catalog.sync")} /> : null}
+      {runs.ok ? <SpecSyncPanel runs={runs.data} canSync={me.capabilities.includes("catalog.sync")} problems={problems.ok ? problems.data : []} /> : null}
 
       {!res.ok ? (
         <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">

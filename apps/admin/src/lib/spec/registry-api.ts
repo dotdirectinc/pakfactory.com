@@ -221,3 +221,20 @@ export async function setDocumentExclusion(changesetId: string, document: string
     { method: "POST", body: { document, excluded } },
   );
 }
+
+/** An approved change that did not reach Sanity (PROD-2751, 2026-10-07). */
+export type SyncWriteProblem = {
+  item_id: string;
+  changeset_id: string;
+  frame: string;
+  approved_at: string;
+  title: string;
+  fields: string[];
+  state: "stale" | "failed" | "stuck";
+  error: string | null;
+};
+
+/** Approved Sanity-bound changes from the last 30 days that ended stale, failed, or stuck pending. */
+export async function listSyncWriteProblems() {
+  return call<SyncWriteProblem[]>("/api/v1/sync-runs/write-problems");
+}
