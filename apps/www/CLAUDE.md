@@ -85,6 +85,7 @@ www prefers **Sections** language for page composition ([ADR-015](../../docs/adr
 - `pnpm dev:www` from repo root → **http://localhost:3003**
 - `pnpm start` (after build) → port **3000**
 - Env: repo root `.env.local` via `loadEnvConfig` in `next.config.ts` (`forceReload: true`); optional overrides in `apps/www/.env.local` — see [`.env.example`](./.env.example)
+- Performance baseline (crawl + Lighthouse, any base URL): `pnpm --filter @pakfactory/www perf:baseline --base <url>` — [`docs/perf-baseline.md`](./docs/perf-baseline.md)
 
 ## Packages
 
