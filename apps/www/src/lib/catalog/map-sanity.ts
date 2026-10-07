@@ -65,34 +65,45 @@ function catalogMediaFromImage(
     return {src, alt: resolveImageAlt(image, titleFallback)};
 }
 
+function pushGallerySlides(
+    slides: CatalogMedia[],
+    seen: Set<string>,
+    items: unknown[] | null | undefined,
+    titleFallback: string,
+    kind: 'product' | 'lifestyle',
+) {
+    if (!Array.isArray(items)) return;
+    for (const item of items) {
+        const slide = catalogMediaFromImage(item, titleFallback);
+        if (!slide?.src || seen.has(slide.src)) continue;
+        seen.add(slide.src);
+        slides.push({...slide, kind});
+    }
+}
+
 /**
- * Detail / compare gallery: Featured image first, then Media extras (ADR-023).
- * Dedupe by src when Featured was also left in Media. Empty → placeholder alt.
+ * Detail / compare gallery: product stills first (primary first via featuredImage
+ * alias), then lifestyle stills (ADR-024). Dedupe by src. Empty → placeholder alt.
  */
 function customizationGallerySlides(
     featuredImage: unknown | null | undefined,
     media: unknown[] | null | undefined,
     titleFallback: string,
+    lifestyleImages?: unknown[] | null,
 ): CatalogMedia[] {
     const slides: CatalogMedia[] = [];
     const seen = new Set<string>();
 
     const featured = catalogMediaFromImage(featuredImage, titleFallback);
     if (featured?.src) {
-        slides.push(featured);
+        slides.push({...featured, kind: 'product'});
         seen.add(featured.src);
     }
 
-    if (Array.isArray(media)) {
-        for (const item of media) {
-            const slide = catalogMediaFromImage(item, titleFallback);
-            if (!slide?.src || seen.has(slide.src)) continue;
-            seen.add(slide.src);
-            slides.push(slide);
-        }
-    }
+    pushGallerySlides(slides, seen, media, titleFallback, 'product');
+    pushGallerySlides(slides, seen, lifestyleImages, titleFallback, 'lifestyle');
 
-    return slides.length > 0 ? slides : [{alt: titleFallback}];
+    return slides.length > 0 ? slides : [{alt: titleFallback, kind: 'product'}];
 }
 
 const SHOWCASE_SOLUTION_CAP = 3;
@@ -187,33 +198,29 @@ function customizationShowcaseLists(
 }
 
 /**
- * Product PDP gallery: Media extras first, Featured image last.
- * Dedupe by src when Featured was also left in Media. Empty → placeholder alt.
- * (Customization detail stays featured-first per ADR-023.)
+ * Product PDP gallery (ADR-024): product stills (primary last when using the
+ * featuredImage alias), then lifestyle stills. Dedupe by src. Empty → placeholder.
  */
 export function productGallerySlides(
     featuredImage: unknown | null | undefined,
     media: unknown[] | null | undefined,
     titleFallback: string,
+    lifestyleImages?: unknown[] | null,
 ): CatalogMedia[] {
     const slides: CatalogMedia[] = [];
     const seen = new Set<string>();
 
-    if (Array.isArray(media)) {
-        for (const item of media) {
-            const slide = catalogMediaFromImage(item, titleFallback);
-            if (!slide?.src || seen.has(slide.src)) continue;
-            seen.add(slide.src);
-            slides.push(slide);
-        }
-    }
+    pushGallerySlides(slides, seen, media, titleFallback, 'product');
 
     const featured = catalogMediaFromImage(featuredImage, titleFallback);
     if (featured?.src && !seen.has(featured.src)) {
-        slides.push(featured);
+        slides.push({...featured, kind: 'product'});
+        seen.add(featured.src);
     }
 
-    return slides.length > 0 ? slides : [{alt: titleFallback}];
+    pushGallerySlides(slides, seen, lifestyleImages, titleFallback, 'lifestyle');
+
+    return slides.length > 0 ? slides : [{alt: titleFallback, kind: 'product'}];
 }
 
 /** First non-empty trimmed string — used for option detail copy fallbacks. */
@@ -362,7 +369,7 @@ function mapAvailableCustomization(
         type?.description,
     );
 
-    // PROD-2774 / ADR-023 — featured image first; media[0] until backfill.
+    // ADR-024 — primary product still; GROQ coalesces legacy featuredImage / media[0].
     const featuredUrl = option.featuredImage
         ? sanityImageBaseUrl(option.featuredImage)
         : null;
@@ -608,7 +615,12 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         status: toLifecycle(doc.status),
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
-        media: productGallerySlides(doc.featuredImage, doc.media, doc.title),
+        media: productGallerySlides(
+            doc.featuredImage,
+            doc.images?.length ? doc.images : doc.media,
+            doc.title,
+            doc.lifestyleImages,
+        ),
         ...(doc.featuredVideoUrl?.trim()
             ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
             : {}),
@@ -1132,7 +1144,12 @@ export function mapSanityCustomizationDetail(
 
     const faqs = mapFaqs(doc.faqs);
 
-    const media = customizationGallerySlides(doc.featuredImage, doc.media, title);
+    const media = customizationGallerySlides(
+        doc.featuredImage,
+        doc.images?.length ? doc.images : doc.media,
+        title,
+        doc.lifestyleImages,
+    );
     const {showcaseSolutions, showcaseCaseStudies} = customizationShowcaseLists(
         doc,
         media,

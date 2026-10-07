@@ -40,8 +40,8 @@ const QUERY = `
     sku,
     status,
     "slug": slug.current,
-    "thumbRef": media[0].asset._ref,
-    "thumbAlt": media[0].alt,
+    "thumbRef": coalesce(images[primary == true][0].asset._ref, images[0].asset._ref, featuredImage.asset._ref, media[0].asset._ref),
+    "thumbAlt": coalesce(images[primary == true][0].alt, images[0].alt, featuredImage.alt, media[0].alt),
   }
 `
 

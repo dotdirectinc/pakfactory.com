@@ -509,6 +509,33 @@ export const MIGRATIONS = [
     probe: `count(*[_type in ["product", "productLine", "productStyle", "solution"] &&
       (defined(customerFacing) || (_type == "solution" && defined(hasPage)))]) == 0`,
   },
+  {
+    id: '20261007-catalog-media-groups',
+    ticket: null,
+    title: 'ADR-024 — copy featuredImage/media/featuredVideo into images[]/videos[] and unset old keys',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:catalog-media-groups',
+    script: 'apps/studio/scripts/migrate-catalog-media-groups.mjs',
+    args: 'flags',
+    // Development cutover only for this ticket. Probe: no catalog doc still has the
+    // retired keys (legacy JSON cleared after copy). Production stays on the old
+    // shape until a later migration; GROQ coalesces until then.
+    probe: `count(*[_type in ["product","productLine","productStyle","customizationOption","solution","solutionStyle","bundle"] &&
+      (defined(featuredImage) || count(media) > 0 || defined(featuredVideo))]) == 0`,
+  },
+  {
+    id: '20261007-inspiration-first-image-to-lifestyle',
+    ticket: null,
+    title: 'Move images[0] → lifestyleImages on inspiration products only',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:inspiration-first-image-to-lifestyle',
+    script: 'apps/studio/scripts/migrate-inspiration-first-image-to-lifestyle.mjs',
+    args: 'flags',
+    after: ['20261007-catalog-media-groups'],
+    // Development cutover. Inspiration only — standard products are never patched.
+    // Probe: no inspiration product still has product stills with an empty lifestyle list.
+    probe: `count(*[_type == "product" && kind == "inspiration" && count(images) > 0 && count(coalesce(lifestyleImages, [])) == 0]) == 0`,
+  },
 ]
 
 /**

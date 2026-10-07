@@ -28,8 +28,8 @@ const PRODUCT_ROW = {
   subtitle: 'sku',
   // Only the exceptions, as on the Customization tabs — an active product says nothing.
   badge: 'select(status == "active" => null, status)',
-  // `featuredImage` is the card image; `media[0]` is the older fallback.
-  thumb: 'coalesce(featuredImage.asset._ref, media[0].asset._ref)',
+  // ADR-024 primary product still; legacy featuredImage / media[0] until migrated.
+  thumb: 'coalesce(images[primary == true][0].asset._ref, images[0].asset._ref, featuredImage.asset._ref, media[0].asset._ref)',
 } as const
 
 // ── Product ↔ product, through `basedOn` ─────────────────────────────────────

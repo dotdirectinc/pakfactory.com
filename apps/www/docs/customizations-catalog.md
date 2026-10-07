@@ -72,9 +72,9 @@ Builder rail + catalog tabs share `compareCategorySlugs()`: Dimensions → mater
 | --- | --- |
 | Category tabs / `categoryValue` | `type->category` (`customizationCategory.slug` / `title`) |
 | Card title / slug / media | option fields |
-| Option Featured image | `featuredImage` — library cards, detail poster, social fallback ([ADR-023](../../../docs/adr/0023-featured-image-and-featured-video.md)) |
-| Option Featured video | `featuredVideo` (upload / CDN URL); gallery keeps Featured image as poster (PROD-2737). YouTube is stored but ambient playback keeps the still. |
-| Option Media gallery | `media[]` — additional detail frames only; not the card source |
+| Option Images | `images[]` — product stills; mark one **Primary** for library cards, detail poster, social ([ADR-024](../../../docs/adr/0024-catalog-media-groups.md)) |
+| Option Videos | `videos[]` — product motion + thumbnail; first playable upload/URL is hover video. YouTube is stored; ambient playback keeps the still. |
+| Option Lifestyle images / videos | `lifestyleImages[]` / `lifestyleVideos[]` — in-context media; lifestyle primary when a surface needs one lifestyle still |
 | Product Line facet | Reverse: products with this option in `availableCustomizations` → `productLine` (PROD-2529; retired `availableOnProducts`) |
 | Sustainability + other facets | `properties[]` → `propertyValue` + parent `property` |
 | Category-specific facet groups | Non-sustainability properties present on items in that category |
@@ -85,21 +85,20 @@ Facet URL keys use `property.slug` (and `product-line` for Product Line). Shared
 
 ## Business rules — customization card media
 
-Binding product rules for the library tile (`CustomizationCard`). Field roles: [ADR-023](../../../docs/adr/0023-featured-image-and-featured-video.md). Implementers: [`customization-card.tsx`](../src/components/customization/customization-card.tsx) + [`mapSanityLibraryOption`](../src/lib/catalog/map-sanity.ts).
+Binding product rules for the library tile (`CustomizationCard`). Field roles: [ADR-024](../../../docs/adr/0024-catalog-media-groups.md). Implementers: [`customization-card.tsx`](../src/components/customization/customization-card.tsx) + [`mapSanityLibraryOption`](../src/lib/catalog/map-sanity.ts).
 
 | State | Rest | Hover (desktop `sm+`; skip mobile / `prefers-reduced-motion`) |
 | --- | --- | --- |
-| Featured image set + Featured video URL | Featured image | Muted loop video over poster |
-| Featured image set, no video, `media.length >= 2` | Featured image | `media[1]` (second Media image) |
-| Featured image set, no video, `media.length < 2` | Featured image | No change |
-| No Featured image, `media.length >= 2` | `media[0]` | `media[1]` |
-| No Featured image, `media.length === 1` | `media[0]` | No change |
-| No images | Package placeholder | No change |
+| Primary (or first) product still + playable product video URL | Primary still | Muted loop video over poster |
+| Primary still, no video, another product still exists | Primary still | Next product still (first `images` item whose src differs from rest) |
+| Primary still, no video, only one product still | Primary still | No change |
+| No product stills | Package placeholder | No change |
 
-- Rest thumb is **never** “whatever is first in a flattened Featured+Media list” — Media stays a separate array so hover can target `media[1]`.
-- Featured video hover requires **both** a Featured image and a playable `featuredVideoUrl` (upload/CDN; YouTube → null).
+- Cards use the primary product image (`images[primary == true]`, else `images[0]`). Lifestyle images are not used on library cards.
+- Product video hover requires **both** a rest still and a playable `featuredVideoUrl` from `videos[0]` (upload/CDN; YouTube → null).
 - Mobile and reduced-motion: keep the rest still (no video, no image swap).
 - Rest↔hover dissolve uses the shared media dissolve utility ([`media-dissolve.ts`](../src/lib/ui/media-dissolve.ts) — `--motion-slow` opacity crossfade).
+- Until the development migration runs, GROQ coalesces legacy `featuredImage` / `media[0]` / `featuredVideo` when the new arrays are empty.
 
 ## Component naming
 

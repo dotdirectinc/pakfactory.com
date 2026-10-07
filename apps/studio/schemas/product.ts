@@ -1,13 +1,13 @@
 import { defineField, defineType, type ValidationContext } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG } from '../lib/media-tags'
+import { catalogMediaFields } from '../lib/catalog-media-fields'
 import { DIMENSION_INPUTS, AXIS_LABEL, usesAxis, type DimensionAxis } from '@pakfactory/sanity/dimension-inputs'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
-import { featuredVideoField } from '../lib/featured-video-field'
 import { productModel3dField } from '../lib/product-model-3d-field'
 import { CATALOG_STATUS, FULL_STATUS_LIST } from '../lib/catalog-status'
 import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
@@ -224,28 +224,11 @@ export const product = defineType({
         ).warning(),
       ],
     }),
-    // One representative image, one gallery — the same pair on Product Line and
-    // Product Style. `featuredImage` replaces the old positional rule, where the
-    // first gallery image silently doubled as the card: reordering a gallery is a
-    // presentation decision and should never change which image represents the
-    // product.
-    defineField(taggedImageField({
-      name: 'featuredImage',
-      title: 'Featured image',
-      type: 'image',
+    // ADR-024: Images / Videos / Lifestyle images / Lifestyle videos.
+    // Primary still on Images replaces featuredImage; media[] and featuredVideo removed.
+    ...catalogMediaFields({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
-      options: { hotspot: true },
-      description:
-        'The one image that represents this product — cards, listings, nav and the social fallback. On the product detail gallery it appears as the last slide when set.',
-      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
-    })),
-    // Hover-play video for catalog / product-line hero tiles. Shared featuredVideo
-    // object (upload | URL | YouTube) — same field on Product Line / Expertise Stage.
-    featuredVideoField({
-      group: GROUPS.content,
-      description:
-        'Optional hover-play video for catalog / product-line hero tiles. Prefer VP9 WebM with alpha (transparent) or H.264 MP4; YouTube is stored but tiles keep Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     // Marketing “View in 3D” bridge (PROD-2777 graduation). Available on both
     // Product types (standard + inspiration). www uses the public GLB URL as-is;
@@ -254,15 +237,6 @@ export const product = defineType({
       group: GROUPS.content,
       description:
         'Optional GLB for “View in 3D” in product preview modals (standard and inspiration). Paste a public URL (Supabase site-assets, S3, or CDN). Optimize under ~5 MB (quantize + WebP; no meshopt/draco). Interactive customize and long-term asset ownership move to PakStudio — this field is for marketing preview until then.',
-    }),
-    defineField({
-      name: 'media',
-      title: 'Media',
-      type: 'array',
-      group: GROUPS.content,
-      description:
-        'Additional images for the product detail gallery. They appear first in the rail; Featured image is appended last when set. Cards and social still use Featured image.',
-      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
     // Renamed from `description` (PROD-2454) — the field was already
     // *labelled* "Short description" but *named* `description`; the name now
@@ -1050,15 +1024,17 @@ export const product = defineType({
       sku: 'sku',
       status: 'status',
       kind: 'kind',
-      featuredImage: 'featuredImage',
-      mediaFallback: 'media.0',
+      primaryImage: 'images',
     },
-    prepare({ title, sku, status, kind, featuredImage, mediaFallback }) {
+    prepare({ title, sku, status, kind, primaryImage }) {
       const badge = status && status !== 'active' ? `[${status.toUpperCase()}] ` : ''
+      const images = (primaryImage ?? []) as {primary?: boolean}[]
+      const media =
+        images.find((item) => item?.primary === true) || images[0] || undefined
       return {
         title: title || 'Untitled product',
         subtitle: `${badge}${sku ?? 'no SKU'} · ${kind ?? ''}`.trim(),
-        media: featuredImage || mediaFallback,
+        media,
       }
     },
   },

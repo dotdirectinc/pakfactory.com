@@ -5,9 +5,9 @@
  *   1 productStyle → [Test] Book Style Rigid Boxes / test-book-style-rigid-boxes
  *   First 6 published standard products on the source Rigid Boxes line
  *
- * Cloned products get a shared kraft mock as featuredImage + sole media
+ * Cloned products get a shared kraft mock as images[0] (primary)
  * (apps/www/public/products/rigid-boxes/mock-rigid-box.png) and a shared
- * hover MP4 as featuredVideo (…/hero-scrub.mp4).
+ * hover MP4 as videos[0] (…/hero-scrub.mp4).
  *
  * Customization options are NOT cloned — products keep live
  * availableCustomizations / customizationExceptions refs.
@@ -91,10 +91,10 @@ const CLONE_LINE_ID = 'line.test-rigid-boxes'
 const CLONE_STYLE_ID = 'style.test-book-style-rigid-boxes'
 
 const PUBLIC_DIR = join(repoRoot, 'apps/www/public')
-/** Shared kraft still for all cloned product featuredImage + media[0]. */
+/** Shared kraft still for all cloned product images[0] (primary). */
 const MOCK_IMAGE_REL = 'products/rigid-boxes/mock-rigid-box.png'
 const MOCK_IMAGE_ALT = 'Kraft rigid box with lid floating above base'
-/** Shared hover-play MP4 for cloned product featuredVideo. */
+/** Shared hover-play MP4 for cloned product videos[0]. */
 const MOCK_VIDEO_REL = 'products/rigid-boxes/hero-scrub.mp4'
 
 const SYSTEM_KEYS = new Set([
@@ -154,19 +154,26 @@ function ref(id) {
   return { _type: 'reference', _ref: id }
 }
 
-function imageField(assetId, alt, key) {
+function imageField(assetId, alt, key, {primary = false} = {}) {
   return {
     _type: 'image',
-    ...(key ? { _key: key } : {}),
-    asset: { _type: 'reference', _ref: assetId },
-    ...(alt ? { alt } : {}),
+    ...(key ? {_key: key} : {}),
+    asset: {_type: 'reference', _ref: assetId},
+    ...(alt ? {alt} : {}),
+    primary,
   }
 }
 
-function fileField(assetId) {
+function catalogVideoField(assetId, thumbnail) {
   return {
-    _type: 'file',
-    asset: { _type: 'reference', _ref: assetId },
+    _type: 'catalogVideo',
+    _key: 'video-mock-0',
+    source: 'upload',
+    file: {
+      _type: 'file',
+      asset: {_type: 'reference', _ref: assetId},
+    },
+    ...(thumbnail ? {thumbnail} : {}),
   }
 }
 
@@ -393,9 +400,14 @@ async function main() {
     // Drop live sibling styles (e.g. Rigid Window Boxes on the display-window
     // product) so the test product only appears under the cloned Book Style.
     clone.productStyle = [ref(CLONE_STYLE_ID)]
-    clone.featuredImage = imageField(imageId, MOCK_IMAGE_ALT)
-    clone.media = [imageField(imageId, MOCK_IMAGE_ALT, 'media-mock-0')]
-    clone.featuredVideo = fileField(videoId)
+    const still = imageField(imageId, MOCK_IMAGE_ALT, 'image-mock-0', {
+      primary: true,
+    })
+    clone.images = [still]
+    clone.videos = [catalogVideoField(videoId, still)]
+    delete clone.featuredImage
+    delete clone.media
+    delete clone.featuredVideo
     // availableCustomizations / customizationExceptions stay on live options.
     return clone
   })

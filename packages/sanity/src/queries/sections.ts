@@ -12,10 +12,12 @@ import {
   SOLUTION_ACTIVE,
   SOLUTION_STYLE_ACTIVE,
 } from './status-gates';
+import {FEATURED_VIDEO_URL_FIELD} from './featured-video';
 import {
-    FEATURED_VIDEO_URL_FIELD,
-    FEATURED_VIDEO_URL_GROQ,
-} from './featured-video';
+  CATALOG_IMAGE_ALT,
+  CATALOG_IMAGE_SRC,
+  CATALOG_VIDEO_SRC,
+} from './catalog-media';
 
 export {FEATURED_VIDEO_URL_FIELD};
 
@@ -104,8 +106,8 @@ const INSPIRATIONS_CARD = /* groq */ `{
     _type,
     "title": coalesce(shortName, title, name),
     "description": shortDescription,
-    "imageSrc": featuredImage.asset->url,
-    "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText),
+    "imageSrc": ${CATALOG_IMAGE_SRC},
+    "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title),
     "slug": slug.current,
     "solutionSlug": solution->slug.current,
     "lineSlug": productLine->slug.current,
@@ -195,8 +197,8 @@ const CATALOG_ROW_ITEM = /* groq */ `{
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": shortDescription,
-  "imageSrc": featuredImage.asset->url,
-  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title)
+  "imageSrc": ${CATALOG_IMAGE_SRC},
+  "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title)
 }`;
 
 /** Hero button: section link + one-line note (PROD-2666). */
@@ -270,8 +272,8 @@ const HERO_SPOTLIGHT_SLIDE = /* groq */ `{
       "title": coalesce(shortName, title),
       "description": shortDescription,
       "lineSlug": productLine->slug.current,
-      "imageSrc": featuredImage.asset->url,
-      "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title)
+      "imageSrc": ${CATALOG_IMAGE_SRC},
+      "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title)
     }
   }
 }`;
@@ -284,9 +286,9 @@ const HERO_FINDER_LINE = /* groq */ `{
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": shortDescription,
-  "imageSrc": featuredImage.asset->url,
-  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
-  "videoSrc": ${FEATURED_VIDEO_URL_GROQ},
+  "imageSrc": ${CATALOG_IMAGE_SRC},
+  "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title),
+  "videoSrc": ${CATALOG_VIDEO_SRC},
   "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY},
   // These become LINKED finder slides (productStyleHref), so the gate is the one for a
   // link — LINE_STYLE_ACTIVE — not LISTED: an Active (Internal) style has no page.
@@ -295,10 +297,10 @@ const HERO_FINDER_LINE = /* groq */ `{
     "title": coalesce(shortName, title),
     "slug": slug.current,
     "description": shortDescription,
-    "imageSrc": featuredImage.asset->url,
-    "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+    "imageSrc": ${CATALOG_IMAGE_SRC},
+    "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title),
     "lineSlug": ^.slug.current,
-    "videoSrc": ${FEATURED_VIDEO_URL_GROQ}
+    "videoSrc": ${CATALOG_VIDEO_SRC}
   }
 }`;
 
@@ -310,8 +312,8 @@ const HERO_FINDER_INDUSTRY = /* groq */ `{
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": shortDescription,
-  "imageSrc": featuredImage.asset->url,
-  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+  "imageSrc": ${CATALOG_IMAGE_SRC},
+  "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title),
   "studies": relatedCaseStudies[]->${HERO_CASE_STUDY}
 }`;
 
@@ -326,14 +328,13 @@ const HERO_FINDER_RAIL_ITEM = /* groq */ `{
   "slug": slug.current,
   "description": coalesce(shortDescription, cardSummary, summary, excerpt),
   "imageSrc": coalesce(
-    featuredImage.asset->url,
+    ${CATALOG_IMAGE_SRC},
     heroMedia.image.asset->url,
     cardImage.asset->url,
     mainImage.asset->url
   ),
   "imageAlt": coalesce(
-    featuredImage.alt,
-    featuredImage.asset->altText,
+    ${CATALOG_IMAGE_ALT},
     heroMedia.alt,
     cardImageAlt,
     mainImage.alt,
@@ -341,7 +342,7 @@ const HERO_FINDER_RAIL_ITEM = /* groq */ `{
   ),
   "videoSrc": coalesce(
     previewVideo.asset->url,
-    ${FEATURED_VIDEO_URL_GROQ}
+    ${CATALOG_VIDEO_SRC}
   ),
   "clientName": client->name,
   "statTitle": highlights[0].title,

@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
+import { MEDIA_TAG } from '../lib/media-tags'
+import { catalogMediaFields } from '../lib/catalog-media-fields'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { uniqueSlugWithinParent } from '../lib/slug-rules'
@@ -138,22 +139,10 @@ export const solutionStyle = defineType({
       group: GROUPS.content,
       description: 'One-line summary for this collection’s card on the solution page.',
     }),
-    taggedImageField({
-      name: 'featuredImage',
-      title: 'Featured image',
-      type: 'image',
+    // ADR-024: Images / Videos / Lifestyle images / Lifestyle videos.
+    ...catalogMediaFields({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.solution],
-      options: { hotspot: true },
-      description: 'The image for this collection — the card on the solution page, the page itself, and the social fallback.',
-      fields: [
-        defineField({
-          name: 'alt',
-          title: 'Alt text',
-          type: 'string',
-          description: 'Describes the image for screen readers and SEO.',
-        }),
-      ],
     }),
     defineField({
       name: 'description',
@@ -286,12 +275,12 @@ export const solutionStyle = defineType({
     select: {
       title: 'title',
       solution: 'solution.title',
-      media: 'featuredImage',
+      images: 'images',
       lines: 'filter.productLines',
       styles: 'filter.productStyles',
       keywords: 'filter.keywords',
     },
-    prepare({ title, solution, media, lines, styles, keywords }) {
+    prepare({ title, solution, images, lines, styles, keywords }) {
       // Say what the filter holds, not what it resolves to — a preview cannot run
       // the query, and a number here would be a number nobody could trust.
       const parts = [
@@ -299,6 +288,8 @@ export const solutionStyle = defineType({
         styles?.length ? `${styles.length} style${styles.length === 1 ? '' : 's'}` : null,
         keywords?.length ? `${keywords.length} keyword${keywords.length === 1 ? '' : 's'}` : null,
       ].filter(Boolean)
+      const list = (images ?? []) as {primary?: boolean}[]
+      const media = list.find((item) => item?.primary === true) || list[0] || undefined
       return {
         title: title || 'Untitled collection',
         subtitle: [solution, parts.length ? parts.join(' · ') : 'No conditions set'].filter(Boolean).join(' — '),

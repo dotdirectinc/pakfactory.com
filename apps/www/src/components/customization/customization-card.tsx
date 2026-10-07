@@ -90,7 +90,7 @@ function useIsMobileViewport(): boolean {
 }
 
 /**
- * Rest / hover resolution for customization library cards (ADR-023 business rules).
+ * Rest / hover resolution for customization library cards (ADR-024).
  * @see apps/www/docs/customizations-catalog.md § Business rules — customization card media
  */
 function resolveCardMedia(item: CustomizationCardData) {
@@ -112,12 +112,15 @@ function resolveCardMedia(item: CustomizationCardData) {
         : (mediaImages[0]?.alt ?? item.imageAlt ?? item.title);
 
     const hoverVideo =
-        Boolean(featuredUrl) && Boolean(videoUrl) ? videoUrl : null;
+        Boolean(thumbSrc) && Boolean(videoUrl) ? videoUrl : null;
+    const nextStill = mediaImages.find(
+        (img) => img.src?.trim() && img.src.trim() !== thumbSrc,
+    );
     const hoverImage =
-        !hoverVideo && mediaImages.length >= 2
+        !hoverVideo && nextStill?.src
             ? {
-                  src: mediaImages[1]!.src!.trim(),
-                  alt: mediaImages[1]!.alt ?? item.title,
+                  src: nextStill.src.trim(),
+                  alt: nextStill.alt ?? item.title,
               }
             : null;
 
@@ -126,8 +129,8 @@ function resolveCardMedia(item: CustomizationCardData) {
 
 /**
  * **Transactional card** — customization catalog tile (category eyebrow, bookmark / compare).
- * Composes {@link MediaCardFrame}. Card media rules: Featured image (else media[0]) at
- * rest; hover Featured video when both featured still + video exist, else media[1].
+ * Composes {@link MediaCardFrame}. Card media rules: primary product still at rest;
+ * hover product video when both still + video exist, else the next product still.
  */
 export function CustomizationCard({item, priority = false}: CustomizationCardProps) {
     const href = customizationCategoryHref(item.categoryValue, item.slug);

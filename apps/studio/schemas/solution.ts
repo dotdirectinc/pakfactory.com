@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { BulbOutlineIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
+import { MEDIA_TAG } from '../lib/media-tags'
+import { catalogMediaFields } from '../lib/catalog-media-fields'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
@@ -212,23 +213,10 @@ export const solution = defineType({
       group: GROUPS.content,
       description: 'One-line summary for the solution card, listings and nav.',
     }),
-    taggedImageField({
-      name: 'featuredImage',
-      title: 'Featured image',
-      type: 'image',
+    // ADR-024: Images / Videos / Lifestyle images / Lifestyle videos.
+    ...catalogMediaFields({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.solution],
-      options: { hotspot: true },
-      description:
-        'The one image that represents this solution — the page hero, cards, listings, nav and the social fallback.',
-      fields: [
-        defineField({
-          name: 'alt',
-          title: 'Alt text',
-          type: 'string',
-          description: 'Describes the image for screen readers and SEO.',
-        }),
-      ],
     }),
     // Renamed from `intro` (PROD-2454). Portable text, so the link
     // annotations the original values carried survived the move.
@@ -453,13 +441,15 @@ export const solution = defineType({
       title: 'title',
       solutionType: 'solutionType',
       status: 'status',
-      media: 'featuredImage',
+      images: 'images',
     },
-    prepare({ title, solutionType, status, media }) {
+    prepare({ title, solutionType, status, images }) {
       const axis = SOLUTION_TYPE_TITLES[solutionType] ?? 'No type set'
       // Status in the subtitle so a hidden solution is obvious in a list without
       // opening it — the lists are where an editor decides what to work on.
       const state = STATUS_TITLES[status as keyof typeof STATUS_TITLES] ?? 'No status set'
+      const list = (images ?? []) as {primary?: boolean}[]
+      const media = list.find((item) => item?.primary === true) || list[0] || undefined
       return {
         title: title || 'Untitled solution',
         subtitle: [axis, state].join(' · '),
