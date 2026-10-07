@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +",
     "test:e2e": "playwright test",
-    "test:e2e:staging": "E2E_TARGET=staging playwright test"
+    "test:e2e:staging": "E2E_TARGET=staging playwright test",
     "perf:baseline": "node scripts/perf-baseline.mjs"
   },
   "dependencies": {
