@@ -27,22 +27,24 @@ the backend at `BACKEND_API_BASE_URL` (`localhost:8080`) running.
 Every free-text value starts with `[E2E]` and the contact is
 `e2e+rfq@dotdirect.ca`, so submitted rows are findable and removable.
 
-## CI (scoped)
+## CI (scoped, after merge)
 
-`.github/workflows/www-e2e.yml` runs this suite on a PR into `www-new-release`
-**only when the PR touches code the suite exercises**: the suite, the request
-forms and `lib/request|rfq|places`, the nav/layout, products, PDP, solutions,
-`lib/products|catalog`, and `packages/ui`. Every other PR skips it. Add a path
-to its `paths:` list when a new spec reaches new code.
+`.github/workflows/www-e2e.yml` runs this suite **after a merge into
+`www-new-release`, only when the merge touched code the suite exercises**: the
+suite, the request forms and `lib/request|rfq|places`, the nav/layout, products,
+PDP, solutions, `lib/products|catalog`, and `packages/ui`. Other merges skip it.
+Add a path to its `paths:` list when a new spec reaches new code.
 
-- **Target:** the PR's own Vercel preview (`Preview – pakfactory-com`). The job
-  waits for it, then runs with `E2E_BASE_URL` set to it. Manual runs
-  (`workflow_dispatch`) default to staging.
-- **Needs** the repo secret `VERCEL_AUTOMATION_BYPASS_SECRET`; without it the job
-  prints a notice and passes without running.
-- **Report-only**: not a required check. On failure the HTML report and traces
-  are uploaded as the `www-e2e-report` artifact.
-- Never submits (`E2E_SUBMIT` is not set).
+- **Target:** that commit's own Vercel deployment (`Preview – pakfactory-com`, the
+  build staging serves). The job waits for it, then runs with `E2E_BASE_URL` set to it.
+- **Why not before merge:** www feature branches get no Vercel preview
+  (`apps/www/vercel.json` `ignoreCommand`). Turning PR previews on would allow a
+  pre-merge run; decided against for now (2026-10-07).
+- **Needs** the repo secret `VERCEL_AUTOMATION_BYPASS_SECRET` (set 2026-10-07);
+  without it the job prints a notice and passes without running.
+- **Report-only**: a failure is a red check on the merge commit, with the HTML
+  report and traces uploaded as the `www-e2e-report` artifact. It blocks nothing.
+- Never submits (`E2E_SUBMIT` is not set). Manual runs need the workflow on `main` first.
 
 ## Content fixtures
 

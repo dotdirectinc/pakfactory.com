@@ -1,13 +1,15 @@
 name: www e2e (RFQ smoke)
 
-# Runs the Playwright RFQ smoke suite (apps/www/e2e) against the PR's Vercel
-# preview, ONLY when a PR touches code the suite exercises (see `paths`).
-# Every other PR skips this workflow entirely.
+# Runs the Playwright RFQ smoke suite (apps/www/e2e) AFTER a merge into
+# www-new-release, against that commit's own Vercel deployment (the build that
+# staging.pakfactory.com serves), ONLY when the merge touched code the suite
+# exercises (see `paths`). Every other merge skips this workflow entirely.
 #
-# Report-only: this is NOT a required check, and nothing in ci.yml depends on it.
-# Make it required in branch protection once it has proved stable. Note that a
-# path-filtered workflow that is skipped never reports, so it would then need a
-# gate job like ci.yml's `ci-success`.
+# Why after merge: www feature branches get no Vercel preview (apps/www/vercel.json
+# ignoreCommand builds only main / staging / www-new-release), so there is nothing
+# to test before merge without changing that. Decision 2026-10-07.
+#
+# Report-only: a failure shows as a red check on the merge commit; it blocks nothing.
 #
 # Needs the repo secret VERCEL_AUTOMATION_BYPASS_SECRET (Vercel → pakfactory-com →
 # Settings → Deployment Protection → Protection Bypass for Automation). Without
@@ -16,7 +18,7 @@ name: www e2e (RFQ smoke)
 # Never submits a request: E2E_SUBMIT is not set, so each flow stops at Review.
 
 on:
-  pull_request:
+  push:
     branches: [www-new-release]
     paths:
       # the suite itself
@@ -44,6 +46,7 @@ on:
       - 'apps/www/src/lib/*nav*.ts'
       # shared UI primitives
       - 'packages/ui/**'
+  # Manual runs need this file on the default branch (main) first.
   workflow_dispatch:
     inputs:
       base_url:
@@ -55,7 +58,7 @@ permissions:
   deployments: read
 
 concurrency:
-  group: www-e2e-${{ github.event.pull_request.number || github.ref }}
+  group: www-e2e-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -76,12 +79,12 @@ jobs:
             echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Wait for the www preview deployment
+      - name: Wait for this commit's www deployment
         id: preview
-        if: steps.secret.outputs.ok == 'true' && github.event_name == 'pull_request'
+        if: steps.secret.outputs.ok == 'true' && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.pull_request.head.sha }}
+          SHA: ${{ github.sha }}
           ENVIRONMENT: 'Preview – pakfactory-com'
         run: |
           # Vercel reports each project as a GitHub deployment; poll until the www one succeeds.
@@ -94,14 +97,14 @@ jobs:
                 echo "url=$url" >> "$GITHUB_OUTPUT"; exit 0
               fi
               if [ "$state" = "failure" ] || [ "$state" = "error" ]; then
-                echo "::error::The www preview deployment failed."; exit 1
+                echo "::error::The www deployment for this commit failed, so there is nothing to test."; exit 1
               fi
             else
               echo "attempt $i: no '$ENVIRONMENT' deployment for $SHA yet"
             fi
             sleep 20
           done
-          echo "::error::Timed out after 20 min waiting for the www preview deployment."; exit 1
+          echo "::error::Timed out after 20 min waiting for the www deployment of this commit."; exit 1
 
       - uses: actions/checkout@v4
         if: steps.secret.outputs.ok == 'true'
