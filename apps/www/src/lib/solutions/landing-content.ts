@@ -7,6 +7,10 @@ import type {
     PageSection,
 } from '@/lib/solutions/types';
 import {customizationOptionHref} from '@/lib/catalog/customization-option-href';
+import {
+    firstLifestyleStill,
+    primaryProductStill,
+} from '@/lib/catalog/map-sanity';
 import type {CustomizationOption, Product} from '@/lib/catalog/types';
 import {
     productHref,
@@ -52,17 +56,19 @@ function mapCustomizations(
 
 /**
  * Map catalog products → Industry LP hero carousel tiles.
+ * Prefer lifestyleImages[0] (mapped as `kind: 'lifestyle'`); else primary product still.
  */
 export function productsToHeroTiles(products: Product[]): SolutionHeroTile[] {
     return products.map((product, index) => {
-        const media = product.media?.[0];
-        const image =
-            media?.src?.trim()
-                ? {
-                      src: media.src.trim(),
-                      alt: media.alt?.trim() || product.title,
-                  }
-                : null;
+        const media =
+            firstLifestyleStill(product.media) ??
+            primaryProductStill(product.media);
+        const image = media?.src
+            ? {
+                  src: media.src,
+                  alt: media.alt?.trim() || product.title,
+              }
+            : null;
         const modelSrc = product.model3dUrl?.trim() || '';
         const modelAnimationName = product.model3dAnimationName?.trim() || '';
         return {

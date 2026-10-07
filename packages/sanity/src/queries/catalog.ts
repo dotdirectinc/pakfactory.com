@@ -8,10 +8,17 @@
 import {KIND_INSPIRATION, KIND_STANDARD} from '../product-kind';
 import {
   PAGE_SECTIONS_PROJECTION,
-  FEATURED_VIDEO_URL_FIELD,
   type PageSectionDoc,
 } from './sections';
 import {MODEL_3D_FIELDS} from './product-model-3d';
+import {
+  CARD_IMAGE_FROM_CATALOG,
+  CATALOG_IMAGE_ALT,
+  CATALOG_IMAGE_SRC,
+  CATALOG_MEDIA_ARRAYS,
+  OPTION_MEDIA_FIELDS,
+  PRIMARY_PRODUCT_IMAGE_GROQ,
+} from './catalog-media';
 import {
   OPTION_ACTIVE,
   OPTION_TAXONOMY_ON,
@@ -45,29 +52,32 @@ export {MODEL_3D_FIELDS, MODEL_3D_URL_FIELD} from './product-model-3d';
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
 /**
- * Card thumbnail.
+ * Card thumbnail (ADR-024).
  *
- * Style: `featuredImage` is the current field (D33 role name). Legacy keys
- * `image` (PROD-2511) and `cardImage` stay as fallbacks until content is unset.
+ * Primary product still from `images[]`, then legacy `featuredImage` / `media[0]`,
+ * then older style/line keys (`image`, `cardImage`, `heroMedia`) until content is unset.
  * The projection key stays `cardImage` for the www consumer map.
- *
- * Line: same cascade — `featuredImage` first, then legacy `cardImage` / `heroMedia`.
  */
-const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, image, cardImage){
+const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(
+  ${PRIMARY_PRODUCT_IMAGE_GROQ},
+  image,
+  cardImage
+){
   ...,
   "alt": ${IMAGE_ALT}
 }`;
 
-const LINE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, cardImage, heroMedia){
+const LINE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(
+  ${PRIMARY_PRODUCT_IMAGE_GROQ},
+  cardImage,
+  heroMedia
+){
   ...,
   "alt": ${IMAGE_ALT}
 }`;
 
-/** Option library / card thumb — Featured image first; media[0] until content backfill (ADR-023). */
-const OPTION_CARD_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, media[0]){
-  ...,
-  "alt": ${IMAGE_ALT}
-}`;
+/** Option library / card thumb — primary product still (ADR-024). */
+const OPTION_CARD_IMAGE = CARD_IMAGE_FROM_CATALOG;
 
 const CATEGORY_PROJ = /* groq */ `{
   _id,
@@ -116,14 +126,7 @@ const ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
   shortDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  }
+  ${OPTION_MEDIA_FIELDS}
 }`;
 
 const OPTION_FIELDS = /* groq */ `
@@ -139,14 +142,7 @@ const OPTION_FIELDS = /* groq */ `
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
+  ${OPTION_MEDIA_FIELDS},
   "type": type->${TYPE_PROJ},
   ${ACHIEVED_BY_PROJ}
 `;
@@ -207,8 +203,6 @@ const STYLE_LIBRARY_REF_PROJ = /* groq */ `{
   "slug": slug.current
 }`;
 
-/** Hover-play / hero video URL from product `featuredVideo`; empty when unset / YouTube-only. */
-const PRODUCT_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
 const PRODUCT_MODEL_3D = MODEL_3D_FIELDS;
 
 /** One FAQ as the catalog pages render it. Blocks for UI; plain for JSON-LD. */
@@ -224,19 +218,19 @@ const FAQ_ITEM_PROJ = /* groq */ `{
  * - Own FAQs always win.
  * - Inspiration: else its primary solution's (`solutions[0]`) — only while that solution
  *   is Active. Nothing further (Richard, 2026-10-05).
- * - Standard: else its primary style's (`productStyle[0]`), else its line's (2026-09-28)
- *   — only while the primary style is on.
- * - An OFF primary passes nothing down, and nothing takes its place: no second parent,
- *   and for a standard product no line either (Richard + Eric, 2026-10-06 — rule 3 in
- *   the PARENT_* note above). The FAQ section is empty until the primary is fixed.
+ * - Standard: else its primary style's (`productStyle[0]`) — only while that style is on —
+ *   else its line's, else nothing. An OFF primary style is skipped, never replaced by a
+ *   second style; the line still answers, because the line is still on: a line that is
+ *   Coming soon or Not active has already hidden the product (R1), and a product whose
+ *   every style is off is hidden too (rule 1). Richard, 2026-10-06, on Eric's review —
+ *   a style set to Coming soon before a launch must not empty its products' FAQs.
  */
 const PRODUCT_FAQS_INHERITED = /* groq */ `"faqs": select(
     count(faqs) > 0 => faqs[]->${FAQ_ITEM_PROJ},
     kind == "inspiration" => select(
       ${PRIMARY_SOLUTION_ON} => solutions[0]->faqs[]->${FAQ_ITEM_PROJ}
     ),
-    !${PRIMARY_STYLE_ON} => null,
-    count(productStyle[0]->faqs) > 0 => productStyle[0]->faqs[]->${FAQ_ITEM_PROJ},
+    ${PRIMARY_STYLE_ON} && count(productStyle[0]->faqs) > 0 => productStyle[0]->faqs[]->${FAQ_ITEM_PROJ},
     coalesce(productLine, productStyle[0]->productLine)->faqs[]->${FAQ_ITEM_PROJ}
   )`;
 
@@ -271,12 +265,8 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
       "slug": slug.current
     }
   ),
-  ${PRODUCT_FEATURED_VIDEO},
   ${PRODUCT_MODEL_3D},
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
+  ${CATALOG_MEDIA_ARRAYS},
   "productLine": coalesce(productLine, basedOn->productLine)->${LINE_REF_PROJ},
   "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ},
   // Which PDP breadcrumb crumbs have a page to link to. The primary is fixed (no
@@ -318,17 +308,8 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
       "slug": slug.current
     }
   ),
-  ${PRODUCT_FEATURED_VIDEO},
   ${PRODUCT_MODEL_3D},
-  // Featured image for www productGallerySlides when gallery media is empty.
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
+  ${CATALOG_MEDIA_ARRAYS},
   "productLine": coalesce(productLine, basedOn->productLine)->${LINE_REF_PROJ},
   "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ}
 `;
@@ -390,11 +371,6 @@ const RULES_PRODUCT_PROJ = /* groq */ `{
 /** PDP-only extras: specs properties, FAQs, curated related (PROD-1913), rules inputs (PROD-2556). */
 export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
   ${CATALOG_PRODUCT_FIELDS},
-  // Featured still — appended last on PDP gallery (media first). Cards use separate projections.
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
   "rulesProduct": select(
     kind == "inspiration" && defined(basedOn) => basedOn->${RULES_PRODUCT_PROJ},
     ${RULES_PRODUCT_PROJ}
@@ -534,24 +510,16 @@ export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
 }`;
 
 /**
- * Line landing projection (PROD-1914). Reads current productLine fields
- * (`featuredImage`, `shortDescription`, `description`) with legacy
- * `cardImage` / `heroMedia` fallbacks until content is migrated.
- * Image cascade matches `LINE_CARD_IMAGE` (library entry card).
+ * Line landing projection (PROD-1914 / ADR-024). Primary product still with
+ * legacy `cardImage` / `heroMedia` fallbacks. Matches `LINE_CARD_IMAGE`.
  */
-const LINE_FEATURED_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, cardImage, heroMedia){
-  ...,
-  "alt": ${IMAGE_ALT}
-}`;
+const LINE_FEATURED_IMAGE = LINE_CARD_IMAGE;
 
 /** CMS field remains `kitMark`; app maps to featuredIcon*. */
 const LINE_FEATURED_ICON = /* groq */ `kitMark{
   ...,
   "alt": ${IMAGE_ALT}
 }`;
-
-/** Desktop scroll-scrub hero video; empty when unset / YouTube-only. */
-const LINE_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
 
 /** One style card on a line's styles grid. Shared by both halves of LINE_STYLES below. */
 const LINE_STYLE_CARD_PROJ = /* groq */ `{
@@ -609,12 +577,8 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   shortDescription,
   "description": pt::text(description),
   ${LINE_FEATURED_IMAGE},
-  ${LINE_FEATURED_VIDEO},
   ${LINE_FEATURED_ICON},
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
+  ${CATALOG_MEDIA_ARRAYS},
   metaTitle,
   metaDescription,
   "expertise": expertise[]->{
@@ -764,16 +728,8 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   title,
   "slug": slug.current,
   status,
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
   ${OPTION_CARD_IMAGE},
-  media[0...1]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  ${FEATURED_VIDEO_URL_FIELD},
+  ${OPTION_MEDIA_FIELDS},
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
     _id,
@@ -800,16 +756,8 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _id,
   title,
   "slug": slug.current,
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
   ${OPTION_CARD_IMAGE},
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  ${FEATURED_VIDEO_URL_FIELD},
+  ${OPTION_MEDIA_FIELDS},
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
     _id,
@@ -836,14 +784,7 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
   shortDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
+  ${OPTION_MEDIA_FIELDS},
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
     _id,
@@ -885,15 +826,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   "benefitsTitle": benefits.title,
   "benefitsPlain": pt::text(benefits.body),
   "benefitsBody": benefits.body,
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  ${FEATURED_VIDEO_URL_FIELD},
+  ${OPTION_MEDIA_FIELDS},
   "specSheetUrl": specSheet.asset->url,
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
@@ -948,8 +881,8 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     title,
     "slug": slug.current,
     shortDescription,
-    "src": featuredImage.asset->url,
-    "alt": title
+    "src": ${CATALOG_IMAGE_SRC},
+    "alt": coalesce(${CATALOG_IMAGE_ALT}, title)
   },
   "peers": *[
     _type == "customizationOption" &&
@@ -1007,14 +940,7 @@ export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
   shortDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
-  featuredImage{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
-  media[]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
+  ${OPTION_MEDIA_FIELDS},
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
     _id,
@@ -1264,14 +1190,20 @@ export type CatalogProductDoc = {
   productLineId?: string | null;
   productStyleIds?: (string | null)[] | null;
   solutionIds?: (string | null)[] | null;
-  /** Hover-play video URL from `featuredVideo` (upload/URL); empty for YouTube-only. */
+  /** Hover-play video URL from `videos[0]` (legacy `featuredVideo`); empty for YouTube-only. */
   featuredVideoUrl?: string | null;
   /** Direct public GLB URL from `model3d.url`; null when unset. */
   model3dUrl?: string | null;
   /** Optional glTF clip name for open/close control. */
   model3dAnimationName?: string | null;
-  /** Card + PDP — gallery slides use media first, then featuredImage. */
+  /** ADR-024 product stills (primary flag on members). */
+  images?: unknown[] | null;
+  lifestyleImages?: unknown[] | null;
+  videos?: unknown[] | null;
+  lifestyleVideos?: unknown[] | null;
+  /** Primary still alias (GROQ coalesce from images / legacy featuredImage). */
   featuredImage?: unknown | null;
+  /** Gallery extras — images[] when set, else legacy media[]. */
   media?: unknown[] | null;
   productLine: CatalogLineRefDoc | null;
   productStyle: CatalogStyleRefDoc | null;
@@ -1388,13 +1320,15 @@ export type CatalogLibraryOptionDoc = {
   title: string;
   slug: string | null;
   status?: string | null;
-  /** Role-named Featured image (ADR-023). */
+  /** Primary still alias (ADR-024 / legacy featuredImage). */
   featuredImage?: unknown | null;
-  /** Featured image coalesce for rest thumb fallback. */
+  /** Primary still as cardImage for rest thumb fallback. */
   cardImage?: unknown | null;
-  /** Sanity `media` only (not Featured) — card hover uses [1] when present. */
+  /** Product stills (ADR-024). */
+  images?: unknown[] | null;
+  /** Gallery extras — images[] when set, else legacy media[]. */
   media?: unknown[] | null;
-  /** Playable MP4/MOV from Featured video; YouTube → null. */
+  /** Playable MP4/MOV from videos[0] / legacy featuredVideo; YouTube → null. */
   featuredVideoUrl?: string | null;
   category: CatalogCategoryDoc | null;
   type?: CatalogLibraryTypeDoc | null;
@@ -1478,7 +1412,9 @@ export type CatalogCustomizationDetailDoc = {
   benefitsBody?: unknown[] | null;
   featuredImage?: unknown | null;
   media?: unknown[] | null;
-  /** Playable MP4/WebM/MOV URL from `featuredVideo` (upload/url); YouTube → null. */
+  images?: unknown[] | null;
+  lifestyleImages?: unknown[] | null;
+  /** Playable MP4/WebM/MOV URL from videos[0] / legacy featuredVideo; YouTube → null. */
   featuredVideoUrl?: string | null;
   /** Optional PDF upload on Specs — CDN URL when set. */
   specSheetUrl?: string | null;

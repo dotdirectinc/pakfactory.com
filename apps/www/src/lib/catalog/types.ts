@@ -98,6 +98,11 @@ export function toLifecycle(status: string | null | undefined): CatalogLifecycle
 export type CatalogMedia = {
     src?: string;
     alt: string;
+    /**
+     * ADR-024 — product stills use the inset scale; lifestyle slides render full-bleed.
+     * Omitted means product (legacy slides and cards).
+     */
+    kind?: 'product' | 'lifestyle';
 };
 
 export type ProductLineRef = {
@@ -200,8 +205,9 @@ export type Product = {
     sku: string;
     kind: ProductKind;
     /**
-     * PDP gallery slides: Media extras first, Featured image last when set
-     * (deduped by URL). Index 0 is the default main well.
+     * PDP gallery slides (ADR-024): primary product still first, then other
+     * product stills, then lifestyle (`kind: 'lifestyle'`). Index 0 is the
+     * default main well / card thumb when product-only.
      */
     media: CatalogMedia[];
     /**
@@ -372,7 +378,7 @@ export type CustomizationLibraryItem = {
     categoryValue: string;
     categoryLabel?: string;
     /**
-     * Rest thumb = Featured image else first Media (ADR-023 card rules).
+     * Rest thumb = primary product image else first Images item (ADR-024).
      * Prefer `featuredImageUrl` / `mediaImages` for hover logic.
      */
     imageUrl?: string | null;
@@ -563,7 +569,7 @@ export type CustomizationDetail = {
     /** Studio `benefits.body` portable text — Overview body. */
     benefitsBody?: PortableTextBlock[];
     /**
-     * Gallery slides: Featured image first (when set), then Media extras (ADR-023).
+     * Gallery slides: product stills then lifestyle stills (ADR-024).
      * Index 0 is the poster for Featured video hover.
      */
     media: CatalogMedia[];

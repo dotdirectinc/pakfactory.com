@@ -2,6 +2,7 @@ import {notFound} from 'next/navigation';
 import {AccountRequestDetailView} from '@/components/account/account-request-detail-view';
 import {getBuyerRequest} from '@/lib/account/buyer-requests';
 import {getProduct} from '@/lib/catalog/catalog';
+import {primaryProductStill} from '@/lib/catalog/map-sanity';
 
 export const metadata = {
     title: 'Request',
@@ -37,7 +38,7 @@ export default async function AccountRequestDetailPage({
         uniqueSlugs.map(async (slug) => {
             try {
                 const product = await getProduct(slug);
-                const src = product?.media?.[0]?.src?.trim();
+                const src = primaryProductStill(product?.media)?.src;
                 if (src) thumbsBySlug[slug] = src;
             } catch {
                 // Catalog miss / network — card shows placeholder.

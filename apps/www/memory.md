@@ -60,24 +60,9 @@ In draft mode (entered from Studio Presentation; it sticks in the browser on sta
 
 Site header + footer read Sanity `websiteNavigation` (not page sections). Header **MegaMenu** (PROD-2611) consumes each primary item’s **Mega-menu groups** + optional **Promo** (Featured hidden when empty) + optional **Footer CTA** (second row under the grid, e.g. “See all products”). Flat items (no real mega groups) stay simple links. Desktop panel is a persistent **4-column** grid (cols 1–2 primary split, no divider; col 3 secondary; col 4 promo rail) with `rounded-b-md` sheet.
 
-After schema/seed updates (e.g. clearing Solutions group descriptors), humans re-run with an explicit dataset:
+Edit the navigation in Studio → Main Website → Navigation (Footer CTA per item there too). `seed:website-navigation` was **retired 2026-10-06** — it built the Solutions groups from solution `hasPage`, which PROD-2845 replaced with `status`, and `createOrReplace` would have overwritten the editors' singleton. Nav links are gated at read time by `isCatalogTargetVisible` (status + parents).
 
-```bash
-pnpm seed:website-navigation -- --dataset development
-pnpm seed:website-navigation -- --dataset development --confirm
-```
-
-Or set Footer CTA per item in Studio → Navigation. Agents must not run seeds.
-
-**Seed (humans only — agents must not run):** fetches live `productLine` + `hasPage` solutions and builds Products / Solutions mega groups. Prefer `path` links for product lines (`productLine` is not Studio-linkable) and `internal` refs for solutions. Solutions groups are seeded **without** `descriptor` (label only). Footer/social/AI preserved. `createOrReplace` overwrites the singleton. `--dataset` is **required** (no env fallback); without `--confirm` the run is a dry run.
-
-```bash
-pnpm seed:website-navigation -- --dataset development              # preview JSON + catalog counts
-pnpm seed:website-navigation -- --dataset development --confirm    # write + attempt publish
-pnpm seed:website-navigation -- --dataset production --confirm --yes-production
-```
-
-Then in Studio → Main Website → Navigation: confirm Products / Solutions groups; attach **Solutions promo image** if desired; publish. Refresh www (`pnpm dev:www`). Revalidate tag: `www-website-navigation`.
+In Studio → Main Website → Navigation: confirm Products / Solutions groups; attach **Solutions promo image** if desired; publish. Refresh www (`pnpm dev:www`). Revalidate tag: `www-website-navigation`.
 
 ## Solution LP sections (CMS template path)
 
@@ -138,13 +123,11 @@ Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudi
 
 **Heading tokens:** section `heading` / `intro` / `link.query` may include `%h1%` / `%title%` / `%description%` / `%shortName%` / `%shortDescription%` / `%slug%`; `applySectionTokens` runs after template merge using the host solution (`descriptionText` + `slug` from GROQ). Catalog CTAs: Site path `/products` + Query `industry=%slug%` (root-relative — current host on staging or prod). **List inherit:** `listSource` / `curatedSource` — `shouldInheritSectionList` skips fill when `custom`; host-agnostic for Product LPs later.
 
-**Seed:** [`apps/studio/memory.md`](../studio/memory.md) § Beauty Solution LP seed.
+**Seed:** retired 2026-10-06 — see [`apps/studio/memory.md`](../studio/memory.md) § Demo seeds (retired).
 
 ## Beauty LP seed parity (WP4 / Phase B)
 
-Human runbook (agents do not `--confirm`): [`apps/studio/memory.md`](../studio/memory.md) § Beauty Solution LP seed.
-
-After a human runs `seed:beauty-solution-lp -- --dataset development --confirm`:
+The seed is retired (2026-10-06, [`apps/studio/memory.md`](../studio/memory.md) § Demo seeds). The checklist below still describes what a correctly configured solution LP looks like:
 
 1. `/solutions/beauty-cosmetics` uses **merged** `solutionIndustryPage` + Beauty content sections (not fixture bands).
 2. Beauty **Template** tab points at Solution Industry Page; section `_key`s match the singleton.

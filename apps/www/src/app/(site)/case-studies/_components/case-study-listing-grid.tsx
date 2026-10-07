@@ -37,10 +37,11 @@ import { Pagination } from "@pakfactory/ui/components/pagination";
 import { usePathPagination } from "@pakfactory/ui/components/use-path-pagination";
 import {
   CASE_STUDIES_BASE_PATH,
+  CASE_STUDIES_DEFAULT_PAGE_SIZE,
   CASE_STUDIES_LISTING_TOP_ID,
 } from "./case-studies-listing-constants";
 
-const PAGE_SIZES = [9, 18, 36];
+const PAGE_SIZES = [CASE_STUDIES_DEFAULT_PAGE_SIZE, 18, 36];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

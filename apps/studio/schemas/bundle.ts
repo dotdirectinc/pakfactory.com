@@ -1,6 +1,7 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG } from '../lib/media-tags'
+import { catalogMediaFields } from '../lib/catalog-media-fields'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
@@ -136,34 +137,10 @@ export const bundle = defineType({
         },
       ],
     }),
-    taggedImageField({
-      name: 'featuredImage',
-      title: 'Featured image',
-      type: 'image',
+    // ADR-024: Images / Videos / Lifestyle images / Lifestyle videos.
+    ...catalogMediaFields({
       group: 'content',
       mediaTags: [MEDIA_TAG.product],
-      options: { hotspot: true },
-      description:
-        'The one image that represents this bundle — the page hero, cards, listings and the social fallback.',
-      fields: [
-        defineField({
-          name: 'alt',
-          title: 'Alt text',
-          type: 'string',
-          description: 'Describes the image for screen readers and SEO.',
-        }),
-      ],
-    }),
-    defineField({
-      name: 'media',
-      title: 'Media',
-      type: 'array',
-      group: 'content',
-      // No positional rule here. `media` used to say "first image = hero", which
-      // let reordering a gallery change which image represented the bundle.
-      description:
-        'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
-      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
 
     // ─── CATEGORIZATION (parts + curated lists) ───────────────────────────────
@@ -273,9 +250,11 @@ export const bundle = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', status: 'status', count: 'includedProducts.length', media: 'featuredImage' },
-    prepare({ title, status, count, media }) {
+    select: { title: 'title', status: 'status', count: 'includedProducts.length', images: 'images' },
+    prepare({ title, status, count, images }) {
       const parts = count ? `${count} product${count === 1 ? '' : 's'}` : 'No products'
+      const list = (images ?? []) as {primary?: boolean}[]
+      const media = list.find((item) => item?.primary === true) || list[0] || undefined
       return {
         title,
         subtitle: status === 'active' ? parts : `[${status?.toUpperCase()}] ${parts}`,

@@ -36,7 +36,7 @@ Active products only (`status == "active"` or unset), ordered by title.
 
 ### What is shown (PROD-2845)
 
-One `status` field decides whether a catalog document gets a page, a listing, and a nav link. Shared GROQ constants live in [`catalog.ts`](../../../packages/sanity/src/queries/catalog.ts); TS mirrors for chrome / mapping live in [`@pakfactory/sanity/catalog-visibility`](../../../packages/sanity/src/catalog-visibility.ts) (`isCatalogTargetVisible`). Do not re-write the whitelist in www.
+One `status` field decides whether a catalog document gets a page, a listing, and a nav link. Shared GROQ constants live in [`status-gates.ts`](../../../packages/sanity/src/queries/status-gates.ts) (re-exported by `catalog.ts` and `@pakfactory/sanity/queries`); TS mirrors for chrome / mapping live in [`@pakfactory/sanity/catalog-visibility`](../../../packages/sanity/src/catalog-visibility.ts) (`isCatalogTargetVisible`). Do not re-write the whitelist in www.
 
 | Rule | Condition | Meaning |
 | --- | --- | --- |
@@ -57,6 +57,27 @@ One `status` field decides whether a catalog document gets a page, a listing, an
 | `solution` | `SOLUTION_ACTIVE` |
 
 Also applied to: the option → product-lines facet, the three solution product lists, the Solution Style filter, the Algolia product index and the case-studies Products filter. Behaviour tests: [`line-style-visibility.test.ts`](../../../packages/sanity/src/queries/line-style-visibility.test.ts).
+
+### Parents, primary and FAQs (2026-10-06, PROD-2898 · content-model D80)
+
+A product's own status is not the whole answer. **Use the product gates — `PRODUCT_LISTED` / `PRODUCT_HAS_PAGE` / `PRODUCT_ORDERABLE` — never the bare status gates, on products.** They add:
+
+| Rule | What it does | Constant |
+| --- | --- | --- |
+| **Every parent off → hidden** | A product's parents are its styles (standard) or solutions (inspiration). Off = Coming soon / Not active for a style (Discontinued and Active (Internal) stay on); anything but Active for a solution. One parent is just the smallest case of "every". | `PRODUCT_HAS_PARENT_ON` |
+| **R1 — exclusive parent** | A standard product follows its one line (Coming soon / Not active hide it; Discontinued keeps the page but unlists it and projects `status: discontinued`). Options follow their type and category. | `PRODUCT_LINE_OPEN` / `_HAS_PAGE`, `OPTION_ACTIVE` |
+| **A preset follows its base** | An inspiration product is hidden unless its `basedOn` product **and** that product's line are Active or Active (Internal). | `INSPIRATION_BASE_OPEN` (inside `PRODUCT_LINE_*`) |
+| **The primary is fixed** | `productStyle[0]` / `solutions[0]` is never substituted by the next parent. An off primary still shows in the PDP breadcrumb, as text (`breadcrumbLinks`). The inspiration breadcrumb parent is `solutions[0]`; the first-industry value lives on as `industry` (grouping, Related Products). | `breadcrumbLinks` |
+| **FAQ inheritance** | Own FAQs win. Standard: primary style (only while on and non-empty) → line → none. Inspiration: primary solution (only while Active) → none. | `PRODUCT_FAQS_INHERITED` |
+
+Also gated, so a hidden target is never shown or linked:
+- **Curated picks** — `relatedProducts`, `featuredProducts`, products rows, inspirations / product-styles cards (`CURATED_REF_VISIBLE` in `sections.ts`).
+- **Curated chrome links** — nav, hero slides, finder rail, catalog rows carry `parentsOn` (`LINK_PARENTS_ON`); `isCatalogTargetVisible` returns false when it is false. Case-study chips keep their label and link only when `linkable`.
+- **Solution Styles** read their own status (`SOLUTION_STYLE_ACTIVE`), not just their solution's.
+- **Style pages** exist only for Active / Discontinued styles (`hasPage` on style projections; Active (Internal) styles stay catalog filters).
+- **Algolia admin search** indexes with the same gates; the `algolia-content-sync` Function removes a record when `indexable` turns false. A *parent's* status change fires no event for its children — those catch up on the next backfill.
+
+Tests: `product-faqs.test.ts`, `exclusive-parent.test.ts`, `curated-visibility.test.ts`, `link-parents.test.ts`, `style-page.test.ts`, `algolia/content-indexes.test.ts` (packages/sanity).
 
 ### Product kind by surface
 

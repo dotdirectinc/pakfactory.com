@@ -63,8 +63,19 @@ const SOLUTION_STYLE_INSPIRATION_CARD = /* groq */ `{
   _type,
   "title": coalesce(shortName, title),
   "description": shortDescription,
-  "imageSrc": featuredImage.asset->url,
-  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText),
+  "imageSrc": coalesce(
+    images[primary == true][0].asset->url,
+    images[0].asset->url,
+    featuredImage.asset->url
+  ),
+  "imageAlt": coalesce(
+    images[primary == true][0].alt,
+    images[primary == true][0].asset->altText,
+    images[0].alt,
+    images[0].asset->altText,
+    featuredImage.alt,
+    featuredImage.asset->altText
+  ),
   "slug": slug.current,
   "solutionSlug": solution->slug.current,
   "_key": slug.current
@@ -104,21 +115,32 @@ const FORMAT_REF = /* groq */ `{
 }`;
 
 /**
- * Industry LP hero tiles — product projection (featuredImage preferred, then gallery).
+ * Industry LP hero tiles — product stills on `media` / `images`; lifestyle stills
+ * via `lifestyleImages` from {@link CATALOG_MEDIA_ARRAYS} (www picks `[0]` for tiles).
  * Used by auto query and curated `featuredProducts` on the solution doc (PROD-2763).
  */
 const SOLUTION_HERO_PRODUCT_PROJ = /* groq */ `{
   ${CATALOG_PRODUCT_FIELDS},
-  "media": [
-    ...select(defined(featuredImage.asset) => [featuredImage{
+  "media": select(
+    count(images) > 0 => images[]{
       ...,
       "alt": ${IMAGE_ALT}
-    }], []),
-    ...coalesce(media, [])[]{
-      ...,
-      "alt": ${IMAGE_ALT}
-    }
-  ]
+    },
+    [
+      ...select(defined(featuredImage.asset) => [featuredImage{
+        ...,
+        "alt": ${IMAGE_ALT}
+      }], []),
+      ...coalesce(media, [])[]{
+        ...,
+        "alt": ${IMAGE_ALT}
+      }
+    ]
+  ),
+  lifestyleImages[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  }
 }`;
 
 /** Solution landing page by slug (caller gates on status). */
@@ -136,7 +158,15 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   shortDescription,
   description,
   "descriptionText": pt::text(description),
-  featuredImage{
+  "featuredImage": coalesce(
+    images[primary == true][0],
+    images[0],
+    featuredImage
+  ){
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  images[]{
     ...,
     "alt": ${IMAGE_ALT}
   },
@@ -255,7 +285,11 @@ export const SOLUTIONS_WITH_PAGES_QUERY = /* groq */ `*[
   shortName,
   shortDescription,
   "slug": slug.current,
-  featuredImage{
+  "featuredImage": coalesce(
+    images[primary == true][0],
+    images[0],
+    featuredImage
+  ){
     ...,
     "alt": ${IMAGE_ALT}
   }
@@ -362,7 +396,11 @@ export const SOLUTION_STYLE_BY_SLUGS_QUERY = /* groq */ `*[
   shortDescription,
   description,
   "descriptionText": pt::text(description),
-  featuredImage{
+  "featuredImage": coalesce(
+    images[primary == true][0],
+    images[0],
+    featuredImage
+  ){
     ...,
     "alt": ${IMAGE_ALT}
   },
@@ -392,7 +430,11 @@ const SOLUTION_STYLE_CARD = /* groq */ `{
   shortName,
   "slug": slug.current,
   shortDescription,
-  featuredImage{
+  "featuredImage": coalesce(
+    images[primary == true][0],
+    images[0],
+    featuredImage
+  ){
     ...,
     "alt": ${IMAGE_ALT}
   }

@@ -126,6 +126,17 @@ export function isSolutionParentOn(status: string | null | undefined): boolean {
 }
 
 /**
+ * Mirror GROQ `INSPIRATION_BASE_OPEN` — a preset follows its base product: the base must
+ * be Active or Active (Internal), and so must the base's line (Richard + Eric, 2026-10-06).
+ */
+export function isInspirationBaseOpen(
+  baseStatus: string | null | undefined,
+  baseLineStatus: string | null | undefined,
+): boolean {
+  return unsetOr(baseStatus, 'active', 'active-internal') && unsetOr(baseLineStatus, 'active', 'active-internal');
+}
+
+/**
  * Mirror GROQ `PRODUCT_HAS_PARENT_ON` — rule 1: a product whose every parent is off is
  * hidden. Inspiration products are anchored by their solutions, standard ones by styles.
  */

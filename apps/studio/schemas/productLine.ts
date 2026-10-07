@@ -1,12 +1,12 @@
 import { defineField, defineType } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
+import { catalogMediaFields } from '../lib/catalog-media-fields'
 import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
-import { featuredVideoField } from '../lib/featured-video-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { entityFields } from '../lib/entity-id-field'
 import {
@@ -131,30 +131,13 @@ export const productLine = defineType({
         },
       ],
     }),
-    // One representative image, one gallery — the same pair on all three product-tree
-    // types. `featuredImage` names a ROLE (the image that stands for this document),
-    // where `cardImage` and `heroMedia` named render slots, which D33 forbids. It is
-    // also the name the shared `ogImage` description has always referred to.
-    defineField(taggedImageField({
-      name: 'featuredImage',
-      title: 'Featured image',
-      type: 'image',
+    // ADR-024: Images / Videos / Lifestyle images / Lifestyle videos.
+    ...catalogMediaFields({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
-      options: { hotspot: true },
-      description:
-        'The one image that represents this line — large landing hero, catalog cards, nav, and the social fallback. Leave empty to use the hero placeholder.',
-      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
-    })),
-    // Desktop scroll-scrub hero. Shared featuredVideo object (upload | URL | YouTube)
-    // — same field on Product / Expertise Stage. Mobile / reduced-motion keep the image.
-    featuredVideoField({
-      group: GROUPS.content,
-      description:
-        'Optional desktop scroll-scrub video. Prefer H.264 MP4 or VP9 WebM; YouTube is stored but the landing keeps Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     // Featured icon on the product-line landing. Stack: above the H1.
-    // Bottom bar: brand-signal slot bottom-left. Distinct from Featured image.
+    // Bottom bar: brand-signal slot bottom-left. Distinct from the primary product still.
     // Schema field name stays `kitMark` (no content migration). Hero shell
     // (stack vs bottomBar) lives on the selected Product Line Page layout.
     defineField(taggedImageField({
@@ -168,14 +151,6 @@ export const productLine = defineType({
         'Icon on the landing hero. Stack layout: above the H1. Bottom bar layout: bottom-left brand signal. Leave empty to use the placeholder. Which shell applies comes from the Template tab.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the icon for screen readers and SEO.' })],
     })),
-    defineField({
-      name: 'media',
-      title: 'Media',
-      type: 'array',
-      group: GROUPS.content,
-      description: 'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
-      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
-    }),
     // Renamed from `cardSummary` (PROD-2454), matching Style, Solution,
     // Product and the existing `blogCategory` pair.
     defineField({
@@ -200,7 +175,7 @@ export const productLine = defineType({
         STATUS_DESCRIPTION_TAIL,
       options: { list: FULL_STATUS_LIST, layout: 'radio' },
       initialValue: 'active',
-      validation: (Rule) =>
+      validation: (Rule) => [
         Rule.custom(
           restrictingChildrenWarning({
             // Styles under this line that would go dark with it. Products are not
@@ -216,6 +191,23 @@ export const productLine = defineType({
               `Use Active (Internal) instead to hide the line but keep its styles and products reachable.`,
           }),
         ).warning(),
+        // Presets follow their base product (Richard + Eric, 2026-10-06): an inspiration
+        // product whose base sits on this line is hidden too — Discontinued included, which
+        // keeps the standard products' own pages but takes their presets down.
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              basedOn->productLine._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon"])
+            ]{ title }`,
+            describe: (names) =>
+              `Inspiration products based on this line's products are hidden too, including ${names}. ` +
+              `Use Active (Internal) to hide the line but keep them live.`,
+          }),
+        ).warning(),
+      ],
     }),
 
     // ─── TEMPLATE (layout version) ────────────────────────────────────────────
@@ -435,7 +427,7 @@ export const productLine = defineType({
       max: 6,
       min: 3,
       description:
-        'Curated FAQs for this line — reference shared FAQ documents. Shown on the line page, and on its styles and standard products that have no FAQs of their own — but not on a product whose first style is switched off.',
+        'Curated FAQs for this line — reference shared FAQ documents. Shown on the line page, and on its styles and standard products that have no FAQs of their own (when a product’s first style has none or is switched off, the line’s show).',
     }),
 
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
@@ -485,8 +477,10 @@ export const productLine = defineType({
     { title: 'Title', name: 'title', by: [{ field: 'title', direction: 'asc' }] },
   ],
   preview: {
-    select: { title: 'title', display: 'shortName', media: 'featuredImage' },
-    prepare({ title, display, media }) {
+    select: { title: 'title', display: 'shortName', images: 'images' },
+    prepare({ title, display, images }) {
+      const list = (images ?? []) as {primary?: boolean}[]
+      const media = list.find((item) => item?.primary === true) || list[0] || undefined
       return { title: display || title || 'Untitled line', subtitle: 'Product Line', media }
     },
   },

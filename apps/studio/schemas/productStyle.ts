@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG } from '../lib/media-tags'
+import { catalogMediaFields } from '../lib/catalog-media-fields'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
@@ -138,27 +139,10 @@ export const productStyle = defineType({
         },
       ],
     }),
-    // One representative image, one gallery — the same pair on all three product-tree
-    // types. `featuredImage` names a ROLE (the image that stands for this document),
-    // where `cardImage` and `heroMedia` named render slots, which D33 forbids. It is
-    // also the name the shared `ogImage` description has always referred to.
-    defineField(taggedImageField({
-      name: 'featuredImage',
-      title: 'Featured image',
-      type: 'image',
+    // ADR-024: Images / Videos / Lifestyle images / Lifestyle videos.
+    ...catalogMediaFields({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
-      options: { hotspot: true },
-      description: 'The one image that represents this style — the landing hero, line cards, listings, nav and the social fallback.',
-      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
-    })),
-    defineField({
-      name: 'media',
-      title: 'Media',
-      type: 'array',
-      group: GROUPS.content,
-      description: 'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
-      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
     defineField({
       name: 'status',
@@ -189,8 +173,8 @@ export const productStyle = defineType({
             // The primary is fixed — nothing falls back to the next style (2026-10-06).
             describe: (names) =>
               `This is the primary style of ${names}. They keep it as their primary: their ` +
-              `breadcrumb shows it without a link, and they inherit no FAQs (not from the line ` +
-              `either) until it is active again. Reorder their styles first if another should lead.`,
+              `breadcrumb shows it without a link, and they skip this style's FAQs and show their ` +
+              `line's instead until it is active again. Reorder their styles first if another should lead.`,
           }),
         ).warning(),
         // Rule 1 (2026-10-06): a product whose every style is off is hidden.
@@ -320,15 +304,17 @@ export const productStyle = defineType({
     ...entityFields({ prefix: 'sty', codeKinds: ['STY'], group: GROUPS.content }),
   ],
   preview: {
-    select: { title: 'title', display: 'shortName', line: 'productLine.title', image: 'featuredImage' },
-    prepare({ title, display, line, image }) {
+    select: { title: 'title', display: 'shortName', line: 'productLine.title', images: 'images' },
+    prepare({ title, display, line, images }) {
+      const list = (images ?? []) as {primary?: boolean}[]
+      const media = list.find((item) => item?.primary === true) || list[0] || undefined
       return {
         title: display || title || 'Untitled style',
         // Just the Line name. "Style of Rigid Boxes" restated what the list is already
         // called; the fallback now names the gap instead, and `productLine` is required,
         // so an empty one is a fault worth seeing rather than a normal state.
         subtitle: line || 'No product line',
-        media: image,
+        media,
       }
     },
   },

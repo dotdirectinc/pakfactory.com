@@ -1,6 +1,6 @@
 # ADR-023: Featured image + Featured video — role-named catalog media
 
-**Status:** **Accepted** (2026-10-01). Ratified with [PROD-2737](https://dotdirect.atlassian.net/browse/PROD-2737) Phase 1. Applies to `studio`, `www` (all catalog document types).
+**Status:** **Superseded** for Product, Product Line, Product Style, Customization Option, Solution, Solution Style, and Bundle by [ADR-024](0024-catalog-media-groups.md). Still **Accepted** for Expertise Stage (`featuredVideo` only). Originally ratified with [PROD-2737](https://dotdirect.atlassian.net/browse/PROD-2737) Phase 1.
 
 ## Context
 

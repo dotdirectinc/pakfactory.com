@@ -7,11 +7,11 @@ import {
 } from "./catalog.ts";
 
 // Product FAQs and primary parents (Richard + Eric, 2026-10-06):
-//   standard    → own → primary style (if on) → line (only while the primary style is on)
+//   standard    → own → primary style (if on) → line
 //   inspiration → own → primary solution (if Active) → nothing
 //   rule 1: every parent off → the product is hidden
 //   rule 2: the primary is fixed — never the second parent
-//   rule 3: an off primary passes no FAQs down
+//   rule 3: an off primary passes no FAQs down (a standard product still reaches its line)
 const block = (text: string) => [
   { _type: "block", _key: "b", children: [{ _type: "span", _key: "s", text }] },
 ];
@@ -96,10 +96,18 @@ test("standard: Active (Internal) and Discontinued primaries still pass FAQs dow
   assert.deepEqual(await faqsFor("p", [standard("p", { productStyle: styles("style-disc") })]), ["Q f-style"]);
 });
 
-test("standard: off primary → empty — no second style, no line (rules 2 + 3)", async () => {
+test("standard: off primary style is skipped — never the second style, always the line (rules 2 + 3)", async () => {
   for (const off of ["style-off", "style-soon"]) {
-    assert.deepEqual(await faqsFor("p", [standard("p", { productStyle: styles(off, "style2") })]), []);
+    assert.deepEqual(await faqsFor("p", [standard("p", { productStyle: styles(off, "style2") })]), ["Q f-line"]);
   }
+});
+
+test("standard: off primary style and a line with no FAQs → empty", async () => {
+  const docs = [
+    { _id: "line-nofaq", _type: "productLine", title: "L", slug: { current: "line-nofaq" } },
+    standard("p", { productLine: { _ref: "line-nofaq" }, productStyle: styles("style-off", "style2") }),
+  ];
+  assert.deepEqual(await faqsFor("p", docs), []);
 });
 
 test("inspiration: Active primary solution → its FAQs, never the second's", async () => {

@@ -20,13 +20,15 @@ const products = [
   // solution is off is hidden (rule 1, 2026-10-06).
   { _id: "sol", _type: "solution", title: "Bakery", status: "active" },
   { _id: "other", _type: "solution", title: "Other", status: "active" },
-  { _id: "p.box", _type: "product", kind: "inspiration", title: "Cookie Box", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
-  { _id: "p.bag", _type: "product", kind: "inspiration", title: "Paper Bakery Bag", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.bag" }, productStyle: [{ _ref: "style.gusset" }, { _ref: "style.handle" }] },
-  { _id: "p.other", _type: "product", kind: "inspiration", title: "Cookie Tin", solutions: [{ _ref: "other" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
+  // Presets follow their base product (2026-10-06), so each needs one that is live.
+  { _id: "p.base", _type: "product", kind: "standard", title: "Base", productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
+  { _id: "p.box", _type: "product", kind: "inspiration", basedOn: { _ref: "p.base" }, title: "Cookie Box", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
+  { _id: "p.bag", _type: "product", kind: "inspiration", basedOn: { _ref: "p.base" }, title: "Paper Bakery Bag", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.bag" }, productStyle: [{ _ref: "style.gusset" }, { _ref: "style.handle" }] },
+  { _id: "p.other", _type: "product", kind: "inspiration", basedOn: { _ref: "p.base" }, title: "Cookie Tin", solutions: [{ _ref: "other" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
   { _id: "p.std", _type: "product", kind: "standard", title: "Cookie Box Standard", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
-  { _id: "p.hidden", _type: "product", kind: "inspiration", title: "Cookie Box Hidden", status: "active-internal", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
-  { _id: "p.soon", _type: "product", kind: "inspiration", title: "Tin Soon", status: "coming-soon", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.soon" }, productStyle: [{ _ref: "style.tuck" }] },
-  { _id: "p.gone", _type: "product", kind: "inspiration", title: "Tin Gone", status: "discontinued", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.soon" }, productStyle: [{ _ref: "style.tuck" }] },
+  { _id: "p.hidden", _type: "product", kind: "inspiration", basedOn: { _ref: "p.base" }, title: "Cookie Box Hidden", status: "active-internal", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
+  { _id: "p.soon", _type: "product", kind: "inspiration", basedOn: { _ref: "p.base" }, title: "Tin Soon", status: "coming-soon", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.soon" }, productStyle: [{ _ref: "style.tuck" }] },
+  { _id: "p.gone", _type: "product", kind: "inspiration", basedOn: { _ref: "p.base" }, title: "Tin Gone", status: "discontinued", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.soon" }, productStyle: [{ _ref: "style.tuck" }] },
 ];
 
 const ids = async (filter: Parameters<typeof filterParams>[1], excluded: { _ref: string }[] = []) => {

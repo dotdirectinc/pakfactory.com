@@ -2,16 +2,19 @@ import {PlayIcon} from '@sanity/icons'
 import {defineField, defineType} from 'sanity'
 
 /**
- * featuredVideo — shared multi-source video object (upload | S3/CDN URL | YouTube).
+ * catalogVideo — product or lifestyle motion with thumbnail (ADR-024).
  *
- * Used on Expertise Stage (ADR-024 moved catalog types to `catalogVideo` / `videos[]`).
- * Ambient / hover playback (`<video>`) resolves from upload or a direct file URL only
- * (H.264 MP4, VP9 WebM including alpha, or a web-encoded MOV). YouTube is stored for
- * editorial completeness but front-ends keep the still image.
+ * Same source choices as `featuredVideo` (upload | S3/CDN URL | YouTube) plus a
+ * still thumbnail for posters. Ambient / hover playback resolves from upload or
+ * a direct file URL only; YouTube is stored but front-ends keep the still.
+ *
+ * Thumbnail media-library tags are applied by the host field helper
+ * (`catalogMediaFields`) via array-member overrides where needed; the type
+ * itself stays tag-agnostic so Product, Option, and Solution share one object.
  */
-export const featuredVideo = defineType({
-  name: 'featuredVideo',
-  title: 'Featured video',
+export const catalogVideo = defineType({
+  name: 'catalogVideo',
+  title: 'Catalog video',
   type: 'object',
   icon: PlayIcon,
   fields: [
@@ -68,7 +71,7 @@ export const featuredVideo = defineType({
       title: 'YouTube URL',
       type: 'url',
       description:
-        'Watch URL. Ambient boards and hover tiles still use the featured/diagram image — use Upload or URL for a looping background.',
+        'Watch URL. Ambient boards and hover tiles use the thumbnail or primary still — use Upload or URL for a looping background.',
       hidden: ({parent}) => parent?.source !== 'youtube',
       validation: (Rule) =>
         Rule.custom((value, context) => {
@@ -79,6 +82,21 @@ export const featuredVideo = defineType({
           return true
         }),
     }),
+    defineField({
+      name: 'thumbnail',
+      title: 'Thumbnail',
+      type: 'image',
+      options: {hotspot: true},
+      description: 'Poster for this video. Falls back to the primary product still when empty.',
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
+    }),
   ],
   preview: {
     select: {
@@ -86,8 +104,9 @@ export const featuredVideo = defineType({
       url: 'url',
       youtubeUrl: 'youtubeUrl',
       fileName: 'file.asset->originalFilename',
+      media: 'thumbnail',
     },
-    prepare({source, url, youtubeUrl, fileName}) {
+    prepare({source, url, youtubeUrl, fileName, media}) {
       const subtitle =
         source === 'upload'
           ? fileName || 'Uploaded file'
@@ -95,8 +114,9 @@ export const featuredVideo = defineType({
             ? url || 'URL'
             : youtubeUrl || 'YouTube'
       return {
-        title: 'Featured video',
+        title: 'Catalog video',
         subtitle: source ? `${source}: ${subtitle}` : subtitle,
+        media,
       }
     },
   },
