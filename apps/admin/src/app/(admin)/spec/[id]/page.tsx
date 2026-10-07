@@ -92,6 +92,7 @@ export default async function SpecChangesetPage({
             changesetId={cs.id}
             itemCount={items.length}
             excludedCount={items.filter((i) => i.excluded_at).length}
+            writesToSanity={items.some((i) => i.entity_type === "sanity_document")}
             canDecide={canApprove(me)}
             blockedBy={blocked}
           />

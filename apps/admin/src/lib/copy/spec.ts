@@ -34,6 +34,8 @@ export const ADMIN_SPEC_COPY = {
   excludeHint:
     "Exclude leaves a record out of this approval — all of its rows here together. It will be proposed again only if its source changes again.",
   allExcluded: "Every change is excluded — include at least one, or discard the frame.",
+  sanityWriteNote:
+    "Its Sanity changes are written right after approval — each row then shows Written, or why it was not; problems also appear in the Sync panel.",
   blockedLead:
     "This frame refers to rows other frames create, so it cannot be approved yet. Approve these first:",
   unreachable:
@@ -302,6 +304,14 @@ export const ADMIN_SPEC_SYNC_COPY = {
   states: { requested: "Queued", running: "Running", done: "Done", failed: "Failed" },
   nothingFound: "No differences — nothing to approve.",
   dismiss: "Dismiss",
+  problemsTitle: (n: number) => `${n} approved ${n === 1 ? "change was" : "changes were"} not written to Sanity`,
+  problemsLead:
+    "They are not counted as decided: run the same sync again and they are proposed again, with current values.",
+  problemStates: {
+    stale: "changed in Sanity since it was proposed — not overwritten",
+    failed: "the write failed",
+    stuck: "still waiting to be written",
+  },
   dismissing: "Dismissing…",
 } as const;
 
