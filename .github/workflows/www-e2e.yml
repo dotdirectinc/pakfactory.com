@@ -1,0 +1,140 @@
+name: www e2e (RFQ smoke)
+
+# Runs the Playwright RFQ smoke suite (apps/www/e2e) AFTER a merge into
+# www-new-release, against that commit's own Vercel deployment (the build that
+# staging.pakfactory.com serves), ONLY when the merge touched code the suite
+# exercises (see `paths`). Every other merge skips this workflow entirely.
+#
+# Why after merge: www feature branches get no Vercel preview (apps/www/vercel.json
+# ignoreCommand builds only main / staging / www-new-release), so there is nothing
+# to test before merge without changing that. Decision 2026-10-07.
+#
+# Report-only: a failure shows as a red check on the merge commit; it blocks nothing.
+#
+# Needs the repo secret VERCEL_AUTOMATION_BYPASS_SECRET (Vercel → pakfactory-com →
+# Settings → Deployment Protection → Protection Bypass for Automation). Without
+# it the job prints a notice and passes without running.
+#
+# Never submits a request: E2E_SUBMIT is not set, so each flow stops at Review.
+
+on:
+  push:
+    branches: [www-new-release]
+    paths:
+      # the suite itself
+      - 'apps/www/e2e/**'
+      - 'apps/www/playwright.config.ts'
+      - 'apps/www/package.json'
+      - '.github/workflows/www-e2e.yml'
+      # request forms (/request, /request/products|general|services)
+      - 'apps/www/src/app/(request)/**'
+      - 'apps/www/src/app/(site)/request/**'
+      - 'apps/www/src/components/request/**'
+      - 'apps/www/src/lib/request/**'
+      - 'apps/www/src/lib/rfq/**'
+      - 'apps/www/src/lib/places/**'
+      # entrances the specs click through: nav, products, PDP, solutions
+      - 'apps/www/src/app/layout.tsx'
+      - 'apps/www/src/app/(site)/layout.tsx'
+      - 'apps/www/src/app/(site)/products/**'
+      - 'apps/www/src/app/(site)/solutions/**'
+      - 'apps/www/src/components/layout/**'
+      - 'apps/www/src/components/product/**'
+      - 'apps/www/src/components/solution/**'
+      - 'apps/www/src/lib/products/**'
+      - 'apps/www/src/lib/catalog/**'
+      - 'apps/www/src/lib/*nav*.ts'
+      # shared UI primitives
+      - 'packages/ui/**'
+  # Manual runs need this file on the default branch (main) first.
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'URL to test (default: https://staging.pakfactory.com)'
+        required: false
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: www-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rfq-smoke:
+    name: RFQ smoke (www)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Check bypass secret
+        id: secret
+        run: |
+          if [ -z "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            echo "::notice::VERCEL_AUTOMATION_BYPASS_SECRET is not set — skipping the e2e run."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait for this commit's www deployment
+        id: preview
+        if: steps.secret.outputs.ok == 'true' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          ENVIRONMENT: 'Preview – pakfactory-com'
+        run: |
+          # Vercel reports each project as a GitHub deployment; poll until the www one succeeds.
+          for i in $(seq 1 60); do
+            id=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$SHA&environment=$(jq -rn --arg e "$ENVIRONMENT" '$e|@uri')" -q '.[0].id // empty')
+            if [ -n "$id" ]; then
+              read -r state url < <(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" -q '.[0] | "\(.state) \(.environment_url // "")"')
+              echo "attempt $i: $state $url"
+              if [ "$state" = "success" ] && [ -n "$url" ]; then
+                echo "url=$url" >> "$GITHUB_OUTPUT"; exit 0
+              fi
+              if [ "$state" = "failure" ] || [ "$state" = "error" ]; then
+                echo "::error::The www deployment for this commit failed, so there is nothing to test."; exit 1
+              fi
+            else
+              echo "attempt $i: no '$ENVIRONMENT' deployment for $SHA yet"
+            fi
+            sleep 20
+          done
+          echo "::error::Timed out after 20 min waiting for the www deployment of this commit."; exit 1
+
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.ok == 'true'
+      - uses: pnpm/action-setup@v4
+        if: steps.secret.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.secret.outputs.ok == 'true'
+        with:
+          node-version: 20
+          cache: pnpm
+      - if: steps.secret.outputs.ok == 'true'
+        run: pnpm install --frozen-lockfile --filter @pakfactory/www...
+      - if: steps.secret.outputs.ok == 'true'
+        run: pnpm --filter @pakfactory/www exec playwright install --with-deps chromium
+
+      - name: Run the RFQ smoke suite
+        if: steps.secret.outputs.ok == 'true'
+        env:
+          CI: 'true'
+          E2E_BASE_URL: ${{ steps.preview.outputs.url || inputs.base_url || 'https://staging.pakfactory.com' }}
+        run: |
+          echo "Testing $E2E_BASE_URL"
+          pnpm --filter @pakfactory/www test:e2e
+
+      - name: Upload report and traces
+        if: failure() && steps.secret.outputs.ok == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: www-e2e-report
+          path: |
+            apps/www/e2e/.report
+            apps/www/e2e/.results
+          retention-days: 7
