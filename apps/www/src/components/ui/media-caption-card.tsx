@@ -47,6 +47,8 @@ export type MediaCaptionCardProps = {
      * Default `always` for non-Finder callers.
      */
     captionMode?: 'always' | 'hover' | 'tap';
+    /** Load the image eagerly at high priority — for cards on screen at first paint (the LCP). */
+    priority?: boolean;
     className?: string;
 };
 
@@ -111,6 +113,7 @@ export function MediaCaptionCard({
     link,
     stat,
     captionMode = 'always',
+    priority = false,
     className,
 }: MediaCaptionCardProps) {
     const router = useRouter();
@@ -207,6 +210,8 @@ export function MediaCaptionCard({
                     alt={image.alt}
                     fill
                     sizes="(max-width: 768px) 85vw, 40vw"
+                    priority={priority}
+                    fetchPriority={priority ? 'high' : undefined}
                     className={cn(
                         contain
                             ? 'object-contain p-8 sm:p-12'

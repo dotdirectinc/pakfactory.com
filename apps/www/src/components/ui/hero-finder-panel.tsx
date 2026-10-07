@@ -385,6 +385,9 @@ function HeroFinderPanelRail({
                                                 : 'hover'
                                         }
                                         className="aspect-video sm:aspect-5/4"
+                                        // The first two slides are on screen at
+                                        // first paint; one is the mobile LCP.
+                                        priority={index < 2}
                                     />
                                 </CarouselItem>
                             );
