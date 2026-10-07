@@ -90,6 +90,7 @@ Acceptance criteria:
   ❌ <criterion> — <what is missing>
   ⚠️ <criterion> — built, NOT verified against the real system
 
+QA checklist: <current in the description? yes / no — update it first (jira-qa-checklist.mdc)>
 Merged:      <PRs on the base branch>
 Still open:  <PRs not merged>
 Verified against reality: <what actually ran outside a test, or "none">
