@@ -9,7 +9,9 @@
     "start": "next start --port 3000",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +"
+    "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +",
+    "test:e2e": "playwright test",
+    "test:e2e:staging": "E2E_TARGET=staging playwright test"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
@@ -50,6 +52,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.0",

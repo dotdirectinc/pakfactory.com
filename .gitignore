@@ -56,3 +56,7 @@ apps/studio/backup
 backups/
 .vercel
 .env*
+
+# Playwright (apps/www e2e)
+apps/www/e2e/.results/
+apps/www/e2e/.report/
