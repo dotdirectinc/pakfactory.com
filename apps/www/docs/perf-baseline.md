@@ -16,7 +16,8 @@ pnpm --filter @pakfactory/www perf:baseline --base http://localhost:3000 --skip-
 | Crawl | `/`, the links on it, and the links on those pages (depth 2, up to `--max-urls`, default 400), each fetched twice. Records status, TTFB, compressed and HTML size, `cache-control`, `x-vercel-cache`. Ends with a 404 probe. | `--skip-crawl` |
 | RSC | The payload size of each measured page with an `RSC: 1` request. | `--skip-rsc` |
 | Media | Sanity images in the page markup (`src`, `srcset`, `poster`) without size parameters, and the size of every referenced MP4. | `--skip-media` |
-| Lighthouse 13 | Mobile and `--preset=desktop` runs on the 14 baseline pages (`--pages a,b,…` to override). Uses `npx lighthouse@13` and the local Chrome. Runs one at a time, about 40 s each: about 20 minutes for the 14 default pages (28 runs). | `--skip-lighthouse` |
+| Warm-up | Loads each measured page and its `/_next/static` files once, unmeasured, so the first Lighthouse run does not pay for a cold CDN (seen right after a deploy). | `--skip-lighthouse` |
+| Lighthouse 13 | Mobile and `--preset=desktop` runs on the 14 baseline pages (`--pages a,b,…` to override), `--runs` times each (default 3). The summary reports the **median** of each metric. Uses `npx lighthouse@13` and the local Chrome. Runs one at a time, about 40 s each: about an hour for the 14 default pages at 3 runs, 20 minutes with `--runs 1`. | `--skip-lighthouse` |
 
 Output goes to `<os tmp>/pf-perf-baseline/<timestamp>/` (or `--out <dir>`): `summary.md`, `results.json` and the raw Lighthouse reports.
 
@@ -27,6 +28,6 @@ Set `VERCEL_AUTOMATION_BYPASS_SECRET` to the project's **Protection Bypass for A
 ## Reading the numbers
 
 - **Concurrency is capped at 3.** Higher rates trip the Vercel firewall (`403`, `x-vercel-mitigated: deny`), and those pages then measure the block page.
-- **Lighthouse runs are single samples.** Mobile scores move about ±5 points run to run, so compare medians, not single pages.
+- **One run per page is noisy.** On staging, a single cold load moved a page's mobile score by 10–20 points (2026-10-07). Keep `--runs 3` for anything posted on the Epic; use `--runs 1` only for a quick look.
 - **Locally there is no `x-vercel-cache`.** Read the `s-maxage` count instead. On Vercel the reverse holds: it strips `s-maxage` from the response, so read the `HIT` count.
 - **Staging uses the `development` dataset.** Re-run against production data at cutover.
