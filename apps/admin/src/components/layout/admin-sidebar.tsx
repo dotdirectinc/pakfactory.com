@@ -68,7 +68,7 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions"].some((p) =>
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help"].some((p) =>
               path.startsWith(p),
             )),
       },
@@ -95,6 +95,12 @@ const NAV: readonly NavEntry[] = [
         href: "/spec/solutions",
         label: "Solutions",
         match: (path) => path.startsWith("/spec/solutions"),
+      },
+      // What each page and button does, the catalog structure, syncing and registry codes (PROD-2771).
+      {
+        href: "/spec/help",
+        label: "Help",
+        match: (path) => path.startsWith("/spec/help"),
       },
     ],
   },
