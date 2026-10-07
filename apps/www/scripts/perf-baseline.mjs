@@ -13,6 +13,8 @@
  *   --pages <a,b,...>    Lighthouse / RSC / media pages. Default: the 14 baseline pages.
  *   --max-urls <n>       Crawl cap. Default 400.
  *   --concurrency <n>    Parallel crawl requests, 1–3. Default 3 (more trips the Vercel firewall).
+ *   --runs <n>           Lighthouse runs per page and form factor; the summary reports the
+ *                        median of each metric. Default 3. Use 1 for a quick check.
  *   --skip-crawl | --skip-rsc | --skip-media | --skip-lighthouse
  *
  * Password-protected deploys (staging): set VERCEL_AUTOMATION_BYPASS_SECRET to the project's
@@ -64,6 +66,7 @@ function parseArgs(argv) {
     pages: DEFAULT_PAGES,
     maxUrls: 400,
     concurrency: 3,
+    runs: 3,
     skip: new Set(),
   };
   const takeValue = (i, flag) => {
@@ -75,7 +78,7 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") {
-      console.log("Usage: perf-baseline.mjs --base <url> [--out <dir>] [--pages a,b] [--max-urls n] [--concurrency 1-3] [--skip-crawl|--skip-rsc|--skip-media|--skip-lighthouse]");
+      console.log("Usage: perf-baseline.mjs --base <url> [--out <dir>] [--pages a,b] [--max-urls n] [--concurrency 1-3] [--runs n] [--skip-crawl|--skip-rsc|--skip-media|--skip-lighthouse]");
       process.exit(0);
     } else if (arg === "--base") {
       opts.base = takeValue(i++, arg);
@@ -88,6 +91,8 @@ function parseArgs(argv) {
     } else if (arg === "--concurrency") {
       opts.concurrency = positiveInt(takeValue(i++, arg), arg);
       if (opts.concurrency > 3) fail("--concurrency above 3 trips the Vercel firewall (403 x-vercel-mitigated)");
+    } else if (arg === "--runs") {
+      opts.runs = positiveInt(takeValue(i++, arg), arg);
     } else if (/^--skip-(crawl|rsc|media|lighthouse)$/.test(arg)) {
       opts.skip.add(arg.slice("--skip-".length));
     } else {
@@ -284,22 +289,26 @@ function lighthouse(opts) {
     for (const formFactor of ["mobile", "desktop"]) {
       for (const pathname of opts.pages) {
         const slug = pathname === "/" ? "home" : pathname.slice(1).replaceAll("/", "_");
-        const file = path.join(dir, `${formFactor}_${slug}.json`);
-        const args = [
-          "--yes",
-          "lighthouse@13",
-          opts.base + pathname,
-          "--output=json",
-          `--output-path=${file}`,
-          "--quiet",
-          "--only-categories=performance,accessibility,best-practices,seo",
-          "--chrome-flags=--headless=new",
-        ];
-        if (formFactor === "desktop") args.push("--preset=desktop");
-        if (BYPASS) args.push(`--extra-headers=${headersFile}`);
-        process.stdout.write(`  lighthouse ${formFactor} ${pathname}\n`);
-        const run = spawnSync("npx", args, { stdio: ["ignore", "ignore", "pipe"], encoding: "utf8" });
-        rows.push(readLighthouse(file, formFactor, pathname, run));
+        const runRows = [];
+        for (let run = 1; run <= opts.runs; run++) {
+          const file = path.join(dir, `${formFactor}_${slug}${opts.runs > 1 ? `_run${run}` : ""}.json`);
+          const args = [
+            "--yes",
+            "lighthouse@13",
+            opts.base + pathname,
+            "--output=json",
+            `--output-path=${file}`,
+            "--quiet",
+            "--only-categories=performance,accessibility,best-practices,seo",
+            "--chrome-flags=--headless=new",
+          ];
+          if (formFactor === "desktop") args.push("--preset=desktop");
+          if (BYPASS) args.push(`--extra-headers=${headersFile}`);
+          process.stdout.write(`  lighthouse ${formFactor} ${pathname}${opts.runs > 1 ? ` (${run}/${opts.runs})` : ""}\n`);
+          const result = spawnSync("npx", args, { stdio: ["ignore", "ignore", "pipe"], encoding: "utf8" });
+          runRows.push(readLighthouse(file, formFactor, pathname, result));
+        }
+        rows.push(medianRow(runRows));
       }
     }
   } finally {
@@ -331,6 +340,32 @@ function readLighthouse(file, formFactor, pathname, run) {
     row.error = run.status === 0 ? "no report" : (run.stderr || "lighthouse failed").trim().split("\n").at(-1);
   }
   return row;
+}
+
+const LIGHTHOUSE_METRICS = ["performance", "accessibility", "bestPractices", "seo", "fcpMs", "lcpMs", "tbtMs", "cls", "speedIndexMs", "transferBytes"];
+
+/** One row per page and form factor: the median of each metric over the runs that succeeded. */
+function medianRow(runRows) {
+  const ok = runRows.filter((r) => !r.error);
+  const row = { formFactor: runRows[0].formFactor, path: runRows[0].path, runs: ok.length, error: null };
+  if (!ok.length) return { ...row, error: runRows.at(-1).error };
+  for (const key of LIGHTHOUSE_METRICS) row[key] = median(ok.map((r) => r[key]));
+  row.perRun = runRows.map((r) => ({ performance: r.performance ?? null, lcpMs: r.lcpMs ?? null, error: r.error }));
+  return row;
+}
+
+/**
+ * Load each measured page and its /_next/static assets once before Lighthouse,
+ * so the first measured page does not pay for a cold CDN (seen right after a deploy).
+ */
+async function warmUp(opts) {
+  const assets = new Set();
+  await pool(opts.pages, opts.concurrency, async (pathname) => {
+    const res = await request(opts.base + pathname);
+    for (const [, ref] of res.body.matchAll(/(?:src|href)="(\/_next\/static\/[^"]+)"/g)) assets.add(ref.replaceAll("&amp;", "&"));
+  });
+  await pool([...assets], opts.concurrency, (ref) => request(opts.base + ref, { keepBody: false }));
+  process.stdout.write(`  warmed ${opts.pages.length} pages and ${assets.size} static assets\n`);
 }
 
 // --- summary ---------------------------------------------------------------
@@ -394,7 +429,7 @@ function summarize(opts, results) {
     const by = (ff) => results.lighthouse.filter((r) => r.formFactor === ff && !r.error);
     const m = (ff, key) => median(by(ff).map((r) => r[key]));
     lines.push(
-      `**Lighthouse 13**, ${opts.pages.length} pages, single runs (expect about ±5 points of noise).`,
+      `**Lighthouse 13**, ${opts.pages.length} pages, ${opts.runs === 1 ? "single runs (expect about ±5 points of noise)" : `median of ${opts.runs} runs per page`}.`,
       "",
       "| Median | Mobile | Desktop |",
       "| --- | --- | --- |",
@@ -409,7 +444,7 @@ function summarize(opts, results) {
       "| Page | Mobile | Desktop |",
       "| --- | --- | --- |",
     );
-    const cell = (r) => (!r ? "–" : r.error ? `error: ${r.error}` : `${r.performance} / ${sec(r.lcpMs / 1000)} / ${mb(r.transferBytes)}`);
+    const cell = (r) => (!r ? "–" : r.error ? `error: ${r.error}` : `${score(r.performance)} / ${sec(r.lcpMs / 1000)} / ${mb(r.transferBytes)}`);
     for (const pathname of opts.pages) {
       const find = (ff) => results.lighthouse.find((r) => r.formFactor === ff && r.path === pathname);
       lines.push(`| \`${pathname}\` | ${cell(find("mobile"))} | ${cell(find("desktop"))} |`);
@@ -417,7 +452,7 @@ function summarize(opts, results) {
     const mobile = by("mobile");
     lines.push(
       "",
-      `**Targets:** mobile perf ≥ 85 on ${mobile.filter((r) => r.performance >= 85).length} of ${mobile.length}; mobile LCP ≤ 2.5 s on ${mobile.filter((r) => r.lcpMs <= 2500).length} of ${mobile.length}; transfer ≤ 2 MB on ${results.lighthouse.filter((r) => !r.error && r.transferBytes <= 2 * 1024 * 1024).length} of ${results.lighthouse.filter((r) => !r.error).length} runs.`,
+      `**Targets:** mobile perf ≥ 85 on ${mobile.filter((r) => r.performance >= 85).length} of ${mobile.length}; mobile LCP ≤ 2.5 s on ${mobile.filter((r) => r.lcpMs <= 2500).length} of ${mobile.length}; transfer ≤ 2 MB on ${results.lighthouse.filter((r) => !r.error && r.transferBytes <= 2 * 1024 * 1024).length} of ${results.lighthouse.filter((r) => !r.error).length} page measurements (mobile + desktop).`,
     );
   }
   return lines.join("\n") + "\n";
@@ -448,7 +483,9 @@ if (!opts.skip.has("media")) {
   results.media = await mediaAudit(opts);
 }
 if (!opts.skip.has("lighthouse")) {
-  const runs = opts.pages.length * 2;
+  console.log("Warm-up…");
+  await warmUp(opts);
+  const runs = opts.pages.length * 2 * opts.runs;
   console.log(`Lighthouse (${runs} runs one at a time, about ${Math.max(1, Math.round((runs * 40) / 60))} min)…`);
   results.lighthouse = lighthouse(opts);
 }
