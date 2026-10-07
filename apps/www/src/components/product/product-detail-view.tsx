@@ -11,6 +11,7 @@ import {ProductSpecs} from '@/components/product/product-specs';
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import {listRelatedProductSiblings} from '@/lib/catalog/catalog';
 import {displayProductSku} from '@/lib/catalog/display-sku';
+import {primaryProductStill} from '@/lib/catalog/map-sanity';
 import {
     buildProductDetailBreadcrumbs,
     buildProductDetailJsonLd,
@@ -30,7 +31,7 @@ type ProductDetailViewProps = {
 function toProductsRowInheritItem(
     product: Product,
 ): PageSectionProductsRowItemDoc {
-    const hero = product.media.find((item) => item.src);
+    const hero = primaryProductStill(product.media);
     return {
         title: product.title,
         slug: product.slug,

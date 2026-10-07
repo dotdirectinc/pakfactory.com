@@ -180,7 +180,11 @@ function customizationShowcaseLists(
     }
 
     if (showcaseSolutions.length === 0 && showcaseCaseStudies.length === 0) {
-        for (const item of optionMedia) {
+        const fallbackMedia = [
+            ...optionMedia.filter((item) => item.kind === 'lifestyle'),
+            ...optionMedia.filter((item) => item.kind !== 'lifestyle'),
+        ];
+        for (const item of fallbackMedia) {
             if (showcaseSolutions.length >= SHOWCASE_SOLUTION_CAP) break;
             const src = item.src?.trim();
             if (!src || seenSrc.has(src)) continue;
@@ -198,8 +202,42 @@ function customizationShowcaseLists(
 }
 
 /**
- * Product PDP gallery (ADR-024): product stills (primary last when using the
- * featuredImage alias), then lifestyle stills. Dedupe by src. Empty → placeholder.
+ * First product still with a URL (skips lifestyle). Gallery is primary-first
+ * after {@link productGallerySlides}, so this is the ADR-024 card/thumb image.
+ */
+export function primaryProductStill(
+    media: CatalogMedia[] | null | undefined,
+): CatalogMedia | null {
+    if (!media?.length) return null;
+    for (const item of media) {
+        if (item.kind === 'lifestyle') continue;
+        const src = item.src?.trim();
+        if (!src) continue;
+        return {...item, src};
+    }
+    return null;
+}
+
+/**
+ * First lifestyle still with a URL (industry LP hero tiles — lifestyleImages[0]).
+ */
+export function firstLifestyleStill(
+    media: CatalogMedia[] | null | undefined,
+): CatalogMedia | null {
+    if (!media?.length) return null;
+    for (const item of media) {
+        if (item.kind !== 'lifestyle') continue;
+        const src = item.src?.trim();
+        if (!src) continue;
+        return {...item, src};
+    }
+    return null;
+}
+
+/**
+ * Product PDP gallery (ADR-024): primary product still first (featuredImage
+ * alias), then remaining product stills, then lifestyle. Dedupe by src.
+ * Empty → placeholder.
  */
 export function productGallerySlides(
     featuredImage: unknown | null | undefined,
@@ -210,14 +248,13 @@ export function productGallerySlides(
     const slides: CatalogMedia[] = [];
     const seen = new Set<string>();
 
-    pushGallerySlides(slides, seen, media, titleFallback, 'product');
-
     const featured = catalogMediaFromImage(featuredImage, titleFallback);
-    if (featured?.src && !seen.has(featured.src)) {
+    if (featured?.src) {
         slides.push({...featured, kind: 'product'});
         seen.add(featured.src);
     }
 
+    pushGallerySlides(slides, seen, media, titleFallback, 'product');
     pushGallerySlides(slides, seen, lifestyleImages, titleFallback, 'lifestyle');
 
     return slides.length > 0 ? slides : [{alt: titleFallback, kind: 'product'}];
@@ -697,12 +734,15 @@ export function mapSanityProductLibraryItem(
     if (!product) return null;
 
     const images = product.media
-        .filter((item): item is {src: string; alt: string} => Boolean(item.src))
+        .filter(
+            (item): item is {src: string; alt: string; kind?: 'product' | 'lifestyle'} =>
+                Boolean(item.src) && item.kind !== 'lifestyle',
+        )
         .map((item) => ({
             src: item.src as string,
             alt: item.alt || product.title,
         }));
-    const first = images[0];
+    const primary = primaryProductStill(product.media);
 
     const attrs: Record<string, string[]> = {};
     const propertyTitles: Record<string, string> = {};
@@ -757,8 +797,8 @@ export function mapSanityProductLibraryItem(
                 title: product.productStyle.title,
             },
             productStyles,
-            imageUrl: first?.src ?? null,
-            imageAlt: first?.alt ?? product.title,
+            imageUrl: primary?.src ?? null,
+            imageAlt: primary?.alt ?? product.title,
             ...(product.status && product.status !== 'active' ? {status: product.status} : {}),
             images: images.length > 0 ? images : undefined,
             ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),

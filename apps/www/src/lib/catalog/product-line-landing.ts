@@ -5,6 +5,7 @@ import {
     PRODUCT_LINE_PRODUCT_KIND,
     productsOfKind,
 } from '@/lib/catalog/product-kind';
+import {primaryProductStill} from '@/lib/catalog/map-sanity';
 import type {
     Product,
     ProductLine,
@@ -199,7 +200,7 @@ export function assembleHeroMediaCards(input: {
         if (cards.length >= HERO_MEDIA_CARD_LIMIT) return;
         if (seenSlugs.has(product.slug)) return;
         seenSlugs.add(product.slug);
-        const media = product.media?.find((m) => Boolean(m.src?.trim()));
+        const media = primaryProductStill(product.media);
         const src =
             media?.src?.trim() || PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER;
         const alt = media?.src?.trim()
@@ -360,10 +361,9 @@ function firstProductImageInStyle(
         if (!isStandardProduct(product)) continue;
         // Union membership — secondary styles count (PROD-2843).
         if (!productBelongsToStyle(product, styleSlug)) continue;
-        for (const media of product.media) {
-            if (media.src) {
-                return {src: media.src, alt: media.alt || product.title};
-            }
+        const media = primaryProductStill(product.media);
+        if (media?.src) {
+            return {src: media.src, alt: media.alt || product.title};
         }
     }
     return null;
@@ -414,6 +414,7 @@ function collectCatalogFrameCandidates(
     }
     for (const product of line.products) {
         for (const media of product.media) {
+            if (media.kind === 'lifestyle') continue;
             push(media.src, media.alt || product.title);
         }
     }

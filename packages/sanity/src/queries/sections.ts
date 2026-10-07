@@ -506,8 +506,8 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
       title,
       "slug": slug.current,
       sku,
-      "imageSrc": media[0].asset->url,
-      "imageAlt": coalesce(media[0].alt, media[0].asset->altText, title)
+      "imageSrc": ${CATALOG_IMAGE_SRC},
+      "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title)
     }
   },
   _type == "bundlesRow" => {
