@@ -1,0 +1,102 @@
+---
+description: Every PROD Jira ticket carries a QA checklist after its Acceptance criteria so a technical or non-technical BA can verify it
+alwaysApply: true
+---
+
+> Cursor mirror of the canonical user-level rule `~/.claude/rules/jira-qa-checklist.md`. Keep in step.
+
+# Jira tickets — every ticket carries a QA checklist
+
+Every PROD ticket's description has a **QA checklist** section, placed directly
+after its Acceptance criteria. It tells a team member who did not build the work
+how to verify it. Then the developer can hand the ticket to a technical BA or a
+non-technical BA without walking them through it.
+
+Added 2026-10-07. That day the checklist was backfilled on PROD-2751 and its
+sub-tasks, the PROD-2752 Epic and its children, and PROD-2900. Before that, test
+plans lived in comments (PROD-2753 comment 27620) or nowhere.
+
+## When it applies
+
+| Moment | What to do |
+|---|---|
+| `createJiraIssue` (any type: Story, Task, Bug, Sub-task, Epic) | Write the checklist with the AC. Set **Ready to verify: No — not started**. Write the steps from the AC only. Do not invent implementation details. |
+| Work delivered (PR merged or opened, data loaded, script run) | Update the checklist to match what was **actually built**: real URLs, PR numbers, commands and IDs. |
+| Before a gated forward transition (`jira-transition-gate.md`) | The checklist must be current. List it in the confirmation block. A stale or missing checklist means the ticket is not ready. |
+| A "BA test plan" was posted as a comment | Move it into the description's checklist. Comments are not where people look for test plans. |
+
+## Format (headings exact; ADF heading 2 for the title, heading 3 below it)
+
+```
+## QA checklist
+**Ready to verify:** Yes — <where> | No — <what must happen first>
+**Where:** <env + URL, e.g. https://staging.pakfactory.com (sign in to Vercel first); Studio/admin URL; dataset>
+**Access needed:** <accounts / roles>
+
+### Non-technical BA
+| # | Steps | Expected result | Pass/Fail |
+  - Use concrete clicks and pages, and describe what "good" looks like on screen.
+  - No terminal, no code, no DB access.
+  - Map each row to an AC ("AC 2").
+  - For a bug: reproduce the original report, confirm the fix, then run a regression check on 2+ other records.
+
+### Technical BA
+  - Commands, DevTools/Lighthouse checks, SQL/GROQ, API calls, logs, PRs to review.
+  - Give the expected output for each.
+  - Read-only by default. If a step writes, name the environment; never prod.
+  - Anything verified only with mocks or locally gets a real-environment check here.
+
+### Not in scope / known gaps
+  What not to fail the ticket for, and which ticket covers it. List deferred or unmet AC.
+
+### Unmet acceptance criteria — reporter decision   (only when delivered work misses an AC)
+  Overall achieved rating: N/5 — 5 fully met + verified on staging · 4 met, verified
+  only locally · 3 most value delivered, target missed · 2 partial · 1 started, little value.
+  Per unmet AC: what WAS achieved (measured) · why it was not met (real cause) ·
+  options with effort S/M/L and gain (extra work here / follow-up ticket / accept +
+  amend AC) · recommendation and whether it is worth it.
+  End: "Decision: reporter to choose" — left unanswered. Post one comment that
+  @mentions the reporter only, pointing to it. Never decide it, never create the
+  follow-up ticket unasked.
+
+### Evidence to attach
+  What the verifier posts back as a comment: screenshots, Lighthouse JSON, query output.
+  Report failures as a comment with the page, test #, browser/device and a screenshot.
+```
+
+## Rules
+
+1. **Never invent identifiers.** If a PR number, URL, deploy ID or record ID is
+   not in the ticket, its comments or git/gh, write `TBD — developer to fill in`.
+   See the memory `feedback-never-infer-an-identifier`.
+2. **Edit in ADF, insert only.** Fetch the description as ADF, insert the section
+   after the AC, write the full ADF back, then re-read the ticket to confirm the
+   original text survived. A markdown round-trip can flatten tables and panels.
+   The Rovo `getJiraIssue` may return markdown even when asked for ADF (seen
+   2026-10-07 on PROD-2900). In that case, rebuild the ADF carefully. Before
+   writing, check the `attachment` field and any inline images, panels or
+   mentions. Compare the markdown before and after the edit.
+3. **One checklist per ticket.** If one already exists, update it in place.
+4. **Parents and Epics** get an index: one row per child with key, status and
+   ready-to-verify. Add an end-to-end check where the parent has its own outcome.
+5. **Updating the checklist is not a transition.** Editing the description is
+   ungated. Moving the ticket is still gated by `jira-transition-gate.md`.
+
+## Skills that carry it
+
+- `jira-create-ticket` (`~/.claude/skills/`): owns ticket creation, including the checklist template.
+- `finisher` (`internalPortal-dataEngine/.claude/skills/` + `.cursor/skills/`): step 4c-1b updates the checklist on delivery; the 4d create template has AC + QA checklist sections.
+- `wayfinder` (`pakfactory.com-poc`, `poc-aslan`: `TRACKER-JIRA.md`) also calls `createJiraIssue`, for planning-question tickets. It is deliberately not wired in, because AC and a QA checklist do not fit them (Richard, 2026-10-07).
+
+## Related
+
+- `jira-account.md`: verify the account first; creation field defaults.
+- `jira-transition-gate.md`: the confirmation block lists the checklist.
+- `jira-ticket-pr-mapping.md`: one PR per subtask-less ticket. Sub-tasks each have their own checklist.
+
+## Where this rule lives
+
+User-level: `~/.claude/rules/jira-qa-checklist.md`. It loads in every repo on this
+machine. Cursor mirror: `internalPortal-dataEngine/.cursor/rules/jira-qa-checklist.mdc`
+(symlinked into `Documents/.cursor/rules/` and `pakFactory/.cursor/rules/`).
+Keep the two in step.
