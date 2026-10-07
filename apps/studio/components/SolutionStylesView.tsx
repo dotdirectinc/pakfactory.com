@@ -53,7 +53,7 @@ const QUERY = `
     title,
     shortName,
     "slug": slug.current,
-    "thumbRef": featuredImage.asset._ref,
+    "thumbRef": coalesce(images[primary == true][0].asset._ref, images[0].asset._ref, featuredImage.asset._ref),
     filter,
     excludedProducts,
   }

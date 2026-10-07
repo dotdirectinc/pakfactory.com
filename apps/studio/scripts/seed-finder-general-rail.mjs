@@ -71,7 +71,7 @@ const CANDIDATES_QUERY = /* groq */ `{
     && (defined(heroMedia.image.asset) || defined(cardImage.asset) || defined(heroMedia.videoThumbnail.asset))]
     | order(publishedAt desc)[0...3]{_id, title},
   "lines": *[_type == "productLine" && ${PUBLISHED} && defined(slug.current) && ${LINE_VISIBLE}]{
-      _id, title, "hasImage": defined(featuredImage.asset)
+      _id, title, "hasImage": defined(images[primary == true][0].asset) || defined(images[0].asset) || defined(featuredImage.asset)
     } | order(hasImage desc, title asc)[0...4],
   "industries": *[_type == "solution" && ${PUBLISHED} && defined(slug.current) && status == "active"]{
       _id, title, "studies": count(relatedCaseStudies)

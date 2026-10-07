@@ -219,7 +219,7 @@ export async function runExpertiseStageSeed(spec) {
   const catalogueCount = spec.galleryCatalogueCount ?? 0
   const catalogueIds = catalogueCount
     ? await client.fetch(
-        `*[_type == "solutionStyle" && defined(featuredImage.asset) && !(_id in path("drafts.**"))
+        `*[_type == "solutionStyle" && (defined(images[0].asset) || defined(featuredImage.asset)) && !(_id in path("drafts.**"))
           && !string::startsWith(_id, "solutionStyle.beauty-")
           && !string::startsWith(_id, "solutionStyle.test-kids-")
           && !string::startsWith(lower(coalesce(title, "")), "[test]")

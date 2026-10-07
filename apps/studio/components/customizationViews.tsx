@@ -41,7 +41,7 @@ export const CustomizationTypeOptionsView = createReferencedByView({
       // Only the exceptions. All 126 options are active today, so this shows
       // nothing — and the day one is discontinued, it shows up here first.
       badge: 'select(status == "active" => null, status)',
-      thumb: 'media[0].asset._ref',
+      thumb: 'coalesce(images[primary == true][0].asset._ref, images[0].asset._ref, featuredImage.asset._ref, media[0].asset._ref)',
     },
   ],
   empty: 'No options reference this customization type yet.',

@@ -119,7 +119,13 @@ export function ProductGallery({
                                     )}
                                 >
                                     {item.src ? (
-                                        <MediaSettleZoom>
+                                        <MediaSettleZoom
+                                            mediaKind={
+                                                item.kind === 'lifestyle'
+                                                    ? 'lifestyle'
+                                                    : 'product'
+                                            }
+                                        >
                                             <SanityImage
                                                 src={item.src}
                                                 alt=""
