@@ -5,9 +5,10 @@ import {useEffect, useRef} from 'react';
 /** Giant PAKFACTORY mark — slides up on scroll and settles still clipped (peek).
  *  Dotted grid is owned by SiteFooter’s meta+wordmark section wrapper.
  *
- *  gsap is imported on mount, not at module load (PROD-2756): this component
- *  sits in the `(site)` layout, so a static import shipped ~53 KB gz of gsap on
- *  every page and competed with first paint. Until it loads, CSS holds the mark
+ *  gsap is imported only when the footer nears the viewport, not at module load
+ *  (PROD-2756) or on mount (PROD-2958): this component sits in the `(site)`
+ *  layout, so gsap would otherwise load on every page and keep ScrollTrigger's
+ *  frame loop running from first paint. Until it loads, CSS holds the mark
  *  in the same start position gsap uses (below the clip, or the 30% peek when
  *  motion is reduced), so there is no visible jump. */
 export function FooterWordmark() {
@@ -26,35 +27,51 @@ export function FooterWordmark() {
         let cancelled = false;
         let revert: (() => void) | undefined;
 
-        void Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(
-            ([{gsap}, {ScrollTrigger}]) => {
-                const wrapper = wrapperRef.current;
-                const text = textRef.current;
-                if (cancelled || !wrapper || !text) return;
+        const loadAnimation = () =>
+            void Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(
+                ([{gsap}, {ScrollTrigger}]) => {
+                    const wrapper = wrapperRef.current;
+                    const text = textRef.current;
+                    if (cancelled || !wrapper || !text) return;
 
-                gsap.registerPlugin(ScrollTrigger);
-                const ctx = gsap.context(() => {
-                    gsap.fromTo(
-                        text,
-                        {yPercent: 100},
-                        {
-                            yPercent: 30,
-                            ease: 'none',
-                            scrollTrigger: {
-                                trigger: wrapper,
-                                start: 'top bottom',
-                                end: 'top 100%',
-                                scrub: 1,
+                    gsap.registerPlugin(ScrollTrigger);
+                    const ctx = gsap.context(() => {
+                        gsap.fromTo(
+                            text,
+                            {yPercent: 100},
+                            {
+                                yPercent: 30,
+                                ease: 'none',
+                                scrollTrigger: {
+                                    trigger: wrapper,
+                                    start: 'top bottom',
+                                    end: 'top 100%',
+                                    scrub: 1,
+                                },
                             },
-                        },
-                    );
-                }, wrapper);
-                revert = () => ctx.revert();
+                        );
+                    }, wrapper);
+                    revert = () => ctx.revert();
+                },
+            );
+
+        // Load gsap only when the footer is about to scroll into view (PROD-2958).
+        // Once registered, ScrollTrigger runs a requestAnimationFrame loop on every
+        // frame; loading it on mount kept the main thread busy on every page load,
+        // long before the wordmark could move.
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (!entries.some((entry) => entry.isIntersecting)) return;
+                observer.disconnect();
+                loadAnimation();
             },
+            {rootMargin: '0px 0px 600px 0px'},
         );
+        observer.observe(wrapperRef.current);
 
         return () => {
             cancelled = true;
+            observer.disconnect();
             revert?.();
         };
     }, []);
