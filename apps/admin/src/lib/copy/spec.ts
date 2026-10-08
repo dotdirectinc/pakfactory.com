@@ -315,6 +315,47 @@ export const ADMIN_SPEC_SYNC_COPY = {
   dismissing: "Dismissing…",
 } as const;
 
+/** Sync history (PROD-2771): every sync, what it produced, what was decided, and whether it landed. */
+export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
+  title: "Sync history",
+  lead:
+    "Every sync, newest first: who started it, the frames it produced and what was decided on each. For an approved frame, the next sync of the same kind re-checks it — whether every field it changed still matches.",
+  back: "Frames to approve",
+  link: "All syncs and results",
+  current: "Current sync",
+  past: "Past syncs",
+  none: "No syncs yet.",
+  unreachable: "The sync history could not be loaded.",
+  requestedBy: (name: string) => `by ${name}`,
+  someone: "someone",
+  documents: (n: number) => `${n} documents read`,
+  noFrames: "No differences — nothing to approve.",
+  changes: (n: number) => `${n} ${n === 1 ? "change" : "changes"}`,
+  excluded: (n: number) => `${n} excluded`,
+  frameStates: {
+    draft: "Waiting for approval",
+    approved: "Approved",
+    discarded: "Discarded",
+    superseded: "Replaced by a newer sync",
+    unknown: "Unknown",
+  },
+  decidedBy: (verb: string, name: string, at: string) => `${verb} by ${name}, ${at}`,
+  writes: (w: { applied: number; pending: number; stale: number; failed: number }) =>
+    [
+      `${w.applied} written to Sanity`,
+      w.pending ? `${w.pending} waiting` : null,
+      w.stale ? `${w.stale} not written (changed in Sanity since)` : null,
+      w.failed ? `${w.failed} failed` : null,
+    ].filter(Boolean).join(" · "),
+  recheckOk: (checked: number) => `Re-checked: all ${checked} ${checked === 1 ? "field" : "fields"} still match`,
+  recheckNothing: "Re-checked: nothing to compare (approved before re-checks existed)",
+  recheckDiffer: (n: number, checked: number) =>
+    `Re-checked: ${n} of ${checked} ${checked === 1 ? "field" : "fields"} no longer match — not written, or changed again since`,
+  recheckPending: "Not re-checked yet — the next sync of this kind checks it.",
+  recheckError: (e: string) => `This sync could not re-check earlier frames: ${e}`,
+  unnamedRow: "a row",
+} as const;
+
 /** Sanity-bound items in a frame (PROD-2751): before → Notion, and how the approved write went. */
 export const ADMIN_SPEC_SANITY_ITEM_COPY = {
   compare: "Compare",

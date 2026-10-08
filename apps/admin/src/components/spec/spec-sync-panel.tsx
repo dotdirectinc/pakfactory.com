@@ -7,7 +7,7 @@ import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
 import { dismissSyncAction, requestSyncAction } from "@/app/(admin)/spec/actions";
 import type { SyncRun, SyncWriteProblem } from "@/lib/spec/registry-api";
-import { ADMIN_SPEC_SYNC_COPY as COPY } from "@/lib/copy/spec";
+import { ADMIN_SPEC_SYNC_COPY as COPY, ADMIN_SPEC_SYNC_HISTORY_COPY as HISTORY } from "@/lib/copy/spec";
 
 type Props = {
   runs: SyncRun[];
@@ -124,7 +124,12 @@ export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
       ) : null}
 
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-medium text-foreground">{COPY.recent}</h3>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-sm font-medium text-foreground">{COPY.recent}</h3>
+          <Link href="/spec/syncs" className="text-sm text-muted-foreground underline-offset-2 hover:underline">
+            {HISTORY.link} →
+          </Link>
+        </div>
         {shown.length === 0 ? (
           <p className="text-sm text-muted-foreground">{COPY.none}</p>
         ) : (
