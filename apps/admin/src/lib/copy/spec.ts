@@ -317,7 +317,7 @@ export const ADMIN_SPEC_SYNC_COPY = {
 
 /** Catalog tables (PROD-2926): read-only, Notion-like tables of every record type. */
 export const ADMIN_SPEC_TABLES_COPY = {
-  title: "Catalog tables",
+  title: "Catalog",
   lead:
     "Every record type as a table, read from Sanity (the website's catalog) with its registry code. Choose columns, drag a header to move it, use a header's menu to sort or hide. Read-only — edit in Studio.",
   level: "Show",

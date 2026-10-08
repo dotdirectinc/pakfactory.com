@@ -72,35 +72,18 @@ const NAV: readonly NavEntry[] = [
               path.startsWith(p),
             )),
       },
-      // Products & Customizations (PROD-2614) — read-only until V1; edits happen in Studio.
+      // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing.
+      // The old list pages and the detail pages tables link to (/spec/products/<id>,
+      // /spec/customizations/<id>) are part of it, so they light this entry.
       {
-        href: "/spec/products",
-        label: "Products",
-        match: (path) => path.startsWith("/spec/products"),
-      },
-      // Everything in the catalog, browsed (registry ids included). An option's rules page sits
-      // under /spec/customizations/<id>, so it lights this entry.
-      {
-        href: "/spec/customizations",
-        label: "Customizations",
-        match: (path) => path.startsWith("/spec/customizations"),
+        href: "/spec/catalog",
+        label: "Catalog",
+        match: (path) => ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions"].some((p) => path.startsWith(p)),
       },
       {
         href: "/spec/properties",
         label: "Properties",
         match: (path) => path.startsWith("/spec/properties"),
-      },
-      // Every record type as a Notion-like table, with image previews (PROD-2926).
-      {
-        href: "/spec/catalog",
-        label: "Catalog tables",
-        match: (path) => path.startsWith("/spec/catalog"),
-      },
-      // Solutions → their styles and inspiration products, registry codes included (PROD-2782).
-      {
-        href: "/spec/solutions",
-        label: "Solutions",
-        match: (path) => path.startsWith("/spec/solutions"),
       },
       // What each page and button does, the catalog structure, syncing and registry codes (PROD-2771).
       {

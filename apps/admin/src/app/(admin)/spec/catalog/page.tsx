@@ -4,7 +4,7 @@ import { SpecCatalogTable } from "@/components/spec/spec-catalog-table";
 import { SpecCatalogNav } from "@/components/spec/spec-catalog-nav";
 import { ADMIN_SPEC_TABLES_COPY as COPY } from "@/lib/copy/spec";
 
-export const metadata = { title: "Catalog tables" };
+export const metadata = { title: "Catalog" };
 
 /** Catalog tables (PROD-2926): three groups as tabs, a level picker, one table per record type. */
 export default async function SpecCatalogPage({ searchParams }: { searchParams: Promise<{ group?: string; level?: string }> }) {
