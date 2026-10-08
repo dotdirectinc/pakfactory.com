@@ -48,8 +48,8 @@ export type TableSpec = {
   defaults: string[];
   /** The field filtered as "parent". */
   parent?: string;
-  /** The existing detail page, where one exists (keyed by Sanity id). */
-  detail?: (id: string) => string;
+  /** The existing detail page, when this record has one (keyed by Sanity id); null when it has none. */
+  detail?: (doc: Doc) => string | null;
   /**
    * GROQ for the record's preview image (2026-10-08, Richard): the first image in the Studio
    * "Media" field (`media[0]`) for every type that has one; a type without a Media field (solution,
@@ -67,14 +67,17 @@ export const SPECS: Record<TableKey, TableSpec> = {
   product: {
     type: "product", filter: `kind != "inspiration"`, image: MEDIA_FIRST, parent: "productLine",
     defaults: ["entityCode", "status", "productLine", "productStyle", "moq", "leadTimeBusinessDaysMin", "leadTimeBusinessDaysMax"],
-    detail: (id) => `/spec/products/${encodeURIComponent(id)}`,
+    // Every standard product has a page, whatever its status (the product view reads them all).
+    detail: (d) => `/spec/products/${encodeURIComponent(d._id)}`,
   },
   customizationCategory: { type: "customizationCategory", defaults: ["entityCode", "status"] },
   customizationType: { type: "customizationType", defaults: ["entityCode", "status", "category", "customerSelects"], parent: "category" },
   customizationOption: {
     type: "customizationOption", image: MEDIA_FIRST, parent: "type",
     defaults: ["entityCode", "status", "type", "configuratorRole", "hasPage"],
-    detail: (id) => `/spec/customizations/${encodeURIComponent(id)}`,
+    // An option's page is its rules page, and only active options are in the rules — any other
+    // status would open "not found" (as the old Customizations tree knew: hasRulesPage).
+    detail: (d) => (d.status === "active" ? `/spec/customizations/${encodeURIComponent(d._id)}` : null),
   },
   solution: { type: "solution", image: FEATURED, defaults: ["entityCode", "status", "solutionType"] },
   solutionStyle: { type: "solutionStyle", image: FEATURED, defaults: ["entityCode", "status", "solution"], parent: "solution" },
@@ -220,7 +223,7 @@ export function buildCatalogTable(key: TableKey, docs: Doc[], names: Map<string,
   const columns = ordered.filter((f, i, a) => a.indexOf(f) === i && (fields.has(f) || spec.defaults.includes(f))).map((f) => ({ key: f, label: columnLabel(f) }));
   const rows = docs.map((d) => ({
     id: d._id,
-    href: spec.detail ? spec.detail(d._id) : null,
+    href: spec.detail ? spec.detail(d) : null,
     image: d._image ? { thumb: `${d._image}?w=96&h=96&fit=crop&auto=format`, large: `${d._image}?w=480&auto=format` } : null,
     cells: Object.fromEntries(columns.map((c) => [c.key, cellOf(d[c.key], names)])),
   }));
