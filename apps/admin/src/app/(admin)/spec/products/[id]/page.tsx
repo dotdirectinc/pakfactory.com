@@ -24,7 +24,7 @@ export default async function SpecProductPage({ params }: { params: Promise<{ id
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-      <Link href="/spec/products" className="text-sm text-muted-foreground hover:underline">
+      <Link href="/spec/catalog?group=products&level=product" className="text-sm text-muted-foreground hover:underline">
         ← {COPY.backToList}
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-2">

@@ -72,10 +72,10 @@ export const SPECS: Record<TableKey, TableSpec> = {
     rules: (d) => `/spec/products/${encodeURIComponent(d._id)}`,
   },
   customizationCategory: { type: "customizationCategory", defaults: ["entityCode", "status"] },
-  customizationType: { type: "customizationType", defaults: ["entityCode", "status", "category", "customerSelects"], parent: "category" },
+  customizationType: { type: "customizationType", defaults: ["entityCode", "status", "category", "availabilityDecidedBy", "customerSelects", "declaredProperties"], parent: "category" },
   customizationOption: {
     type: "customizationOption", image: PRIMARY_IMAGE, parent: "type",
-    defaults: ["entityCode", "status", "type", "configuratorRole", "hasPage"],
+    defaults: ["entityCode", "status", "type", "configuratorRole", "valueCount", "hasPage"],
     // Only active options are in the rules, so only they have a rules view (hasRulesPage).
     rules: (d) => (d.status === "active" ? `/spec/customizations/${encodeURIComponent(d._id)}` : null),
   },
@@ -93,7 +93,7 @@ export const SPECS: Record<TableKey, TableSpec> = {
   },
   optionValue: {
     type: "propertyValue", parent: "property",
-    defaults: ["property", "usedByOptions", "optionExamples", "kindOf", "facts", "entityCode"],
+    defaults: ["property", "declaredOn", "usedByOptions", "optionExamples", "kindOf", "facts", "entityCode"],
   },
 };
 
@@ -147,6 +147,11 @@ const LABELS: Record<string, string> = {
   rulesListed: "Listed options",
   rulesDerived: "Derived options",
   rulesExceptions: "Exceptions",
+  // From the retired Customizations and Properties pages (the loader adds them).
+  availabilityDecidedBy: "Availability decided by",
+  declaredProperties: "Properties declared",
+  valueCount: "Property values",
+  declaredOn: "Property declared on",
 };
 
 export const columnLabel = (key: string) =>

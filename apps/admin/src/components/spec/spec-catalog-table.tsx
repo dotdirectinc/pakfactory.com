@@ -267,7 +267,7 @@ export function SpecCatalogTable({ table }: { table: CatalogTable }) {
         </div>
       ) : null}
 
-      {/* The admin's table pattern (spec-product-table): packages/ui has no Table component. */}
+      {/* The admin's table classes: packages/ui has no Table component. */}
       {/* Lighter than the page (card), with alternate rows tinted — Eric, 2026-10-08, for readability. */}
       <div className="overflow-x-auto rounded-md border border-border bg-card">
         <table className="w-full min-w-max text-sm">
