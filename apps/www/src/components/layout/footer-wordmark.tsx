@@ -34,12 +34,21 @@ export function FooterWordmark() {
                     const text = textRef.current;
                     if (cancelled || !wrapper || !text) return;
 
+                    // Drop the CSS start transform before gsap takes over — GSAP
+                    // would otherwise bake translateY(100%) into pixel `y` and stack
+                    // it on top of yPercent (mark stays fully clipped).
+                    text.classList.remove(
+                        '[transform:translateY(100%)]',
+                        'motion-reduce:[transform:translateY(30%)]',
+                    );
+
                     gsap.registerPlugin(ScrollTrigger);
                     const ctx = gsap.context(() => {
                         gsap.fromTo(
                             text,
-                            {yPercent: 100},
+                            {y: 0, yPercent: 100},
                             {
+                                y: 0,
                                 yPercent: 30,
                                 ease: 'none',
                                 scrollTrigger: {
