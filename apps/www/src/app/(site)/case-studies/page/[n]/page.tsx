@@ -6,6 +6,7 @@ import {
   fetchCaseStudiesListing,
 } from "../../_components/case-studies-listing-page";
 import { CASE_STUDIES_DEFAULT_PAGE_SIZE } from "../../_components/case-studies-listing-constants";
+import { staticParamsExceptPreview } from "@/lib/static-params";
 
 export const revalidate = 300;
 
@@ -16,11 +17,13 @@ export const revalidate = 300;
  * demand (and are then cached); invalid ones 404 and page 1 redirects below.
  */
 export async function generateStaticParams(): Promise<{ n: string }[]> {
-  const { studies } = await fetchCaseStudiesListing();
-  const pageCount = Math.ceil(studies.length / CASE_STUDIES_DEFAULT_PAGE_SIZE);
-  return Array.from({ length: Math.max(0, pageCount - 1) }, (_, i) => ({
-    n: String(i + 2),
-  }));
+  return staticParamsExceptPreview(async () => {
+    const { studies } = await fetchCaseStudiesListing();
+    const pageCount = Math.ceil(studies.length / CASE_STUDIES_DEFAULT_PAGE_SIZE);
+    return Array.from({ length: Math.max(0, pageCount - 1) }, (_, i) => ({
+      n: String(i + 2),
+    }));
+  });
 }
 
 type PageProps = {

@@ -7,6 +7,7 @@ import {
 } from '@/lib/solutions/solutions';
 import {absoluteUrl} from '@/lib/site';
 import {solutionHref} from '@/lib/www-routes';
+import {staticParamsExceptPreview} from '@/lib/static-params';
 
 export const revalidate = 60;
 
@@ -15,8 +16,10 @@ type PageProps = {
 };
 
 export async function generateStaticParams(): Promise<{slug: string}[]> {
-    const pages = await listSolutionPageSlugs();
-    return pages.map((page) => ({slug: page.slug}));
+    return staticParamsExceptPreview(async () => {
+        const pages = await listSolutionPageSlugs();
+        return pages.map((page) => ({slug: page.slug}));
+    });
 }
 
 export async function generateMetadata({

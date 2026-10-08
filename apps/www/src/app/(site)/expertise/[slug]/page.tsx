@@ -13,6 +13,7 @@ import {
 import {buildExpertiseStageJsonLd} from '@/lib/expertise/expertise-jsonld';
 import {absoluteUrl} from '@/lib/site';
 import {expertiseHref} from '@/lib/www-routes';
+import {staticParamsExceptPreview} from '@/lib/static-params';
 
 export const revalidate = 60;
 
@@ -21,11 +22,13 @@ type PageProps = {
 };
 
 export async function generateStaticParams(): Promise<{slug: string}[]> {
-    const pages = await listExpertiseStageSlugs();
-    return pages
-        .map((page) => page.slug?.trim())
-        .filter((slug): slug is string => Boolean(slug))
-        .map((slug) => ({slug}));
+    return staticParamsExceptPreview(async () => {
+        const pages = await listExpertiseStageSlugs();
+        return pages
+            .map((page) => page.slug?.trim())
+            .filter((slug): slug is string => Boolean(slug))
+            .map((slug) => ({slug}));
+    });
 }
 
 export async function generateMetadata({

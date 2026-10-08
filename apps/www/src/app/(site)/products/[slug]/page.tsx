@@ -3,6 +3,7 @@ import {notFound} from 'next/navigation';
 import {ProductDetailView} from '@/components/product/product-detail-view';
 import {ProductLineLanding} from '@/components/product/product-line-landing-view';
 import {getByProductsSegment, listLines, listProducts} from '@/lib/catalog/catalog';
+import {staticParamsExceptPreview} from '@/lib/static-params';
 
 export const revalidate = 60;
 
@@ -11,11 +12,13 @@ type PageProps = {
 };
 
 export async function generateStaticParams(): Promise<{slug: string}[]> {
-    const [lines, products] = await Promise.all([listLines(), listProducts()]);
-    return [
-        ...lines.map((line) => ({slug: line.slug})),
-        ...products.map((product) => ({slug: product.slug})),
-    ];
+    return staticParamsExceptPreview(async () => {
+        const [lines, products] = await Promise.all([listLines(), listProducts()]);
+        return [
+            ...lines.map((line) => ({slug: line.slug})),
+            ...products.map((product) => ({slug: product.slug})),
+        ];
+    });
 }
 
 export async function generateMetadata({params}: PageProps): Promise<Metadata> {

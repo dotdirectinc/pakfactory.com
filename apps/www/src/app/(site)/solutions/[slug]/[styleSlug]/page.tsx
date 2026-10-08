@@ -7,6 +7,7 @@ import {
 } from '@/lib/solutions/solutions';
 import {absoluteUrl} from '@/lib/site';
 import {solutionStyleHref} from '@/lib/www-routes';
+import {staticParamsExceptPreview} from '@/lib/static-params';
 
 export const revalidate = 60;
 
@@ -17,7 +18,7 @@ type PageProps = {
 export async function generateStaticParams(): Promise<
     {slug: string; styleSlug: string}[]
 > {
-    return listSolutionStylePageParams();
+    return staticParamsExceptPreview(listSolutionStylePageParams);
 }
 
 export async function generateMetadata({
