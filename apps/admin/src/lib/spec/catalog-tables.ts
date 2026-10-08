@@ -61,7 +61,7 @@ async function fetchTable(key: TableKey): Promise<Loaded<CatalogTable>> {
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
   const spec = SPECS[key];
   const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });
-  const image = spec.hasImages ? `, "_image": coalesce(images[primary == true][0], images[0], lifestyleImages[0]).asset->url` : "";
+  const image = spec.image ? `, "_image": ${spec.image}` : "";
   try {
     const docs =
       key === "productValue" || key === "optionValue"

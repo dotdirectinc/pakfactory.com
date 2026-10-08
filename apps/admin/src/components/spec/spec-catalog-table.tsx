@@ -268,9 +268,10 @@ export function SpecCatalogTable({ table }: { table: CatalogTable }) {
       ) : null}
 
       {/* The admin's table pattern (spec-product-table): packages/ui has no Table component. */}
-      <div className="overflow-x-auto rounded-md border border-border">
+      {/* Lighter than the page (card), with alternate rows tinted — Eric, 2026-10-08, for readability. */}
+      <div className="overflow-x-auto rounded-md border border-border bg-card">
         <table className="w-full min-w-max text-sm">
-          <thead className="bg-muted/40 text-left text-muted-foreground">
+          <thead className="bg-muted text-left text-muted-foreground">
             <tr>
               {table.hasImages ? <th className="w-14 px-3 py-2 font-medium">{COPY.image}</th> : null}
               {visible.map((k) => (
@@ -323,7 +324,7 @@ export function SpecCatalogTable({ table }: { table: CatalogTable }) {
               </tr>
             ) : (
               shown.map((r) => (
-                <tr key={r.id} className="border-t border-border align-middle hover:bg-muted/30">
+                <tr key={r.id} className="border-t border-border align-middle even:bg-muted/50 hover:bg-muted">
                   {table.hasImages ? (
                     <td className="px-3 py-2">
                       {r.image ? (

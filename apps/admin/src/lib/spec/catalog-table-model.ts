@@ -50,28 +50,36 @@ export type TableSpec = {
   parent?: string;
   /** The existing detail page, where one exists (keyed by Sanity id). */
   detail?: (id: string) => string;
-  hasImages?: boolean;
+  /**
+   * GROQ for the record's preview image (2026-10-08, Richard): the first image in the Studio
+   * "Media" field (`media[0]`) for every type that has one; a type without a Media field (solution,
+   * solution style) uses its Featured image. Absent: no image column.
+   */
+  image?: string;
 };
 
+const MEDIA_FIRST = "media[0].asset->url";
+const FEATURED = "featuredImage.asset->url";
+
 export const SPECS: Record<TableKey, TableSpec> = {
-  productLine: { type: "productLine", defaults: ["entityCode", "status", "slug"] },
-  productStyle: { type: "productStyle", defaults: ["entityCode", "status", "productLine"], parent: "productLine" },
+  productLine: { type: "productLine", image: MEDIA_FIRST, defaults: ["entityCode", "status", "slug"] },
+  productStyle: { type: "productStyle", image: MEDIA_FIRST, defaults: ["entityCode", "status", "productLine"], parent: "productLine" },
   product: {
-    type: "product", filter: `kind != "inspiration"`, hasImages: true, parent: "productLine",
+    type: "product", filter: `kind != "inspiration"`, image: MEDIA_FIRST, parent: "productLine",
     defaults: ["entityCode", "status", "productLine", "productStyle", "moq", "leadTimeBusinessDaysMin", "leadTimeBusinessDaysMax"],
     detail: (id) => `/spec/products/${encodeURIComponent(id)}`,
   },
   customizationCategory: { type: "customizationCategory", defaults: ["entityCode", "status"] },
   customizationType: { type: "customizationType", defaults: ["entityCode", "status", "category", "customerSelects"], parent: "category" },
   customizationOption: {
-    type: "customizationOption", hasImages: true, parent: "type",
+    type: "customizationOption", image: MEDIA_FIRST, parent: "type",
     defaults: ["entityCode", "status", "type", "configuratorRole", "hasPage"],
     detail: (id) => `/spec/customizations/${encodeURIComponent(id)}`,
   },
-  solution: { type: "solution", defaults: ["entityCode", "status", "solutionType"] },
-  solutionStyle: { type: "solutionStyle", hasImages: true, defaults: ["entityCode", "status", "solution"], parent: "solution" },
+  solution: { type: "solution", image: FEATURED, defaults: ["entityCode", "status", "solutionType"] },
+  solutionStyle: { type: "solutionStyle", image: FEATURED, defaults: ["entityCode", "status", "solution"], parent: "solution" },
   inspiration: {
-    type: "product", filter: `kind == "inspiration"`, hasImages: true, parent: "solutions",
+    type: "product", filter: `kind == "inspiration"`, image: MEDIA_FIRST, parent: "solutions",
     defaults: ["entityCode", "status", "basedOn", "solutions"],
   },
   // One row per property value (properties are one shared vocabulary): the values of every property
@@ -109,7 +117,11 @@ export type CatalogTable = {
 };
 
 /** Never offered as columns: internal or covered elsewhere (the image column, the row link). */
-export const HIDDEN = new Set(["_id", "_type", "_rev", "_system", "_image", "images", "lifestyleImages", "videos", "orderRank"]);
+export const HIDDEN = new Set([
+  "_id", "_type", "_rev", "_system", "_image", "orderRank",
+  // Images and video: the image column shows the preview.
+  "media", "featuredImage", "images", "lifestyleImages", "videos",
+]);
 
 const LABELS: Record<string, string> = {
   title: "Name",
@@ -218,7 +230,7 @@ export function buildCatalogTable(key: TableKey, docs: Doc[], names: Map<string,
     if (present.length && present.every((v) => typeof v === "number")) (c as CatalogColumn).numeric = true;
   }
   return {
-    key, dataset, columns, rows, hasImages: Boolean(spec.hasImages), parent: spec.parent ?? null,
+    key, dataset, columns, rows, hasImages: Boolean(spec.image), parent: spec.parent ?? null,
     defaults: ["title", ...spec.defaults].filter((f) => columns.some((c) => c.key === f)),
   };
 }
