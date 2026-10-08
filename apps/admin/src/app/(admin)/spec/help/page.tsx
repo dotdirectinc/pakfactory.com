@@ -70,13 +70,13 @@ export default async function SpecHelpPage() {
           </Term>
           <Term name="Catalog">
             Every record as a table, in three tabs — <em>Products</em>, <em>Customizations</em>, <em>Solutions</em> — with
-            a <em>Show</em> picker for the level (e.g. product lines → styles → standard products). Search, filter by status
+            a <em>Show</em> picker for the level: product lines → styles → standard products → product properties &amp; values;
+            categories → types → options → option properties &amp; values; solutions → solution styles → inspiration
+            products. Properties and their values are one shared list; each stream shows the ones it uses, and how many
+            of its records use each value. Search, filter by status
             or parent, choose columns (<em>Columns</em>), drag a header to move it, click a header to sort or hide it. A
             product's or option's name opens its page: for an option, what it offers, how a customer configures it, and its
             exceptions. Your column choice is remembered in your browser.
-          </Term>
-          <Term name="Properties">
-            Properties (e.g. Shape, Closure) and their values, shared by products and customizations.
           </Term>
         </dl>
         <p>

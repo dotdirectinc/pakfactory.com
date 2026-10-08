@@ -9,26 +9,35 @@
 export type TableKey =
   | "productLine" | "productStyle" | "product"
   | "customizationCategory" | "customizationType" | "customizationOption"
-  | "solution" | "solutionStyle" | "inspiration";
+  | "solution" | "solutionStyle" | "inspiration"
+  | "productValue" | "optionValue";
 
-export type TableGroup = { key: "products" | "customizations" | "solutions"; label: string; levels: { key: TableKey; label: string }[] };
+/** `defaultLevel`: the level a tab opens on — the records themselves, not their vocabulary. */
+export type TableGroup = {
+  key: "products" | "customizations" | "solutions";
+  label: string;
+  levels: { key: TableKey; label: string }[];
+  defaultLevel: TableKey;
+};
 
 export const TABLE_GROUPS: TableGroup[] = [
   { key: "products", label: "Products", levels: [
     { key: "productLine", label: "Product lines" },
     { key: "productStyle", label: "Product styles" },
     { key: "product", label: "Standard products" },
-  ] },
+    { key: "productValue", label: "Product properties & values" },
+  ], defaultLevel: "product" },
   { key: "customizations", label: "Customizations", levels: [
     { key: "customizationCategory", label: "Categories" },
     { key: "customizationType", label: "Types" },
     { key: "customizationOption", label: "Options" },
-  ] },
+    { key: "optionValue", label: "Option properties & values" },
+  ], defaultLevel: "customizationOption" },
   { key: "solutions", label: "Solutions", levels: [
     { key: "solution", label: "Solutions" },
     { key: "solutionStyle", label: "Solution styles" },
     { key: "inspiration", label: "Inspiration products" },
-  ] },
+  ], defaultLevel: "inspiration" },
 ];
 
 export type TableSpec = {
@@ -64,6 +73,16 @@ export const SPECS: Record<TableKey, TableSpec> = {
   inspiration: {
     type: "product", filter: `kind == "inspiration"`, hasImages: true, parent: "solutions",
     defaults: ["entityCode", "status", "basedOn", "solutions"],
+  },
+  // One row per property value (properties are one shared vocabulary): the values of every property
+  // the stream uses, with how many of its records use each. The loader adds the usage fields.
+  productValue: {
+    type: "propertyValue", parent: "property",
+    defaults: ["property", "usedByProducts", "productExamples", "kindOf", "facts", "entityCode"],
+  },
+  optionValue: {
+    type: "propertyValue", parent: "property",
+    defaults: ["property", "usedByOptions", "optionExamples", "kindOf", "facts", "entityCode"],
   },
 };
 
@@ -104,6 +123,11 @@ const LABELS: Record<string, string> = {
   _createdAt: "Created",
   _updatedAt: "Last updated",
   basedOn: "Based on",
+  usedByProducts: "Used by products",
+  productExamples: "Products (examples)",
+  usedByOptions: "Used by options",
+  optionExamples: "Options (examples)",
+  kindOf: "Kind of",
 };
 
 export const columnLabel = (key: string) =>
@@ -146,6 +170,16 @@ export function cellOf(v: unknown, names: Map<string, string>): string | number 
     if (isObj(v[0]) && v[0]._type === "block") return blockText(v).slice(0, 300) || null;
     if (v.every((x) => isObj(x) && typeof x._ref === "string")) return v.map((x) => names.get(String((x as { _ref: string })._ref)) ?? UNPUBLISHED).join(", ");
     if (v.every((x) => typeof x !== "object")) return v.join(", ");
+    // Label/value pairs (a value's facts): "Weight: 1.2 kg · Width: 30 cm".
+    if (v.every((x) => isObj(x) && typeof x.label === "string")) {
+      return v
+        .map((x) => {
+          const o = x as Record<string, unknown>;
+          const val = o.text ?? o.value ?? o.number;
+          return `${columnLabel(String(o.label))}${val !== undefined && val !== null ? `: ${String(val)}${o.unit ? ` ${String(o.unit)}` : ""}` : ""}`;
+        })
+        .join(" · ");
+    }
     // Objects (properties, availability rows…): what they reference, else how many there are.
     const refs = new Set<string>();
     collectRefs(v, refs);

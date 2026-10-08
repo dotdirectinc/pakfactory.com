@@ -72,18 +72,15 @@ const NAV: readonly NavEntry[] = [
               path.startsWith(p),
             )),
       },
-      // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing.
+      // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing —
+      // properties & values included, as the fourth level of the Products and Customizations streams.
       // The old list pages and the detail pages tables link to (/spec/products/<id>,
       // /spec/customizations/<id>) are part of it, so they light this entry.
       {
         href: "/spec/catalog",
         label: "Catalog",
-        match: (path) => ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions"].some((p) => path.startsWith(p)),
-      },
-      {
-        href: "/spec/properties",
-        label: "Properties",
-        match: (path) => path.startsWith("/spec/properties"),
+        match: (path) =>
+          ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions", "/spec/properties"].some((p) => path.startsWith(p)),
       },
       // What each page and button does, the catalog structure, syncing and registry codes (PROD-2771).
       {

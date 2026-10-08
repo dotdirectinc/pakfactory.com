@@ -28,7 +28,7 @@ export function SpecCatalogNav({ groups, group, level }: { groups: TableGroup[];
       <div className="flex items-center gap-2 pb-2">
         <span className="text-sm text-muted-foreground">{COPY.level}</span>
         <Select value={level} onValueChange={(v) => go(group.key, v)}>
-          <SelectTrigger size="sm" className="w-52" aria-label={COPY.level}>
+          <SelectTrigger size="sm" className="w-64" aria-label={COPY.level}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

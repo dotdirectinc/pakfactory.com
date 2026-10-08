@@ -11,7 +11,7 @@ export default async function SpecCatalogPage({ searchParams }: { searchParams: 
   await requireRegistryGrant();
   const sp = await searchParams;
   const group = TABLE_GROUPS.find((g) => g.key === sp.group) ?? TABLE_GROUPS[0]!;
-  const level = isTableKey(sp.level) && group.levels.some((l) => l.key === sp.level) ? sp.level : group.levels[group.levels.length - 1]!.key;
+  const level = isTableKey(sp.level) && group.levels.some((l) => l.key === sp.level) ? sp.level : group.defaultLevel;
   const res = await getCatalogTable(level);
 
   return (
