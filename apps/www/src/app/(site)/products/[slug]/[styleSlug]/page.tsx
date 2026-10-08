@@ -16,6 +16,7 @@ import {
 import {resolveStyleFaqs} from '@/lib/catalog/faq-inheritance';
 import type {ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 import {applyFaqInherit} from '@/lib/sections/merge-solution-sections';
+import {staticParamsExceptPreview} from '@/lib/static-params';
 
 export const revalidate = 60;
 
@@ -26,10 +27,12 @@ type PageProps = {
 export async function generateStaticParams(): Promise<
     {slug: string; styleSlug: string}[]
 > {
-    const lines = await listLines();
-    return lines.flatMap((line) =>
-        line.styles.map((style) => ({slug: line.slug, styleSlug: style.slug})),
-    );
+    return staticParamsExceptPreview(async () => {
+        const lines = await listLines();
+        return lines.flatMap((line) =>
+            line.styles.map((style) => ({slug: line.slug, styleSlug: style.slug})),
+        );
+    });
 }
 
 export async function generateMetadata({params}: PageProps): Promise<Metadata> {

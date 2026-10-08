@@ -32,16 +32,19 @@ import {
   makeCaseStudyPtComponents,
   makeHeroIntroPtComponents,
 } from "./_components/pt-components";
+import { staticParamsExceptPreview } from "@/lib/static-params";
 
 export const revalidate = 300;
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  if (!isSanityConfigured()) return [];
-  return getPublishedSanityClient()
-    .fetch<CaseStudyPath[]>(CASE_STUDY_PATHS_QUERY)
-    .catch(() => [] as CaseStudyPath[]);
+  return staticParamsExceptPreview(async () => {
+    if (!isSanityConfigured()) return [];
+    return getPublishedSanityClient()
+      .fetch<CaseStudyPath[]>(CASE_STUDY_PATHS_QUERY)
+      .catch(() => [] as CaseStudyPath[]);
+  });
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

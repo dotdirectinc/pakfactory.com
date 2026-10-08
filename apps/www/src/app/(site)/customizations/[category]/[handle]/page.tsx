@@ -11,17 +11,20 @@ import {
     listProductLibrary,
     listProductOfferIndex,
 } from '@/lib/catalog/catalog';
+import {staticParamsExceptPreview} from '@/lib/static-params';
 
 export const revalidate = 60;
 
 type PageParams = {category: string; handle: string};
 
 export async function generateStaticParams(): Promise<PageParams[]> {
-    const {items} = await listCustomizations();
-    return items.map((item) => ({
-        category: item.categoryValue,
-        handle: item.slug,
-    }));
+    return staticParamsExceptPreview(async () => {
+        const {items} = await listCustomizations();
+        return items.map((item) => ({
+            category: item.categoryValue,
+            handle: item.slug,
+        }));
+    });
 }
 
 export async function generateMetadata({

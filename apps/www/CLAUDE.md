@@ -78,6 +78,7 @@ www prefers **Sections** language for page composition ([ADR-015](../../docs/adr
 
 - **Stakeholder staging:** [staging.pakfactory.com](https://staging.pakfactory.com) — latest `www-new-release` build on Vercel `pakfactory-com` project (preview deployment, Vercel Authentication wall)
 - **QA alias:** git-branch preview on `www-new-release` (see root `AGENTS.md` § www rebuild trunk)
+- **Preview builds skip catalog pre-rendering** (PROD-2979): products, styles, solutions, customizations, expertise and case studies render on first visit, then cache. Set `WWW_PRERENDER_ALL=1` on a deployment to pre-render everything ([`src/lib/static-params.ts`](src/lib/static-params.ts)).
 - Ops detail: [`memory.md`](./memory.md)
 
 ## Local dev
