@@ -68,33 +68,19 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help"].some((p) =>
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog"].some((p) =>
               path.startsWith(p),
             )),
       },
-      // Products & Customizations (PROD-2614) — read-only until V1; edits happen in Studio.
+      // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing —
+      // properties & values included, as the fourth level of the Products and Customizations streams.
+      // The old list pages and the detail pages tables link to (/spec/products/<id>,
+      // /spec/customizations/<id>) are part of it, so they light this entry.
       {
-        href: "/spec/products",
-        label: "Products",
-        match: (path) => path.startsWith("/spec/products"),
-      },
-      // Everything in the catalog, browsed (registry ids included). An option's rules page sits
-      // under /spec/customizations/<id>, so it lights this entry.
-      {
-        href: "/spec/customizations",
-        label: "Customizations",
-        match: (path) => path.startsWith("/spec/customizations"),
-      },
-      {
-        href: "/spec/properties",
-        label: "Properties",
-        match: (path) => path.startsWith("/spec/properties"),
-      },
-      // Solutions → their styles and inspiration products, registry codes included (PROD-2782).
-      {
-        href: "/spec/solutions",
-        label: "Solutions",
-        match: (path) => path.startsWith("/spec/solutions"),
+        href: "/spec/catalog",
+        label: "Catalog",
+        match: (path) =>
+          ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions", "/spec/properties"].some((p) => path.startsWith(p)),
       },
       // What each page and button does, the catalog structure, syncing and registry codes (PROD-2771).
       {

@@ -315,6 +315,53 @@ export const ADMIN_SPEC_SYNC_COPY = {
   dismissing: "Dismissing…",
 } as const;
 
+/** Catalog tables (PROD-2926): read-only, Notion-like tables of every record type. */
+export const ADMIN_SPEC_TABLES_COPY = {
+  title: "Catalog",
+  lead:
+    "Every record type as a table, read from Sanity (the website's catalog) with its registry code. Choose columns, drag a header to move it, use a header's menu to sort or hide. Read-only — edit in Studio.",
+  level: "Show",
+  datasetNote: (dataset: string) => `Sanity dataset: ${dataset}`,
+  unreachable: "The table could not be loaded.",
+  search: "Search",
+  searchPlaceholder: "Search…",
+  status: "Status",
+  parent: "Parent",
+  any: "Any",
+  filter: "Filter",
+  clearFilters: "Clear filters",
+  removeFilter: (label: string) => `Remove filter ${label}`,
+  columns: (shown: number, total: number) => `Columns ${shown}/${total}`,
+  shown: "Shown",
+  hidden: "Hidden",
+  showAll: "Show all",
+  hideAll: "Hide all",
+  reset: "Reset to default",
+  dragHint: "Drag to reorder",
+  count: (shown: number, total: number) => (shown === total ? `${total} records` : `${shown} of ${total} records`),
+  image: "Image",
+  noImage: "No image",
+  headerHint: "Drag to move · click for sort and hide",
+  sortAsc: "Sort ascending",
+  sortDesc: "Sort descending",
+  clearSort: "Clear sort",
+  hide: "Hide column",
+  noMatch: "No records match.",
+  untitled: "(untitled)",
+  perPage: "Rows per page",
+  paginationLabel: "Table pages",
+} as const;
+
+/** A catalog record's page (2026-10-08): every record, every level and status. */
+export const ADMIN_SPEC_RECORD_COPY = {
+  unreachable: "The record could not be loaded.",
+  rules: "Rules view",
+  readOnly: (dataset: string) => `Read-only, from Sanity (${dataset}) — edit in Studio.`,
+  images: (n: number) => `Images (${n})`,
+  fields: "All fields",
+  more: (shown: number, total: number) => `First ${shown} of ${total}.`,
+} as const;
+
 /** Sync history (PROD-2771): every sync, what it produced, what was decided, and whether it landed. */
 export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
   title: "Sync history",
