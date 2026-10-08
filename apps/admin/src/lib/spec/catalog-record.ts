@@ -82,7 +82,16 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
   try {
     const doc = await client.fetch<(Doc & { _images?: (string | null)[] }) | null>(
       `*[_id == $id && _type == $type && ${PUBLISHED}][0]{
-        ..., "_images": array::compact([...coalesce(media[].asset->url, []), featuredImage.asset->url, image.asset->url])
+        ..., "_images": array::compact([
+          // ADR-024: the primary product still first, then the other product stills, then lifestyle
+          // stills; legacy featuredImage / media[] for documents not migrated yet; a value's image.
+          coalesce(images[primary == true][0], images[0]).asset->url,
+          ...coalesce(images[primary != true][].asset->url, []),
+          ...coalesce(lifestyleImages[].asset->url, []),
+          featuredImage.asset->url,
+          ...coalesce(media[].asset->url, []),
+          image.asset->url
+        ])
       }`,
       { id, type: spec.type },
       { cache: "no-store" },

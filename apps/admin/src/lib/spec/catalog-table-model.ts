@@ -50,22 +50,23 @@ export type TableSpec = {
   parent?: string;
   /** The record's rules view, when it has one (standard products; active options); null when not. */
   rules?: (doc: Doc) => string | null;
-  /**
-   * GROQ for the record's preview image (2026-10-08, Richard): the first image in the Studio
-   * "Media" field (`media[0]`) for every type that has one; a type without a Media field (solution,
-   * solution style) uses its Featured image. Absent: no image column.
-   */
+  /** GROQ for the record's preview image (PRIMARY_IMAGE). Absent: no image column. */
   image?: string;
 };
 
-const MEDIA_FIRST = "media[0].asset->url";
-const FEATURED = "featuredImage.asset->url";
+/**
+ * The representative image (ADR-024, catalog media groups — on www-new-release since 2026-10-07):
+ * the item marked Primary in `images`, else the first; for documents not yet migrated, the legacy
+ * `featuredImage`, else `media[0]`. Same rule as packages/sanity `PRIMARY_PRODUCT_IMAGE_GROQ` (not
+ * on the admin branch yet — use it from there once it is).
+ */
+const PRIMARY_IMAGE = `coalesce(images[primary == true][0], images[0], featuredImage, media[0]).asset->url`;
 
 export const SPECS: Record<TableKey, TableSpec> = {
-  productLine: { type: "productLine", image: MEDIA_FIRST, defaults: ["entityCode", "status", "slug"] },
-  productStyle: { type: "productStyle", image: MEDIA_FIRST, defaults: ["entityCode", "status", "productLine"], parent: "productLine" },
+  productLine: { type: "productLine", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "slug"] },
+  productStyle: { type: "productStyle", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "productLine"], parent: "productLine" },
   product: {
-    type: "product", filter: `kind != "inspiration"`, image: MEDIA_FIRST, parent: "productLine",
+    type: "product", filter: `kind != "inspiration"`, image: PRIMARY_IMAGE, parent: "productLine",
     defaults: ["entityCode", "status", "productLine", "productStyle", "moq", "leadTimeBusinessDaysMin", "leadTimeBusinessDaysMax"],
     // Every standard product has a rules view, whatever its status (the product view reads them all).
     rules: (d) => `/spec/products/${encodeURIComponent(d._id)}`,
@@ -73,15 +74,15 @@ export const SPECS: Record<TableKey, TableSpec> = {
   customizationCategory: { type: "customizationCategory", defaults: ["entityCode", "status"] },
   customizationType: { type: "customizationType", defaults: ["entityCode", "status", "category", "customerSelects"], parent: "category" },
   customizationOption: {
-    type: "customizationOption", image: MEDIA_FIRST, parent: "type",
+    type: "customizationOption", image: PRIMARY_IMAGE, parent: "type",
     defaults: ["entityCode", "status", "type", "configuratorRole", "hasPage"],
     // Only active options are in the rules, so only they have a rules view (hasRulesPage).
     rules: (d) => (d.status === "active" ? `/spec/customizations/${encodeURIComponent(d._id)}` : null),
   },
-  solution: { type: "solution", image: FEATURED, defaults: ["entityCode", "status", "solutionType"] },
-  solutionStyle: { type: "solutionStyle", image: FEATURED, defaults: ["entityCode", "status", "solution"], parent: "solution" },
+  solution: { type: "solution", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "solutionType"] },
+  solutionStyle: { type: "solutionStyle", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "solution"], parent: "solution" },
   inspiration: {
-    type: "product", filter: `kind == "inspiration"`, image: MEDIA_FIRST, parent: "solutions",
+    type: "product", filter: `kind == "inspiration"`, image: PRIMARY_IMAGE, parent: "solutions",
     defaults: ["entityCode", "status", "basedOn", "solutions"],
   },
   // One row per property value (properties are one shared vocabulary): the values of every property
