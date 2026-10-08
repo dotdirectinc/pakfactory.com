@@ -185,6 +185,8 @@ export type SyncRun = {
   state: SyncRunState;
   /** How the run started (PROD-2772): a person, or the worker because Sanity changed. Absent on older backends. */
   trigger?: SyncTrigger;
+  /** The person asked for SKUs too (permanent once approved). Absent on older backends. */
+  include_sku?: boolean;
   /** Null for an automatic run. */
   requested_by: string | null;
   requested_at: string;
@@ -212,8 +214,10 @@ export async function listSyncRuns() {
  * Ask the backend to sync — Sanity → registry, or Notion → Sanity. The run is queued and the worker
  * takes it within seconds; what it finds arrives as draft frames, never as live changes.
  */
-export async function requestSyncRun(kind: SyncKind, dataset: string) {
-  return call<SyncRun>("/api/v1/sync-runs", { method: "POST", body: { kind, dataset } });
+export async function requestSyncRun(kind: SyncKind, dataset: string, includeSku = false) {
+  // include_sku is sent only when asked, so a backend without the option keeps working.
+  const body = includeSku ? { kind, dataset, include_sku: true } : { kind, dataset };
+  return call<SyncRun>("/api/v1/sync-runs", { method: "POST", body });
 }
 
 /** Hide a finished run from the panel. The backend keeps the row. */

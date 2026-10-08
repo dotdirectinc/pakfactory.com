@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
+import { Checkbox } from "@pakfactory/ui/components/checkbox";
 import { dismissSyncAction, requestSyncAction } from "@/app/(admin)/spec/actions";
 import type { SyncRun, SyncWriteProblem } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SYNC_COPY as COPY, ADMIN_SPEC_SYNC_HISTORY_COPY as HISTORY } from "@/lib/copy/spec";
@@ -39,6 +40,8 @@ const when = (iso: string) =>
  */
 export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
   const [dataset, setDataset] = useState("development");
+  // SKUs are permanent once approved, so they are asked for per run and never stay ticked.
+  const [includeSku, setIncludeSku] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -54,8 +57,9 @@ export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
   function request() {
     setError(null);
     startTransition(async () => {
-      const res = await requestSyncAction("sanity", dataset);
+      const res = await requestSyncAction("sanity", dataset, includeSku);
       if (!res.ok) setError(res.error);
+      else setIncludeSku(false);
       router.refresh();
     });
   }
@@ -93,6 +97,14 @@ export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
               ))}
             </select>
           </label>
+          <label className="flex h-9 items-center gap-2 text-sm text-foreground" title={COPY.includeSkuHint}>
+            <Checkbox
+              checked={includeSku}
+              disabled={pending || open}
+              onCheckedChange={(v) => setIncludeSku(v === true)}
+            />
+            {COPY.includeSku}
+          </label>
           <Button size="sm" disabled={pending || open} onClick={request}>
             {pending ? COPY.requesting : COPY.button}
           </Button>
@@ -101,6 +113,7 @@ export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
       ) : (
         <p className="text-sm text-muted-foreground">{COPY.noPermission}</p>
       )}
+      {canSync && includeSku ? <p className="max-w-2xl text-sm text-muted-foreground">{COPY.includeSkuHint}</p> : null}
       {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
 
       {problems.length ? (

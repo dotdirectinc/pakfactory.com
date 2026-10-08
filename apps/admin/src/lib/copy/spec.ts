@@ -295,6 +295,9 @@ export const ADMIN_SPEC_SYNC_COPY = {
   ],
   button: "Sync Changes",
   requesting: "Requesting…",
+  includeSku: "Include SKUs",
+  includeSkuHint:
+    "Also propose SKUs that replace a TMP- placeholder, in their own frame. Approving that frame is permanent: the registry refuses any later SKU change.",
   open: "A sync is in progress. This page updates when it finishes.",
   noPermission: "Starting a sync needs the approver role.",
   recent: "Recent syncs",
