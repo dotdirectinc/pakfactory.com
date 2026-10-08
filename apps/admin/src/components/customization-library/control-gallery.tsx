@@ -63,8 +63,8 @@ export function ControlGallery() {
             Every control kind the configurator uses, with demo values — a design reference for the
             shared <code>PropertyController</code>, not rules. To see what a real product offers and
             configure it as a customer, open{" "}
-            <Link href="/spec/products" className="text-foreground underline">
-              Spec System → Products
+            <Link href="/spec/catalog?group=products&level=product" className="text-foreground underline">
+              Spec System → Catalog → Standard products
             </Link>
             .
           </p>
