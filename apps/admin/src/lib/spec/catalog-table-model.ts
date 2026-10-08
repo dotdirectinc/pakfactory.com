@@ -48,8 +48,8 @@ export type TableSpec = {
   defaults: string[];
   /** The field filtered as "parent". */
   parent?: string;
-  /** The existing detail page, when this record has one (keyed by Sanity id); null when it has none. */
-  detail?: (doc: Doc) => string | null;
+  /** The record's rules view, when it has one (standard products; active options); null when not. */
+  rules?: (doc: Doc) => string | null;
   /**
    * GROQ for the record's preview image (2026-10-08, Richard): the first image in the Studio
    * "Media" field (`media[0]`) for every type that has one; a type without a Media field (solution,
@@ -67,17 +67,16 @@ export const SPECS: Record<TableKey, TableSpec> = {
   product: {
     type: "product", filter: `kind != "inspiration"`, image: MEDIA_FIRST, parent: "productLine",
     defaults: ["entityCode", "status", "productLine", "productStyle", "moq", "leadTimeBusinessDaysMin", "leadTimeBusinessDaysMax"],
-    // Every standard product has a page, whatever its status (the product view reads them all).
-    detail: (d) => `/spec/products/${encodeURIComponent(d._id)}`,
+    // Every standard product has a rules view, whatever its status (the product view reads them all).
+    rules: (d) => `/spec/products/${encodeURIComponent(d._id)}`,
   },
   customizationCategory: { type: "customizationCategory", defaults: ["entityCode", "status"] },
   customizationType: { type: "customizationType", defaults: ["entityCode", "status", "category", "customerSelects"], parent: "category" },
   customizationOption: {
     type: "customizationOption", image: MEDIA_FIRST, parent: "type",
     defaults: ["entityCode", "status", "type", "configuratorRole", "hasPage"],
-    // An option's page is its rules page, and only active options are in the rules — any other
-    // status would open "not found" (as the old Customizations tree knew: hasRulesPage).
-    detail: (d) => (d.status === "active" ? `/spec/customizations/${encodeURIComponent(d._id)}` : null),
+    // Only active options are in the rules, so only they have a rules view (hasRulesPage).
+    rules: (d) => (d.status === "active" ? `/spec/customizations/${encodeURIComponent(d._id)}` : null),
   },
   solution: { type: "solution", image: FEATURED, defaults: ["entityCode", "status", "solutionType"] },
   solutionStyle: { type: "solutionStyle", image: FEATURED, defaults: ["entityCode", "status", "solution"], parent: "solution" },
@@ -223,7 +222,7 @@ export function buildCatalogTable(key: TableKey, docs: Doc[], names: Map<string,
   const columns = ordered.filter((f, i, a) => a.indexOf(f) === i && (fields.has(f) || spec.defaults.includes(f))).map((f) => ({ key: f, label: columnLabel(f) }));
   const rows = docs.map((d) => ({
     id: d._id,
-    href: spec.detail ? spec.detail(d) : null,
+    href: recordHref(key, d._id),
     image: d._image ? { thumb: `${d._image}?w=96&h=96&fit=crop&auto=format`, large: `${d._image}?w=480&auto=format` } : null,
     cells: Object.fromEntries(columns.map((c) => [c.key, cellOf(d[c.key], names)])),
   }));
@@ -238,3 +237,53 @@ export function buildCatalogTable(key: TableKey, docs: Doc[], names: Map<string,
   };
 }
 
+
+// ─── Record pages (2026-10-08, Richard: every record at every level and status has one) ─────────
+
+/** The record page of any catalog row; the table it was opened from gives its level and context. */
+export const recordHref = (key: TableKey, id: string) => `/spec/catalog/${key}/${encodeURIComponent(id)}`;
+
+export const levelOf = (key: TableKey) => {
+  for (const g of TABLE_GROUPS) {
+    const l = g.levels.find((x) => x.key === key);
+    if (l) return { group: g, level: l };
+  }
+  return null;
+};
+
+/** The level a referenced document belongs to, so a reference on a record page can link to it. */
+export function tableOfDoc(type: string | undefined, kind?: string | null): TableKey | null {
+  switch (type) {
+    case "productLine": return "productLine";
+    case "productStyle": return "productStyle";
+    case "product": return kind === "inspiration" ? "inspiration" : "product";
+    case "customizationCategory": return "customizationCategory";
+    case "customizationType": return "customizationType";
+    case "customizationOption": return "customizationOption";
+    case "solution": return "solution";
+    case "solutionStyle": return "solutionStyle";
+    case "propertyValue": return "productValue";
+    default: return null;
+  }
+}
+
+export type RefInfo = { title: string; href: string | null };
+export type RecordField = { key: string; label: string; text: string | number | null; links: { title: string; href: string | null }[] };
+
+/** Every field of a record for its page: display text, and the records it references as links. */
+export function recordFields(doc: Doc, refs: Map<string, RefInfo>): RecordField[] {
+  const names = new Map([...refs].map(([id, r]) => [id, r.title]));
+  const keys = ["title", ...Object.keys(doc).filter((k) => k !== "title" && !HIDDEN.has(k) && !k.startsWith("_")).sort(), "_createdAt", "_updatedAt"];
+  return keys
+    .filter((k, i, a) => a.indexOf(k) === i && k in doc)
+    .map((k) => {
+      const ids = new Set<string>();
+      collectRefs(doc[k], ids);
+      return {
+        key: k,
+        label: columnLabel(k),
+        text: cellOf(doc[k], names),
+        links: [...ids].map((id) => refs.get(id) ?? { title: UNPUBLISHED, href: null }),
+      };
+    });
+}

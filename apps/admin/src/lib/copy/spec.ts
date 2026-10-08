@@ -352,6 +352,16 @@ export const ADMIN_SPEC_TABLES_COPY = {
   paginationLabel: "Table pages",
 } as const;
 
+/** A catalog record's page (2026-10-08): every record, every level and status. */
+export const ADMIN_SPEC_RECORD_COPY = {
+  unreachable: "The record could not be loaded.",
+  rules: "Rules view",
+  readOnly: (dataset: string) => `Read-only, from Sanity (${dataset}) — edit in Studio.`,
+  images: (n: number) => `Images (${n})`,
+  fields: "All fields",
+  more: (shown: number, total: number) => `First ${shown} of ${total}.`,
+} as const;
+
 /** Sync history (PROD-2771): every sync, what it produced, what was decided, and whether it landed. */
 export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
   title: "Sync history",

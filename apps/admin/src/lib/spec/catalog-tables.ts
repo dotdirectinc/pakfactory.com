@@ -74,13 +74,13 @@ async function fetchTable(key: TableKey): Promise<Loaded<CatalogTable>> {
     const refs = new Set<string>();
     for (const d of docs) for (const [k, v] of Object.entries(d)) if (!HIDDEN.has(k)) collectRefs(v, refs);
     const named = refs.size
-      ? await client.fetch<{ _id: string; title?: string; label?: string; name?: string }[]>(
-          `*[_id in $ids]{ _id, title, label, name }`,
+      ? await client.fetch<{ _id: string; title?: string; label?: string; name?: string; term?: string }[]>(
+          `*[_id in $ids]{ _id, title, label, name, term }`,
           { ids: [...refs] },
           { cache: "no-store" },
         )
       : [];
-    const names = new Map(named.map((n) => [n._id, n.title ?? n.label ?? n.name ?? n._id]));
+    const names = new Map(named.map((n) => [n._id, n.title ?? n.label ?? n.name ?? n.term ?? n._id]));
     return { ok: true, data: buildCatalogTable(key, docs, names, RULES_DATASET) };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Sanity query failed" };
