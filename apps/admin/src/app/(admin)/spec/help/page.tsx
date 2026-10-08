@@ -139,6 +139,12 @@ export default async function SpecHelpPage() {
           Failed sync runs stop showing once a later run of the same kind succeeds; you can also <strong>Dismiss</strong>{" "}
           one. Runs are kept as history either way.
         </p>
+        <p>
+          <strong>Sync history</strong> (from the Sync panel: <em>All syncs and results</em>) lists every sync with
+          who started it, the frames it produced and what was decided on each. For an approved frame, the next sync of
+          the same kind <strong>re-checks</strong> it: <em>all fields still match</em> means the change landed and holds;
+          otherwise it names the rows that no longer match — not written, or changed again since.
+        </p>
       </Section>
 
       <Section id="structure" title="How the catalog is structured">

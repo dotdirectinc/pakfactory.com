@@ -238,3 +238,53 @@ export type SyncWriteProblem = {
 export async function listSyncWriteProblems() {
   return call<SyncWriteProblem[]>("/api/v1/sync-runs/write-problems");
 }
+
+// ── Sync history (PROD-2771) ─────────────────────────────────────────────────
+
+export type SyncPerson = { id: string; name: string | null } | null;
+
+/** The latest re-check of an approved frame: of the fields it changed, how many still differ now. */
+export type SyncRecheck = {
+  run_id: string;
+  at: string;
+  checked: number;
+  still_differ: number;
+  items: { id: string; title: string | null }[];
+};
+
+export type SyncHistoryFrame = {
+  id: string;
+  frame: string;
+  items: number;
+  excluded: number;
+  state: "draft" | "approved" | "discarded" | "superseded" | "unknown";
+  approved_by: SyncPerson;
+  approved_at: string | null;
+  discarded_by: SyncPerson;
+  discarded_at: string | null;
+  superseded_at: string | null;
+  /** Sanity-bound frames only: how the approved rows were written. */
+  writes_to_sanity: { applied: number; pending: number; stale: number; failed: number } | null;
+  recheck: SyncRecheck | null;
+};
+
+export type SyncHistoryRun = {
+  id: string;
+  kind: SyncKind;
+  dataset: string;
+  state: SyncRunState;
+  requested_by: SyncPerson;
+  requested_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error: string | null;
+  dismissed_at: string | null;
+  documents: number | null;
+  recheck_error: string | null;
+  frames: SyncHistoryFrame[];
+};
+
+/** Past and current syncs, newest first, with their frames, decisions and re-checks. */
+export async function listSyncHistory(limit = 30) {
+  return call<SyncHistoryRun[]>(`/api/v1/sync-runs/history?limit=${limit}`);
+}
