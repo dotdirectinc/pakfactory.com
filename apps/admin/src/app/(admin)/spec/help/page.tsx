@@ -100,6 +100,11 @@ export default async function SpecHelpPage() {
             frames named <em>Website content · …</em>. Approved ones are written to Sanity; run Sync Changes afterwards to
             carry them into the registry.
           </Term>
+          <Term name="Automatic">
+            Sync Changes also runs by itself: every 10 minutes the system checks whether a catalog record was published
+            in Sanity since the last comparison, and runs it if so — marked <em>Automatic</em>. It never replaces frames
+            waiting for review: while one is pending it waits. Sync Notion never runs by itself.
+          </Term>
           <Term name="Dataset">Development only for now. Production follows its catalog rebuild.</Term>
         </dl>
         <p>

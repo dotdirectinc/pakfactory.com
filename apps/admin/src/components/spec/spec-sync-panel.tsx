@@ -139,6 +139,9 @@ export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={r.state === "failed" ? "destructive" : "secondary"}>{COPY.states[r.state]}</Badge>
                   <span className="text-foreground">{COPY.kinds[r.kind] ?? r.kind}</span>
+                  {r.trigger === "automatic" ? (
+                    <Badge variant="outline" title={COPY.automaticHint}>{COPY.automatic}</Badge>
+                  ) : null}
                   <span className="text-muted-foreground">· {r.dataset}</span>
                   <span className="text-muted-foreground">{when(r.requested_at)}</span>
                   {r.result?.documents !== undefined ? (
@@ -155,7 +158,8 @@ export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
                     ) : null}
                   </div>
                 ) : null}
-                {r.state === "done" && r.result?.loaded?.length === 0 ? (
+                {r.state === "done" && r.result?.skipped ? <p className="text-muted-foreground">{COPY.skipped}</p> : null}
+                {r.state === "done" && !r.result?.skipped && r.result?.loaded?.length === 0 ? (
                   <p className="text-muted-foreground">{COPY.nothingFound}</p>
                 ) : null}
                 {r.state === "done" && r.result?.loaded?.length ? (

@@ -39,12 +39,17 @@ export function SpecSyncHistoryRun({ run }: { run: SyncHistoryRun }) {
         <span className="font-medium text-foreground">{SYNC.kinds[run.kind] ?? run.kind}</span>
         <span className="text-muted-foreground">· {run.dataset}</span>
         <span className="text-muted-foreground">{when(run.requested_at)}</span>
-        <span className="text-muted-foreground">{COPY.requestedBy(run.requested_by?.name ?? COPY.someone)}</span>
+        {run.trigger === "automatic" ? (
+          <Badge variant="outline" title={SYNC.automaticHint}>{SYNC.automatic}</Badge>
+        ) : (
+          <span className="text-muted-foreground">{COPY.requestedBy(run.requested_by?.name ?? COPY.someone)}</span>
+        )}
         {run.documents !== null ? <span className="text-muted-foreground">· {COPY.documents(run.documents)}</span> : null}
       </div>
       {run.state === "failed" && run.error ? <p className="break-words text-sm text-destructive">{run.error}</p> : null}
       {run.recheck_error ? <p className="text-xs text-muted-foreground">{COPY.recheckError(run.recheck_error)}</p> : null}
-      {run.state === "done" && run.frames.length === 0 ? <p className="text-sm text-muted-foreground">{COPY.noFrames}</p> : null}
+      {run.state === "done" && run.skipped ? <p className="text-sm text-muted-foreground">{SYNC.skipped}</p> : null}
+      {run.state === "done" && !run.skipped && run.frames.length === 0 ? <p className="text-sm text-muted-foreground">{COPY.noFrames}</p> : null}
       {run.frames.length ? (
         <ul className="flex flex-col gap-2 border-l border-border pl-3">
           {run.frames.map((f) => (

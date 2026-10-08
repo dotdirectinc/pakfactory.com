@@ -176,12 +176,17 @@ export type SyncRunLoaded = { id: string; frame: string; items: number };
 
 export type SyncKind = "sanity" | "notion";
 
+export type SyncTrigger = "manual" | "automatic";
+
 export type SyncRun = {
   id: string;
   kind: SyncKind;
   dataset: string;
   state: SyncRunState;
-  requested_by: string;
+  /** How the run started (PROD-2772): a person, or the worker because Sanity changed. Absent on older backends. */
+  trigger?: SyncTrigger;
+  /** Null for an automatic run. */
+  requested_by: string | null;
   requested_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -193,6 +198,8 @@ export type SyncRun = {
     proposed?: { frame: string; items: number }[];
     loaded?: SyncRunLoaded[];
     report?: { unresolved?: unknown[]; unknownStatus?: unknown[]; reportOnly?: Record<string, number> };
+    /** An automatic run left the frames alone because one was waiting for review. */
+    skipped?: string;
   } | null;
 };
 
@@ -273,6 +280,7 @@ export type SyncHistoryRun = {
   kind: SyncKind;
   dataset: string;
   state: SyncRunState;
+  trigger?: SyncTrigger;
   requested_by: SyncPerson;
   requested_at: string;
   started_at: string | null;
@@ -281,6 +289,7 @@ export type SyncHistoryRun = {
   dismissed_at: string | null;
   documents: number | null;
   recheck_error: string | null;
+  skipped?: string | null;
   frames: SyncHistoryFrame[];
 };
 
