@@ -303,6 +303,9 @@ export const ADMIN_SPEC_SYNC_COPY = {
   kinds: { sanity: "Changes", notion: "Content" },
   states: { requested: "Queued", running: "Running", done: "Done", failed: "Failed" },
   nothingFound: "No differences — nothing to approve.",
+  automatic: "Automatic",
+  automaticHint: "Started by the system because a catalog record was published in Sanity.",
+  skipped: "Skipped — frames were waiting for review. It runs again once they are decided.",
   dismiss: "Dismiss",
   problemsTitle: (n: number) => `${n} approved ${n === 1 ? "change was" : "changes were"} not written to Sanity`,
   problemsLead:
