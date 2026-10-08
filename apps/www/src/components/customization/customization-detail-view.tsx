@@ -5,16 +5,18 @@ import {
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
-import {CustomizationComparison} from '@/components/customization/customization-comparison';
+import {
+    CustomizationComparison,
+    CUSTOMIZATION_COMPARISON_ID,
+} from '@/components/customization/customization-comparison';
 import {CustomizationConfigPanel} from '@/components/customization/customization-config-panel';
 import {ProductGallery} from '@/components/product/product-gallery';
+import {CustomizationReferenceBenefitsSpecs} from '@/components/customization/customization-reference-benefits-specs';
 import {
-    CustomizationReferenceOverview,
     CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
     hasReferenceOverview,
 } from '@/components/customization/customization-reference-overview';
 import {
-    CustomizationReferenceSpecs,
     CUSTOMIZATION_REFERENCE_SPECS_ID,
     hasReferenceSpecs,
 } from '@/components/customization/customization-reference-specs';
@@ -23,19 +25,26 @@ import {
     CUSTOMIZATION_REFERENCE_WORKS_WITH_ID,
     hasReferenceWorksWith,
 } from '@/components/customization/customization-reference-works-with';
-import {CustomizationShowcase} from '@/components/customization/customization-showcase';
+import {
+    CustomizationShowcase,
+    CUSTOMIZATION_SHOWCASE_ID,
+    hasCustomizationShowcase,
+} from '@/components/customization/customization-showcase';
 import {AnchorNav, type AnchorNavItem} from '@/components/product/anchor-nav';
 import {FaqSection} from '@/components/sections/faq-section';
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import type {PageSection} from '@/components/sections/registry';
 import {StatusBadge} from '@/components/ui/status-badge';
-import {
-    formatSectionEyebrow,
-    SectionHeading,
-} from '@/components/ui/section-heading';
+import {formatSectionEyebrow} from '@/components/ui/section-heading';
 import {getReferenceCopy} from '@/lib/catalog/reference-copy';
-import type {CustomizationDetail} from '@/lib/catalog/types';
+import type {
+    WorksWithOptionRef,
+    WorksWithProductCard,
+} from '@/lib/catalog/build-works-with-products';
+import type {CustomizationDetail, ProductLineRef} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
+
+const CUSTOMIZATION_FAQS_ID = 'customization-faqs';
 
 const glossaryHeroComponents: PortableTextComponents = {
     block: {
@@ -65,20 +74,64 @@ const glossaryHeroComponents: PortableTextComponents = {
     },
 };
 
+function pageSectionNavItems(
+    pageSections: PageSection[] | null | undefined,
+): AnchorNavItem[] {
+    if (!pageSections?.length) return [];
+    return pageSections.flatMap((section): AnchorNavItem[] => {
+        if (section._type === 'productsRow') {
+            const items = 'items' in section ? (section.items ?? []) : [];
+            if (items.length === 0) return [];
+            return [
+                {
+                    id: `section-products-${section._key}`,
+                    label: 'Related Products',
+                },
+            ];
+        }
+        if (section._type === 'testimonialsRow') {
+            return [
+                {
+                    id: `section-reviews-${section._key}`,
+                    label: 'Reviews',
+                },
+            ];
+        }
+        if (section._type === 'faqSection') {
+            const sectionFaqs = 'faqs' in section ? (section.faqs ?? []) : [];
+            if (sectionFaqs.length === 0) return [];
+            return [
+                {
+                    id: `section-faqs-${section._key}`,
+                    label: 'FAQs',
+                },
+            ];
+        }
+        return [];
+    });
+}
+
 type CustomizationDetailViewProps = {
     detail: CustomizationDetail;
     peers?: CustomizationDetail[];
     /** Shared bands from `customizationDetailPage` layout (template → Default). */
     pageSections?: PageSection[] | null;
+    /** Compatible products for the Works with browser (PROD-2921). */
+    worksWith?: {
+        option: WorksWithOptionRef;
+        lines: ProductLineRef[];
+        products: WorksWithProductCard[];
+    };
 };
 
 /**
- * Customization detail (PROD-1299: above-fold, Material Reference, comparison + Slice H chrome).
+ * Customization detail — hero + page-level section nav (PDP parity).
  */
 export function CustomizationDetailView({
     detail,
     peers = [],
     pageSections = null,
+    worksWith,
 }: CustomizationDetailViewProps) {
     const categoryLabel = detail.categoryLabel || detail.categoryValue;
     const categoryListHref = `${WWW_ROUTES.customizations}?category=${encodeURIComponent(detail.categoryValue)}`;
@@ -87,28 +140,42 @@ export function CustomizationDetailView({
     const showOverview = hasReferenceOverview(detail);
     const showSpecs = hasReferenceSpecs(detail);
     const showWorksWith = hasReferenceWorksWith();
+    const showShowcase = hasCustomizationShowcase(detail);
+    const showFaqs = (detail.faqs?.length ?? 0) > 0;
+    const sections = pageSections ?? [];
 
-    const navItems: AnchorNavItem[] = [];
-    if (showOverview) {
-        navItems.push({
-            id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
-            label: 'Benefits',
-        });
-    }
-    if (showSpecs) {
-        navItems.push({
-            id: CUSTOMIZATION_REFERENCE_SPECS_ID,
-            label: 'Specs & performance',
-        });
-    }
-    if (showWorksWith) {
-        navItems.push({
-            id: CUSTOMIZATION_REFERENCE_WORKS_WITH_ID,
-            label: 'Works with',
-        });
-    }
-
-    const showReferenceBand = showOverview || showSpecs || showWorksWith;
+    const navItems: AnchorNavItem[] = [
+        ...(showOverview
+            ? [
+                  {
+                      id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
+                      label: 'Benefits',
+                  },
+              ]
+            : []),
+        ...(showSpecs
+            ? [
+                  {
+                      id: CUSTOMIZATION_REFERENCE_SPECS_ID,
+                      label: 'Specs & performance',
+                  },
+              ]
+            : []),
+        ...(showWorksWith
+            ? [
+                  {
+                      id: CUSTOMIZATION_REFERENCE_WORKS_WITH_ID,
+                      label: 'Works with',
+                  },
+              ]
+            : []),
+        {id: CUSTOMIZATION_COMPARISON_ID, label: 'Compare'},
+        ...(showShowcase
+            ? [{id: CUSTOMIZATION_SHOWCASE_ID, label: 'Showcase'}]
+            : []),
+        ...(showFaqs ? [{id: CUSTOMIZATION_FAQS_ID, label: 'FAQs'}] : []),
+        ...pageSectionNavItems(sections),
+    ];
 
     return (
         <>
@@ -124,8 +191,8 @@ export function CustomizationDetailView({
                 ]}
             />
             <PageDielineSection
-                paddingBlock="sm"
-                innerClassName="border-b border-dashed border-border"
+                borderBottom
+                paddingBlock="md"
             >
                 <article
                     id="customization-overview"
@@ -159,41 +226,44 @@ export function CustomizationDetailView({
                 </article>
             </PageDielineSection>
 
-            {showReferenceBand ? (
-                <PageDielineSection innerClassName="border-b border-dashed border-border">
-                    <SectionHeading
-                        eyebrow={reference.eyebrow}
-                        title={reference.title}
-                        description={reference.description}
-                        descriptionClassName="mb-20 sm:mb-10"
+            <div className="relative">
+                <AnchorNav items={navItems} />
+
+                {showOverview || showSpecs ? (
+                    <CustomizationReferenceBenefitsSpecs
+                        detail={detail}
+                        compareLabel={reference.compareLabel}
                     />
+                ) : null}
+                {showWorksWith ? (
+                    <CustomizationReferenceWorksWith
+                        option={
+                            worksWith?.option ?? {
+                                id: detail.id,
+                                category: detail.categoryValue,
+                                slug: detail.slug,
+                                title: detail.title,
+                            }
+                        }
+                        lines={worksWith?.lines ?? detail.productLines}
+                        products={worksWith?.products ?? []}
+                    />
+                ) : null}
 
-                    <AnchorNav embedded items={navItems} />
-
-                    {showOverview ? (
-                        <CustomizationReferenceOverview detail={detail} />
-                    ) : null}
-                    {showSpecs ? (
-                        <CustomizationReferenceSpecs
-                            detail={detail}
-                            compareLabel={reference.compareLabel}
-                        />
-                    ) : null}
-                    {showWorksWith ? (
-                        <CustomizationReferenceWorksWith detail={detail} />
-                    ) : null}
-                </PageDielineSection>
-            ) : null}
-
-            <CustomizationComparison detail={detail} peers={peers} />
-            <CustomizationShowcase detail={detail} />
-            <FaqSection
-                sectionId="customization-faqs"
-                items={detail.faqs ?? []}
-                footerHref={WWW_ROUTES.contact}
-                footerLabel="Let's chat"
-            />
-            <SectionRenderer sections={pageSections} />
+                <CustomizationComparison detail={detail} peers={peers} />
+                {showShowcase ? <CustomizationShowcase detail={detail} /> : null}
+                {showFaqs ? (
+                    <FaqSection
+                        sectionId={CUSTOMIZATION_FAQS_ID}
+                        items={detail.faqs ?? []}
+                        footerHref={WWW_ROUTES.contact}
+                        footerLabel="Let's chat"
+                    />
+                ) : null}
+                {sections.length > 0 ? (
+                    <SectionRenderer sections={sections} />
+                ) : null}
+            </div>
         </>
     );
 }

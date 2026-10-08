@@ -9,12 +9,14 @@ import {
     CATALOG_OPTION_BY_ID_QUERY,
     CATALOG_PRODUCT_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LIBRARY_QUERY,
+    CATALOG_PRODUCT_OFFER_INDEX_QUERY,
     CATALOG_PRODUCT_LINE_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCT_STYLE_PAGE_QUERY,
     CATALOG_PRODUCTS_QUERY,
     CUSTOMIZATION_CATALOG_PAGE_QUERY,
+    CUSTOMIZATION_COMPATIBILITY_PAGE_QUERY,
     CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
     PRODUCT_CATALOG_PAGE_QUERY,
     PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY,
@@ -27,6 +29,7 @@ import {
     type CatalogOptionDoc,
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
+    type CatalogProductOfferIndexDoc,
     type CatalogProductLineDoc,
     type CatalogStyleRefDoc,
     type SolutionStylesForBreadcrumbDoc,
@@ -36,8 +39,13 @@ import {buildProductLibraryResult} from '@/lib/catalog/build-product-library';
 import {
     prepareRules,
     resolveProductCustomizations,
+    resolveProductOfferIds,
     type PreparedRules,
 } from '@/lib/catalog/customization-rules';
+import type {
+    ProductOfferIndex,
+    ProductOfferIndexEntry,
+} from '@/lib/catalog/product-offer-index';
 import {
     mapSanityCustomizationDetail,
     mapSanityLibraryOption,
@@ -428,6 +436,68 @@ export async function listProductLibrary(): Promise<ProductLibraryResult> {
     return readThrough(fetchSanityProductLibrary, getCachedProductLibrary);
 }
 
+export type {
+    ProductOfferIndex,
+    ProductOfferIndexEntry,
+} from '@/lib/catalog/product-offer-index';
+
+async function fetchSanityProductOfferIndexDocs(): Promise<
+    CatalogProductOfferIndexDoc[]
+> {
+    if (!isSanityConfigured()) return [];
+    try {
+        return (
+            (await (await draftAwareClient()).fetch<CatalogProductOfferIndexDoc[]>(
+                CATALOG_PRODUCT_OFFER_INDEX_QUERY,
+            )) ?? []
+        );
+    } catch (err) {
+        throw sanityReadFailed(
+            '[catalog] Sanity product offer index fetch failed:',
+            err,
+        );
+    }
+}
+
+const getCachedProductOfferIndexDocs = sanityCache(
+    fetchSanityProductOfferIndexDocs,
+    [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}:offer-index`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG, WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+/**
+ * Cached base-offer sets for every listed product (PROD-2921).
+ * Resolves once per cache entry via `resolveForProduct` / own list when rules
+ * are absent — never N+1 PDP fetches.
+ */
+export async function listProductOfferIndex(): Promise<ProductOfferIndex> {
+    const [docs, rules] = await Promise.all([
+        readThrough(fetchSanityProductOfferIndexDocs, getCachedProductOfferIndexDocs),
+        getPreparedRules(),
+    ]);
+    const entries: ProductOfferIndexEntry[] = [];
+    for (const doc of docs) {
+        const slug = doc.slug?.trim();
+        if (!slug || !doc._id) continue;
+        const rulesProduct = doc.rulesProduct ?? null;
+        const baseOfferIds = resolveProductOfferIds(rules, {
+            rulesProduct,
+            productId: doc._id,
+        });
+        entries.push({
+            productId: doc._id,
+            slug,
+            kind: doc.kind?.trim() || null,
+            baseOfferIds,
+            rulesProduct,
+        });
+    }
+    return {entries, hasRules: rules != null, rules};
+}
+
 /**
  * Product library scoped to one line + style for `/products/[line]/[style]`.
  * Standard products only (product-line surfaces). Omits the Product Line facet
@@ -533,6 +603,37 @@ const getCachedCustomizationCatalogPage = sanityCache(
         tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
     },
 );
+
+async function fetchCustomizationCompatibilityPage(): Promise<CatalogIndexPageDoc | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
+            CUSTOMIZATION_COMPATIBILITY_PAGE_QUERY,
+        );
+    } catch (err) {
+        throw sanityReadFailed(
+            '[catalog] Sanity fetchCustomizationCompatibilityPage failed:',
+            err,
+        );
+    }
+}
+
+const getCachedCustomizationCompatibilityPage = sanityCache(
+    fetchCustomizationCompatibilityPage,
+    [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-compatibility-page`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+    },
+);
+
+/** Sections below `/customizations/compatibility` (PROD-2921). Default fixed id only. */
+export async function getCustomizationCompatibilityPage(): Promise<CatalogIndexPageDoc | null> {
+    return readThrough(
+        fetchCustomizationCompatibilityPage,
+        getCachedCustomizationCompatibilityPage,
+    );
+}
 
 /** Sections below the `/customizations` grid (PROD-2599). Default fixed id only. */
 export async function getCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | null> {

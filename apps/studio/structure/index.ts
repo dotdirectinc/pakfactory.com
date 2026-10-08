@@ -1260,6 +1260,15 @@ export const mainWebsiteStructure = (
                                         'Customization Catalog Pages',
                                     ),
                                 ),
+                            S.listItem()
+                                .title('Customization Compatibility Pages')
+                                .icon(ComponentIcon)
+                                .schemaType('customizationCompatibilityPage')
+                                .child(
+                                    S.documentTypeList('customizationCompatibilityPage').title(
+                                        'Customization Compatibility Pages',
+                                    ),
+                                ),
                             // Layout versions — each option with a page selects one.
                             S.listItem()
                                 .title('Customization Detail Pages')

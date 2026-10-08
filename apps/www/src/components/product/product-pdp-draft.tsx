@@ -12,7 +12,12 @@ import {
     type ReactNode,
     type SetStateAction,
 } from 'react';
+import {usePathname} from 'next/navigation';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import {
+    applyCompatibilityQuery,
+    type CompatibilityPreselectNotice,
+} from '@/components/product/compatibility-preselect';
 import {showToastCard} from '@/components/ui/toast-card';
 import type {Product} from '@/lib/catalog/types';
 import {REQUEST_COPY} from '@/lib/copy/request';
@@ -120,6 +125,8 @@ type ProductPdpDraftContextValue = {
     showStickyBar: boolean;
     missingForRequest: MissingRequestField[];
     summaryParts: string[];
+    compatibilityPreselect: CompatibilityPreselectNotice | null;
+    clearCompatibilityPreselect: () => void;
     addVolume: (volume: number) => void;
     removeVolume: (volume: number) => void;
     setContents: (value: string) => void;
@@ -145,6 +152,7 @@ export function ProductPdpDraftProvider({
     children,
 }: ProductPdpDraftProviderProps) {
     const {addLine, draft} = useRequest();
+    const pathname = usePathname();
     const isInspiration = product.kind === 'inspiration';
 
     const [volumes, setVolumes] = useState<number[]>([]);
@@ -157,7 +165,11 @@ export function ProductPdpDraftProvider({
     const [builderState, setBuilderState] = useState<CustomizationBuilderState>(
         () => initialBuilderState(product),
     );
+    const [compatibilityPreselect, setCompatibilityPreselect] =
+        useState<CompatibilityPreselectNotice | null>(null);
+    const baseBuilderStateRef = useRef(initialBuilderState(product));
     const skipProductResetRef = useRef(true);
+    const appliedCompatibilitySearchRef = useRef<string | null>(null);
 
     // Soft-nav between PDPs remounts slowly; reset draft when the product changes.
     useEffect(() => {
@@ -177,8 +189,40 @@ export function ProductPdpDraftProvider({
             }
             return [];
         });
-        setBuilderState(initialBuilderState(product));
+        const next = initialBuilderState(product);
+        baseBuilderStateRef.current = next;
+        setBuilderState(next);
+        setCompatibilityPreselect(null);
+        appliedCompatibilitySearchRef.current = null;
     }, [product.slug]);
+
+    // Works with → PDP: read the browser URL directly so soft-nav into a static
+    // PDP still applies (useSearchParams can stay empty on the first pass).
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const search = window.location.search.startsWith('?')
+            ? window.location.search.slice(1)
+            : window.location.search;
+        if (!search) return;
+        if (appliedCompatibilitySearchRef.current === search) return;
+
+        const result = applyCompatibilityQuery(
+            product,
+            baseBuilderStateRef.current,
+            new URLSearchParams(search),
+        );
+        if (!result) return;
+
+        appliedCompatibilitySearchRef.current = search;
+        setBuilderState(result.state);
+        setCompatibilityPreselect(result.notice);
+    }, [product, pathname]);
+
+    const clearCompatibilityPreselect = useCallback(() => {
+        setCompatibilityPreselect(null);
+        setBuilderState(baseBuilderStateRef.current);
+        appliedCompatibilitySearchRef.current = null;
+    }, []);
 
     const contentsReady = Boolean(contents.trim());
     const ready = volumes.length > 0 && contentsReady;
@@ -225,7 +269,10 @@ export function ProductPdpDraftProvider({
         setDetailsOptIn(false);
         setNotes('');
         setReferenceImages([]);
-        setBuilderState(initialBuilderState(product));
+        const next = initialBuilderState(product);
+        baseBuilderStateRef.current = next;
+        setBuilderState(next);
+        setCompatibilityPreselect(null);
     }, [product, referenceImages]);
 
     const handleAdd = useCallback(() => {
@@ -316,6 +363,8 @@ export function ProductPdpDraftProvider({
             showStickyBar,
             missingForRequest,
             summaryParts,
+            compatibilityPreselect,
+            clearCompatibilityPreselect,
             addVolume,
             removeVolume,
             setContents,
@@ -339,6 +388,8 @@ export function ProductPdpDraftProvider({
             showStickyBar,
             missingForRequest,
             summaryParts,
+            compatibilityPreselect,
+            clearCompatibilityPreselect,
             addVolume,
             removeVolume,
             resetDraft,

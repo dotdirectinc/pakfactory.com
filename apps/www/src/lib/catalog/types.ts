@@ -575,6 +575,8 @@ export type CustomizationDetail = {
     media: CatalogMedia[];
     /** Playable MP4/MOV from Studio Featured video; YouTube yields null. */
     featuredVideoUrl?: string | null;
+    /** Playable lifestyle video from Studio lifestyleVideos[0]; YouTube yields null. */
+    lifestyleVideoUrl?: string | null;
     /** Optional Specs PDF — when set, config rail shows Download spec sheet. */
     specSheetUrl?: string | null;
     /**

@@ -44,6 +44,24 @@ export function customizationCategoryHref(
     return `${WWW_ROUTES.customizations}/${category}/${slug}`;
 }
 
+/** Canonical multi-option compatibility engine (PROD-2921). */
+export function customizationCompatibilityHref(query = ''): string {
+    const base = `${WWW_ROUTES.customizations}/compatibility`;
+    const qs = query.replace(/^\?/, '');
+    return qs ? `${base}?${qs}` : base;
+}
+
+/** Single-option entry into the compatibility view (PROD-2921). */
+export function customizationCompatibleHref(
+    category: string,
+    handle: string,
+    query = '',
+): string {
+    const base = `${WWW_ROUTES.customizations}/${category}/${handle}/compatible`;
+    const qs = query.replace(/^\?/, '');
+    return qs ? `${base}?${qs}` : base;
+}
+
 export function solutionHref(slug: string): string {
     return `${WWW_ROUTES.solutions}/${slug}`;
 }

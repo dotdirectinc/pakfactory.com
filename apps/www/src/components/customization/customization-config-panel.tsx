@@ -1,15 +1,16 @@
 'use client';
 
 import {useMemo, useState, type MouseEvent} from 'react';
-import Link from 'next/link';
 import {Bookmark, Download} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
+import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
 import {
     initialPropertySelection,
     OptionPropertyControllers,
     type PropertySelectionMap,
 } from '@/components/customization/option-property-controllers';
+import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
 import {Icon} from '@/components/ui/icon';
 import {StatusNotice} from '@/components/ui/status-badge';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
@@ -53,7 +54,6 @@ export function CustomizationConfigPanel({
         return parts.join(' · ');
     }, [fields, selection]);
 
-    const customizeHref = `${WWW_ROUTES.products}?customize=${encodeURIComponent(detail.categoryValue)}/${encodeURIComponent(detail.slug)}`;
     const specSheetUrl = detail.specSheetUrl?.trim() || null;
 
     const setPropertyValue = (propertyKey: string, ids: string[]) => {
@@ -114,9 +114,11 @@ export function CustomizationConfigPanel({
             {showOrderCtas ? (
                 <div className="flex flex-col gap-2">
                     <Button asChild className="h-auto w-full px-6 py-3 text-base">
-                        <Link href={customizeHref}>
-                            Choose a packaging item to customize
-                        </Link>
+                        <InPageAnchorLink
+                            href={`#${CUSTOMIZATION_REFERENCE_WORKS_WITH_ID}`}
+                        >
+                            Apply to a product
+                        </InPageAnchorLink>
                     </Button>
                     <Button
                         type="button"

@@ -15,65 +15,64 @@ export const CUSTOMIZATION_REFERENCE_SPECS_ID =
 export {buildReferenceSpecRows, CUSTOMIZATION_COMPARISON_ID} from '@/lib/catalog/compare-matrix';
 export type {ReferenceSpecRow} from '@/lib/catalog/compare-matrix';
 
-type CustomizationReferenceSpecsProps = {
+type CustomizationReferenceSpecsContentProps = {
     detail: CustomizationDetail;
     compareLabel: string;
     className?: string;
 };
 
 /**
- * Material Reference — Specs & performance subsection (PROD-1299).
- * Content-only; parent band owns the dieline shell.
+ * Specs & performance content block (PROD-1299) — used inside the shared
+ * Benefits/Specs band. Keeps the scroll anchor for AnchorNav.
  */
-export function CustomizationReferenceSpecs({
+export function CustomizationReferenceSpecsContent({
     detail,
     compareLabel,
     className,
-}: CustomizationReferenceSpecsProps) {
+}: CustomizationReferenceSpecsContentProps) {
     const rows = buildReferenceSpecRows(detail);
     if (rows.length === 0) return null;
 
     const compareHref = `#${CUSTOMIZATION_COMPARISON_ID}`;
 
     return (
-        <section
+        <div
             id={CUSTOMIZATION_REFERENCE_SPECS_ID}
-            className={cn(
-                'scroll-mt-32 border-b border-dashed border-border py-16 sm:py-20',
-                className,
-            )}
+            className={cn('scroll-mt-32', className)}
         >
             <h3 className="text-base font-semibold text-foreground sm:text-lg">
                 Specs &amp; performance
             </h3>
 
-            <div className="mt-8 border-t border-dashed border-border">
-                <dl>
-                    {rows.map((row) => (
-                        <div
-                            key={row.label}
-                            className="flex flex-col gap-1 border-b border-dashed border-border py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-8"
-                        >
-                            <dt className="shrink-0 text-sm text-muted-foreground">
-                                {row.label}
-                            </dt>
-                            <dd className="min-w-0 text-sm font-semibold text-foreground sm:text-right">
-                                {row.value}
-                            </dd>
-                        </div>
-                    ))}
-                </dl>
-            </div>
+            <dl className="mt-8 border-t border-border">
+                {rows.map((row) => (
+                    <div
+                        key={row.label}
+                        className="grid grid-cols-[40%_1fr] items-baseline gap-4 border-b border-border py-4"
+                    >
+                        <dt className="text-sm text-muted-foreground">
+                            {row.label}
+                        </dt>
+                        <dd className="min-w-0 text-right text-sm font-semibold text-foreground">
+                            {row.value}
+                        </dd>
+                    </div>
+                ))}
+            </dl>
 
             <div className="mt-8">
-                <Button asChild variant="link" className="h-auto gap-2 px-0 has-[>svg]:px-0">
+                <Button
+                    asChild
+                    variant="link"
+                    className="h-auto gap-2 px-0 has-[>svg]:px-0"
+                >
                     <Link href={compareHref}>
                         {compareLabel}
                         <Icon icon={ChevronDown} size="sm" />
                     </Link>
                 </Button>
             </div>
-        </section>
+        </div>
     );
 }
 

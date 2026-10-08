@@ -4,13 +4,13 @@ import {
 } from '@portabletext/react';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
-import {SanityImage} from '@/components/ui/sanity-image';
+import {SectionHeading} from '@/components/ui/section-heading';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 
 export const CUSTOMIZATION_REFERENCE_OVERVIEW_ID =
     'customization-reference-overview';
 
-type CustomizationReferenceOverviewProps = {
+type CustomizationReferenceBenefitsContentProps = {
     detail: CustomizationDetail;
     className?: string;
 };
@@ -60,56 +60,42 @@ const benefitsBodyComponents: PortableTextComponents = {
 };
 
 /**
- * Material / Finish Reference — Overview (PROD-1299).
- * Studio Benefits title + portable text body; optional hero media.
+ * Benefits content block (PROD-1299) — used inside the shared Benefits/Specs band.
+ * Hierarchy: SectionHeading Benefits (h2) → benefitsTitle (h3) → body.
  */
-export function CustomizationReferenceOverview({
+export function CustomizationReferenceBenefitsContent({
     detail,
     className,
-}: CustomizationReferenceOverviewProps) {
-    const hero = detail.media.find((m) => Boolean(m.src));
-    const title = detail.benefitsTitle?.trim();
+}: CustomizationReferenceBenefitsContentProps) {
+    const benefitsTitle = detail.benefitsTitle?.trim() || '';
     const body = detail.benefitsBody;
-    const hasBenefits = Boolean(title || (body && body.length > 0));
-    if (!hasBenefits) return null;
+    if (!hasReferenceOverview(detail)) return null;
 
     return (
-        <section
+        <div
             id={CUSTOMIZATION_REFERENCE_OVERVIEW_ID}
-            className={cn(
-                'scroll-mt-32 border-b border-dashed border-border py-16 sm:py-20',
-                className,
-            )}
+            className={cn('scroll-mt-32', className)}
         >
-            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-                <div className="flex flex-col gap-4">
-                    {title ? (
-                        <h3 className="text-base font-semibold text-foreground sm:text-lg">
-                            {title}
-                        </h3>
-                    ) : null}
-                    {body && body.length > 0 ? (
-                        <div className="text-base">
-                            <PortableText
-                                value={body}
-                                components={benefitsBodyComponents}
-                            />
-                        </div>
-                    ) : null}
-                </div>
-                {hero?.src ? (
-                    <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl bg-muted">
-                        <SanityImage
-                            src={hero.src}
-                            alt={hero.alt || detail.title}
-                            fill
-                            sizes="(max-width: 1024px) 100vw, 40vw"
-                            className="object-cover"
+            <SectionHeading
+                title="Benefits"
+                className="[&>div]:md:max-w-none"
+            />
+            <div className="mt-12 flex min-w-0 flex-col gap-6">
+                {benefitsTitle ? (
+                    <h3 className="text-base font-semibold text-foreground sm:text-lg">
+                        {benefitsTitle}
+                    </h3>
+                ) : null}
+                {body && body.length > 0 ? (
+                    <div className="text-base">
+                        <PortableText
+                            value={body}
+                            components={benefitsBodyComponents}
                         />
                     </div>
                 ) : null}
             </div>
-        </section>
+        </div>
     );
 }
 

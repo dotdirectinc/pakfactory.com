@@ -269,6 +269,18 @@ export const siteLocations: DocumentLocationResolvers = {
     }),
   }),
 
+  customizationCompatibilityPage: defineLocations({
+    select: { title: 'title' },
+    resolve: (doc) => ({
+      locations: [
+        {
+          title: doc?.title || 'Compatibility',
+          href: '/customizations/compatibility',
+        },
+      ],
+    }),
+  }),
+
   productStylePage: defineLocations({
     select: { title: 'title' },
     resolve: (doc) => ({

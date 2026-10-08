@@ -2,6 +2,7 @@
 
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {AddToRequestButton} from '@/components/product/add-to-request-button';
+import {CompatibilityPreselectBanner} from '@/components/product/compatibility-preselect';
 import {ContentsField} from '@/components/product/contents-field';
 import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
@@ -23,6 +24,8 @@ export function ProductRequestRail() {
         builderState,
         draftId,
         ready,
+        compatibilityPreselect,
+        clearCompatibilityPreselect,
         addVolume,
         removeVolume,
         setContents,
@@ -36,6 +39,10 @@ export function ProductRequestRail() {
 
     return (
         <div className="mt-8 space-y-6">
+            <CompatibilityPreselectBanner
+                notice={compatibilityPreselect}
+                onClear={clearCompatibilityPreselect}
+            />
             <section className="rounded-2xl bg-muted p-6">
                 <h2 className="text-base font-semibold text-brand-blue">
                     {REQUEST_COPY.quantityLabel}

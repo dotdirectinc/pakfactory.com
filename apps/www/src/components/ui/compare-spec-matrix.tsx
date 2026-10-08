@@ -35,10 +35,13 @@ export function CompareSpecMatrix({
                 <div
                     key={row.key}
                     id={`compare-row-${row.key}`}
-                    className="scroll-mt-32 border-b border-dashed border-border"
+                    className="scroll-mt-32"
                     role="row"
                 >
-                    <div className="px-4 py-8" role="rowheader">
+                    <div
+                        className="border-b border-border px-4 pb-4 pt-8"
+                        role="rowheader"
+                    >
                         <p className="text-xl font-semibold leading-7 text-foreground">
                             {row.label}
                         </p>
@@ -67,16 +70,10 @@ export function CompareSpecMatrix({
                                     }
                                     role="cell"
                                     className={cn(
-                                        'min-w-0 px-4 py-2 text-base font-medium leading-6 text-muted-foreground',
+                                        'min-w-0 px-4 pb-8 pt-4 text-base font-medium leading-6 text-muted-foreground',
                                         columnCount >= 3 &&
                                             i === 2 &&
                                             'hidden md:block',
-                                        i === 0 &&
-                                            columnCount > 1 &&
-                                            'border-r border-dashed border-border',
-                                        i === 1 &&
-                                            columnCount >= 3 &&
-                                            'border-border md:border-r md:border-dashed',
                                     )}
                                     {...(isEmpty
                                         ? {

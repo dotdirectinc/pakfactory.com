@@ -55,6 +55,9 @@ export const FEATURED_VIDEO_URL_FROM_CATALOG = /* groq */ `"featuredVideoUrl": c
   )
 )`;
 
+/** First playable lifestyle video (CDP Benefits/Specs sticky media). */
+export const LIFESTYLE_VIDEO_URL_FROM_CATALOG = /* groq */ `"lifestyleVideoUrl": ${catalogVideoUrlGroq('lifestyleVideos[0]')}`;
+
 /** Full media arrays for gallery / hover (product + lifestyle). */
 export const CATALOG_MEDIA_ARRAYS = /* groq */ `
   images[]${CATALOG_IMAGE_PROJ},
@@ -75,6 +78,7 @@ export const CATALOG_MEDIA_ARRAYS = /* groq */ `
   },
   ${FEATURED_IMAGE_FROM_CATALOG},
   ${FEATURED_VIDEO_URL_FROM_CATALOG},
+  ${LIFESTYLE_VIDEO_URL_FROM_CATALOG},
   "media": select(
     count(images) > 0 => images[]${CATALOG_IMAGE_PROJ},
     media[]${CATALOG_IMAGE_PROJ}
@@ -93,7 +97,8 @@ export const OPTION_MEDIA_FIELDS = /* groq */ `
   ),
   images[]${CATALOG_IMAGE_PROJ},
   lifestyleImages[]${CATALOG_IMAGE_PROJ},
-  ${FEATURED_VIDEO_URL_FROM_CATALOG}
+  ${FEATURED_VIDEO_URL_FROM_CATALOG},
+  ${LIFESTYLE_VIDEO_URL_FROM_CATALOG}
 `;
 
 /** Card / section `imageSrc` from primary product still (legacy coalesce). */

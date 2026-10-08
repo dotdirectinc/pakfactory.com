@@ -65,6 +65,29 @@ function catalogMediaFromImage(
     return {src, alt: resolveImageAlt(image, titleFallback)};
 }
 
+function isPrimaryCatalogImage(item: unknown): boolean {
+    return Boolean(
+        item &&
+            typeof item === 'object' &&
+            'primary' in item &&
+            (item as {primary?: unknown}).primary === true,
+    );
+}
+
+/** Lifestyle stills: primary first, then Studio order. */
+function lifestyleImagesPrimaryFirst(
+    items: unknown[] | null | undefined,
+): unknown[] {
+    if (!Array.isArray(items) || items.length === 0) return [];
+    const primary: unknown[] = [];
+    const rest: unknown[] = [];
+    for (const item of items) {
+        if (isPrimaryCatalogImage(item)) primary.push(item);
+        else rest.push(item);
+    }
+    return [...primary, ...rest];
+}
+
 function pushGallerySlides(
     slides: CatalogMedia[],
     seen: Set<string>,
@@ -73,7 +96,9 @@ function pushGallerySlides(
     kind: 'product' | 'lifestyle',
 ) {
     if (!Array.isArray(items)) return;
-    for (const item of items) {
+    const ordered =
+        kind === 'lifestyle' ? lifestyleImagesPrimaryFirst(items) : items;
+    for (const item of ordered) {
         const slide = catalogMediaFromImage(item, titleFallback);
         if (!slide?.src || seen.has(slide.src)) continue;
         seen.add(slide.src);
@@ -1214,6 +1239,9 @@ export function mapSanityCustomizationDetail(
         media,
         ...(doc.featuredVideoUrl?.trim()
             ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
+            : {}),
+        ...(doc.lifestyleVideoUrl?.trim()
+            ? {lifestyleVideoUrl: doc.lifestyleVideoUrl.trim()}
             : {}),
         ...(specSheetUrl ? {specSheetUrl} : {}),
         showcaseSolutions,

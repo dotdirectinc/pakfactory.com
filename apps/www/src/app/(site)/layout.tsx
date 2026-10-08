@@ -25,15 +25,16 @@ export default async function SiteLayout({children}: {children: ReactNode}) {
   const accountLink = buildSiteNavProps({authenticated: true, chrome}).signIn;
   const footer = mapWwwFooterFromChrome(chrome);
 
+  // Wrapper + inline script stay outside `RequestRoot` (a client boundary).
+  // React 19 rejects `<script>` when a client parent re-renders it.
   return (
-    <RequestRoot>
-      {/* `contents`: no box, so the header lays out exactly as before. */}
-      <div
-        id={NAV_SESSION_WRAPPER_ID}
-        className="contents"
-        suppressHydrationWarning
-      >
-        <script dangerouslySetInnerHTML={{__html: NAV_SESSION_FLAG_SCRIPT}} />
+    <div
+      id={NAV_SESSION_WRAPPER_ID}
+      className="contents"
+      suppressHydrationWarning
+    >
+      <script dangerouslySetInnerHTML={{__html: NAV_SESSION_FLAG_SCRIPT}} />
+      <RequestRoot>
         <SiteNavRequestSlot
           homeHref={nav.homeHref}
           navItems={nav.items}
@@ -41,14 +42,14 @@ export default async function SiteLayout({children}: {children: ReactNode}) {
           signIn={nav.signIn}
           accountLink={accountLink}
         />
-      </div>
-      {children}
-      <SiteFooter
-        columns={footer.columns}
-        social={footer.social}
-        aiLinks={footer.aiLinks}
-        wordmark={<FooterWordmark />}
-      />
-    </RequestRoot>
+        {children}
+        <SiteFooter
+          columns={footer.columns}
+          social={footer.social}
+          aiLinks={footer.aiLinks}
+          wordmark={<FooterWordmark />}
+        />
+      </RequestRoot>
+    </div>
   );
 }
