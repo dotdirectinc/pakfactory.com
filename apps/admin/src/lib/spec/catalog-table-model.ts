@@ -69,7 +69,8 @@ export const SPECS: Record<TableKey, TableSpec> = {
 
 export const isTableKey = (k: string | undefined): k is TableKey => Boolean(k && k in SPECS);
 
-export type CatalogColumn = { key: string; label: string };
+/** `numeric`: every value present is a number — right-aligned, sorted as numbers. */
+export type CatalogColumn = { key: string; label: string; numeric?: boolean };
 export type CatalogRow = {
   id: string;
   href: string | null;
@@ -89,7 +90,7 @@ export type CatalogTable = {
 };
 
 /** Never offered as columns: internal or covered elsewhere (the image column, the row link). */
-export const HIDDEN = new Set(["_id", "_type", "_rev", "_image", "images", "lifestyleImages", "videos", "orderRank"]);
+export const HIDDEN = new Set(["_id", "_type", "_rev", "_system", "_image", "images", "lifestyleImages", "videos", "orderRank"]);
 
 const LABELS: Record<string, string> = {
   title: "Name",
@@ -98,8 +99,8 @@ const LABELS: Record<string, string> = {
   moq: "MOQ",
   sku: "SKU",
   h1: "H1",
-  leadTimeBusinessDaysMin: "Lead time min (business days)",
-  leadTimeBusinessDaysMax: "Lead time max (business days)",
+  leadTimeBusinessDaysMin: "Lead time min (days)",
+  leadTimeBusinessDaysMax: "Lead time max (days)",
   _createdAt: "Created",
   _updatedAt: "Last updated",
   basedOn: "Based on",
@@ -130,6 +131,9 @@ const blockText = (blocks: unknown[]) =>
     .filter(Boolean)
     .join(" ");
 
+/** A reference to a document that is not published (draft-only or deleted). */
+const UNPUBLISHED = "(not published)";
+
 /** A field's value as one display cell. */
 export function cellOf(v: unknown, names: Map<string, string>): string | number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -140,7 +144,7 @@ export function cellOf(v: unknown, names: Map<string, string>): string | number 
   if (Array.isArray(v)) {
     if (!v.length) return null;
     if (isObj(v[0]) && v[0]._type === "block") return blockText(v).slice(0, 300) || null;
-    if (v.every((x) => isObj(x) && typeof x._ref === "string")) return v.map((x) => names.get(String((x as { _ref: string })._ref)) ?? "?").join(", ");
+    if (v.every((x) => isObj(x) && typeof x._ref === "string")) return v.map((x) => names.get(String((x as { _ref: string })._ref)) ?? UNPUBLISHED).join(", ");
     if (v.every((x) => typeof x !== "object")) return v.join(", ");
     // Objects (properties, availability rows…): what they reference, else how many there are.
     const refs = new Set<string>();
@@ -149,7 +153,7 @@ export function cellOf(v: unknown, names: Map<string, string>): string | number 
     return titled.length ? titled.join(", ") : `${v.length} ${v.length === 1 ? "entry" : "entries"}`;
   }
   if (isObj(v)) {
-    if (typeof v._ref === "string") return names.get(v._ref) ?? "?";
+    if (typeof v._ref === "string") return names.get(v._ref) ?? UNPUBLISHED;
     if (v._type === "slug") return typeof v.current === "string" ? v.current : null;
     const refs = new Set<string>();
     collectRefs(v, refs);
@@ -175,6 +179,10 @@ export function buildCatalogTable(key: TableKey, docs: Doc[], names: Map<string,
     cells: Object.fromEntries(columns.map((c) => [c.key, cellOf(d[c.key], names)])),
   }));
   rows.sort((a, b) => String(a.cells.title ?? "").localeCompare(String(b.cells.title ?? "")));
+  for (const c of columns) {
+    const present = rows.map((r) => r.cells[c.key]).filter((v) => v !== null && v !== undefined);
+    if (present.length && present.every((v) => typeof v === "number")) (c as CatalogColumn).numeric = true;
+  }
   return {
     key, dataset, columns, rows, hasImages: Boolean(spec.hasImages), parent: spec.parent ?? null,
     defaults: ["title", ...spec.defaults].filter((f) => columns.some((c) => c.key === f)),

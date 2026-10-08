@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { TABLE_GROUPS, getCatalogTable, isTableKey } from "@/lib/spec/catalog-tables";
 import { SpecCatalogTable } from "@/components/spec/spec-catalog-table";
-import { SpecCatalogLevelSelect } from "@/components/spec/spec-catalog-level-select";
+import { SpecCatalogNav } from "@/components/spec/spec-catalog-nav";
 import { ADMIN_SPEC_TABLES_COPY as COPY } from "@/lib/copy/spec";
 
 export const metadata = { title: "Catalog tables" };
@@ -16,27 +15,13 @@ export default async function SpecCatalogPage({ searchParams }: { searchParams: 
   const res = await getCatalogTable(level);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">{COPY.title}</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">{COPY.lead}</p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label={COPY.title} className="flex gap-1 rounded-md border border-border p-1">
-          {TABLE_GROUPS.map((g) => (
-            <Link
-              key={g.key}
-              href={`/spec/catalog?group=${g.key}`}
-              aria-current={g.key === group.key ? "page" : undefined}
-              className={`rounded px-3 py-1.5 text-sm ${g.key === group.key ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {g.label}
-            </Link>
-          ))}
-        </nav>
-        <SpecCatalogLevelSelect group={group} level={level} label={COPY.level} />
-      </div>
+      <SpecCatalogNav groups={TABLE_GROUPS} group={group} level={level} />
 
       {res.ok ? (
         <>
