@@ -348,6 +348,19 @@ export const MIGRATIONS = [
     // a run there is a clean no-op; `development` holds 10 of 12.
     probe: `count(*[_type == "property" && defined(valuesPerItem)]) == 0`,
   },
+  {
+    id: '20261008-images-to-media',
+    ticket: 'PROD-2926',
+    title: 'Copy legacy images into the Media field on products and customization options',
+    pkg: '@pakfactory/sanity',
+    task: 'migrate:images-to-media',
+    script: 'packages/sanity/scripts/migrate-images-to-media.ts',
+    args: 'flags',
+    // A copy, not a move: `images` stays, so "the old key is gone" cannot be the probe.
+    // What stays true once run is that no product or option holds legacy images with an
+    // empty Media field — editors only ever add to Media.
+    probe: `count(*[_type in ["product", "customizationOption"] && count(images) > 0 && !(count(media) > 0)]) == 0`,
+  },
 ]
 
 /**
