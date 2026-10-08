@@ -17,6 +17,7 @@ import {
     stubCompareAction,
 } from '@/lib/catalog-card-actions';
 import {displayProductSku} from '@/lib/catalog/display-sku';
+import {Badge} from '@pakfactory/ui/components/badge';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 export type ProductCardImage = {
@@ -37,14 +38,21 @@ export type ProductCardData = {
     leadTime?: string;
     /** Coming soon shows a badge on the image; listings never carry discontinued. */
     status?: CatalogLifecycle;
+    /** Compatibility / match badge on the media (PROD-2921). */
+    mediaBadgeLabel?: string;
+    /** Short support line under the title (partial matches). */
+    supportNote?: string;
 };
-
 type ProductCardProps = {
     data: ProductCardData;
     /** Above-fold catalog tiles — LCP candidates. */
     priority?: boolean;
     /** Catalog grid passes false; detail/related rails keep watermark. */
     applyWatermark?: boolean;
+    /**
+     * `elevated` — white media well on a muted band (`MediaCardFrame` surface).
+     */
+    surface?: 'default' | 'elevated';
 };
 
 function resolveGallery(data: ProductCardData): ProductCardImage[] {
@@ -76,10 +84,12 @@ export function ProductCard({
     data,
     priority = false,
     applyWatermark = true,
+    surface = 'default',
 }: ProductCardProps) {
     // Missing SKU shows "-" — never fall back to slug or style/line title.
-    const slugFromHref =
-        data.href.split('/').filter(Boolean).pop() ?? '';
+    // Strip ?query so compatibility handoff hrefs don't pollute the slug.
+    const pathOnly = data.href.split('?')[0] ?? '';
+    const slugFromHref = pathOnly.split('/').filter(Boolean).pop() ?? '';
     const eyebrow = displayProductSku(data.sku, slugFromHref).toUpperCase();
     const [saved, setSaved] = useState(false);
     const [prefetch, setPrefetch] = useState(false);
@@ -137,11 +147,19 @@ export function ProductCard({
 
     return (
         <MediaCardFrame
+            surface={surface}
             bookmarkPressed={saved}
             media={media}
             mediaOverlay={mediaOverlay}
             statusBadge={
-                data.status && data.status !== 'active' ? (
+                data.mediaBadgeLabel ? (
+                    <Badge
+                        variant="secondary"
+                        className="pointer-events-none shadow-sm"
+                    >
+                        {data.mediaBadgeLabel}
+                    </Badge>
+                ) : data.status && data.status !== 'active' ? (
                     <StatusBadge status={data.status} />
                 ) : undefined
             }
@@ -195,6 +213,11 @@ export function ProductCard({
                     >
                         <ProductCardTitlePending title={data.title} />
                     </Link>
+                    {data.supportNote ? (
+                        <p className="text-xs text-muted-foreground">
+                            {data.supportNote}
+                        </p>
+                    ) : null}
                 </div>
             }
         />

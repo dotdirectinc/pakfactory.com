@@ -40,7 +40,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "caseStudy", "listingPage", "client",
  *     "solution", "solutionIndustryPage", "solutionStyle", "solutionStylePage", "productLine", "productLinePage", "expertiseStage", "expertiseStagePage", "expertiseService", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
- *     "productCatalogPage", "productStylePage", "productDetailPage", "customizationCatalogPage", "customizationDetailPage",
+ *     "productCatalogPage", "productStylePage", "productDetailPage", "customizationCatalogPage", "customizationCompatibilityPage", "customizationDetailPage",
  *     "faq", "websiteNavigation", "settings"
  *   ]
  *
@@ -201,6 +201,7 @@ export async function POST(request: Request) {
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
     type === FAQ_TYPE ||
     type === "customizationCatalogPage" ||
+    type === "customizationCompatibilityPage" ||
     type === "customizationDetailPage";
   if (touchesCustomizations) {
     tags.add(WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG);
@@ -209,6 +210,8 @@ export async function POST(request: Request) {
     tags.add(WWW_CATALOG_LINES_CACHE_TAG);
     revalidatePath("/customizations");
     revalidated.push("/customizations");
+    revalidatePath("/customizations/compatibility");
+    revalidated.push("/customizations/compatibility");
     revalidatePath("/customizations/[category]", "page");
     revalidatePath("/customizations/[category]/[handle]", "page");
     revalidated.push(

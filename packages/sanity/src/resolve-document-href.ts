@@ -63,6 +63,7 @@ const PAGE_SINGLETON_ID_PATHS: Record<string, string> = {
   productsPage: "/products",
   productCatalogPage: "/products",
   customizationCatalogPage: "/customizations",
+  customizationCompatibilityPage: "/customizations/compatibility",
   expertisePage: "/expertise",
 };
 
@@ -160,6 +161,7 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
     case "legalPage":
     case "productCatalogPage":
     case "customizationCatalogPage":
+    case "customizationCompatibilityPage":
       return idPath ?? null;
     case "contentPage":
       // Semantic-id singletons (about/contact/search/404) first, else by slug.

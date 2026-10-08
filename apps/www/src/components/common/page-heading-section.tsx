@@ -397,6 +397,11 @@ export type PageHeadingMedia = {
 type PageHeadingWithMediaProps = PageHeadingSectionProps & {
     /** Larger featured image beside the heading (catalogue / collection pages). */
     media?: PageHeadingMedia | null;
+    /**
+     * Custom media column (e.g. collage). When set, replaces `media` /
+     * placeholder. Prefer a square (`aspect-square`) root inside.
+     */
+    mediaContent?: ReactNode;
 };
 
 /**
@@ -406,9 +411,11 @@ type PageHeadingWithMediaProps = PageHeadingSectionProps & {
  * Always keeps a media column (lg+: text ~55% / media ~45%). Real image when
  * `media.src` is set; otherwise {@link ImagePlaceholder}. Image bleeds and crops
  * against the top, bottom, and right of the heading band.
+ * Pass `mediaContent` for composed media (compatibility collage).
  */
 export function PageHeadingWithMedia({
     media,
+    mediaContent,
     borderBottom = true,
     className,
     innerClassName,
@@ -417,6 +424,7 @@ export function PageHeadingWithMedia({
 }: PageHeadingWithMediaProps) {
     const mediaSrc = media?.src?.trim() || '';
     const hasSrc = Boolean(mediaSrc);
+    const useCustomMedia = mediaContent != null;
 
     return (
         <PageDielineSection
@@ -429,8 +437,18 @@ export function PageHeadingWithMedia({
                 <div className="min-w-0 py-20 sm:py-24 lg:w-[55%] lg:shrink-0 lg:py-28 lg:pr-12">
                     <PageHeadingContent variant={variant} {...contentProps} />
                 </div>
-                <div className="relative aspect-4/3 w-full overflow-hidden rounded-lg lg:aspect-auto lg:min-h-72 lg:w-[45%] lg:rounded-none lg:-mr-layout-gutter-inner">
-                    {hasSrc ? (
+                <div
+                    className={cn(
+                        'relative w-full overflow-hidden rounded-lg lg:rounded-none lg:-mr-layout-gutter-inner',
+                        'lg:w-[calc(45%+var(--layout-gutter-inner))]',
+                        useCustomMedia
+                            ? 'aspect-square'
+                            : 'aspect-4/3 lg:aspect-auto lg:min-h-72',
+                    )}
+                >
+                    {useCustomMedia ? (
+                        mediaContent
+                    ) : hasSrc ? (
                         <Image
                             src={mediaSrc}
                             alt={media?.alt ?? ''}

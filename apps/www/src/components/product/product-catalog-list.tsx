@@ -18,10 +18,11 @@ const CATALOG_GRID_CLASS =
 
 export function toProductLibraryCardData(
     item: ProductLibraryItem,
+    href = productHref(item.slug),
 ): ProductCardData {
     return {
         title: item.title,
-        href: productHref(item.slug),
+        href,
         sku: item.sku,
         eyebrowLabel: item.productStyle.title ?? item.productLine.title,
         imageUrl: item.imageUrl ?? null,
@@ -47,19 +48,37 @@ function buildGridCells(
     return cells;
 }
 
+export type ProductCatalogCardMeta = {
+    badge?: string | null;
+    note?: string | null;
+};
+
 type ProductCatalogListProps = {
     items: ProductLibraryItem[];
     /** When set, spliced at the first grid spot. */
     lineEntry?: ProductLibraryLineMeta | null;
     emptyMessage?: string;
+    /**
+     * Query string (no `?`) appended to product card hrefs — serializable for
+     * RSC → client (compatibility handoff).
+     */
+    productHrefQuery?: string;
+    /** Per-product badge / note keyed by `_id` (serializable). */
+    cardMetaByProductId?: Record<string, ProductCatalogCardMeta>;
 };
 
 export function ProductCatalogList({
     items,
     lineEntry = null,
     emptyMessage = 'No products match these filters. Reset or broaden search.',
+    productHrefQuery,
+    cardMetaByProductId,
 }: ProductCatalogListProps) {
     const cells = buildGridCells(items, lineEntry);
+    const hrefFor = (slug: string) => {
+        const base = productHref(slug);
+        return productHrefQuery ? `${base}?${productHrefQuery}` : base;
+    };
 
     if (cells.length === 0) {
         return (
@@ -71,29 +90,49 @@ export function ProductCatalogList({
 
     return (
         <div className={CATALOG_GRID_CLASS}>
-            {cells.map((cell, index) =>
-                cell.kind === 'line' ? (
-                    <div
-                        key={`line-entry-${cell.line.slug}`}
-                        className="min-h-0 h-full"
-                    >
-                        <CatalogEntryCard
-                            title={cell.line.title}
-                            href={productHref(cell.line.slug)}
-                            imageUrl={cell.line.imageUrl}
-                            imageAlt={cell.line.imageAlt ?? cell.line.title}
-                        />
-                    </div>
-                ) : (
+            {cells.map((cell, index) => {
+                if (cell.kind === 'line') {
+                    return (
+                        <div
+                            key={`line-entry-${cell.line.slug}`}
+                            className="min-h-0 h-full"
+                        >
+                            <CatalogEntryCard
+                                title={cell.line.title}
+                                href={productHref(cell.line.slug)}
+                                imageUrl={cell.line.imageUrl}
+                                imageAlt={cell.line.imageAlt ?? cell.line.title}
+                            />
+                        </div>
+                    );
+                }
+                const meta = cardMetaByProductId?.[cell.item._id];
+                return (
                     <div key={cell.item._id} className="min-h-0 h-full">
                         <ProductCard
-                            data={toProductLibraryCardData(cell.item)}
+                            data={{
+                                ...toProductLibraryCardData(
+                                    cell.item,
+                                    hrefFor(cell.item.slug),
+                                ),
+                                ...(meta?.badge
+                                    ? {
+                                          mediaBadgeLabel:
+                                              meta.badge ?? undefined,
+                                      }
+                                    : {}),
+                                ...(meta?.note
+                                    ? {
+                                          supportNote: meta.note ?? undefined,
+                                      }
+                                    : {}),
+                            }}
                             priority={index < 4}
                             applyWatermark={false}
                         />
                     </div>
-                ),
-            )}
+                );
+            })}
         </div>
     );
 }

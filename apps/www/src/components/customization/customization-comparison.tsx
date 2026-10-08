@@ -221,7 +221,7 @@ export function CustomizationComparison({
             id={CUSTOMIZATION_COMPARISON_ID}
             className={cn('scroll-mt-32', className)}
         >
-            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
+            <PageDielineSection borderBottom innerClassName="py-16 sm:py-20">
                 <SectionHeading
                     eyebrow="Comparison"
                     title="How it stacks up"

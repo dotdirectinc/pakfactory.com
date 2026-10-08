@@ -1,7 +1,12 @@
+import type {ReactNode} from 'react';
+
 import {
     ProductCatalogPageChrome,
 } from '@/components/product/product-catalog-page-loading';
-import {ProductCatalogPanel} from '@/components/product/product-catalog-panel';
+import {
+    ProductCatalogPanel,
+    type ProductCatalogPanelProps,
+} from '@/components/product/product-catalog-panel';
 import {packProductLibrary} from '@/lib/catalog/library-wire';
 import type {ProductLibraryResult} from '@/lib/catalog/types';
 
@@ -20,6 +25,13 @@ type ProductCatalogViewProps = {
     hideCatalogBorderTop?: boolean;
     heading?: string | null;
     intro?: string | null;
+    emptyMessage?: string;
+    productHrefQuery?: ProductCatalogPanelProps['productHrefQuery'];
+    cardMetaByProductId?: ProductCatalogPanelProps['cardMetaByProductId'];
+    /** Leading controls on the sticky search strip (e.g. Category filters). */
+    toolbarStart?: ReactNode;
+    /** Trailing control beside Search products (e.g. Copy link). */
+    toolbarEnd?: ReactNode;
 };
 
 /** Faceted products library at `/products` (PROD-1845). */
@@ -30,6 +42,11 @@ export function ProductCatalogView({
     hideCatalogBorderTop = false,
     heading,
     intro,
+    emptyMessage,
+    productHrefQuery,
+    cardMetaByProductId,
+    toolbarStart,
+    toolbarEnd,
 }: ProductCatalogViewProps) {
     return (
         <>
@@ -53,6 +70,11 @@ export function ProductCatalogView({
                 packedLibrary={packProductLibrary(library)}
                 urlSync={urlSync}
                 hideCatalogBorderTop={hideCatalogBorderTop}
+                emptyMessage={emptyMessage}
+                productHrefQuery={productHrefQuery}
+                cardMetaByProductId={cardMetaByProductId}
+                toolbarStart={toolbarStart}
+                toolbarEnd={toolbarEnd}
             />
         </>
     );

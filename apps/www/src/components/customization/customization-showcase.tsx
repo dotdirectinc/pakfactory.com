@@ -11,6 +11,16 @@ type CustomizationShowcaseProps = {
     className?: string;
 };
 
+/** True when the showcase band has at least one tile (nav + render stay in sync). */
+export function hasCustomizationShowcase(detail: CustomizationDetail): boolean {
+    return (
+        fillShowcaseBentoSlots(
+            detail.showcaseSolutions,
+            detail.showcaseCaseStudies,
+        ).length > 0
+    );
+}
+
 /**
  * Showcase — See it in use (PROD-1299).
  * 3×3 bento with a large right feature tile; solutions then case studies.
@@ -20,18 +30,14 @@ export function CustomizationShowcase({
     detail,
     className,
 }: CustomizationShowcaseProps) {
-    const tiles = fillShowcaseBentoSlots(
-        detail.showcaseSolutions,
-        detail.showcaseCaseStudies,
-    );
-    if (tiles.length === 0) return null;
+    if (!hasCustomizationShowcase(detail)) return null;
 
     return (
         <section
             id={CUSTOMIZATION_SHOWCASE_ID}
             className={cn('scroll-mt-32', className)}
         >
-            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
+            <PageDielineSection borderBottom innerClassName="py-16 sm:py-20">
                 <CustomizationShowcaseGallery
                     kicker="Showcase"
                     title="See it in use"

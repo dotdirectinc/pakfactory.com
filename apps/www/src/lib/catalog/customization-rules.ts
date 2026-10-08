@@ -125,17 +125,12 @@ export type ResolvedCustomizations = {
  * never sees (reference options, inactive ones). Reference options stay in the snapshot: they
  * can still be the partner that keeps another option available.
  */
-export function resolveProductCustomizations(
-    rules: PreparedRules,
-    input: {
-        rulesProduct: CatalogRulesProductDoc | null | undefined;
-        preselectedIds: (string | null)[] | null | undefined;
-        productId: string;
-    },
-    mapOption: (doc: CatalogRulesOptionDoc, preselected: boolean) => CustomizationOption | null,
-): ResolvedCustomizations {
-    const available = ids(input.rulesProduct?.available);
-    const exceptions = (input.rulesProduct?.exceptions ?? [])
+function rulesProductInputs(
+    rulesProduct: CatalogRulesProductDoc | null | undefined,
+    productId: string,
+) {
+    const available = ids(rulesProduct?.available);
+    const exceptions = (rulesProduct?.exceptions ?? [])
         .filter(
             (e): e is {optionId: string; mode: 'add' | 'remove'; reason?: string | null} =>
                 Boolean(e?.optionId) && (e?.mode === 'add' || e?.mode === 'remove'),
@@ -145,11 +140,55 @@ export function resolveProductCustomizations(
             mode: e.mode,
             ...(e.reason ? {reason: e.reason} : {}),
         }));
-    const product = {
-        _id: input.productId,
-        availableCustomizations: available.map((optionId) => ({optionId})),
-        customizationExceptions: exceptions,
+    return {
+        available,
+        exceptions,
+        product: {
+            _id: productId,
+            availableCustomizations: available.map((optionId) => ({optionId})),
+            customizationExceptions: exceptions,
+        },
     };
+}
+
+/**
+ * Option ids a product can offer (PROD-2921 offer index). When `rules` is null,
+ * returns the product's own `available` list only.
+ */
+export function resolveProductOfferIds(
+    rules: PreparedRules | null,
+    input: {
+        rulesProduct: CatalogRulesProductDoc | null | undefined;
+        productId: string;
+    },
+): Set<string> {
+    const {available, product} = rulesProductInputs(
+        input.rulesProduct,
+        input.productId,
+    );
+    if (!rules) return new Set(available);
+
+    const resolution = resolveForProduct(rules.catalog, product, rules.graph);
+    const resolvedIds = new Set<string>();
+    for (const optionIds of resolution.availableByType.values()) {
+        for (const id of optionIds) resolvedIds.add(id);
+    }
+    return resolvedIds;
+}
+
+export function resolveProductCustomizations(
+    rules: PreparedRules,
+    input: {
+        rulesProduct: CatalogRulesProductDoc | null | undefined;
+        preselectedIds: (string | null)[] | null | undefined;
+        productId: string;
+    },
+    mapOption: (doc: CatalogRulesOptionDoc, preselected: boolean) => CustomizationOption | null,
+): ResolvedCustomizations {
+    const {available, exceptions, product} = rulesProductInputs(
+        input.rulesProduct,
+        input.productId,
+    );
     const resolution = resolveForProduct(rules.catalog, product, rules.graph);
 
     const resolvedIds = new Set<string>();

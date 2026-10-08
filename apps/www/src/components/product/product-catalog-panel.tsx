@@ -1,6 +1,12 @@
 'use client';
 
-import {useCallback, useDeferredValue, useMemo, useState} from 'react';
+import {
+    useCallback,
+    useDeferredValue,
+    useMemo,
+    useState,
+    type ReactNode,
+} from 'react';
 import {ChevronDown, Search, SlidersHorizontal} from 'lucide-react';
 
 import {Button} from '@pakfactory/ui/components/button';
@@ -33,13 +39,25 @@ import {
 
 const PAGE_SIZE = 12;
 
-type ProductCatalogPanelProps = {
+export type ProductCatalogPanelProps = {
     /** Compact wire form from `ProductCatalogView` (PROD-2757); unpacked once here. */
     packedLibrary: PackedProductLibrary;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
     /** Drop the desktop search strip top border (style landing under a headed section). */
     hideCatalogBorderTop?: boolean;
+    emptyMessage?: string;
+    /** Query string (no `?`) appended to product hrefs — RSC-safe. */
+    productHrefQuery?: string;
+    /** Per-product badge / note keyed by `_id` — RSC-safe. */
+    cardMetaByProductId?: Record<
+        string,
+        {badge?: string | null; note?: string | null}
+    >;
+    /** Leading controls on the sticky search strip (e.g. Category filters). */
+    toolbarStart?: ReactNode;
+    /** Trailing control beside Search products (e.g. Copy link). */
+    toolbarEnd?: ReactNode;
 };
 
 function toggleValue(list: string[], value: string): string[] {
@@ -52,6 +70,11 @@ export function ProductCatalogPanel({
     packedLibrary,
     urlSync = true,
     hideCatalogBorderTop = false,
+    emptyMessage,
+    productHrefQuery,
+    cardMetaByProductId,
+    toolbarStart,
+    toolbarEnd,
 }: ProductCatalogPanelProps) {
     const library = useMemo(
         () => unpackProductLibrary(packedLibrary),
@@ -302,42 +325,60 @@ export function ProductCatalogPanel({
             <SectionReveal enabled={false} className="flex flex-col gap-8">
                 {/* Mobile: sticky search + filters */}
                 <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
-                    <div className="flex items-center gap-2 py-3">
-                        {renderSearchField()}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="relative size-10 shrink-0"
-                            aria-label={
-                                activeFilterCount > 0
-                                    ? `Filters, ${activeFilterCount} active`
-                                    : 'Filters'
-                            }
-                            onClick={() => setFiltersOpen(true)}
-                        >
-                            <SlidersHorizontal className="size-5" />
-                            {activeFilterCount > 0 ? (
-                                <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                                    {activeFilterCount > 9
-                                        ? '9+'
-                                        : activeFilterCount}
-                                </span>
+                    <div className="flex flex-col gap-3 py-4">
+                        {toolbarStart ? (
+                            <div className="min-w-0">{toolbarStart}</div>
+                        ) : null}
+                        <div className="flex items-center gap-2">
+                            {renderSearchField()}
+                            {toolbarEnd ? (
+                                <div className="shrink-0">{toolbarEnd}</div>
                             ) : null}
-                        </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="relative size-10 shrink-0"
+                                aria-label={
+                                    activeFilterCount > 0
+                                        ? `Filters, ${activeFilterCount} active`
+                                        : 'Filters'
+                                }
+                                onClick={() => setFiltersOpen(true)}
+                            >
+                                <SlidersHorizontal className="size-5" />
+                                {activeFilterCount > 0 ? (
+                                    <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                                        {activeFilterCount > 9
+                                            ? '9+'
+                                            : activeFilterCount}
+                                    </span>
+                                ) : null}
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Desktop: sticky search bar (no category tabs) */}
+                {/* Desktop: sticky toolbar (category + search) */}
                 <div
                     className={cn(
                         '-mx-layout-gutter-inner hidden border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block',
                         hideCatalogBorderTop ? 'border-b' : 'border-y',
                     )}
                 >
-                    <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">
-                        <div className="relative flex w-full min-w-56 items-center py-2 sm:ml-auto sm:w-64">
-                            {renderSearchField()}
+                    <div className="flex items-center gap-x-4 gap-y-3 px-layout-gutter-inner py-4">
+                        {toolbarStart ? (
+                            <div className="min-w-0 flex-1">{toolbarStart}</div>
+                        ) : (
+                            <div className="min-w-0 flex-1" />
+                        )}
+                        <div className="flex shrink-0 items-center gap-3">
+                            <div className="relative w-56 xl:w-64">
+                                {renderSearchField()}
+                            </div>
+                            {toolbarEnd ? (
+                                <div className="shrink-0">{toolbarEnd}</div>
+                            ) : null}
                         </div>
                     </div>
                 </div>
@@ -368,6 +409,9 @@ export function ProductCatalogPanel({
                         <ProductCatalogList
                             items={shown}
                             lineEntry={lineEntry}
+                            emptyMessage={emptyMessage}
+                            productHrefQuery={productHrefQuery}
+                            cardMetaByProductId={cardMetaByProductId}
                         />
                         {isAppending ? (
                             <ProductCatalogListSkeleton count={appendCount} />

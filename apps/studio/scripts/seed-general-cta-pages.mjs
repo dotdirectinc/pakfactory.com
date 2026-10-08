@@ -117,6 +117,11 @@ const TARGETS = [
     title: 'Default',
   },
   {
+    id: 'customizationCompatibilityPage',
+    type: 'customizationCompatibilityPage',
+    title: 'Default',
+  },
+  {
     id: 'customizationDetailPage',
     type: 'customizationDetailPage',
     title: 'Default',
@@ -141,6 +146,7 @@ const PREVIEW_IMAGE_TYPES = new Set([
   'productStylePage',
   'productCatalogPage',
   'customizationCatalogPage',
+  'customizationCompatibilityPage',
   'customizationDetailPage',
   'solutionIndustryPage',
   'solutionStylePage',

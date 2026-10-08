@@ -23,6 +23,7 @@ import {
     createEmptyBuilderState,
     fillUnsetWithConsultation,
     getAnswer,
+    isBuilderConfigured,
     isPrintingCategoryStep,
     markGuidedComplete,
     patchAnswer,
@@ -88,6 +89,22 @@ function restoreOptionId(
     state: CustomizationBuilderState,
 ): string | null {
     return lastPick(step, state)?.optionId || null;
+}
+
+/** Prefer an explicit step, else the first step that already has a pick (URL handoff). */
+function resolveFocusStep(
+    steps: BuilderStep[],
+    state: CustomizationBuilderState,
+    preferredKey?: BuilderStepKey,
+): BuilderStep | undefined {
+    if (preferredKey) {
+        const preferred = steps.find((step) => step.key === preferredKey);
+        if (preferred) return preferred;
+    }
+    for (const step of steps) {
+        if (lastPick(step, state)) return step;
+    }
+    return steps[0];
 }
 
 export function CustomizationBuilder({
@@ -202,19 +219,31 @@ export function CustomizationBuilder({
         }
     }
 
+    // Open + late URL handoff: when value becomes configured while the dialog is
+    // already open, leave guided and restore the handoff pick (PROD-2921).
     useEffect(() => {
         if (!open) return;
         const enterGuided = shouldEnterGuided(value);
         setMode(enterGuided ? 'guided' : 'workspace');
-        setGuidedMaxIndex(0);
-        const focus =
-            (initialStepKey
-                ? steps.find((step) => step.key === initialStepKey)
-                : undefined) ?? steps[0];
+        if (enterGuided) {
+            setGuidedMaxIndex(0);
+        }
+        const focus = resolveFocusStep(steps, value, initialStepKey);
         setActiveKey(focus?.key ?? 'dimensions');
         setActiveTypeId(restoreTypeId(focus, value));
         setActiveOptionId(restoreOptionId(focus, value));
-    }, [open]);
+    }, [open, value.guidedComplete, initialStepKey, steps]);
+
+    useEffect(() => {
+        if (!open || !isBuilderConfigured(value)) return;
+        // Handoff applied after open with activeOptionId still null — restore pick.
+        const current = steps.find((step) => step.key === activeKey);
+        if (!current) return;
+        if (!activeOptionId && lastPick(current, value)) {
+            setActiveTypeId(restoreTypeId(current, value));
+            setActiveOptionId(restoreOptionId(current, value));
+        }
+    }, [open, value, activeKey, activeOptionId, steps]);
 
     useEffect(() => {
         const current = steps.find((step) => step.key === activeKey);

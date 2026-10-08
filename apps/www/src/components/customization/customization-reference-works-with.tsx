@@ -1,60 +1,75 @@
-import Link from 'next/link';
+import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
-import type {CustomizationDetail} from '@/lib/catalog/types';
-import {productHref} from '@/lib/www-routes';
+
+import {CustomizationWorksWithBrowser} from '@/components/customization/customization-works-with-browser';
+import {SectionHeading} from '@/components/ui/section-heading';
+import {serializeCompatibilityQuery} from '@/lib/catalog/compatibility-query';
+import type {
+    WorksWithOptionRef,
+    WorksWithProductCard,
+} from '@/lib/catalog/build-works-with-products';
+import type {ProductLineRef} from '@/lib/catalog/types';
+import {customizationCompatibilityHref} from '@/lib/www-routes';
 
 export const CUSTOMIZATION_REFERENCE_WORKS_WITH_ID =
     'customization-reference-works-with';
 
 type CustomizationReferenceWorksWithProps = {
-    detail: CustomizationDetail;
+    option: WorksWithOptionRef;
+    lines: ProductLineRef[];
+    products: WorksWithProductCard[];
     className?: string;
 };
 
 /**
- * Material Reference — Works with subsection (PROD-1299).
- * Content-only; parent band owns the dieline shell.
- * Product lines from `availableOnProducts`; muted empty when none.
+ * Works with page section (PROD-1299 / PROD-2921).
+ * SectionHeading + browser; engine Show more lives on the heading CTA.
  */
 export function CustomizationReferenceWorksWith({
-    detail,
+    option,
+    lines,
+    products,
     className,
 }: CustomizationReferenceWorksWithProps) {
-    const lines = detail.productLines;
+    const engineHref = customizationCompatibilityHref(
+        serializeCompatibilityQuery({
+            selections: [
+                {
+                    category: option.category,
+                    optionSlug: option.slug,
+                },
+            ],
+            properties: [],
+        }),
+    );
 
     return (
         <section
             id={CUSTOMIZATION_REFERENCE_WORKS_WITH_ID}
-            className={cn('scroll-mt-32 py-16 sm:py-20', className)}
+            className={cn('scroll-mt-32', className)}
         >
-            <h3 className="text-base font-semibold text-foreground sm:text-lg">
-                Works with
-            </h3>
-
-            {lines.length > 0 ? (
-                <ul className="mt-8 flex flex-wrap gap-2">
-                    {lines.map((line) => (
-                        <li key={line.slug}>
-                            <Link
-                                href={productHref(line.slug)}
-                                className="inline-flex rounded-control border border-border bg-card px-4 py-2 text-sm font-medium text-foreground underline-offset-4 hover:underline"
-                            >
-                                {line.title}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p className="mt-8 text-sm text-muted-foreground">
-                    Product-line availability for this option has not been
-                    authored yet.
-                </p>
-            )}
+            <PageDielineSection
+                borderBottom
+                innerClassName="py-16 sm:py-20"
+            >
+                <SectionHeading
+                    eyebrow="Works with"
+                    title="Works with"
+                    description="Choose a compatible product to apply this option to your request."
+                    cta={{label: 'Browse all compatible products', href: engineHref}}
+                    ctaPlacement="end"
+                />
+                <CustomizationWorksWithBrowser
+                    option={option}
+                    lines={lines}
+                    products={products}
+                />
+            </PageDielineSection>
         </section>
     );
 }
 
-/** Always present so the in-band nav can include Works with. */
+/** Always present so the page-level nav can include Works with. */
 export function hasReferenceWorksWith(): boolean {
     return true;
 }

@@ -16,6 +16,7 @@ import {
   CATALOG_IMAGE_ALT,
   CATALOG_IMAGE_SRC,
   CATALOG_MEDIA_ARRAYS,
+  FEATURED_IMAGE_FROM_CATALOG,
   OPTION_MEDIA_FIELDS,
   PRIMARY_PRODUCT_IMAGE_GROQ,
 } from './catalog-media';
@@ -439,10 +440,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   kind,
   ${PRODUCT_EFFECTIVE_STATUS},
   moq,
-  media[0...1]{
-    ...,
-    "alt": ${IMAGE_ALT}
-  },
+  ${FEATURED_IMAGE_FROM_CATALOG},
   "productLine": *[
     _id == coalesce(^.productLine._ref, ^.basedOn->productLine._ref) &&
     ${LINE_STYLE_LISTED}
@@ -500,6 +498,32 @@ export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LIBRARY_FIELDS}
 }`;
+
+/**
+ * Slim product list for compatibility matching (PROD-2921).
+ * Refs only — paired with {@link CATALOG_CUSTOMIZATION_RULES_QUERY}.
+ * Same `basedOn` / `rulesProduct` read as the PDP.
+ */
+export const CATALOG_PRODUCT_OFFER_INDEX_QUERY = /* groq */ `*[
+  _type == "product" &&
+  defined(slug.current) &&
+  ${PRODUCT_LISTED}
+] | order(title asc) {
+  _id,
+  "slug": slug.current,
+  kind,
+  "rulesProduct": select(
+    kind == "inspiration" && defined(basedOn) => basedOn->${RULES_PRODUCT_PROJ},
+    ${RULES_PRODUCT_PROJ}
+  )
+}`;
+
+export type CatalogProductOfferIndexDoc = {
+  _id: string;
+  slug: string | null;
+  kind?: string | null;
+  rulesProduct?: CatalogRulesProductDoc | null;
+};
 
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   _type == "product" &&
@@ -1416,6 +1440,8 @@ export type CatalogCustomizationDetailDoc = {
   lifestyleImages?: unknown[] | null;
   /** Playable MP4/WebM/MOV URL from videos[0] / legacy featuredVideo; YouTube → null. */
   featuredVideoUrl?: string | null;
+  /** Playable lifestyle video URL from lifestyleVideos[0]; YouTube → null. */
+  lifestyleVideoUrl?: string | null;
   /** Optional PDF upload on Specs — CDN URL when set. */
   specSheetUrl?: string | null;
   category: CatalogCategoryDoc | null;

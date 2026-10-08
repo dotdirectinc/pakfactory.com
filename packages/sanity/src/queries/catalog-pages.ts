@@ -54,6 +54,11 @@ export const CUSTOMIZATION_CATALOG_PAGE_QUERY = /* groq */ `*[
   _id == "customizationCatalogPage"
 ][0]${CATALOG_INDEX_PAGE_PROJECTION}`
 
+/** Default Customization Compatibility Page layout (PROD-2921). */
+export const CUSTOMIZATION_COMPATIBILITY_PAGE_QUERY = /* groq */ `*[
+  _id == "customizationCompatibilityPage"
+][0]${CATALOG_INDEX_PAGE_PROJECTION}`
+
 /** Default Customization Detail Page layout (fallback when an option has no template). */
 export const CUSTOMIZATION_DETAIL_PAGE_QUERY = /* groq */ `*[
   _id == "customizationDetailPage"

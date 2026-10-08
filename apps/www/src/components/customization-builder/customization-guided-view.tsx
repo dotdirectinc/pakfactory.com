@@ -6,11 +6,7 @@ import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/cop
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
-    getAnswer,
-    isPrintedSideComplete,
-    isPrintingCategoryStep,
     isStepReady,
-    wantsAnyPrint,
     type BuilderOption,
     type BuilderStep,
     type BuilderStepKey,
@@ -92,14 +88,6 @@ export function CustomizationGuidedView({
     const canAdvance = step
         ? isStepReady(state, step, dimensionAxisIds)
         : false;
-    // Footer Skip → specialist for methods. Gate link owns specialist before methods;
-    // both No uses Next (None).
-    const canSkip =
-        !step ||
-        !isPrintingCategoryStep(step) ||
-        (isPrintedSideComplete(state) &&
-            wantsAnyPrint(state) &&
-            getAnswer(state, step.key).status !== 'not-sure');
 
     function handleSelectStep(key: BuilderStepKey) {
         const index = steps.findIndex((step) => step.key === key);
@@ -146,7 +134,6 @@ export function CustomizationGuidedView({
                             type="button"
                             variant="link"
                             className="px-0"
-                            disabled={!canSkip}
                             onClick={onSkip}
                         >
                             {CUSTOMIZATION_BUILDER_COPY.skip}

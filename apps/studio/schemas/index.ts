@@ -26,6 +26,7 @@ import { productStylePage } from './productStylePage'
 import { productDetailPage } from './productDetailPage'
 import { solutionProductDetailPage } from './solutionProductDetailPage'
 import { customizationCatalogPage } from './customizationCatalogPage'
+import { customizationCompatibilityPage } from './customizationCompatibilityPage'
 import { customizationDetailPage } from './customizationDetailPage'
 import { solutionStylePage } from './solutionStylePage'
 import { expertiseStage } from './expertiseStage'
@@ -104,6 +105,7 @@ export const schemaTypes = [
   productDetailPage,
   solutionProductDetailPage,
   customizationCatalogPage,
+  customizationCompatibilityPage,
   customizationDetailPage,
   expertiseStage,
   expertiseService,
