@@ -67,7 +67,7 @@ export const SPECS: Record<TableKey, TableSpec> = {
   productStyle: { type: "productStyle", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "productLine"], parent: "productLine" },
   product: {
     type: "product", filter: `kind != "inspiration"`, image: PRIMARY_IMAGE, parent: "productLine",
-    defaults: ["entityCode", "status", "productLine", "productStyle", "moq", "leadTimeBusinessDaysMin", "leadTimeBusinessDaysMax"],
+    defaults: ["entityCode", "status", "productLine", "productStyle", "rulesListed", "rulesDerived", "rulesExceptions", "moq", "leadTimeBusinessDaysMin", "leadTimeBusinessDaysMax"],
     // Every standard product has a rules view, whatever its status (the product view reads them all).
     rules: (d) => `/spec/products/${encodeURIComponent(d._id)}`,
   },
@@ -143,6 +143,10 @@ const LABELS: Record<string, string> = {
   usedByOptions: "Used by options",
   optionExamples: "Options (examples)",
   kindOf: "Kind of",
+  // What the rules make of a standard product (the loader adds them; same counts as the rules view).
+  rulesListed: "Listed options",
+  rulesDerived: "Derived options",
+  rulesExceptions: "Exceptions",
 };
 
 export const columnLabel = (key: string) =>

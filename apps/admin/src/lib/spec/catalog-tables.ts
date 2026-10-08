@@ -2,6 +2,7 @@ import { createClient } from "next-sanity";
 import { getSanityApiVersion, getSanityProjectId } from "@/lib/sanity/env";
 import { cachedSpec } from "./cache";
 import { RULES_DATASET, type Loaded } from "./rules-source";
+import { getProductRows } from "./cached-views";
 import { HIDDEN, SPECS, buildCatalogTable, collectRefs, type CatalogTable, type Doc, type TableKey } from "./catalog-table-model";
 
 export { TABLE_GROUPS, isTableKey } from "./catalog-table-model";
@@ -56,6 +57,21 @@ async function propertyValueDocs(client: Client, stream: "product" | "option"): 
     });
 }
 
+/**
+ * Standard products with what the rules make of them (2026-10-08): listed and derived options and
+ * exceptions, from the same cached rules summary as the product's rules view. A product the rules
+ * cannot read keeps the columns empty; a rules failure leaves the table itself working.
+ */
+async function withRuleCounts(docs: Doc[]): Promise<Doc[]> {
+  const res = await getProductRows();
+  if (!res.ok) return docs;
+  const byId = new Map(res.data.rows.map((r) => [r.id, r]));
+  return docs.map((d) => {
+    const r = byId.get(d._id);
+    return r ? { ...d, rulesListed: r.listed, rulesDerived: r.derived, rulesExceptions: r.exceptions } : d;
+  });
+}
+
 async function fetchTable(key: TableKey): Promise<Loaded<CatalogTable>> {
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
@@ -63,7 +79,7 @@ async function fetchTable(key: TableKey): Promise<Loaded<CatalogTable>> {
   const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });
   const image = spec.image ? `, "_image": ${spec.image}` : "";
   try {
-    const docs =
+    const read =
       key === "productValue" || key === "optionValue"
         ? await propertyValueDocs(client, key === "productValue" ? "product" : "option")
         : await client.fetch<Doc[]>(
@@ -71,6 +87,7 @@ async function fetchTable(key: TableKey): Promise<Loaded<CatalogTable>> {
             { type: spec.type },
             { cache: "no-store" },
           );
+    const docs = key === "product" ? await withRuleCounts(read) : read;
     const refs = new Set<string>();
     for (const d of docs) for (const [k, v] of Object.entries(d)) if (!HIDDEN.has(k)) collectRefs(v, refs);
     const named = refs.size
