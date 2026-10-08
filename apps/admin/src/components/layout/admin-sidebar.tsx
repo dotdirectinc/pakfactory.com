@@ -68,7 +68,7 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help"].some((p) =>
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog"].some((p) =>
               path.startsWith(p),
             )),
       },
@@ -89,6 +89,12 @@ const NAV: readonly NavEntry[] = [
         href: "/spec/properties",
         label: "Properties",
         match: (path) => path.startsWith("/spec/properties"),
+      },
+      // Every record type as a Notion-like table, with image previews (PROD-2926).
+      {
+        href: "/spec/catalog",
+        label: "Catalog tables",
+        match: (path) => path.startsWith("/spec/catalog"),
       },
       // Solutions → their styles and inspiration products, registry codes included (PROD-2782).
       {

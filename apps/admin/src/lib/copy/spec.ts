@@ -315,6 +315,30 @@ export const ADMIN_SPEC_SYNC_COPY = {
   dismissing: "Dismissing…",
 } as const;
 
+/** Catalog tables (PROD-2926): read-only, Notion-like tables of every record type. */
+export const ADMIN_SPEC_TABLES_COPY = {
+  title: "Catalog tables",
+  lead:
+    "Every record type as a table, read from Sanity (the website's catalog) with its registry code. Pick the columns you want, drag a header to move it, click it to sort. Read-only — edit in Studio.",
+  level: "Show",
+  datasetNote: (dataset: string) => `Sanity dataset: ${dataset}`,
+  unreachable: "The table could not be loaded.",
+  search: "Search",
+  searchPlaceholder: "Name, code, any shown column…",
+  status: "Status",
+  parent: "Parent",
+  any: "Any",
+  columns: (shown: number, total: number) => `Columns (${shown} of ${total})`,
+  reset: "Reset to default",
+  close: "Close",
+  count: (shown: number, total: number) => (shown === total ? `${total} records` : `${shown} of ${total} records`),
+  image: "Image",
+  noImage: "No image",
+  headerHint: "Drag to move · click to sort",
+  untitled: "(untitled)",
+  more: (n: number, left: number) => `Show ${n} more (${left} left)`,
+} as const;
+
 /** Sync history (PROD-2771): every sync, what it produced, what was decided, and whether it landed. */
 export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
   title: "Sync history",
