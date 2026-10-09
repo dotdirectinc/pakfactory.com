@@ -4,6 +4,7 @@ import {useState} from "react";
 import {cn} from "../../../lib/utils";
 import {DimensionInputs} from "./dimension-field";
 import {chipClass, inputClass} from "./field-styles";
+import {RadioChoiceMark} from "./radio-choice-mark";
 
 export function RadioPickField({
   choices,
@@ -12,6 +13,10 @@ export function RadioPickField({
   value: controlled,
   defaultValue,
   onChange,
+  /** Choice label that reveals the stock-size dropdown. Defaults to gallery copy. */
+  revealPick = "Stock size",
+  /** Choice label that reveals dimension inputs. Defaults to gallery copy. */
+  revealDimensions = "Custom",
 }: {
   choices: string[];
   pick: string[];
@@ -19,6 +24,8 @@ export function RadioPickField({
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
+  revealPick?: string;
+  revealDimensions?: string;
 }) {
   const [internal, setInternal] = useState(defaultValue ?? choices[0] ?? "");
   const value = controlled ?? internal;
@@ -46,25 +53,22 @@ export function RadioPickField({
                 }
               }}
             >
-              <span
-                className={cn(
-                  "inline-block size-3 shrink-0 rounded-full border border-current",
-                  on && "bg-current",
-                )}
-              />
+              <RadioChoiceMark on={on} />
               {c}
             </span>
           );
         })}
       </div>
-      <div className={cn("mt-2", value === "Stock size" ? "block" : "hidden")}>
+      <div className={cn("mt-2", value === revealPick ? "block" : "hidden")}>
         <select className={inputClass} defaultValue={pick[0]}>
           {pick.map((p) => (
             <option key={p}>{p}</option>
           ))}
         </select>
       </div>
-      <div className={cn("mt-2", value === "Custom" ? "block" : "hidden")}>
+      <div
+        className={cn("mt-2", value === revealDimensions ? "block" : "hidden")}
+      >
         <DimensionInputs unit={unit} />
       </div>
     </>

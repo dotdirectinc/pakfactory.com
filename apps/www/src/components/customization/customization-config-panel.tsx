@@ -75,7 +75,7 @@ export function CustomizationConfigPanel({
                     <h2 className="text-base font-semibold text-foreground">
                         Configuration
                     </h2>
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-6">
                         <OptionPropertyControllers
                             fields={fields}
                             value={selection}

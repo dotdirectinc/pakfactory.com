@@ -58,7 +58,10 @@ export function PropertyController({
 
   switch (ui.kind) {
     case "readonly":
-      return <ReadonlyField value={ui.value} />;
+      // Gallery / product-structure demo: badge is presentation copy, not CMS.
+      return (
+        <ReadonlyField value={ui.value} sourceBadge="from product page" />
+      );
     case "dimension": {
       const controlled = asKind(value, "dimension");
       return (

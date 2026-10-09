@@ -52,6 +52,9 @@ export type CardItem = {
   id: string;
   name: string;
   meta?: string;
+  /** Property Value image when authored in Studio. */
+  imageUrl?: string;
+  imageAlt?: string;
 };
 
 export type LinkItem = {
@@ -62,7 +65,10 @@ export type LinkItem = {
 export type ChipItem = {
   id: string;
   label: string;
-  /** Empty dotted treatment (e.g. Need consultation); matches swatch consultation. */
+  /**
+   * Reserved for callers that tag consultation rows. ChipField chrome no longer
+   * differs by appearance — same pill + check circle as every other chip.
+   */
   appearance?: "chip" | "consultation";
 };
 

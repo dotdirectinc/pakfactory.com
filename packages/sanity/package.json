@@ -49,6 +49,7 @@
     "migrate:page-consolidation": "tsx scripts/migrate-page-consolidation.ts",
     "migrate:customization-cleanup": "tsx scripts/migrate-customization-cleanup.ts",
     "migrate:customization-properties-backfill": "tsx scripts/migrate-customization-properties-backfill.ts",
+    "migrate:declared-property-control": "tsx scripts/migrate-declared-property-control.ts",
     "migrate:description-naming": "tsx scripts/migrate-description-naming.ts",
     "migrate:description-cleanup": "tsx scripts/migrate-description-naming-cleanup.ts",
     "migrate:solution-cleanup": "tsx scripts/migrate-solution-remove-usecase-leftovers.ts",

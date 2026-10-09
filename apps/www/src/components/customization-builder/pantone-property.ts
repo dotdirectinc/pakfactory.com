@@ -9,6 +9,10 @@ export const PANTONE_COUNT_KEY = 'pantone-count';
 export const PANTONE_PMS_KEY = 'pantone-pms';
 export const PANTONE_MAX_COUNT = 3;
 
+/**
+ * @deprecated Prefer a selectable declared property with `control: "pantone"`.
+ * Title sniff kept for any leftover callers until content is backfilled.
+ */
 export function optionNeedsPantoneControllers(
     option: Pick<BuilderOption, 'slug' | 'title'>,
 ): boolean {

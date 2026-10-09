@@ -595,6 +595,7 @@ export const TASKS = [
   { task: 'seed:home-page', pkg: '@pakfactory/studio', why: 'idempotent Home layout seed (PROD-2666); stable seed-hero-*/seed-home-* keys, picks real docs' },
   { task: 'seed:finder-general', pkg: '@pakfactory/studio', why: 'surgical General-rail buckets on existing heroFinder; preserves section order' },
   { task: 'seed:help-categories', pkg: '@pakfactory/studio', why: 'create the Help Center categories (create-if-missing)' },
+  { task: 'seed:controller-lab', pkg: '@pakfactory/studio', why: 'idempotent Controller Lab QA seed — Materials type + options, append-only on test product' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
 ]

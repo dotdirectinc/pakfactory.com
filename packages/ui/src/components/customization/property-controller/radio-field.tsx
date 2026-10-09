@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { cn } from "../../../lib/utils";
-import { chipClass } from "./field-styles";
+import {useState} from "react";
+import {cn} from "../../../lib/utils";
+import {chipClass} from "./field-styles";
+import {RadioChoiceMark} from "./radio-choice-mark";
 
 export function RadioField({
   choices,
@@ -40,12 +41,7 @@ export function RadioField({
               }
             }}
           >
-            <span
-              className={cn(
-                "inline-block size-3 shrink-0 rounded-full border border-current",
-                on && "bg-current",
-              )}
-            />
+            <RadioChoiceMark on={on} />
             {c}
           </span>
         );

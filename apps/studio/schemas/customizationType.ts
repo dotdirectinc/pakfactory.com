@@ -402,6 +402,14 @@ export const customizationType = defineType({
       of: [{
         type: 'object',
         name: 'declaredProperty',
+        // Pre-seed control/valuesPerItem so flipping Stated → Selectable still
+        // shows Chips / One value instead of an empty dropdown.
+        initialValue: {
+          usage: 'stated',
+          showOnDetailPage: true,
+          control: 'chip',
+          valuesPerItem: 'one',
+        },
         fields: [
           defineField({
             name: 'property',
@@ -459,14 +467,93 @@ export const customizationType = defineType({
             initialValue: true,
             hidden: ({ parent }) => (parent as { usage?: string } | undefined)?.usage === 'selectable',
           }),
+          // Customer control for Selectable rows only. Stated rows are spec facts —
+          // they never reach the configurator, so a widget has no meaning there.
+          // Not required: existing selectable rows have no value; a required field
+          // would fail the type on the next edit. New rows default to chip / one.
+          defineField({
+            name: 'control',
+            title: 'Customer control',
+            type: 'string',
+            description:
+              'How the customer picks a value for this property on this type. Only shown when ' +
+              'the row is Selectable. The same Property can use a different control on another type.',
+            options: {
+              layout: 'dropdown',
+              list: [
+                { title: 'Chips', value: 'chip' },
+                { title: 'Swatch', value: 'swatch' },
+                { title: 'Swatch with shades', value: 'swatchShades' },
+                { title: 'Radio', value: 'radio' },
+                { title: 'Radio with pick', value: 'radioPick' },
+                { title: 'List', value: 'listbox' },
+                { title: 'Cards', value: 'card' },
+                { title: 'Toggles', value: 'toggles' },
+                { title: 'Read-only', value: 'readonly' },
+                { title: 'Spec table', value: 'specTable' },
+                { title: 'Pantone', value: 'pantone' },
+                { title: 'Dimensions', value: 'dimension' },
+              ],
+            },
+            initialValue: 'chip',
+            hidden: ({ parent }) =>
+              (parent as { usage?: string } | undefined)?.usage !== 'selectable',
+          }),
+          defineField({
+            name: 'valuesPerItem',
+            title: 'Customer may select',
+            type: 'string',
+            description:
+              'Whether the buyer picks a single value or more than one. This does not change how many ' +
+              'values you author under Values. Only shown for Chips, List, and Toggles.',
+            options: {
+              layout: 'radio',
+              list: [
+                { title: 'One value', value: 'one' },
+                { title: 'Several values', value: 'many' },
+              ],
+            },
+            initialValue: 'one',
+            hidden: ({ parent }) => {
+              const row = parent as { usage?: string; control?: string } | undefined
+              if (row?.usage !== 'selectable') return true
+              return !['chip', 'listbox', 'toggles'].includes(row.control ?? '')
+            },
+          }),
         ],
         preview: {
-          select: { title: 'property.title', usage: 'usage', shown: 'showOnDetailPage' },
-          prepare({ title, usage, shown }) {
-            const label = usage === 'selectable' ? 'Selectable' : 'Stated'
+          select: {
+            title: 'property.title',
+            usage: 'usage',
+            shown: 'showOnDetailPage',
+            control: 'control',
+          },
+          prepare({ title, usage, shown, control }) {
+            if (usage === 'selectable') {
+              const controlLabel: Record<string, string> = {
+                chip: 'Chips',
+                swatch: 'Swatch',
+                swatchShades: 'Swatch with shades',
+                radio: 'Radio',
+                radioPick: 'Radio with pick',
+                listbox: 'List',
+                card: 'Cards',
+                toggles: 'Toggles',
+                readonly: 'Read-only',
+                specTable: 'Spec table',
+                pantone: 'Pantone',
+                dimension: 'Dimensions',
+              }
+              const widget = controlLabel[control as string] ?? 'Chips'
+              return {
+                title: title || 'Property',
+                subtitle: `Selectable · ${widget}`,
+              }
+            }
+            const label = 'Stated'
             return {
               title: title || 'Property',
-              subtitle: usage !== 'selectable' && shown === false ? `${label} · hidden` : label,
+              subtitle: shown === false ? `${label} · hidden` : label,
             }
           },
         },
