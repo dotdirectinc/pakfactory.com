@@ -154,6 +154,19 @@ const LEVEL_INFO = new Map(
     ),
   ),
 );
+/**
+ * Shorter column names on the map: inside the Products tab the "Product" prefix only repeats the
+ * tab, and in narrow columns it pushed the names into "…" (Richard, 2026-10-09). The full name stays
+ * in the header's tooltip, and the Catalog and the panel keep theirs.
+ */
+const MAP_LABEL: Partial<Record<TableKey, string>> = {
+  productLine: "Lines",
+  productStyle: "Styles",
+  product: "Standard",
+  productValue: "Property values",
+};
+const mapLabelOf = (level: TableKey) =>
+  MAP_LABEL[level] ?? LEVEL_INFO.get(level)?.label;
 const streamOf = (level: TableKey) =>
   LEVEL_INFO.get(level)?.stream ?? TABLE_GROUPS[0]!.key;
 
@@ -364,6 +377,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     Math.floor((areaW - PAD * 2) / levels.length),
   );
   const cardW = colW - GUTTER;
+  /** Headers run on into the gutter (nothing is drawn there at their height), so names fit narrow columns. */
+  const headW = colW - 16;
   const statusOk = useCallback(
     (i: number) =>
       status === ALL || !nodes[i]!.status || nodes[i]!.status === status,
@@ -912,7 +927,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                     style={{
                       left: PAD + li * colW,
                       top: 8,
-                      width: cardW,
+                      width: headW,
                       height: HEAD_H - 16,
                     }}
                   >
@@ -944,7 +959,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   style={{
                     left: PAD + li * colW,
                     top: 8,
-                    width: cardW,
+                    width: headW,
                     height: HEAD_H - 16,
                   }}
                 >
@@ -970,15 +985,14 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                     disabled={focus !== null}
                     className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground enabled:hover:underline disabled:cursor-default"
                     aria-expanded={focus !== null || !isCollapsed}
+                    title={LEVEL_INFO.get(level)?.label}
                   >
                     {isCollapsed && focus === null ? (
                       <ChevronRight className="size-4 shrink-0" />
                     ) : (
                       <ChevronDown className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">
-                      {LEVEL_INFO.get(level)?.label}
-                    </span>
+                    <span className="truncate">{mapLabelOf(level)}</span>
                   </button>
                   <span className="text-xs tabular-nums text-muted-foreground">
                     {count === total ? total : `${count}/${total}`}
