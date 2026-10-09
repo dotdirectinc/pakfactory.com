@@ -3,7 +3,8 @@ type LogoMarkProps = {
   label?: string;
 };
 
-const MARK_GREEN = "#6DBE45";
+/** Pak mark lime — shared with home insight charts. */
+export const MARK_GREEN = "#6DBE45";
 const MARK_NAVY = "#211F57";
 
 export function LogoMark({ className, label }: LogoMarkProps) {
