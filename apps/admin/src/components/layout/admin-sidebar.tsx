@@ -14,9 +14,14 @@ import { cn } from "@pakfactory/ui/lib/utils";
 
 type NavIcon = typeof Inbox;
 
+/** Counts the layout passes in, for entries that show how much is waiting. */
+type NavCounts = { pendingFrames: number };
+
 type NavChild = {
   href: string;
   label: string;
+  /** When above zero: the label turns bold and a pill shows the number. */
+  count?: keyof NavCounts;
   match: (path: string) => boolean;
 };
 
@@ -69,21 +74,13 @@ const NAV: readonly NavEntry[] = [
     requiresRegistryGrant: true,
     label: "Spec System",
     icon: FileText,
+    // Order (Richard, 2026-10-09): the map first, the catalog beside it, then the work queue, the rules, help.
     children: [
+      // The catalog as a diagram (PROD-2960): three streams, levels as columns, read-only.
       {
-        href: "/spec/rules",
-        label: "Current rules",
-        match: (path) => path === "/spec/rules" || path.startsWith("/spec/rules/"),
-      },
-      {
-        href: "/spec",
-        label: "Frames to approve",
-        match: (path) =>
-          path === "/spec" ||
-          (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map"].some((p) =>
-              path.startsWith(p),
-            )),
+        href: "/spec/map",
+        label: "Spec Map",
+        match: (path) => path.startsWith("/spec/map"),
       },
       // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing —
       // properties & values included, as the fourth level of the Products and Customizations streams.
@@ -95,11 +92,21 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions", "/spec/properties"].some((p) => path.startsWith(p)),
       },
-      // The catalog as a diagram (PROD-2960): three streams, levels as columns, read-only.
       {
-        href: "/spec/map",
-        label: "Spec Map",
-        match: (path) => path.startsWith("/spec/map"),
+        href: "/spec",
+        label: "Frames to approve",
+        count: "pendingFrames",
+        match: (path) =>
+          path === "/spec" ||
+          (path.startsWith("/spec/") &&
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map"].some((p) =>
+              path.startsWith(p),
+            )),
+      },
+      {
+        href: "/spec/rules",
+        label: "Current rules",
+        match: (path) => path === "/spec/rules" || path.startsWith("/spec/rules/"),
       },
       // What each page and button does, the catalog structure, syncing and registry codes (PROD-2771).
       {
@@ -152,9 +159,11 @@ function LeafLink({ item, pathname }: { item: NavLinkItem; pathname: string }) {
 function NavGroup({
   item,
   pathname,
+  counts,
 }: {
   item: NavGroupItem;
   pathname: string;
+  counts: NavCounts;
 }) {
   const childActive = item.children.some((c) => c.match(pathname));
   const [open, setOpen] = useState(childActive);
@@ -182,20 +191,31 @@ function NavGroup({
         <div className="relative ml-4 flex flex-col gap-0.5 border-l border-border pl-3">
           {item.children.map((child) => {
             const active = child.match(pathname);
+            const n = child.count ? counts[child.count] : 0;
             return (
               <Link
                 key={child.href}
                 href={child.href}
                 className={cn(
-                  "relative rounded-xs px-2 py-2 text-sm transition-colors",
+                  "relative flex items-center gap-2 rounded-xs px-2 py-2 text-sm transition-colors",
                   "before:absolute before:top-1/2 before:right-full before:h-px before:w-3 before:bg-border",
                   active
                     ? "bg-background font-semibold text-foreground"
-                    : "font-normal text-muted-foreground hover:text-foreground",
+                    : n > 0
+                      ? "font-semibold text-foreground hover:text-foreground"
+                      : "font-normal text-muted-foreground hover:text-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
               >
-                {child.label}
+                <span className="min-w-0 flex-1 truncate">{child.label}</span>
+                {n > 0 ? (
+                  <span
+                    className="shrink-0 rounded-full bg-foreground px-1.5 py-0.5 text-[11px] font-semibold leading-none tabular-nums text-background"
+                    aria-label={`${n} pending`}
+                  >
+                    {n > 99 ? "99+" : n}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
@@ -205,7 +225,13 @@ function NavGroup({
   );
 }
 
-export function AdminSidebar({ specAccess }: { specAccess: boolean }) {
+export function AdminSidebar({
+  specAccess,
+  pendingFrames,
+}: {
+  specAccess: boolean;
+  pendingFrames: number;
+}) {
   const pathname = usePathname();
   const nav = NAV.filter(
     (entry) => !(entry.type === "group" && entry.requiresRegistryGrant && !specAccess),
@@ -218,7 +244,12 @@ export function AdminSidebar({ specAccess }: { specAccess: boolean }) {
           entry.type === "link" ? (
             <LeafLink key={entry.href} item={entry} pathname={pathname} />
           ) : (
-            <NavGroup key={entry.id} item={entry} pathname={pathname} />
+            <NavGroup
+              key={entry.id}
+              item={entry}
+              pathname={pathname}
+              counts={{ pendingFrames }}
+            />
           ),
         )}
       </nav>
