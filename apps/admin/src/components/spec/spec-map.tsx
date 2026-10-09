@@ -770,23 +770,16 @@ export function SpecMap({ data }: { data: SpecMapData }) {
               const dot = statusDot(n.status);
               const unrelated = related !== null && !related.has(i);
               const gone = isGone(i);
-              // A related card from a collapsed level has no resting place: it fades in where it lands.
+              // A related card from a collapsed level (property values) has no resting place: once the
+              // others have moved it rises into its own column from below, row by row (Eric, 2026-10-09).
+              // The rise is on an inner layer — an animation on the positioned element would override
+              // its translate and start it from the map's top-left corner.
               const arriving = !from && focus !== null && !rest.pos.has(i);
+              const row = Math.max(0, Math.round((p.y - HEAD_H) / ROW_H));
               return (
-                <button
+                <div
                   key={i}
-                  type="button"
-                  onClick={() => select(i, false)}
-                  title={n.status ? `${n.title} — ${n.status}` : n.title}
-                  tabIndex={gone ? -1 : undefined}
-                  aria-hidden={gone ? true : undefined}
-                  className={`absolute left-0 top-0 flex items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs ease-out hover:bg-muted ${
-                    i === selected
-                      ? "z-10 border-foreground ring-2 ring-foreground"
-                      : compatible.has(i)
-                        ? "border-foreground/60 ring-1 ring-foreground/40"
-                        : "border-border"
-                  } ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${arriving ? "animate-in fade-in fill-mode-backwards duration-200 delay-500" : ""}`}
+                  className={`absolute left-0 top-0 ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
                   style={{
                     width: cardW,
                     height: CARD_H,
@@ -797,25 +790,47 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                     willChange: moving ? "transform, opacity" : undefined,
                   }}
                 >
-                  <Icon
-                    className="size-4 shrink-0 text-muted-foreground"
-                    aria-hidden
-                  />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-xs font-medium text-foreground">
-                      {n.title}
-                    </span>
-                    <span className="truncate text-[11px] text-muted-foreground">
-                      {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
-                    </span>
-                  </span>
-                  {dot ? (
-                    <span
-                      className={`size-2.5 shrink-0 rounded-full ${dot}`}
-                      aria-label={n.status ?? undefined}
+                  <button
+                    type="button"
+                    onClick={() => select(i, false)}
+                    title={n.status ? `${n.title} — ${n.status}` : n.title}
+                    tabIndex={gone ? -1 : undefined}
+                    aria-hidden={gone ? true : undefined}
+                    className={`flex size-full items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs hover:bg-muted ${
+                      i === selected
+                        ? "border-foreground ring-2 ring-foreground"
+                        : compatible.has(i)
+                          ? "border-foreground/60 ring-1 ring-foreground/40"
+                          : "border-border"
+                    } ${arriving ? "animate-in fade-in slide-in-from-bottom-6 fill-mode-backwards duration-300 ease-out" : ""}`}
+                    style={
+                      arriving
+                        ? {
+                            animationDelay: `${MOVE_MS + Math.min(row, 12) * 30}ms`,
+                          }
+                        : undefined
+                    }
+                  >
+                    <Icon
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden
                     />
-                  ) : null}
-                </button>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-xs font-medium text-foreground">
+                        {n.title}
+                      </span>
+                      <span className="truncate text-[11px] text-muted-foreground">
+                        {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
+                      </span>
+                    </span>
+                    {dot ? (
+                      <span
+                        className={`size-2.5 shrink-0 rounded-full ${dot}`}
+                        aria-label={n.status ?? undefined}
+                      />
+                    ) : null}
+                  </button>
+                </div>
               );
             })}
           </div>
