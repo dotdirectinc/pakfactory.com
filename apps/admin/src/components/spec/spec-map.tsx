@@ -98,6 +98,34 @@ const OFFER_DASH: Record<ProductOptionState, string | undefined> = {
   derived: "6 4",
   added: "1 3",
 };
+/**
+ * The offered-options column, top to bottom: a filter box, then one group per kind — a header the
+ * product's line runs to, and when open, its options under their customization type, hung off a rail
+ * in the group's line style. Only Direct starts open, so a product with 80 options starts short.
+ */
+const FILTER_H = 44;
+const GROUP_H = 36;
+const GROUP_ROW = 44;
+const TYPE_H = 24;
+const GROUP_GAP = 8;
+const INDENT = 20;
+const RAIL = 8;
+
+type OfferGroup = {
+  state: ProductOptionState;
+  y: number;
+  /** Options matching the filter, of `total`. */
+  shown: number;
+  total: number;
+  open: boolean;
+};
+type OfferLayout = {
+  x: number;
+  filterY: number;
+  groups: OfferGroup[];
+  types: { key: string; title: string; y: number }[];
+  rails: { state: ProductOptionState; y1: number; ticks: number[] }[];
+};
 
 /**
  * One icon per depth, the same in every stream (Eric, 2026-10-09), high to low: a group of groups,
@@ -222,6 +250,14 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   const [offers, setOffers] = useState<Map<number, ProductOptionState>>(
     new Map(),
   );
+  /** Kept from product to product, so the same question can be asked of the next one. */
+  const [offerKinds, setOfferKinds] = useState<Set<ProductOptionState>>(
+    () => new Set(OFFER_ORDER),
+  );
+  const [openGroups, setOpenGroups] = useState<Set<ProductOptionState>>(
+    () => new Set<ProductOptionState>(["listed"]),
+  );
+  const [offerQ, setOfferQ] = useState("");
   const [record, setRecord] = useState<{
     for: number;
     res: Awaited<ReturnType<typeof loadMapRecord>>;
@@ -256,6 +292,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     const n = nodes[selected]!;
     setCompatible(new Set());
     setOffers(new Map());
+    setOfferQ("");
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
         loadMapRecord(n.level, n.id),
@@ -352,25 +389,80 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     const f = place(
       levels,
       (level) =>
-        offering && streamOf(level) !== stream
-          ? [...offers.keys()]
-              .filter(statusOk)
-              .sort(
-                (a, b) =>
-                  OFFER_ORDER.indexOf(offers.get(a)!) -
-                    OFFER_ORDER.indexOf(offers.get(b)!) || a - b,
-              )
+        streamOf(level) !== stream
+          ? []
           : (byLevel.get(level) ?? []).filter(
               (i) => related!.has(i) && statusOk(i),
             ),
       parentsOf,
       colW,
     );
-    return f;
+    if (!offering) return { ...f, offer: null };
+
+    // The offered-options column, laid out by hand: filter, then per kind a header and its options by type.
+    const x = PAD + levels.indexOf("customizationOption") * colW;
+    const needle = offerQ.trim().toLowerCase();
+    const matches = (i: number) =>
+      !needle ||
+      nodes[i]!.title.toLowerCase().includes(needle) ||
+      (nodes[i]!.code ?? "").toLowerCase().includes(needle);
+    const typeOf = (i: number) => parentsOf[i]?.[0];
+    const offer: OfferLayout = { x, filterY: HEAD_H, groups: [], types: [], rails: [] };
+    let y = HEAD_H + FILTER_H;
+    for (const state of OFFER_ORDER) {
+      if (!offerKinds.has(state)) continue;
+      const all = [...offers]
+        .filter(([i, k]) => k === state && statusOk(i))
+        .map(([i]) => i);
+      const hit = all.filter(matches);
+      // Filtering opens every group with a match and closes the rest.
+      const open = hit.length > 0 && (needle ? true : openGroups.has(state));
+      offer.groups.push({ state, y, shown: hit.length, total: all.length, open });
+      const y1 = y + GROUP_H;
+      y += GROUP_ROW;
+      if (!open) {
+        y += GROUP_GAP;
+        continue;
+      }
+      // By customization type, in the order the types sit under their categories.
+      const byType = new Map<number, number[]>();
+      for (const i of hit) {
+        const t = typeOf(i) ?? -1;
+        byType.set(t, [...(byType.get(t) ?? []), i]);
+      }
+      const typeRank = (t: number) => [parentsOf[t]?.[0] ?? -1, t] as const;
+      const ticks: number[] = [];
+      for (const [t, cards] of [...byType].sort((a, b) => {
+        const [ca, ta] = typeRank(a[0]);
+        const [cb, tb] = typeRank(b[0]);
+        return ca - cb || ta - tb;
+      })) {
+        offer.types.push({
+          key: `${state}:${t}`,
+          title: t >= 0 ? nodes[t]!.title : COPY.otherType,
+          y,
+        });
+        y += TYPE_H;
+        for (const i of cards.sort((a, b) =>
+          nodes[a]!.title.localeCompare(nodes[b]!.title),
+        )) {
+          f.pos.set(i, { x: x + INDENT, y });
+          ticks.push(y + CARD_H / 2);
+          y += ROW_H;
+        }
+      }
+      offer.rails.push({ state, y1, ticks });
+      y += GROUP_GAP;
+    }
+    return { ...f, height: Math.max(f.height, y), offer };
   }, [
     focusing,
     offering,
     offers,
+    offerKinds,
+    openGroups,
+    offerQ,
+    nodes,
     stream,
     levels,
     byLevel,
@@ -537,15 +629,24 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   const arrows = focus
     ? edges.filter(([a, b]) => focus.pos.has(a) && focus.pos.has(b))
     : edges.filter(([a, b]) => rest.pos.has(a) && rest.pos.has(b));
-  /** A focused product → each option it offers, styled by how it is offered. */
-  const offerArrows =
-    offering && focus && !from && focus.pos.has(selected!)
-      ? [...offers].filter(([i]) => focus.pos.has(i))
-      : [];
+  /** Laid out and settled: the offered-options column's own parts (filter, group headers, rails). */
+  const offerUi =
+    offering && focus?.offer && !from && focus.pos.has(selected!)
+      ? focus.offer
+      : null;
+  /** Options per kind (status filter applied), for the focus bar's chips. */
+  const offerCount = (state: ProductOptionState) =>
+    [...offers].filter(([i, k]) => k === state && statusOk(i)).length;
+  const toggleKind = (state: ProductOptionState) =>
+    setOfferKinds((ks) => {
+      // From "all": show only this kind. Otherwise toggle it; turning off the last one shows all again.
+      if (ks.size === OFFER_ORDER.length) return new Set([state]);
+      const x = new Set(ks);
+      if (x.has(state)) x.delete(state);
+      else x.add(state);
+      return x.size ? x : new Set(OFFER_ORDER);
+    });
   const sel = selected !== null ? nodes[selected]! : null;
-  const relatedOffers = [...offers.keys()].filter((i) =>
-    focus?.pos.has(i),
-  ).length;
   const relatedIn = (level: TableKey) =>
     related ? [...related].filter((i) => nodes[i]!.level === level).length : 0;
   const elsewhere = TABLE_GROUPS.filter(
@@ -649,23 +750,27 @@ export function SpecMap({ data }: { data: SpecMapData }) {
               {sel.title}
             </span>
             {offering && offers.size ? (
-              <span className="hidden shrink-0 items-center gap-3 text-xs text-muted-foreground lg:flex">
+              <span
+                role="group"
+                aria-label={COPY.offerKinds}
+                className="flex shrink-0 items-center gap-1"
+              >
                 {OFFER_ORDER.map((k) => (
-                  <span key={k} className="inline-flex items-center gap-1.5">
-                    <svg width="20" height="6" aria-hidden>
-                      <line
-                        x1="0"
-                        y1="3"
-                        x2="20"
-                        y2="3"
-                        stroke={LINE.on}
-                        strokeWidth={1.25}
-                        strokeDasharray={OFFER_DASH[k]}
-                        strokeLinecap={k === "added" ? "round" : undefined}
-                      />
-                    </svg>
-                    {COPY.offerKind[k]}
-                  </span>
+                  <Button
+                    key={k}
+                    size="xs"
+                    variant={offerKinds.has(k) ? "secondary" : "ghost"}
+                    aria-pressed={offerKinds.has(k)}
+                    title={COPY.offerKind[k]}
+                    onClick={() => toggleKind(k)}
+                    className={offerKinds.has(k) ? "" : "text-muted-foreground"}
+                  >
+                    <OfferSwatch state={k} />
+                    {COPY.offerChip[k]}
+                    <span className="tabular-nums text-muted-foreground">
+                      {offerCount(k)}
+                    </span>
+                  </Button>
                 ))}
               </span>
             ) : null}
@@ -759,22 +864,41 @@ export function SpecMap({ data }: { data: SpecMapData }) {
               </g>
               {/* Separate from the arrows above: the offers arrive after the move, and fade in on their own. */}
               <g
-                key={`offers-${selected}-${offers.size}`}
+                key={`offers-${selected}-${offers.size}-${offerUi ? 1 : 0}`}
                 fill="none"
                 strokeLinejoin="round"
                 className="animate-in fade-in fill-mode-backwards duration-200 delay-300"
               >
-                {offerArrows.map(([i, state]) => (
+                {offerUi?.groups.map((g) => (
                   <path
-                    key={i}
-                    d={elbow(posOf(selected!)!, posOf(i)!, cardW, colW)}
-                    stroke={LINE.on}
+                    key={g.state}
+                    // To the header's middle: elbow() aims at a card's middle, so shift the target to match.
+                    d={elbow(
+                      posOf(selected!)!,
+                      { x: offerUi.x, y: g.y + GROUP_H / 2 - CARD_H / 2 },
+                      cardW,
+                      colW,
+                    )}
+                    stroke={g.total ? LINE.on : LINE.rest}
                     strokeWidth={1.25}
-                    strokeDasharray={OFFER_DASH[state]}
-                    strokeLinecap={state === "added" ? "round" : undefined}
-                    markerEnd="url(#spec-map-arrow-on)"
+                    strokeDasharray={OFFER_DASH[g.state]}
+                    strokeLinecap={g.state === "added" ? "round" : undefined}
+                    markerEnd={`url(#spec-map-arrow-${g.total ? "on" : "rest"})`}
                   />
                 ))}
+                {offerUi?.rails.map((r) =>
+                  r.ticks.length ? (
+                    <path
+                      key={`rail-${r.state}`}
+                      d={`M${offerUi.x + RAIL},${r.y1} V${r.ticks.at(-1)}${r.ticks
+                        .map((t) => ` M${offerUi.x + RAIL},${t} H${offerUi.x + INDENT - 1}`)
+                        .join("")}`}
+                      stroke={LINE.on}
+                      strokeDasharray={OFFER_DASH[r.state]}
+                      strokeLinecap={r.state === "added" ? "round" : undefined}
+                    />
+                  ) : null,
+                )}
               </g>
             </svg>
 
@@ -801,7 +925,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                       <span className="truncate">{COPY.offered}</span>
                     </span>
                     <span className="text-xs tabular-nums text-muted-foreground">
-                      {focus?.pos.size ? relatedOffers : "…"}
+                      {offers.size ? [...offers.keys()].filter(statusOk).length : "…"}
                     </span>
                   </div>
                 );
@@ -890,6 +1014,79 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                     </button>
                   ))}
 
+            {offerUi ? (
+              <div className="animate-in fade-in duration-200">
+                <div
+                  className="absolute"
+                  style={{
+                    left: offerUi.x,
+                    top: offerUi.filterY + 4,
+                    width: cardW,
+                  }}
+                >
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={offerQ}
+                    onChange={(e) => setOfferQ(e.target.value)}
+                    onKeyDown={(e) => e.key === "Escape" && setOfferQ("")}
+                    placeholder={COPY.filterOffers}
+                    aria-label={COPY.filterOffers}
+                    className="h-8 bg-card pl-8 text-xs"
+                  />
+                </div>
+                {offerUi.groups.map((g) => (
+                  <button
+                    key={g.state}
+                    type="button"
+                    disabled={!g.total || Boolean(offerQ.trim())}
+                    aria-expanded={g.open}
+                    onClick={() =>
+                      setOpenGroups((s) => {
+                        const x = new Set(s);
+                        if (x.has(g.state)) x.delete(g.state);
+                        else x.add(g.state);
+                        return x;
+                      })
+                    }
+                    className={`absolute flex items-center gap-2 rounded-md border border-border bg-card px-2.5 text-left text-xs font-semibold shadow-xs enabled:hover:bg-muted disabled:cursor-default ${g.total ? "text-foreground" : "text-muted-foreground"}`}
+                    style={{
+                      left: offerUi.x,
+                      top: g.y,
+                      width: cardW,
+                      height: GROUP_H,
+                    }}
+                  >
+                    {g.open ? (
+                      <ChevronDown className="size-4 shrink-0" />
+                    ) : (
+                      <ChevronRight
+                        className={`size-4 shrink-0 ${g.total ? "" : "opacity-40"}`}
+                      />
+                    )}
+                    <OfferSwatch state={g.state} />
+                    <span className="truncate">{COPY.offerKind[g.state]}</span>
+                    <span className="ml-auto shrink-0 font-normal tabular-nums text-muted-foreground">
+                      {offerQ.trim() ? COPY.ofTotal(g.shown, g.total) : g.total}
+                    </span>
+                  </button>
+                ))}
+                {offerUi.types.map((t) => (
+                  <span
+                    key={t.key}
+                    className="absolute truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+                    style={{
+                      left: offerUi.x + INDENT,
+                      top: t.y,
+                      width: cardW - INDENT,
+                      lineHeight: `${TYPE_H}px`,
+                    }}
+                  >
+                    {t.title}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
             {drawn.map((i) => {
               if (!onMap(i)) return null;
               const n = nodes[i]!;
@@ -910,7 +1107,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   key={i}
                   className={`absolute left-0 top-0 ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
                   style={{
-                    width: cardW,
+                    width: offer ? cardW - INDENT : cardW,
                     height: CARD_H,
                     transform: `translate(${p.x}px, ${p.y}px)`,
                     transition: moving
@@ -942,7 +1139,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                     style={
                       arriving
                         ? {
-                            animationDelay: `${MOVE_MS + Math.min(row, 12) * 30}ms`,
+                            // An offered option also arrives when its group opens, long after the move.
+                            animationDelay: `${(offer && !moving ? 0 : MOVE_MS) + Math.min(row, 12) * (offer ? 20 : 30)}ms`,
                           }
                         : undefined
                     }
@@ -1026,6 +1224,24 @@ export function SpecMap({ data }: { data: SpecMapData }) {
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** A short sample of a kind's line, for the chips and group headers. */
+function OfferSwatch({ state }: { state: ProductOptionState }) {
+  return (
+    <svg width="18" height="6" className="shrink-0" aria-hidden>
+      <line
+        x1="1"
+        y1="3"
+        x2="17"
+        y2="3"
+        stroke={LINE.on}
+        strokeWidth={1.5}
+        strokeDasharray={OFFER_DASH[state]}
+        strokeLinecap={state === "added" ? "round" : undefined}
+      />
+    </svg>
   );
 }
 
