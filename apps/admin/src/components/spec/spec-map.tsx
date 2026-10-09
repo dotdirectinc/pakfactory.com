@@ -41,6 +41,7 @@ import {
 } from "@/lib/spec/catalog-table-model";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
 import type { SpecMapData } from "@/lib/spec/spec-map";
+import type { ProductOptionState } from "@/lib/spec/product-view";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
 import {
   loadMapCompatible,
@@ -86,6 +87,45 @@ const MOVE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 /** Many-to-many and large: shown on demand. */
 const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
 const ALL = "all";
+/**
+ * A focused standard product's offered options, by how the product gets them (as Studio's product
+ * view shows them): listed by the product itself, derived by the rules, added by an exception.
+ * Told apart by line style, since colour means status.
+ */
+const OFFER_ORDER: ProductOptionState[] = ["listed", "derived", "added"];
+const OFFER_DASH: Record<ProductOptionState, string | undefined> = {
+  listed: undefined,
+  derived: "6 4",
+  added: "1 3",
+};
+/**
+ * The offered-options column, top to bottom: a filter box, then one group per kind — a header the
+ * product's line runs to, and when open, its options under their customization type, hung off a rail
+ * in the group's line style. Only Direct starts open, so a product with 80 options starts short.
+ */
+const FILTER_H = 44;
+const GROUP_H = 36;
+const GROUP_ROW = 44;
+const TYPE_H = 24;
+const GROUP_GAP = 8;
+const INDENT = 20;
+const RAIL = 8;
+
+type OfferGroup = {
+  state: ProductOptionState;
+  y: number;
+  /** Options matching the filter, of `total`. */
+  shown: number;
+  total: number;
+  open: boolean;
+};
+type OfferLayout = {
+  x: number;
+  filterY: number;
+  groups: OfferGroup[];
+  types: { key: string; title: string; y: number }[];
+  rails: { state: ProductOptionState; y1: number; ticks: number[] }[];
+};
 
 /**
  * One icon per depth, the same in every stream (Eric, 2026-10-09), high to low: a group of groups,
@@ -114,6 +154,19 @@ const LEVEL_INFO = new Map(
     ),
   ),
 );
+/**
+ * Shorter column names on the map: inside the Products tab the "Product" prefix only repeats the
+ * tab, and in narrow columns it pushed the names into "…" (Richard, 2026-10-09). The full name stays
+ * in the header's tooltip, and the Catalog and the panel keep theirs.
+ */
+const MAP_LABEL: Partial<Record<TableKey, string>> = {
+  productLine: "Lines",
+  productStyle: "Styles",
+  product: "Standard",
+  productValue: "Property values",
+};
+const mapLabelOf = (level: TableKey) =>
+  MAP_LABEL[level] ?? LEVEL_INFO.get(level)?.label;
 const streamOf = (level: TableKey) =>
   LEVEL_INFO.get(level)?.stream ?? TABLE_GROUPS[0]!.key;
 
@@ -207,6 +260,17 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   // ── selection: the chain up and down, cross-stream links, and the rules' compatibility ──
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
+  const [offers, setOffers] = useState<Map<number, ProductOptionState>>(
+    new Map(),
+  );
+  /** Kept from product to product, so the same question can be asked of the next one. */
+  const [offerKinds, setOfferKinds] = useState<Set<ProductOptionState>>(
+    () => new Set(OFFER_ORDER),
+  );
+  const [openGroups, setOpenGroups] = useState<Set<ProductOptionState>>(
+    () => new Set<ProductOptionState>(["listed"]),
+  );
+  const [offerQ, setOfferQ] = useState("");
   const [record, setRecord] = useState<{
     for: number;
     res: Awaited<ReturnType<typeof loadMapRecord>>;
@@ -240,6 +304,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     if (selected === null) return;
     const n = nodes[selected]!;
     setCompatible(new Set());
+    setOffers(new Map());
+    setOfferQ("");
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
         loadMapRecord(n.level, n.id),
@@ -247,15 +313,20 @@ export function SpecMap({ data }: { data: SpecMapData }) {
       ]);
       setRecord({ for: selected, res: rec });
       if (compat.ok) {
-        const want = new Set([
-          ...compat.data.products.map((id) => `product:${id}`),
-          ...compat.data.options.map((id) => `customizationOption:${id}`),
+        const want = new Map<string, ProductOptionState | null>([
+          ...compat.data.products.map((id) => [`product:${id}`, null] as const),
+          ...compat.data.options.map(
+            (o) => [`customizationOption:${o.id}`, o.state] as const,
+          ),
         ]);
-        setCompatible(
-          new Set(
-            nodes.flatMap((m, i) =>
-              want.has(`${m.level}:${m.id}`) ? [i] : [],
-            ),
+        const found = nodes.flatMap((m, i) => {
+          const k = `${m.level}:${m.id}`;
+          return want.has(k) ? [[i, want.get(k)!] as const] : [];
+        });
+        setCompatible(new Set(found.map(([i]) => i)));
+        setOffers(
+          new Map(
+            found.flatMap(([i, state]) => (state ? [[i, state] as const] : [])),
           ),
         );
       }
@@ -282,12 +353,32 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
   const group = TABLE_GROUPS.find((g) => g.key === stream) ?? TABLE_GROUPS[0]!;
-  const levels = useMemo(() => group.levels.map((l) => l.key), [group]);
+  /**
+   * A focused standard product brings the options it offers into its own stream, as a column right
+   * after it, so the product → option lines run straight across. Known from the selection alone, so
+   * the columns are settled before the cards glide; the options rise in once the rules answer.
+   */
+  const offering =
+    focusing &&
+    nodes[selected!]!.level === "product" &&
+    stream === streamOf("product");
+  const levels = useMemo(() => {
+    const own = group.levels.map((l) => l.key);
+    if (!offering) return own;
+    const at = own.indexOf("product") + 1;
+    return [
+      ...own.slice(0, at),
+      "customizationOption" as TableKey,
+      ...own.slice(at),
+    ];
+  }, [group, offering]);
   const colW = Math.max(
     MIN_COL_W,
     Math.floor((areaW - PAD * 2) / levels.length),
   );
   const cardW = colW - GUTTER;
+  /** Headers run on into the gutter (nothing is drawn there at their height), so names fit narrow columns. */
+  const headW = colW - 16;
   const statusOk = useCallback(
     (i: number) =>
       status === ALL || !nodes[i]!.status || nodes[i]!.status === status,
@@ -299,7 +390,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
       place(
         levels,
         (level) =>
-          collapsed.has(level)
+          collapsed.has(level) || streamOf(level) !== stream
             ? []
             : (byLevel.get(level) ?? []).filter(statusOk),
         parentsOf,
@@ -313,14 +404,88 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     const f = place(
       levels,
       (level) =>
-        (byLevel.get(level) ?? []).filter(
-          (i) => related!.has(i) && statusOk(i),
-        ),
+        streamOf(level) !== stream
+          ? []
+          : (byLevel.get(level) ?? []).filter(
+              (i) => related!.has(i) && statusOk(i),
+            ),
       parentsOf,
       colW,
     );
-    return f;
-  }, [focusing, levels, byLevel, related, statusOk, parentsOf, colW]);
+    if (!offering) return { ...f, offer: null };
+
+    // The offered-options column, laid out by hand: filter, then per kind a header and its options by type.
+    const x = PAD + levels.indexOf("customizationOption") * colW;
+    const needle = offerQ.trim().toLowerCase();
+    const matches = (i: number) =>
+      !needle ||
+      nodes[i]!.title.toLowerCase().includes(needle) ||
+      (nodes[i]!.code ?? "").toLowerCase().includes(needle);
+    const typeOf = (i: number) => parentsOf[i]?.[0];
+    const offer: OfferLayout = { x, filterY: HEAD_H, groups: [], types: [], rails: [] };
+    let y = HEAD_H + FILTER_H;
+    for (const state of OFFER_ORDER) {
+      if (!offerKinds.has(state)) continue;
+      const all = [...offers]
+        .filter(([i, k]) => k === state && statusOk(i))
+        .map(([i]) => i);
+      const hit = all.filter(matches);
+      // Filtering opens every group with a match and closes the rest.
+      const open = hit.length > 0 && (needle ? true : openGroups.has(state));
+      offer.groups.push({ state, y, shown: hit.length, total: all.length, open });
+      const y1 = y + GROUP_H;
+      y += GROUP_ROW;
+      if (!open) {
+        y += GROUP_GAP;
+        continue;
+      }
+      // By customization type, in the order the types sit under their categories.
+      const byType = new Map<number, number[]>();
+      for (const i of hit) {
+        const t = typeOf(i) ?? -1;
+        byType.set(t, [...(byType.get(t) ?? []), i]);
+      }
+      const typeRank = (t: number) => [parentsOf[t]?.[0] ?? -1, t] as const;
+      const ticks: number[] = [];
+      for (const [t, cards] of [...byType].sort((a, b) => {
+        const [ca, ta] = typeRank(a[0]);
+        const [cb, tb] = typeRank(b[0]);
+        return ca - cb || ta - tb;
+      })) {
+        offer.types.push({
+          key: `${state}:${t}`,
+          title: t >= 0 ? nodes[t]!.title : COPY.otherType,
+          y,
+        });
+        y += TYPE_H;
+        for (const i of cards.sort((a, b) =>
+          nodes[a]!.title.localeCompare(nodes[b]!.title),
+        )) {
+          f.pos.set(i, { x: x + INDENT, y });
+          ticks.push(y + CARD_H / 2);
+          y += ROW_H;
+        }
+      }
+      offer.rails.push({ state, y1, ticks });
+      y += GROUP_GAP;
+    }
+    return { ...f, height: Math.max(f.height, y), offer };
+  }, [
+    focusing,
+    offering,
+    offers,
+    offerKinds,
+    openGroups,
+    offerQ,
+    nodes,
+    stream,
+    levels,
+    byLevel,
+    related,
+    statusOk,
+    parentsOf,
+    colW,
+  ]);
 
   const targetOf = (i: number) =>
     focus ? (focus.pos.get(i) ?? rest.pos.get(i)) : rest.pos.get(i);
@@ -438,7 +603,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   useLayoutEffect(() => {
     const pos = new Map<number, Pos>();
-    for (const i of drawn) if (inStream(i) && !isGone(i)) pos.set(i, posOf(i)!);
+    for (const i of drawn) if (onMap(i) && !isGone(i)) pos.set(i, posOf(i)!);
     shown.current = { pos };
   });
 
@@ -463,6 +628,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   // ── render ──────────────────────────────────────────────────────────────────
   const inStream = (i: number) => streamOf(nodes[i]!.level) === stream;
+  /** Drawn in this stream: its own records, and a focused product's offered options. */
+  const onMap = (i: number) => inStream(i) || (offering && offers.has(i));
   const isGone = (i: number) =>
     from
       ? !from.pos.has(i)
@@ -477,6 +644,23 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   const arrows = focus
     ? edges.filter(([a, b]) => focus.pos.has(a) && focus.pos.has(b))
     : edges.filter(([a, b]) => rest.pos.has(a) && rest.pos.has(b));
+  /** Laid out and settled: the offered-options column's own parts (filter, group headers, rails). */
+  const offerUi =
+    offering && focus?.offer && !from && focus.pos.has(selected!)
+      ? focus.offer
+      : null;
+  /** Options per kind (status filter applied), for the focus bar's chips. */
+  const offerCount = (state: ProductOptionState) =>
+    [...offers].filter(([i, k]) => k === state && statusOk(i)).length;
+  const toggleKind = (state: ProductOptionState) =>
+    setOfferKinds((ks) => {
+      // From "all": show only this kind. Otherwise toggle it; turning off the last one shows all again.
+      if (ks.size === OFFER_ORDER.length) return new Set([state]);
+      const x = new Set(ks);
+      if (x.has(state)) x.delete(state);
+      else x.add(state);
+      return x.size ? x : new Set(OFFER_ORDER);
+    });
   const sel = selected !== null ? nodes[selected]! : null;
   const relatedIn = (level: TableKey) =>
     related ? [...related].filter((i) => nodes[i]!.level === level).length : 0;
@@ -580,6 +764,31 @@ export function SpecMap({ data }: { data: SpecMapData }) {
             <span className="truncate font-medium text-foreground">
               {sel.title}
             </span>
+            {offering && offers.size ? (
+              <span
+                role="group"
+                aria-label={COPY.offerKinds}
+                className="flex shrink-0 items-center gap-1"
+              >
+                {OFFER_ORDER.map((k) => (
+                  <Button
+                    key={k}
+                    size="xs"
+                    variant={offerKinds.has(k) ? "secondary" : "ghost"}
+                    aria-pressed={offerKinds.has(k)}
+                    title={COPY.offerKind[k]}
+                    onClick={() => toggleKind(k)}
+                    className={offerKinds.has(k) ? "" : "text-muted-foreground"}
+                  >
+                    <OfferSwatch state={k} />
+                    {COPY.offerChip[k]}
+                    <span className="tabular-nums text-muted-foreground">
+                      {offerCount(k)}
+                    </span>
+                  </Button>
+                ))}
+              </span>
+            ) : null}
             {elsewhere.map((g) => (
               <Button
                 key={g.key}
@@ -660,7 +869,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   return (
                     <path
                       key={`${a}-${b}`}
-                      d={elbow(posOf(a)!, posOf(b)!, cardW)}
+                      d={elbow(posOf(a)!, posOf(b)!, cardW, colW)}
                       stroke={LINE[k]}
                       strokeWidth={k === "on" ? 1.25 : 1}
                       markerEnd={`url(#spec-map-arrow-${k})`}
@@ -668,10 +877,73 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   );
                 })}
               </g>
+              {/* Separate from the arrows above: the offers arrive after the move, and fade in on their own. */}
+              <g
+                key={`offers-${selected}-${offers.size}-${offerUi ? 1 : 0}`}
+                fill="none"
+                strokeLinejoin="round"
+                className="animate-in fade-in fill-mode-backwards duration-200 delay-300"
+              >
+                {offerUi?.groups.map((g) => (
+                  <path
+                    key={g.state}
+                    // To the header's middle: elbow() aims at a card's middle, so shift the target to match.
+                    d={elbow(
+                      posOf(selected!)!,
+                      { x: offerUi.x, y: g.y + GROUP_H / 2 - CARD_H / 2 },
+                      cardW,
+                      colW,
+                    )}
+                    stroke={g.total ? LINE.on : LINE.rest}
+                    strokeWidth={1.25}
+                    strokeDasharray={OFFER_DASH[g.state]}
+                    strokeLinecap={g.state === "added" ? "round" : undefined}
+                    markerEnd={`url(#spec-map-arrow-${g.total ? "on" : "rest"})`}
+                  />
+                ))}
+                {offerUi?.rails.map((r) =>
+                  r.ticks.length ? (
+                    <path
+                      key={`rail-${r.state}`}
+                      d={`M${offerUi.x + RAIL},${r.y1} V${r.ticks.at(-1)}${r.ticks
+                        .map((t) => ` M${offerUi.x + RAIL},${t} H${offerUi.x + INDENT - 1}`)
+                        .join("")}`}
+                      stroke={LINE.on}
+                      strokeDasharray={OFFER_DASH[r.state]}
+                      strokeLinecap={r.state === "added" ? "round" : undefined}
+                    />
+                  ) : null,
+                )}
+              </g>
             </svg>
 
             {levels.map((level, li) => {
               const Icon = iconOf(level);
+              if (streamOf(level) !== stream)
+                return (
+                  <div
+                    key={level}
+                    className="absolute flex items-center gap-2"
+                    style={{
+                      left: PAD + li * colW,
+                      top: 8,
+                      width: headW,
+                      height: HEAD_H - 16,
+                    }}
+                  >
+                    <Icon
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
+                      <ChevronDown className="size-4 shrink-0" />
+                      <span className="truncate">{COPY.offered}</span>
+                    </span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {offers.size ? [...offers.keys()].filter(statusOk).length : "…"}
+                    </span>
+                  </div>
+                );
               const total = (byLevel.get(level) ?? []).length;
               const isCollapsed = collapsed.has(level);
               const count = focus
@@ -687,12 +959,12 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   style={{
                     left: PAD + li * colW,
                     top: 8,
-                    width: cardW,
+                    width: headW,
                     height: HEAD_H - 16,
                   }}
                 >
                   <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border bg-card text-[11px] font-semibold tabular-nums text-muted-foreground">
-                    {li + 1}
+                    {(LEVEL_INFO.get(level)?.index ?? li) + 1}
                   </span>
                   <Icon
                     className="size-4 shrink-0 text-muted-foreground"
@@ -713,15 +985,14 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                     disabled={focus !== null}
                     className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground enabled:hover:underline disabled:cursor-default"
                     aria-expanded={focus !== null || !isCollapsed}
+                    title={LEVEL_INFO.get(level)?.label}
                   >
                     {isCollapsed && focus === null ? (
                       <ChevronRight className="size-4 shrink-0" />
                     ) : (
                       <ChevronDown className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">
-                      {LEVEL_INFO.get(level)?.label}
-                    </span>
+                    <span className="truncate">{mapLabelOf(level)}</span>
                   </button>
                   <span className="text-xs tabular-nums text-muted-foreground">
                     {count === total ? total : `${count}/${total}`}
@@ -757,9 +1028,83 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                     </button>
                   ))}
 
+            {offerUi ? (
+              <div className="animate-in fade-in duration-200">
+                <div
+                  className="absolute"
+                  style={{
+                    left: offerUi.x,
+                    top: offerUi.filterY + 4,
+                    width: cardW,
+                  }}
+                >
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={offerQ}
+                    onChange={(e) => setOfferQ(e.target.value)}
+                    onKeyDown={(e) => e.key === "Escape" && setOfferQ("")}
+                    placeholder={COPY.filterOffers}
+                    aria-label={COPY.filterOffers}
+                    className="h-8 bg-card pl-8 text-xs"
+                  />
+                </div>
+                {offerUi.groups.map((g) => (
+                  <button
+                    key={g.state}
+                    type="button"
+                    disabled={!g.total || Boolean(offerQ.trim())}
+                    aria-expanded={g.open}
+                    onClick={() =>
+                      setOpenGroups((s) => {
+                        const x = new Set(s);
+                        if (x.has(g.state)) x.delete(g.state);
+                        else x.add(g.state);
+                        return x;
+                      })
+                    }
+                    className={`absolute flex items-center gap-2 rounded-md border border-border bg-card px-2.5 text-left text-xs font-semibold shadow-xs enabled:hover:bg-muted disabled:cursor-default ${g.total ? "text-foreground" : "text-muted-foreground"}`}
+                    style={{
+                      left: offerUi.x,
+                      top: g.y,
+                      width: cardW,
+                      height: GROUP_H,
+                    }}
+                  >
+                    {g.open ? (
+                      <ChevronDown className="size-4 shrink-0" />
+                    ) : (
+                      <ChevronRight
+                        className={`size-4 shrink-0 ${g.total ? "" : "opacity-40"}`}
+                      />
+                    )}
+                    <OfferSwatch state={g.state} />
+                    <span className="truncate">{COPY.offerKind[g.state]}</span>
+                    <span className="ml-auto shrink-0 font-normal tabular-nums text-muted-foreground">
+                      {offerQ.trim() ? COPY.ofTotal(g.shown, g.total) : g.total}
+                    </span>
+                  </button>
+                ))}
+                {offerUi.types.map((t) => (
+                  <span
+                    key={t.key}
+                    className="absolute truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+                    style={{
+                      left: offerUi.x + INDENT,
+                      top: t.y,
+                      width: cardW - INDENT,
+                      lineHeight: `${TYPE_H}px`,
+                    }}
+                  >
+                    {t.title}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
             {drawn.map((i) => {
-              if (!inStream(i)) return null;
+              if (!onMap(i)) return null;
               const n = nodes[i]!;
+              const offer = offering ? offers.get(i) : undefined;
               const p = posOf(i)!;
               const Icon = iconOf(n.level);
               const dot = statusDot(n.status);
@@ -776,7 +1121,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   key={i}
                   className={`absolute left-0 top-0 ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
                   style={{
-                    width: cardW,
+                    width: offer ? cardW - INDENT : cardW,
                     height: CARD_H,
                     transform: `translate(${p.x}px, ${p.y}px)`,
                     transition: moving
@@ -787,8 +1132,15 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                 >
                   <button
                     type="button"
-                    onClick={() => select(i, false)}
-                    title={n.status ? `${n.title} — ${n.status}` : n.title}
+                    // An offered option belongs to the Customizations stream: selecting it goes there.
+                    onClick={() => select(i, !inStream(i))}
+                    title={[
+                      n.title,
+                      offer ? COPY.offerKind[offer] : null,
+                      n.status,
+                    ]
+                      .filter(Boolean)
+                      .join(" — ")}
                     tabIndex={gone ? -1 : undefined}
                     aria-hidden={gone ? true : undefined}
                     className={`flex size-full items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs hover:bg-muted ${
@@ -801,7 +1153,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                     style={
                       arriving
                         ? {
-                            animationDelay: `${MOVE_MS + Math.min(row, 12) * 30}ms`,
+                            // An offered option also arrives when its group opens, long after the move.
+                            animationDelay: `${(offer && !moving ? 0 : MOVE_MS) + Math.min(row, 12) * (offer ? 20 : 30)}ms`,
                           }
                         : undefined
                     }
@@ -888,6 +1241,24 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   );
 }
 
+/** A short sample of a kind's line, for the chips and group headers. */
+function OfferSwatch({ state }: { state: ProductOptionState }) {
+  return (
+    <svg width="18" height="6" className="shrink-0" aria-hidden>
+      <line
+        x1="1"
+        y1="3"
+        x2="17"
+        y2="3"
+        stroke={LINE.on}
+        strokeWidth={1.5}
+        strokeDasharray={OFFER_DASH[state]}
+        strokeLinecap={state === "added" ? "round" : undefined}
+      />
+    </svg>
+  );
+}
+
 function adjacency(
   n: number,
   edges: [number, number][],
@@ -903,13 +1274,21 @@ function adjacency(
  * Parent's right edge → child's left edge as an angled line: out, along a shared vertical just past
  * the parent's column, then in. Every line from one column shares that vertical, so they overlap
  * into one trunk instead of fanning out (Eric, 2026-10-09).
+ *
+ * A line that skips a column (a focused product's property values, past its offered options) bridges
+ * over that column's cards, just under the headers, and comes down the child column's own trunk.
  */
-function elbow(a: Pos, b: Pos, cardW: number): string {
+function elbow(a: Pos, b: Pos, cardW: number, colW: number): string {
   const x1 = a.x + cardW;
   const y1 = a.y + CARD_H / 2;
   const x2 = b.x - 1;
   const y2 = b.y + CARD_H / 2;
   const mx = x1 + Math.round(GUTTER / 2);
+  if (b.x - a.x > colW * 1.5) {
+    const bridge = HEAD_H - 6;
+    const mx2 = b.x - Math.round(GUTTER / 2);
+    return `M${x1},${y1} H${mx} V${bridge} H${mx2} V${y2} H${x2}`;
+  }
   return y1 === y2
     ? `M${x1},${y1} H${x2}`
     : `M${x1},${y1} H${mx} V${y2} H${x2}`;

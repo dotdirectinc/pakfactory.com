@@ -5,6 +5,7 @@ import { getCatalogRecord, type CatalogRecord } from "@/lib/spec/catalog-record"
 import { getCustomizationView, getProductView } from "@/lib/spec/cached-views";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import type { Loaded } from "@/lib/spec/rules-source";
+import type { ProductOptionState } from "@/lib/spec/product-view";
 
 /**
  * The Spec Map's side panel (PROD-2960). Read-only; the same grant as every Spec page, checked here
@@ -25,14 +26,18 @@ export async function loadMapRecord(level: string, id: string): Promise<Loaded<C
 
 /**
  * What a record is compatible with, from the rules (the storefront's own answer): a standard
- * product's offered options, an option's products. Other levels have none.
+ * product's offered options, each with how it is offered (listed by the product, derived by the
+ * rules, added by an exception), and an option's products. Other levels have none.
  */
-export async function loadMapCompatible(level: string, id: string): Promise<Loaded<{ products: string[]; options: string[] }>> {
+export async function loadMapCompatible(
+  level: string,
+  id: string,
+): Promise<Loaded<{ products: string[]; options: { id: string; state: ProductOptionState }[] }>> {
   if (!(await granted())) return { ok: false, error: "No access to Spec System" };
   if (level === "product") {
     const res = await getProductView(id);
     if (!res.ok) return res;
-    const options = (res.data?.categories ?? []).flatMap((c) => c.types.flatMap((t) => t.options.map((o) => o.id)));
+    const options = (res.data?.categories ?? []).flatMap((c) => c.types.flatMap((t) => t.options.map((o) => ({ id: o.id, state: o.state }))));
     return { ok: true, data: { products: [], options } };
   }
   if (level === "customizationOption") {
