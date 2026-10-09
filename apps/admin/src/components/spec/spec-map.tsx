@@ -708,13 +708,16 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                         return x;
                       })
                     }
-                    className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground hover:underline"
-                    aria-expanded={!isCollapsed}
+                    // While a card is selected every level shows its related cards, collapsed or not: one
+                    // chevron for all, and the toggle waits until the selection is cleared (Eric, 2026-10-09).
+                    disabled={focus !== null}
+                    className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground enabled:hover:underline disabled:cursor-default"
+                    aria-expanded={focus !== null || !isCollapsed}
                   >
-                    {isCollapsed ? (
-                      <ChevronRight className="size-4" />
+                    {isCollapsed && focus === null ? (
+                      <ChevronRight className="size-4 shrink-0" />
                     ) : (
-                      <ChevronDown className="size-4" />
+                      <ChevronDown className="size-4 shrink-0" />
                     )}
                     <span className="truncate">
                       {LEVEL_INFO.get(level)?.label}
