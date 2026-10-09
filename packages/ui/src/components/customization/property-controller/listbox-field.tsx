@@ -1,8 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { cn } from "../../../lib/utils";
-import { hintClass } from "./field-styles";
+import {useState} from "react";
+import {ChevronDownIcon} from "lucide-react";
+import {cn} from "../../../lib/utils";
+import {Button} from "../../button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "../../dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../select";
+
+const PLACEHOLDER = "Select…";
 
 export function ListboxField({
   choices,
@@ -12,7 +28,6 @@ export function ListboxField({
   defaultValue,
   defaultValues,
   onChange,
-  hint,
 }: {
   choices: string[];
   multi?: boolean;
@@ -36,23 +51,6 @@ export function ListboxField({
     onChange?.(next);
   };
 
-  const boxRef = useRef<HTMLDivElement>(null);
-  const [hideHint, setHideHint] = useState(false);
-
-  useEffect(() => {
-    const lb = boxRef.current;
-    if (!lb) return;
-    if (lb.scrollHeight <= lb.clientHeight + 1) setHideHint(true);
-  }, [choices]);
-
-  const dflt = multi
-    ? "Scroll for the full list — multiple selections allowed."
-    : "Scroll for the full list — one selection only.";
-
-  function pickSingle(c: string) {
-    setSelected([c]);
-  }
-
   function toggleMulti(c: string) {
     const on = !selected.includes(c);
     if (!on) {
@@ -71,40 +69,60 @@ export function ListboxField({
     setSelected(selected.filter((x) => x !== exclusive).concat(c));
   }
 
-  return (
-    <>
-      <div
-        ref={boxRef}
-        className="max-h-[200px] overflow-y-auto rounded-[var(--radius-control)] border border-border"
-        data-excl={exclusive}
-        data-multi={multi || undefined}
+  if (!multi) {
+    const current = selected[0] ?? "";
+    return (
+      <Select
+        value={current || undefined}
+        onValueChange={(next) => setSelected(next ? [next] : [])}
       >
-        {choices.map((c) => {
-          const on = selected.includes(c);
-          return (
-            <div
-              key={c}
-              role="option"
-              aria-selected={on}
-              className={cn(
-                "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm",
-                on && "bg-primary/10 text-primary",
-              )}
-              onClick={() => (multi ? toggleMulti(c) : pickSingle(c))}
-            >
-              <span
-                className={cn(
-                  "inline-block size-3 shrink-0 border border-current",
-                  multi ? "rounded-sm" : "rounded-full",
-                  on && "bg-current",
-                )}
-              />
+        <SelectTrigger className="w-full max-w-full shadow-none">
+          <SelectValue placeholder={PLACEHOLDER} />
+        </SelectTrigger>
+        <SelectContent position="popper" align="start" className="w-(--radix-select-trigger-width)">
+          {choices.map((c) => (
+            <SelectItem key={c} value={c}>
               {c}
-            </div>
-          );
-        })}
-      </div>
-      {!hideHint ? <div className={hintClass}>{hint || dflt}</div> : null}
-    </>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  const label =
+    selected.length > 0 ? selected.join(", ") : PLACEHOLDER;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(
+            "h-9 w-full max-w-full justify-between px-3 font-normal shadow-none",
+            selected.length === 0 && "text-muted-foreground",
+          )}
+        >
+          <span className="truncate">{label}</span>
+          <ChevronDownIcon className="size-4 shrink-0 opacity-50" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="w-(--radix-dropdown-menu-trigger-width) min-w-[var(--radix-dropdown-menu-trigger-width)]"
+      >
+        {choices.map((c) => (
+          <DropdownMenuCheckboxItem
+            key={c}
+            checked={selected.includes(c)}
+            onCheckedChange={() => toggleMulti(c)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            {c}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

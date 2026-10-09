@@ -1,6 +1,7 @@
 "use client";
 
 import {useState, type CSSProperties} from "react";
+import {CheckIcon} from "lucide-react";
 import {cn} from "../../../lib/utils";
 import type {SwatchItem} from "../types";
 import {
@@ -20,11 +21,14 @@ export function SwatchField({
   value: controlled,
   defaultValue,
   onChange,
+  /** When false, selected state keeps the ring but omits the top-right check badge. */
+  showCheckBadge = true,
 }: {
   swatches: SwatchItem[];
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
+  showCheckBadge?: boolean;
 }) {
   const [internal, setInternal] = useState(
     defaultValue ?? swatches[0]?.id ?? "",
@@ -57,7 +61,7 @@ export function SwatchField({
                 aria-checked={on}
                 aria-label={s.label}
                 className={cn(
-                  "size-9 shrink-0 cursor-pointer rounded-full transition-shadow",
+                  "relative size-9 shrink-0 cursor-pointer rounded-full transition-shadow",
                   "hover:opacity-90",
                   "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
                   isConsultation
@@ -69,7 +73,16 @@ export function SwatchField({
                 )}
                 style={style}
                 onClick={() => setSelected(s.id)}
-              />
+              >
+                {on && showCheckBadge ? (
+                  <span
+                    className="absolute -top-1 -right-1 inline-flex size-3 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                    aria-hidden
+                  >
+                    <CheckIcon className="size-2" strokeWidth={2.5} />
+                  </span>
+                ) : null}
+              </button>
             </TooltipTrigger>
             <TooltipContent side="bottom" sideOffset={6}>
               {s.label}

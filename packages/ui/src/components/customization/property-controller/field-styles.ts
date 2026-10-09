@@ -1,21 +1,14 @@
-import { cn } from "../../../lib/utils";
+import {cn} from "../../../lib/utils";
 
-export const chipClass = (on: boolean, consultation = false) =>
+/** Filled selected chrome for radio / checks / radioPick / specTable (not ChipField). */
+export const chipClass = (on: boolean) =>
   cn(
     "cursor-pointer rounded-[var(--radius-control)] border px-3 py-2 text-sm transition-colors",
     "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
-    consultation
-      ? cn(
-          "border-dotted border-[3px] border-muted-foreground bg-transparent text-foreground",
-          "hover:bg-muted/60",
-          on && "border-foreground bg-muted hover:bg-muted",
-        )
-      : cn(
-          "border-border bg-background",
-          "hover:bg-muted/60",
-          on &&
-            "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-        ),
+    "border-border bg-background",
+    "hover:bg-muted/60",
+    on &&
+      "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
   );
 
 export const inputClass =

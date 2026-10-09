@@ -1,6 +1,8 @@
 import type {
     CustomizationDetail,
+    CustomizationPropertyFact,
     CustomizationPropertyValue,
+    PropertyControlKind,
 } from '@/lib/catalog/types';
 import {
     isCustomColorSlug,
@@ -18,24 +20,57 @@ export type PropertyFieldOption = {
     color?: string;
     /** Custom Color wheel / consultation treatment. */
     appearance?: 'customColor';
+    /** Heading slug this shade points at (kindOf). */
+    kindOfSlug?: string;
+    kindOfTitle?: string;
+    facts?: CustomizationPropertyFact[];
 };
+
+/** Customer control kinds rendered by OptionPropertyControllers. */
+export type PropertyFieldKind = PropertyControlKind;
 
 export type PropertyFieldDescriptor = {
     /** Property slug or id used as selection key. */
     propertyKey: string;
     label: string;
     valuesPerItem: PropertyValuesPerItem;
-    kind: 'swatch' | 'chip';
+    kind: PropertyFieldKind;
     options: PropertyFieldOption[];
 };
+
+const MULTI_VALUE_KINDS = new Set<PropertyFieldKind>([
+    'chip',
+    'listbox',
+    'toggles',
+]);
 
 function groupKey(value: CustomizationPropertyValue): string | null {
     return value.propertySlug?.trim() || value.propertyId?.trim() || null;
 }
 
+function inferControl(options: PropertyFieldOption[]): 'swatch' | 'chip' {
+    return options.some(
+        (o) =>
+            Boolean(o.imageUrl) ||
+            Boolean(o.color) ||
+            o.appearance === 'customColor',
+    )
+        ? 'swatch'
+        : 'chip';
+}
+
+function resolveValuesPerItem(
+    kind: PropertyFieldKind,
+    declared: PropertyValuesPerItem | undefined,
+): PropertyValuesPerItem {
+    if (!MULTI_VALUE_KINDS.has(kind)) return 'one';
+    return declared ?? 'one';
+}
+
 /**
  * Map a customization Option detail → selectable Property fields.
- * Stated declared Properties are excluded. Shared ui property controllers only.
+ * Stated declared Properties are excluded. Control comes from the type’s
+ * declared row when set; otherwise image/color still infer swatch vs chip.
  * Skips a field when its only value title matches the option title (echo).
  */
 export function mapDetailToPropertyFields(
@@ -68,10 +103,6 @@ export function mapDetailToPropertyFields(
             (d) =>
                 d.propertySlug === propertyKey || d.propertyId === propertyKey,
         );
-        const valuesPerItem: PropertyValuesPerItem =
-            declaredMatch?.valuesPerItem ??
-            values.find((v) => v.valuesPerItem)?.valuesPerItem ??
-            'one';
         const label =
             declaredMatch?.propertyTitle?.trim() ||
             values.find((v) => v.propertyTitle)?.propertyTitle?.trim() ||
@@ -91,6 +122,9 @@ export function mapDetailToPropertyFields(
                 ...(v.imageAlt ? {imageAlt: v.imageAlt} : {}),
                 ...(color ? {color} : {}),
                 ...(isCustom ? {appearance: 'customColor' as const} : {}),
+                ...(v.kindOfSlug ? {kindOfSlug: v.kindOfSlug} : {}),
+                ...(v.kindOfTitle ? {kindOfTitle: v.kindOfTitle} : {}),
+                ...(v.facts.length > 0 ? {facts: v.facts} : {}),
             };
         });
         // Sole value that only restates the option name — hide from Configuration.
@@ -100,14 +134,14 @@ export function mapDetailToPropertyFields(
         ) {
             continue;
         }
-        const kind = options.some(
-            (o) =>
-                Boolean(o.imageUrl) ||
-                Boolean(o.color) ||
-                o.appearance === 'customColor',
-        )
-            ? 'swatch'
-            : 'chip';
+
+        const kind: PropertyFieldKind =
+            declaredMatch?.control ?? inferControl(options);
+        const valuesPerItem = resolveValuesPerItem(
+            kind,
+            declaredMatch?.valuesPerItem,
+        );
+
         fields.push({
             propertyKey,
             label,
@@ -117,5 +151,31 @@ export function mapDetailToPropertyFields(
         });
     }
 
+    // Dimension / Pantone do not need authored Property Values — emit from the
+    // declaration alone when the option has no values for that property.
+    const emitted = new Set(fields.map((f) => f.propertyKey));
+    for (const row of declared) {
+        if (row.usage !== 'selectable') continue;
+        if (row.control !== 'dimension' && row.control !== 'pantone') continue;
+        const propertyKey =
+            row.propertySlug?.trim() || row.propertyId?.trim();
+        if (!propertyKey || emitted.has(propertyKey)) continue;
+        fields.push({
+            propertyKey,
+            label: row.propertyTitle?.trim() || propertyKey,
+            valuesPerItem: 'one',
+            kind: row.control,
+            options: [],
+        });
+        emitted.add(propertyKey);
+    }
+
     return fields;
+}
+
+/** Summary display kind: swatches keep swatch; everything else is a chip. */
+export function summaryKindForField(
+    kind: PropertyFieldKind,
+): 'swatch' | 'chip' {
+    return kind === 'swatch' || kind === 'swatchShades' ? 'swatch' : 'chip';
 }

@@ -196,6 +196,8 @@ Staff gallery for shared configurator UI and draft build-spec logic (PROD-1299 /
 
 **Structure map:** [`docs/configurator-html-structure.md`](docs/configurator-html-structure.md) — HTML Category → “Option” row (`ui.kind` + `cond`) maps to Studio **Category → Type** (list choices ≈ Options); separate sandbox (`S` / L1–L15); DEPS reference only. The iframe Configurator Logic route is removed; Property Controls hosts the React port.
 
+**Www UI parity (handoff):** [`docs/property-controls-www-parity.md`](docs/property-controls-www-parity.md) — match the www option Configuration rail one-to-one (Controller Lab as gold standard); shared `@pakfactory/ui` primitives; do not fork field components.
+
 Static HTML reference (kept for now): [`public/customization-logic-explorer.html`](public/customization-logic-explorer.html). Shared field dispatcher: `@pakfactory/ui` `PropertyController` (admin `CatalogControl` re-exports it).
 
 ## Troubleshooting

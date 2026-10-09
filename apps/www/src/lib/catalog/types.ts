@@ -502,6 +502,21 @@ export type CustomizationPropertyFact = {
     display: string;
 };
 
+/** Customer control on a selectable declared property (Customization Type). */
+export type PropertyControlKind =
+    | 'chip'
+    | 'swatch'
+    | 'swatchShades'
+    | 'radio'
+    | 'radioPick'
+    | 'listbox'
+    | 'card'
+    | 'toggles'
+    | 'readonly'
+    | 'specTable'
+    | 'pantone'
+    | 'dimension';
+
 export type CustomizationPropertyValue = {
     id: string;
     title: string;
@@ -509,7 +524,9 @@ export type CustomizationPropertyValue = {
     propertyId?: string;
     propertySlug?: string;
     propertyTitle?: string;
-    valuesPerItem?: 'one' | 'many';
+    /** Heading value this shade points at (propertyValue.kindOf). */
+    kindOfSlug?: string;
+    kindOfTitle?: string;
     imageUrl?: string | null;
     imageAlt?: string;
     facts: CustomizationPropertyFact[];
@@ -526,6 +543,9 @@ export type CustomizationDeclaredProperty = {
     propertyId?: string;
     propertySlug?: string;
     propertyTitle?: string;
+    /** Selectable rows — customer control. Absent until editors set it (frontend falls back). */
+    control?: PropertyControlKind;
+    /** Selectable chip / listbox / toggles — one or several. */
     valuesPerItem?: 'one' | 'many';
 };
 

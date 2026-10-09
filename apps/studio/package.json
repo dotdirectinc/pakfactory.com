@@ -11,6 +11,7 @@
     "seed:per-type-settings": "node scripts/seed-per-type-settings.mjs",
     "seed:corrugated-selectable-props": "node scripts/seed-corrugated-board-selectable-props.mjs",
     "seed:white-lined-detail-demo": "node scripts/seed-white-lined-detail-demo.mjs",
+    "seed:controller-lab": "node scripts/seed-controller-lab.mjs",
     "seed:expertise-design": "node scripts/seed-expertise-design.mjs",
     "seed:expertise-strategy": "node scripts/seed-expertise-strategy.mjs",
     "clone:test-rigid-book-style": "node scripts/clone-test-rigid-book-style.mjs",

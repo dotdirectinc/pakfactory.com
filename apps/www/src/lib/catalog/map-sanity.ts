@@ -22,6 +22,7 @@ import type {
     CustomizationPropertyFact,
     CustomizationPropertyValue,
     CustomizationShowcaseTile,
+    PropertyControlKind,
     Product,
     ProductFaq,
     ProductKind,
@@ -1117,6 +1118,21 @@ function mapPropertyFacts(
     return out;
 }
 
+const PROPERTY_CONTROLS = new Set<string>([
+    'chip',
+    'swatch',
+    'swatchShades',
+    'radio',
+    'radioPick',
+    'listbox',
+    'card',
+    'toggles',
+    'readonly',
+    'specTable',
+    'pantone',
+    'dimension',
+]);
+
 function mapDetailPropertyValue(
     value: CatalogPropertyValueDetailDoc | null | undefined,
 ): CustomizationPropertyValue | null {
@@ -1126,7 +1142,8 @@ function mapDetailPropertyValue(
     if (!slug || !title) return null;
     const propSlug = value.property?.slug?.trim();
     const propTitle = value.property?.title?.trim();
-    const valuesPerItem = value.property?.valuesPerItem;
+    const kindOfSlug = value.kindOf?.slug?.trim();
+    const kindOfTitle = value.kindOf?.title?.trim();
     const imageUrl = value.image
         ? (sanityImageBaseUrl(value.image) ?? null)
         : null;
@@ -1140,9 +1157,8 @@ function mapDetailPropertyValue(
         ...(value.property?._id ? {propertyId: value.property._id} : {}),
         ...(propSlug ? {propertySlug: propSlug} : {}),
         ...(propTitle ? {propertyTitle: propTitle} : {}),
-        ...(valuesPerItem === 'one' || valuesPerItem === 'many'
-            ? {valuesPerItem}
-            : {}),
+        ...(kindOfSlug ? {kindOfSlug} : {}),
+        ...(kindOfTitle ? {kindOfTitle} : {}),
         ...(imageUrl !== undefined ? {imageUrl} : {}),
         ...(imageAlt ? {imageAlt} : {}),
         facts: mapPropertyFacts(value.facts),
@@ -1177,7 +1193,17 @@ export function mapSanityCustomizationDetail(
         const usage = row.usage === 'selectable' ? 'selectable' : 'stated';
         const propSlug = row.property?.slug?.trim();
         const propTitle = row.property?.title?.trim();
-        const valuesPerItem = row.property?.valuesPerItem;
+        const control =
+            usage === 'selectable' &&
+            row.control &&
+            PROPERTY_CONTROLS.has(row.control)
+                ? (row.control as PropertyControlKind)
+                : undefined;
+        const valuesPerItem =
+            usage === 'selectable' &&
+            (row.valuesPerItem === 'one' || row.valuesPerItem === 'many')
+                ? row.valuesPerItem
+                : undefined;
         declaredProperties.push({
             usage,
             ...(usage === 'stated' && row.showOnDetailPage === false
@@ -1186,9 +1212,8 @@ export function mapSanityCustomizationDetail(
             ...(row.property?._id ? {propertyId: row.property._id} : {}),
             ...(propSlug ? {propertySlug: propSlug} : {}),
             ...(propTitle ? {propertyTitle: propTitle} : {}),
-            ...(valuesPerItem === 'one' || valuesPerItem === 'many'
-                ? {valuesPerItem}
-                : {}),
+            ...(control ? {control} : {}),
+            ...(valuesPerItem ? {valuesPerItem} : {}),
         });
     }
 

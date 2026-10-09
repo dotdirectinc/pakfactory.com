@@ -716,7 +716,11 @@ const PROPERTY_VALUE_DETAIL_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
-  kindOf,
+  "kindOf": kindOf->{
+    _id,
+    title,
+    "slug": slug.current
+  },
   image{
     ...,
     "alt": ${IMAGE_ALT}
@@ -730,8 +734,20 @@ const PROPERTY_VALUE_DETAIL_PROJ = /* groq */ `{
   "property": property->{
     _id,
     title,
-    "slug": slug.current,
-    valuesPerItem
+    "slug": slug.current
+  }
+}`;
+
+/** Declared property row on a customization type — usage + customer control. */
+const DECLARED_PROPERTY_PROJ = /* groq */ `{
+  usage,
+  showOnDetailPage,
+  control,
+  valuesPerItem,
+  "property": property->{
+    _id,
+    title,
+    "slug": slug.current
   }
 }`;
 
@@ -814,16 +830,7 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
     _id,
     title,
     "slug": slug.current,
-    "declaredProperties": properties[]{
-      usage,
-      showOnDetailPage,
-      "property": property->{
-        _id,
-        title,
-        "slug": slug.current,
-        valuesPerItem
-      }
-    }
+    "declaredProperties": properties[]${DECLARED_PROPERTY_PROJ}
   },
   "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ}
 }`;
@@ -857,16 +864,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     _id,
     title,
     "slug": slug.current,
-    "declaredProperties": properties[]{
-      usage,
-      showOnDetailPage,
-      "property": property->{
-        _id,
-        title,
-        "slug": slug.current,
-        valuesPerItem
-      }
-    }
+    "declaredProperties": properties[]${DECLARED_PROPERTY_PROJ}
   },
   "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ},
   ${PRODUCT_LINES_FROM_PRODUCTS},
@@ -970,16 +968,7 @@ export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
     _id,
     title,
     "slug": slug.current,
-    "declaredProperties": properties[]{
-      usage,
-      showOnDetailPage,
-      "property": property->{
-        _id,
-        title,
-        "slug": slug.current,
-        valuesPerItem
-      }
-    }
+    "declaredProperties": properties[]${DECLARED_PROPERTY_PROJ}
   },
   "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ},
   ${ACHIEVED_BY_PROJ},
@@ -1360,11 +1349,26 @@ export type CatalogLibraryOptionDoc = {
   productLines?: (CatalogLineRefDoc | null)[] | null;
 };
 
+export type CatalogPropertyControl =
+  | 'chip'
+  | 'swatch'
+  | 'swatchShades'
+  | 'radio'
+  | 'radioPick'
+  | 'listbox'
+  | 'card'
+  | 'toggles'
+  | 'readonly'
+  | 'specTable'
+  | 'pantone'
+  | 'dimension';
+
 export type CatalogPropertyValueDetailDoc = {
   _id: string;
   title: string;
   slug: string | null;
-  kindOf?: unknown | null;
+  /** Heading value this shade points at (propertyValue.kindOf), when set. */
+  kindOf?: CatalogPropertyRefDoc | null;
   image?: unknown | null;
   facts?:
     | {
@@ -1374,18 +1378,18 @@ export type CatalogPropertyValueDetailDoc = {
         text?: string | null;
       }[]
     | null;
-  property: (CatalogPropertyRefDoc & {
-    valuesPerItem?: 'one' | 'many' | null;
-  }) | null;
+  property: CatalogPropertyRefDoc | null;
 };
 
 export type CatalogDeclaredPropertyDoc = {
   usage?: 'stated' | 'selectable' | null;
-  property: (CatalogPropertyRefDoc & {
-    valuesPerItem?: 'one' | 'many' | null;
-  }) | null;
+  property: CatalogPropertyRefDoc | null;
   /** Stated rows only (PROD-2610): false = a filter the detail page does not print. Unset = shown. */
   showOnDetailPage?: boolean | null;
+  /** Selectable rows only — customer control kind. */
+  control?: CatalogPropertyControl | null;
+  /** Selectable chip / listbox / toggles only. */
+  valuesPerItem?: 'one' | 'many' | null;
 };
 
 /** Peer option for detail compare (no FAQs / product lines). */

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import type { ChipItem, ValuesPerItem } from "../types";
-import { chipClass } from "./field-styles";
+import {useState} from "react";
+import {CheckIcon} from "lucide-react";
+import {cn} from "../../../lib/utils";
+import type {ChipItem, ValuesPerItem} from "../types";
 
 export function ChipField({
   chips,
@@ -46,17 +47,33 @@ export function ChipField({
     >
       {chips.map((c) => {
         const on = selected.includes(c.id);
-        const isConsultation = c.appearance === "consultation";
         return (
           <button
             key={c.id}
             type="button"
             role={valuesPerItem === "one" ? "radio" : "checkbox"}
             aria-checked={on}
-            className={chipClass(on, isConsultation)}
+            className={cn(
+              "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm text-foreground transition-colors",
+              "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              on
+                ? "border-primary bg-muted hover:bg-muted"
+                : "border-border bg-background hover:bg-muted/60",
+            )}
             onClick={() => toggle(c.id)}
           >
             {c.label}
+            <span
+              className={cn(
+                "inline-flex size-3 shrink-0 items-center justify-center rounded-full border",
+                on
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-transparent",
+              )}
+              aria-hidden
+            >
+              {on ? <CheckIcon className="size-2" strokeWidth={2.5} /> : null}
+            </span>
           </button>
         );
       })}
