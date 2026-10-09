@@ -343,7 +343,7 @@ export const ADMIN_SPEC_MAP_COPY = {
   title: "Spec Map",
   lead:
     "One stream at a time, one column per level, arrows from each record to the records below it. Click a card to see only what it is connected to — up, down and, for products and options, what the rules make them compatible with. Read-only: edit in Studio.",
-  hint: "Click a card to focus on it · drag to move · scroll to pan · Ctrl/⌘ + scroll to zoom · click a level's name to collapse or expand it.",
+  hint: "Click a card to see what it is connected to · drag to move · scroll to pan · Ctrl/⌘ + scroll to zoom · click a level's name to collapse or expand it.",
   search: "Find by name or registry code",
   status: "Status",
   allStatuses: "All statuses",
@@ -356,6 +356,7 @@ export const ADMIN_SPEC_MAP_COPY = {
   zoomOut: "Zoom out",
   fit: "Fit width",
   collapsed: (n: number) => `${n} records — click to show`,
+  collapsedRelated: (n: number) => `${n} related here — click to show`,
   openFullPage: "Open full page",
   compatible: (n: number) => `${n} compatible record${n === 1 ? "" : "s"}`,
   loading: "Loading…",

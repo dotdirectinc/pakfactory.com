@@ -44,6 +44,8 @@ import { ADMIN_SPEC_MAP_COPY as COPY } from "@/lib/copy/spec";
  *
  * Eric, 2026-10-09: colour means status (green active, yellow active internal, red not active);
  * levels are told apart by a numbered header and an icon, not a colour.
+ * A click never moves the map: unrelated cards and arrows fade out where they are, and the record
+ * slides in from the right. Only search (and a panel link to a record off screen) scrolls to it.
  *
  * Laid out here from fixed card sizes — no measuring, no layout library: each column is ordered by
  * its parents' positions, so arrows mostly run straight across.
@@ -174,11 +176,10 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     let height = HEAD_H + ROW_H;
     group.levels.forEach((l, li) => {
       const all = byLevel.get(l.key) ?? [];
-      // Focusing shows every related card, collapsed level or not; otherwise a collapsed level shows none.
-      const isCollapsed = !focusing && collapsed.has(l.key);
-      const shown = isCollapsed
-        ? []
-        : all.filter((i) => (!focusing || related!.has(i)) && (status === ALL || !nodes[i]!.status || nodes[i]!.status === status));
+      // The selection never moves a card (Eric, 2026-10-09): positions depend on the stream, the
+      // collapsed levels and the status filter only; unrelated cards fade out where they are.
+      const isCollapsed = collapsed.has(l.key);
+      const shown = isCollapsed ? [] : all.filter((i) => status === ALL || !nodes[i]!.status || nodes[i]!.status === status);
       // Order by where the parents sit (their mean row), so arrows run across; no parent → last.
       const rank = (i: number) => {
         const ys = (parentsOf[i] ?? []).map((p) => pos[p]?.y).filter((y): y is number => y !== undefined);
@@ -191,26 +192,31 @@ export function SpecMap({ data }: { data: SpecMapData }) {
       height = Math.max(height, HEAD_H + Math.max(ordered.length, 1) * ROW_H);
     });
     return { pos, columns, width: group.levels.length * COL_W, height };
-  }, [nodes, stream, collapsed, status, parentsOf, focusing, related]);
+  }, [nodes, stream, collapsed, status, parentsOf]);
 
-  /** Select a record and show it: its stream's tab, its level open, its status kept. */
+  /**
+   * Select a record. A click on a card moves nothing; a record reached another way (search, a link in
+   * the panel) that is not on screen is brought in: its stream's tab, its level open, its status kept.
+   */
   const select = useCallback(
-    (i: number) => {
+    (i: number, bringIntoView: boolean) => {
       const n = nodes[i]!;
-      setStream(streamOf(n.level));
-      if (collapsed.has(n.level)) setCollapsed((c) => { const x = new Set(c); x.delete(n.level); return x; });
-      if (status !== ALL && n.status && n.status !== status) setStatus(ALL);
+      if (bringIntoView) {
+        setStream(streamOf(n.level));
+        if (collapsed.has(n.level)) setCollapsed((c) => { const x = new Set(c); x.delete(n.level); return x; });
+        if (status !== ALL && n.status && n.status !== status) setStatus(ALL);
+        setCentreOn(i);
+      }
       setSelected(i);
-      setCentreOn(i);
     },
     [nodes, collapsed, status],
   );
   const selectBy = useCallback(
     (level: TableKey, id: string) => {
       const i = nodes.findIndex((n) => n.level === level && n.id === id);
-      if (i >= 0) select(i);
+      if (i >= 0) select(i, streamOf(level) !== stream || !layout.pos[i]);
     },
-    [nodes, select],
+    [nodes, select, stream, layout],
   );
   const clearSelection = () => {
     setSelected(null);
@@ -219,8 +225,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   };
 
   // ── pan and zoom ────────────────────────────────────────────────────────────
-  // Back to the top-left whenever the stream or the focus changes (before any centring below).
-  useEffect(() => setView((v) => ({ ...v, x: 24, y: 24 })), [stream, focusing]);
+  // Back to the top-left when the stream changes (before any centring below).
+  useEffect(() => setView((v) => ({ ...v, x: 24, y: 24 })), [stream]);
 
   useEffect(() => {
     if (centreOn === null) return;
@@ -229,12 +235,10 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     if (!p || !el) return;
     setView((v) => {
       const k = Math.max(v.k, 0.6);
-      // Focusing puts the related cards at the top: keep the top in view rather than centring.
-      const y = focusing ? 24 : el.clientHeight / 2 - (p.y + CARD_H / 2) * k;
-      return { k, x: el.clientWidth / 2 - (p.x + CARD_W / 2) * k, y };
+      return { k, x: el.clientWidth / 2 - (p.x + CARD_W / 2) * k, y: el.clientHeight / 2 - (p.y + CARD_H / 2) * k };
     });
     setCentreOn(null);
-  }, [centreOn, layout, focusing]);
+  }, [centreOn, layout]);
 
   useEffect(() => {
     const el = viewport.current;
@@ -281,13 +285,14 @@ export function SpecMap({ data }: { data: SpecMapData }) {
       .slice(0, 8);
   }, [q, nodes]);
   const pick = (i: number) => {
-    select(i);
+    select(i, true);
     setQ("");
   };
 
   // ── render ──────────────────────────────────────────────────────────────────
   const visibleEdges = edges.filter(([a, b]) => layout.pos[a] && layout.pos[b]);
   const sel = selected !== null ? nodes[selected]! : null;
+  const relatedIn = (level: TableKey) => (related ? [...related].filter((i) => nodes[i]!.level === level).length : 0);
   const elsewhere = TABLE_GROUPS.filter((g) => g.key !== stream && (relatedByStream.get(g.key) ?? 0) > 0);
 
   return (
@@ -379,7 +384,16 @@ export function SpecMap({ data }: { data: SpecMapData }) {
           <span className="text-muted-foreground">{COPY.focusedOn}</span>
           <span className="font-medium text-foreground">{sel.title}</span>
           {elsewhere.map((g) => (
-            <Button key={g.key} size="xs" variant="outline" onClick={() => setStream(g.key)}>
+            <Button
+              key={g.key}
+              size="xs"
+              variant="outline"
+              onClick={() => {
+                setStream(g.key);
+                const first = [...related!].find((i) => streamOf(nodes[i]!.level) === g.key && !collapsed.has(nodes[i]!.level));
+                if (first !== undefined) setCentreOn(first);
+              }}
+            >
               {COPY.relatedIn(relatedByStream.get(g.key)!, g.label)}
             </Button>
           ))}
@@ -427,8 +441,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   d={curve(layout.pos[a]!, layout.pos[b]!)}
                   fill="none"
                   stroke={on ? "var(--foreground)" : "var(--muted-foreground)"}
-                  strokeOpacity={related === null ? 0.35 : on ? 0.8 : 0.08}
                   strokeWidth={on ? 1.5 : 1}
+                  style={{ strokeOpacity: related === null ? 0.35 : on ? 0.8 : focusing ? 0 : 0.08, transition: "stroke-opacity 300ms ease-out" }}
                   markerEnd={`url(#${on ? "spec-map-arrow-on" : "spec-map-arrow"})`}
                 />
               );
@@ -446,11 +460,10 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                 <button
                   type="button"
                   onClick={() => setCollapsed((s) => { const x = new Set(s); if (x.has(c.level)) x.delete(c.level); else x.add(c.level); return x; })}
-                  disabled={focusing}
-                  className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground enabled:hover:underline"
+                  className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground hover:underline"
                   aria-expanded={!c.collapsed}
                 >
-                  {focusing ? null : c.collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+                  {c.collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
                   <span className="truncate">{c.label}</span>
                 </button>
                 <span className="text-xs tabular-nums text-muted-foreground">{c.collapsed || c.shown === c.total ? c.total : `${c.shown}/${c.total}`}</span>
@@ -467,7 +480,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                 className="absolute rounded-md border border-dashed border-border bg-card px-3 text-left text-xs text-muted-foreground hover:bg-muted"
                 style={{ left: c.x, top: HEAD_H, width: CARD_W, height: CARD_H }}
               >
-                {COPY.collapsed(c.total)}
+                {related !== null && relatedIn(c.level) > 0 ? COPY.collapsedRelated(relatedIn(c.level)) : COPY.collapsed(c.total)}
               </button>
             ))}
 
@@ -476,16 +489,18 @@ export function SpecMap({ data }: { data: SpecMapData }) {
             if (!p) return null;
             const Icon = LEVEL_ICON[n.level];
             const dot = statusDot(n.status);
-            const dimmed = related !== null && !focusing && !related.has(i);
+            const unrelated = related !== null && !related.has(i);
             return (
               <button
                 key={i}
                 type="button"
-                onClick={() => select(i)}
+                onClick={() => select(i, false)}
                 title={n.status ? `${n.title} — ${n.status}` : n.title}
-                className={`absolute flex items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs transition-opacity hover:bg-muted ${
+                tabIndex={unrelated && focusing ? -1 : undefined}
+                aria-hidden={unrelated && focusing ? true : undefined}
+                className={`absolute flex items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs transition-[opacity,transform] duration-300 ease-out hover:bg-muted ${
                   i === selected ? "border-foreground ring-2 ring-foreground" : compatible.has(i) ? "border-foreground/60 ring-1 ring-foreground/40" : "border-border"
-                } ${dimmed ? "opacity-25" : ""}`}
+                } ${unrelated ? (focusing ? "pointer-events-none scale-95 opacity-0" : "opacity-25") : ""}`}
                 style={{ left: p.x, top: p.y, width: CARD_W, height: CARD_H }}
               >
                 <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
