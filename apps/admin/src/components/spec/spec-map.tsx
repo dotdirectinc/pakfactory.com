@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -61,7 +62,7 @@ import { ADMIN_SPEC_MAP_COPY as COPY } from "@/lib/copy/spec";
  *   · colour means status (green active, yellow active internal, red not active); levels are told
  *     apart by a numbered header and an icon;
  *   · no zoom or pan — a plain scrolling area, columns sized to fill its width;
- *   · selecting a card keeps it where it is, slides its related cards into a compact group around it
+ *   · selecting a card slides it and its related cards into a compact group at the top
  *     and fades everything else out; the record slides in from the right.
  *
  * Laid out here from fixed card heights — no measuring, no layout library: each column is ordered by
@@ -74,7 +75,11 @@ const HEAD_H = 48;
 const GUTTER = 72;
 const MIN_COL_W = 240;
 const PAD = 16;
-const MOVE_MS = 300;
+const MOVE_MS = 450;
+const PANEL_W = 544;
+/** The gap between the map and the panel (Tailwind gap-3). */
+const PANEL_GAP = 12;
+const MOVE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 /** Many-to-many and large: shown on demand. */
 const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
 const ALL = "all";
@@ -160,12 +165,14 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   const [onlyRelated, setOnlyRelated] = useState(true);
   const [scrollTo, setScrollTo] = useState<number | null>(null);
   const area = useRef<HTMLDivElement>(null);
-  const [areaW, setAreaW] = useState(1200);
+  const row = useRef<HTMLDivElement>(null);
+  const [rowW, setRowW] = useState(1200);
 
-  useEffect(() => {
-    const el = area.current;
+  useLayoutEffect(() => {
+    const el = row.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setAreaW(el.clientWidth));
+    setRowW(el.clientWidth);
+    const ro = new ResizeObserver(() => setRowW(el.clientWidth));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -271,6 +278,11 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   const focusing = onlyRelated && related !== null;
 
+  /** The panel's width, so the map's columns for the new selection are known in the same render. */
+  const panelW =
+    selected !== null ? Math.min(PANEL_W, Math.floor(rowW * 0.45)) : 0;
+  const areaW = rowW - (panelW ? panelW + PANEL_GAP : 0);
+
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
   const group = TABLE_GROUPS.find((g) => g.key === stream) ?? TABLE_GROUPS[0]!;
   const levels = useMemo(() => group.levels.map((l) => l.key), [group]);
@@ -298,7 +310,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
       ),
     [levels, collapsed, byLevel, statusOk, parentsOf, colW],
   );
-  /** Related cards only, every level open, shifted so the selected card stays where it was. */
+  /** Related cards only, every level open, gathered at the top (Eric, 2026-10-09). */
   const focus = useMemo(() => {
     if (!focusing) return null;
     const f = place(
@@ -310,32 +322,69 @@ export function SpecMap({ data }: { data: SpecMapData }) {
       parentsOf,
       colW,
     );
-    const from = selected !== null ? rest.pos.get(selected) : undefined;
-    const to = selected !== null ? f.pos.get(selected) : undefined;
-    const dy = from && to ? Math.max(0, from.y - to.y) : 0;
-    if (dy) for (const [i, p] of f.pos) f.pos.set(i, { x: p.x, y: p.y + dy });
-    return { pos: f.pos, height: f.height + dy };
-  }, [
-    focusing,
-    levels,
-    byLevel,
-    related,
-    statusOk,
-    parentsOf,
-    colW,
-    rest,
-    selected,
-  ]);
+    return f;
+  }, [focusing, levels, byLevel, related, statusOk, parentsOf, colW]);
 
-  const posOf = (i: number) =>
+  const targetOf = (i: number) =>
     focus ? (focus.pos.get(i) ?? rest.pos.get(i)) : rest.pos.get(i);
+
+  /*
+   * Cards glide only when the selection changes — never on a resize, a filter or a collapse — and
+   * they glide from where they were ON SCREEN (Eric, 2026-10-09): the map jumps to where the new
+   * layout should be seen (the top when focusing, the record's place when clearing), each card is
+   * first drawn where it appeared before the jump, then moves to its new place.
+   */
+  const focusKey = focusing ? `${selected}` : "rest";
+  const lastFocusKey = useRef(focusKey);
+  const lastSelected = useRef<number | null>(selected);
+  const shown = useRef<{ pos: Map<number, Pos> }>({ pos: new Map() });
+  const [from, setFrom] = useState<{
+    pos: Map<number, Pos>;
+    dy: number;
+  } | null>(null);
+  const [moving, setMoving] = useState(false);
+  useLayoutEffect(() => {
+    if (lastFocusKey.current === focusKey) return;
+    const clearedFrom = focusKey === "rest" ? lastSelected.current : null;
+    lastFocusKey.current = focusKey;
+    const el = area.current;
+    if (!el) return;
+    const before = shown.current;
+    const back = clearedFrom !== null ? rest.pos.get(clearedFrom) : undefined;
+    const was = el.scrollTop; // live: scrolling does not re-render
+    const top = focus
+      ? 0
+      : back
+        ? Math.max(0, back.y - el.clientHeight / 3)
+        : el.scrollTop;
+    el.scrollTop = top;
+    setFrom({ pos: before.pos, dy: top - was });
+    setMoving(false);
+    // Not cancelled when the related set grows mid-move (the rules' compatibility arrives later):
+    // the move must always finish.
+    // A timer, not animation frames: frames pause in a background tab, and the move must finish.
+    window.setTimeout(() => {
+      setFrom(null);
+      setMoving(true);
+      window.setTimeout(() => setMoving(false), MOVE_MS + 100);
+    }, 32);
+  }, [focusKey]); // focus and rest are this render's, read once when the key changes
+  useLayoutEffect(() => {
+    lastSelected.current = selected;
+  }, [selected]);
+
+  const posOf = (i: number) => {
+    const start = from?.pos.get(i);
+    return start ? { x: start.x, y: start.y + from!.dy } : targetOf(i);
+  };
   const height = Math.max(rest.height, focus?.height ?? 0);
   const width = PAD * 2 + levels.length * colW;
 
   // ── selection ───────────────────────────────────────────────────────────────
   /**
-   * Select a record. A click on a card scrolls nothing; a record reached another way (search, a panel
-   * link to a record off screen) is brought in: its stream's tab, its level open, its status kept.
+   * Select a record. Its related cards gather at the top, so the map scrolls up with them; a record
+   * reached another way (search, a panel link) is brought in first: its stream's tab, its level
+   * open, its status kept.
    */
   const select = useCallback(
     (i: number, bringIntoView: boolean) => {
@@ -349,9 +398,9 @@ export function SpecMap({ data }: { data: SpecMapData }) {
             return x;
           });
         if (status !== ALL && n.status && n.status !== status) setStatus(ALL);
-        setScrollTo(i);
       }
       setSelected(i);
+      if (bringIntoView) setScrollTo(i);
     },
     [nodes, collapsed, status],
   );
@@ -375,17 +424,26 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   // Scroll a record into view once it is laid out (search, panel links, "related in…").
   useEffect(() => {
     if (scrollTo === null) return;
-    const p = focus?.pos.get(scrollTo) ?? rest.pos.get(scrollTo);
+    const p = targetOf(scrollTo);
     const el = area.current;
     if (!p || !el) return;
+    // Gathered at the top: show the top. Otherwise put the card a third of the way down.
     el.scrollTo({
       left: Math.max(0, p.x - el.clientWidth / 2 + cardW / 2),
-      top: Math.max(0, p.y - el.clientHeight / 3),
+      top: focus ? 0 : Math.max(0, p.y - el.clientHeight / 3),
       behavior: "smooth",
     });
     setScrollTo(null);
   }, [scrollTo, focus, rest, cardW]);
-  useEffect(() => area.current?.scrollTo({ left: 0, top: 0 }), [stream]);
+  useEffect(() => {
+    area.current?.scrollTo({ left: 0, top: 0 });
+  }, [stream]);
+
+  useLayoutEffect(() => {
+    const pos = new Map<number, Pos>();
+    for (const i of drawn) if (inStream(i) && !isGone(i)) pos.set(i, posOf(i)!);
+    shown.current = { pos };
+  });
 
   // ── search (every stream) ─────────────────────────────────────────────────────
   const [q, setQ] = useState("");
@@ -408,6 +466,11 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   // ── render ──────────────────────────────────────────────────────────────────
   const inStream = (i: number) => streamOf(nodes[i]!.level) === stream;
+  const isGone = (i: number) =>
+    from
+      ? !from.pos.has(i)
+      : focus !== null &&
+        ((related !== null && !related.has(i)) || !focus.pos.has(i));
   /** Cards to draw: the resting ones, plus related cards from collapsed levels while focusing. */
   const drawn = useMemo(() => {
     const s = new Set(rest.pos.keys());
@@ -513,40 +576,44 @@ export function SpecMap({ data }: { data: SpecMapData }) {
         </div>
       </div>
 
-      {sel ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-sm">
-          <span className="text-muted-foreground">{COPY.focusedOn}</span>
-          <span className="font-medium text-foreground">{sel.title}</span>
-          {elsewhere.map((g) => (
+      <div className="flex h-9 shrink-0 items-center">
+        {sel ? (
+          <div className="flex h-9 w-full min-w-0 items-center gap-3 overflow-hidden rounded-md border border-border bg-card px-3 text-sm">
+            <span className="text-muted-foreground">{COPY.focusedOn}</span>
+            <span className="truncate font-medium text-foreground">
+              {sel.title}
+            </span>
+            {elsewhere.map((g) => (
+              <Button
+                key={g.key}
+                size="xs"
+                variant="outline"
+                onClick={() => {
+                  setStream(g.key);
+                  const first = [...related!].find(
+                    (i) => streamOf(nodes[i]!.level) === g.key,
+                  );
+                  if (first !== undefined) setScrollTo(first);
+                }}
+              >
+                {COPY.relatedIn(relatedByStream.get(g.key)!, g.label)}
+              </Button>
+            ))}
             <Button
-              key={g.key}
               size="xs"
-              variant="outline"
-              onClick={() => {
-                setStream(g.key);
-                const first = [...related!].find(
-                  (i) => streamOf(nodes[i]!.level) === g.key,
-                );
-                if (first !== undefined) setScrollTo(first);
-              }}
+              variant="ghost"
+              className="ml-auto"
+              onClick={clearSelection}
             >
-              {COPY.relatedIn(relatedByStream.get(g.key)!, g.label)}
+              {COPY.clear}
             </Button>
-          ))}
-          <Button
-            size="xs"
-            variant="ghost"
-            className="ml-auto"
-            onClick={clearSelection}
-          >
-            {COPY.clear}
-          </Button>
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">{COPY.hint}</p>
-      )}
+          </div>
+        ) : (
+          <p className="truncate text-xs text-muted-foreground">{COPY.hint}</p>
+        )}
+      </div>
 
-      <div className="flex min-h-[28rem] flex-1 gap-3">
+      <div ref={row} className="flex min-h-[28rem] flex-1 gap-3">
         <div
           ref={area}
           className="relative min-w-0 flex-1 overflow-auto rounded-md border border-border bg-muted/30"
@@ -584,11 +651,11 @@ export function SpecMap({ data }: { data: SpecMapData }) {
               </defs>
               {/* Focused: only the related arrows, drawn at their new places once the cards have moved. */}
               <g
-                key={focus ? `focus-${selected}-${stream}` : `rest-${stream}`}
+                key={`${focusKey}-${stream}`}
                 className={
-                  focus
-                    ? "animate-in fade-in fill-mode-backwards duration-200 delay-300"
-                    : undefined
+                  from
+                    ? "hidden"
+                    : "animate-in fade-in fill-mode-backwards duration-200 delay-500"
                 }
               >
                 {arrows.map(([a, b]) => {
@@ -702,9 +769,9 @@ export function SpecMap({ data }: { data: SpecMapData }) {
               const Icon = LEVEL_ICON[n.level];
               const dot = statusDot(n.status);
               const unrelated = related !== null && !related.has(i);
-              const gone = focus !== null && (unrelated || !focus.pos.has(i));
+              const gone = isGone(i);
               // A related card from a collapsed level has no resting place: it fades in where it lands.
-              const arriving = focus !== null && !rest.pos.has(i);
+              const arriving = !from && focus !== null && !rest.pos.has(i);
               return (
                 <button
                   key={i}
@@ -719,12 +786,15 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                       : compatible.has(i)
                         ? "border-foreground/60 ring-1 ring-foreground/40"
                         : "border-border"
-                  } ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${arriving ? "animate-in fade-in fill-mode-backwards duration-200 delay-300" : ""}`}
+                  } ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${arriving ? "animate-in fade-in fill-mode-backwards duration-200 delay-500" : ""}`}
                   style={{
                     width: cardW,
                     height: CARD_H,
                     transform: `translate(${p.x}px, ${p.y}px)`,
-                    transition: `transform ${MOVE_MS}ms ease-out, opacity ${MOVE_MS}ms ease-out`,
+                    transition: moving
+                      ? `transform ${MOVE_MS}ms ${MOVE_EASE}, opacity ${MOVE_MS / 1.5}ms ease-out`
+                      : undefined,
+                    willChange: moving ? "transform, opacity" : undefined,
                   }}
                 >
                   <Icon
@@ -754,9 +824,9 @@ export function SpecMap({ data }: { data: SpecMapData }) {
         {/* The record slides in from the right and takes its place beside the map (Eric, 2026-10-09). */}
         {sel ? (
           <aside
-            key={selected}
             aria-label={COPY.panelLabel}
-            className="flex w-[34rem] max-w-[45%] shrink-0 flex-col overflow-hidden rounded-md border border-border bg-card animate-in fade-in slide-in-from-right-8 duration-300"
+            style={{ width: panelW }}
+            className="flex shrink-0 flex-col overflow-hidden rounded-md border border-border bg-card animate-in fade-in slide-in-from-right-8 duration-300"
           >
             <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
               <div className="flex min-w-0 flex-col gap-1">
