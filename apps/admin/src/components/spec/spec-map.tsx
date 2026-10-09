@@ -14,16 +14,10 @@ import {
   ArrowUpRight,
   ChevronDown,
   ChevronRight,
-  FolderTree,
-  Layers,
-  Lightbulb,
-  ListTree,
-  Package,
-  Palette,
+  Layers2,
+  Layers3,
   Search,
-  Shapes,
-  SlidersHorizontal,
-  Sparkles,
+  Square,
   Tag,
   X,
   type LucideIcon,
@@ -76,6 +70,15 @@ const GUTTER = 72;
 const MIN_COL_W = 240;
 const PAD = 16;
 const MOVE_MS = 450;
+/**
+ * Line colours, solid (not translucent) so overlapping lines merge instead of darkening:
+ * resting, related to the selection, and unrelated while dimmed.
+ */
+const LINE = {
+  rest: "color-mix(in oklab, var(--muted-foreground) 45%, var(--background))",
+  on: "color-mix(in oklab, var(--foreground) 80%, var(--background))",
+  dim: "color-mix(in oklab, var(--muted-foreground) 15%, var(--background))",
+} as const;
 const PANEL_W = 544;
 /** The gap between the map and the panel (Tailwind gap-3). */
 const PANEL_GAP = 12;
@@ -84,19 +87,13 @@ const MOVE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
 const ALL = "all";
 
-const LEVEL_ICON: Record<TableKey, LucideIcon> = {
-  productLine: Layers,
-  productStyle: Shapes,
-  product: Package,
-  productValue: Tag,
-  customizationCategory: FolderTree,
-  customizationType: ListTree,
-  customizationOption: SlidersHorizontal,
-  optionValue: Tag,
-  solution: Lightbulb,
-  solutionStyle: Palette,
-  inspiration: Sparkles,
-};
+/**
+ * One icon per depth, the same in every stream (Eric, 2026-10-09), high to low: a group of groups,
+ * a group, one record, an attribute of records.
+ */
+const DEPTH_ICON: LucideIcon[] = [Layers3, Layers2, Square, Tag];
+const iconOf = (level: TableKey) =>
+  DEPTH_ICON[LEVEL_INFO.get(level)?.index ?? 0] ?? Square;
 
 /** Status → badge colour. Anything else (coming soon) is neutral grey. */
 const STATUS_DOT: Record<string, string> = {
@@ -626,32 +623,27 @@ export function SpecMap({ data }: { data: SpecMapData }) {
               aria-hidden
             >
               <defs>
-                <marker
-                  id="spec-map-arrow"
-                  viewBox="0 0 8 8"
-                  refX="7"
-                  refY="4"
-                  markerWidth="6"
-                  markerHeight="6"
-                  orient="auto"
-                >
-                  <path d="M0,0 L8,4 L0,8 z" fill="var(--muted-foreground)" />
-                </marker>
-                <marker
-                  id="spec-map-arrow-on"
-                  viewBox="0 0 8 8"
-                  refX="7"
-                  refY="4"
-                  markerWidth="6"
-                  markerHeight="6"
-                  orient="auto"
-                >
-                  <path d="M0,0 L8,4 L0,8 z" fill="var(--foreground)" />
-                </marker>
+                {(["rest", "on", "dim"] as const).map((k) => (
+                  <marker
+                    key={k}
+                    id={`spec-map-arrow-${k}`}
+                    viewBox="0 0 8 8"
+                    refX="8"
+                    refY="4"
+                    markerWidth="6"
+                    markerHeight="6"
+                    markerUnits="userSpaceOnUse"
+                    orient="auto"
+                  >
+                    <path d="M0,0.5 L8,4 L0,7.5 z" fill={LINE[k]} />
+                  </marker>
+                ))}
               </defs>
               {/* Focused: only the related arrows, drawn at their new places once the cards have moved. */}
               <g
                 key={`${focusKey}-${stream}`}
+                fill="none"
+                strokeLinejoin="round"
                 className={
                   from
                     ? "hidden"
@@ -659,19 +651,19 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                 }
               >
                 {arrows.map(([a, b]) => {
-                  const on =
-                    related !== null && related.has(a) && related.has(b);
+                  const k =
+                    related === null
+                      ? "rest"
+                      : related.has(a) && related.has(b)
+                        ? "on"
+                        : "dim";
                   return (
                     <path
                       key={`${a}-${b}`}
-                      d={curve(posOf(a)!, posOf(b)!, cardW)}
-                      fill="none"
-                      stroke={
-                        on ? "var(--foreground)" : "var(--muted-foreground)"
-                      }
-                      strokeOpacity={on ? 0.75 : related === null ? 0.35 : 0.1}
-                      strokeWidth={on ? 1.5 : 1}
-                      markerEnd={`url(#${on ? "spec-map-arrow-on" : "spec-map-arrow"})`}
+                      d={elbow(posOf(a)!, posOf(b)!, cardW)}
+                      stroke={LINE[k]}
+                      strokeWidth={k === "on" ? 1.25 : 1}
+                      markerEnd={`url(#spec-map-arrow-${k})`}
                     />
                   );
                 })}
@@ -679,7 +671,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
             </svg>
 
             {levels.map((level, li) => {
-              const Icon = LEVEL_ICON[level];
+              const Icon = iconOf(level);
               const total = (byLevel.get(level) ?? []).length;
               const isCollapsed = collapsed.has(level);
               const count = focus
@@ -766,7 +758,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
               if (!inStream(i)) return null;
               const n = nodes[i]!;
               const p = posOf(i)!;
-              const Icon = LEVEL_ICON[n.level];
+              const Icon = iconOf(n.level);
               const dot = statusDot(n.status);
               const unrelated = related !== null && !related.has(i);
               const gone = isGone(i);
@@ -904,12 +896,18 @@ function adjacency(
   return out;
 }
 
-/** Parent's right edge → child's left edge, as a gentle S. */
-function curve(a: Pos, b: Pos, cardW: number): string {
+/**
+ * Parent's right edge → child's left edge as an angled line: out, along a shared vertical just past
+ * the parent's column, then in. Every line from one column shares that vertical, so they overlap
+ * into one trunk instead of fanning out (Eric, 2026-10-09).
+ */
+function elbow(a: Pos, b: Pos, cardW: number): string {
   const x1 = a.x + cardW;
   const y1 = a.y + CARD_H / 2;
-  const x2 = b.x - 2;
+  const x2 = b.x - 1;
   const y2 = b.y + CARD_H / 2;
-  const dx = Math.max(Math.abs(x2 - x1) / 2, 24);
-  return `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
+  const mx = x1 + Math.round(GUTTER / 2);
+  return y1 === y2
+    ? `M${x1},${y1} H${x2}`
+    : `M${x1},${y1} H${mx} V${y2} H${x2}`;
 }
