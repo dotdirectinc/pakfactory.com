@@ -68,7 +68,7 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog"].some((p) =>
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map"].some((p) =>
               path.startsWith(p),
             )),
       },
@@ -81,6 +81,12 @@ const NAV: readonly NavEntry[] = [
         label: "Catalog",
         match: (path) =>
           ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions", "/spec/properties"].some((p) => path.startsWith(p)),
+      },
+      // The catalog as a diagram (PROD-2960): three streams, levels as columns, read-only.
+      {
+        href: "/spec/map",
+        label: "Spec Map",
+        match: (path) => path.startsWith("/spec/map"),
       },
       // What each page and button does, the catalog structure, syncing and registry codes (PROD-2771).
       {

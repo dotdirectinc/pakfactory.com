@@ -337,3 +337,23 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
     failed: "Not written — failed",
   },
 } as const;
+
+/** Spec Map (PROD-2960): the catalog as a read-only diagram. */
+export const ADMIN_SPEC_MAP_COPY = {
+  title: "Spec Map",
+  lead:
+    "The catalog's three streams, one column per level, arrows from each record to the records below it. Click a card to highlight what it is connected to — up, down and, for products and options, what the rules make them compatible with. Read-only: edit in Studio.",
+  hint: "Drag to move · scroll to pan · Ctrl/⌘ + scroll to zoom · click a level's name to collapse or expand it.",
+  search: "Find by name or registry code",
+  status: "Status",
+  allStatuses: "All statuses",
+  zoomIn: "Zoom in",
+  zoomOut: "Zoom out",
+  fit: "Fit width",
+  collapsed: (n: number) => `${n} records — click to show`,
+  openFullPage: "Open full page",
+  compatible: (n: number) => `${n} compatible record${n === 1 ? "" : "s"} highlighted`,
+  loading: "Loading…",
+  notFound: "This record is no longer published.",
+  unreachable: "The Spec Map could not be loaded.",
+} as const;
