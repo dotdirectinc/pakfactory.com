@@ -2,11 +2,33 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { ArrowUpRight, ChevronDown, ChevronRight, Maximize2, Minus, Plus, Search } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronDown,
+  ChevronRight,
+  FolderTree,
+  Layers,
+  Lightbulb,
+  ListTree,
+  Maximize2,
+  Minus,
+  Package,
+  Palette,
+  Plus,
+  Search,
+  Shapes,
+  SlidersHorizontal,
+  Sparkles,
+  Tag,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { Input } from "@pakfactory/ui/components/input";
+import { Label } from "@pakfactory/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@pakfactory/ui/components/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@pakfactory/ui/components/sheet";
+import { Switch } from "@pakfactory/ui/components/switch";
+import { Tabs, TabsList, TabsTrigger } from "@pakfactory/ui/components/tabs";
 import { TABLE_GROUPS, recordHref, type TableKey } from "@/lib/spec/catalog-table-model";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
 import type { SpecMapData } from "@/lib/spec/spec-map";
@@ -15,9 +37,13 @@ import { loadMapCompatible, loadMapRecord } from "@/app/(admin)/spec/map/actions
 import { ADMIN_SPEC_MAP_COPY as COPY } from "@/lib/copy/spec";
 
 /**
- * The Spec Map (PROD-2960): the Catalog's three streams side by side, one column per level, a
- * colour per level, cards joined by arrows parent → child. Read-only: selecting a card highlights
- * its chain up and down plus what it is compatible with, and opens the shared record view.
+ * The Spec Map (PROD-2960): one of the Catalog's three streams at a time, one column per level,
+ * cards joined by arrows parent → child. Read-only: selecting a card shows only what it is
+ * connected to — its chain up and down, plus what the rules make it compatible with — and opens
+ * the shared record view.
+ *
+ * Eric, 2026-10-09: colour means status (green active, yellow active internal, red not active);
+ * levels are told apart by a numbered header and an icon, not a colour.
  *
  * Laid out here from fixed card sizes — no measuring, no layout library: each column is ordered by
  * its parents' positions, so arrows mostly run straight across.
@@ -27,27 +53,49 @@ const CARD_W = 232;
 const CARD_H = 48;
 const ROW_H = 56;
 const COL_W = 312;
-const STREAM_GAP = 120;
 const HEAD_H = 56;
-const LEVEL_COLOURS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
 /** Many-to-many and large: shown on demand. */
 const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
 const ALL = "all";
 
+const LEVEL_ICON: Record<TableKey, LucideIcon> = {
+  productLine: Layers,
+  productStyle: Shapes,
+  product: Package,
+  productValue: Tag,
+  customizationCategory: FolderTree,
+  customizationType: ListTree,
+  customizationOption: SlidersHorizontal,
+  optionValue: Tag,
+  solution: Lightbulb,
+  solutionStyle: Palette,
+  inspiration: Sparkles,
+};
+
+/** Status → badge colour. Anything else (coming soon, or no status) is neutral grey. */
+const STATUS_DOT: Record<string, string> = {
+  active: "bg-green-500",
+  "active-internal": "bg-yellow-400",
+  "not-active": "bg-red-500",
+};
+const statusDot = (s: string | null) => (s ? (STATUS_DOT[s] ?? "bg-muted-foreground/50") : null);
+
 type Pos = { x: number; y: number };
-type Column = { level: TableKey; label: string; x: number; y: number; total: number; shown: number; collapsed: boolean; colour: string };
+type Column = { level: TableKey; label: string; index: number; x: number; total: number; shown: number; collapsed: boolean };
 type View = { x: number; y: number; k: number };
 
 const LEVEL_INFO = new Map(
   TABLE_GROUPS.flatMap((g) => g.levels.map((l, i) => [l.key, { stream: g.key, label: l.label, index: i }] as const)),
 );
+const streamOf = (level: TableKey) => LEVEL_INFO.get(level)?.stream ?? TABLE_GROUPS[0]!.key;
 
 export function SpecMap({ data }: { data: SpecMapData }) {
   const { nodes, edges, links } = data;
-  const [streams, setStreams] = useState<Set<string>>(() => new Set(TABLE_GROUPS.map((g) => g.key)));
+  const [stream, setStream] = useState<string>(TABLE_GROUPS[0]!.key);
   const [collapsed, setCollapsed] = useState<Set<TableKey>>(() => new Set(COLLAPSED_AT_START));
   const [status, setStatus] = useState<string>(ALL);
   const [selected, setSelected] = useState<number | null>(null);
+  const [onlyRelated, setOnlyRelated] = useState(true);
   const [view, setView] = useState<View>({ x: 24, y: 24, k: 0.8 });
   const [centreOn, setCentreOn] = useState<number | null>(null);
   const viewport = useRef<HTMLDivElement>(null);
@@ -64,42 +112,13 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   }, [links]);
   const statuses = useMemo(() => [...new Set(nodes.map((n) => n.status).filter((s): s is string => Boolean(s)))].sort(), [nodes]);
 
-  // ── layout ──────────────────────────────────────────────────────────────────
-  const layout = useMemo(() => {
-    const pos: (Pos | null)[] = nodes.map(() => null);
-    const columns: Column[] = [];
-    const byLevel = new Map<TableKey, number[]>();
-    nodes.forEach((n, i) => byLevel.set(n.level, [...(byLevel.get(n.level) ?? []), i]));
-    let x0 = 0;
-    let height = 0;
-    for (const g of TABLE_GROUPS) {
-      if (!streams.has(g.key)) continue;
-      g.levels.forEach((l, li) => {
-        const all = byLevel.get(l.key) ?? [];
-        const isCollapsed = collapsed.has(l.key);
-        const shown = isCollapsed ? [] : all.filter((i) => status === ALL || !nodes[i]!.status || nodes[i]!.status === status);
-        // Order by where the parents sit (their mean row), so arrows run across; no parent → last.
-        const rank = (i: number) => {
-          const ys = (parentsOf[i] ?? []).map((p) => pos[p]?.y).filter((y): y is number => y !== undefined);
-          return ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : Number.POSITIVE_INFINITY;
-        };
-        const ordered = li === 0 ? shown : [...shown].map((i, o) => ({ i, r: rank(i), o })).sort((a, b) => a.r - b.r || a.o - b.o).map((x) => x.i);
-        const x = x0 + li * COL_W;
-        ordered.forEach((i, row) => (pos[i] = { x, y: HEAD_H + row * ROW_H }));
-        columns.push({ level: l.key, label: l.label, x, y: 0, total: all.length, shown: ordered.length, collapsed: isCollapsed, colour: LEVEL_COLOURS[li % LEVEL_COLOURS.length]! });
-        height = Math.max(height, HEAD_H + Math.max(ordered.length, 1) * ROW_H);
-      });
-      x0 += g.levels.length * COL_W + STREAM_GAP;
-    }
-    return { pos, columns, width: Math.max(x0 - STREAM_GAP, COL_W), height };
-  }, [nodes, streams, collapsed, status, parentsOf]);
-
   // ── selection: the chain up and down, cross-stream links, and the rules' compatibility ──
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
   const [record, setRecord] = useState<{ for: number; res: Awaited<ReturnType<typeof loadMapRecord>> } | null>(null);
   const [, startLoading] = useTransition();
 
-  const chain = useMemo(() => {
+  /** Everything connected to the selection; cross-stream records come with their own parents, for context. */
+  const related = useMemo(() => {
     if (selected === null) return null;
     const out = new Set<number>([selected]);
     const walk = (from: number, next: number[][]) => {
@@ -114,9 +133,12 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     };
     walk(selected, parentsOf);
     walk(selected, childrenOf);
-    for (const l of linksOf.get(selected) ?? []) out.add(l);
+    for (const other of [...(linksOf.get(selected) ?? []), ...compatible]) {
+      out.add(other);
+      walk(other, parentsOf);
+    }
     return out;
-  }, [selected, parentsOf, childrenOf, linksOf]);
+  }, [selected, parentsOf, childrenOf, linksOf, compatible]);
 
   useEffect(() => {
     if (selected === null) return;
@@ -132,18 +154,56 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     });
   }, [selected, nodes]);
 
-  /** Select a record, making sure it is on the map (its stream shown, its level open, its status kept). */
+  /** Related records per stream, for the "also related in…" links. */
+  const relatedByStream = useMemo(() => {
+    const m = new Map<string, number>();
+    if (!related) return m;
+    for (const i of related) m.set(streamOf(nodes[i]!.level), (m.get(streamOf(nodes[i]!.level)) ?? 0) + 1);
+    return m;
+  }, [related, nodes]);
+
+  const focusing = onlyRelated && related !== null;
+
+  // ── layout: the current stream only ────────────────────────────────────────────
+  const layout = useMemo(() => {
+    const pos: (Pos | null)[] = nodes.map(() => null);
+    const columns: Column[] = [];
+    const byLevel = new Map<TableKey, number[]>();
+    nodes.forEach((n, i) => byLevel.set(n.level, [...(byLevel.get(n.level) ?? []), i]));
+    const group = TABLE_GROUPS.find((g) => g.key === stream) ?? TABLE_GROUPS[0]!;
+    let height = HEAD_H + ROW_H;
+    group.levels.forEach((l, li) => {
+      const all = byLevel.get(l.key) ?? [];
+      // Focusing shows every related card, collapsed level or not; otherwise a collapsed level shows none.
+      const isCollapsed = !focusing && collapsed.has(l.key);
+      const shown = isCollapsed
+        ? []
+        : all.filter((i) => (!focusing || related!.has(i)) && (status === ALL || !nodes[i]!.status || nodes[i]!.status === status));
+      // Order by where the parents sit (their mean row), so arrows run across; no parent → last.
+      const rank = (i: number) => {
+        const ys = (parentsOf[i] ?? []).map((p) => pos[p]?.y).filter((y): y is number => y !== undefined);
+        return ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : Number.POSITIVE_INFINITY;
+      };
+      const ordered = li === 0 ? shown : [...shown].map((i, o) => ({ i, r: rank(i), o })).sort((a, b) => a.r - b.r || a.o - b.o).map((x) => x.i);
+      const x = li * COL_W;
+      ordered.forEach((i, row) => (pos[i] = { x, y: HEAD_H + row * ROW_H }));
+      columns.push({ level: l.key, label: l.label, index: li, x, total: all.length, shown: ordered.length, collapsed: isCollapsed });
+      height = Math.max(height, HEAD_H + Math.max(ordered.length, 1) * ROW_H);
+    });
+    return { pos, columns, width: group.levels.length * COL_W, height };
+  }, [nodes, stream, collapsed, status, parentsOf, focusing, related]);
+
+  /** Select a record and show it: its stream's tab, its level open, its status kept. */
   const select = useCallback(
     (i: number) => {
       const n = nodes[i]!;
-      const stream = LEVEL_INFO.get(n.level)?.stream;
-      if (stream && !streams.has(stream)) setStreams((s) => new Set(s).add(stream));
+      setStream(streamOf(n.level));
       if (collapsed.has(n.level)) setCollapsed((c) => { const x = new Set(c); x.delete(n.level); return x; });
       if (status !== ALL && n.status && n.status !== status) setStatus(ALL);
       setSelected(i);
       setCentreOn(i);
     },
-    [nodes, streams, collapsed, status],
+    [nodes, collapsed, status],
   );
   const selectBy = useCallback(
     (level: TableKey, id: string) => {
@@ -152,8 +212,16 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     },
     [nodes, select],
   );
+  const clearSelection = () => {
+    setSelected(null);
+    setRecord(null);
+    setCompatible(new Set());
+  };
 
   // ── pan and zoom ────────────────────────────────────────────────────────────
+  // Back to the top-left whenever the stream or the focus changes (before any centring below).
+  useEffect(() => setView((v) => ({ ...v, x: 24, y: 24 })), [stream, focusing]);
+
   useEffect(() => {
     if (centreOn === null) return;
     const p = layout.pos[centreOn];
@@ -161,10 +229,12 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     if (!p || !el) return;
     setView((v) => {
       const k = Math.max(v.k, 0.6);
-      return { k, x: el.clientWidth / 2 - (p.x + CARD_W / 2) * k, y: el.clientHeight / 2 - (p.y + CARD_H / 2) * k };
+      // Focusing puts the related cards at the top: keep the top in view rather than centring.
+      const y = focusing ? 24 : el.clientHeight / 2 - (p.y + CARD_H / 2) * k;
+      return { k, x: el.clientWidth / 2 - (p.x + CARD_W / 2) * k, y };
     });
     setCentreOn(null);
-  }, [centreOn, layout]);
+  }, [centreOn, layout, focusing]);
 
   useEffect(() => {
     const el = viewport.current;
@@ -197,11 +267,10 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   };
   const fitWidth = () => {
     const w = viewport.current?.clientWidth ?? layout.width;
-    const k = clamp((w - 48) / layout.width, 0.05, 1);
-    setView({ k, x: 24, y: 24 });
+    setView({ k: clamp((w - 48) / layout.width, 0.05, 1), x: 24, y: 24 });
   };
 
-  // ── search ──────────────────────────────────────────────────────────────────
+  // ── search (every stream) ─────────────────────────────────────────────────────
   const [q, setQ] = useState("");
   const matches = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -218,12 +287,33 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   // ── render ──────────────────────────────────────────────────────────────────
   const visibleEdges = edges.filter(([a, b]) => layout.pos[a] && layout.pos[b]);
-  const shownLinks = chain ? links.filter(([a, b]) => (a === selected || b === selected) && layout.pos[a] && layout.pos[b]) : [];
-  const dim = (i: number) => chain !== null && !chain.has(i) && !compatible.has(i);
   const sel = selected !== null ? nodes[selected]! : null;
+  const elsewhere = TABLE_GROUPS.filter((g) => g.key !== stream && (relatedByStream.get(g.key) ?? 0) > 0);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border">
+        <Tabs value={stream} onValueChange={setStream}>
+          <TabsList variant="line">
+            {TABLE_GROUPS.map((g) => (
+              <TabsTrigger key={g.key} value={g.key}>
+                {g.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-3 pb-2 text-xs text-muted-foreground">
+          {[["active", COPY.statusLabel.active], ["active-internal", COPY.statusLabel["active-internal"]], ["not-active", COPY.statusLabel["not-active"]], ["other", COPY.statusLabel.other]].map(
+            ([s, label]) => (
+              <span key={s} className="inline-flex items-center gap-1.5">
+                <span className={`size-2.5 rounded-full ${statusDot(s!) ?? ""}`} />
+                {label}
+              </span>
+            ),
+          )}
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-72">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -251,24 +341,6 @@ export function SpecMap({ data }: { data: SpecMapData }) {
             </ul>
           ) : null}
         </div>
-        {TABLE_GROUPS.map((g) => (
-          <Button
-            key={g.key}
-            size="sm"
-            variant={streams.has(g.key) ? "secondary" : "outline"}
-            aria-pressed={streams.has(g.key)}
-            onClick={() =>
-              setStreams((s) => {
-                const x = new Set(s);
-                if (x.has(g.key)) x.delete(g.key);
-                else x.add(g.key);
-                return x.size ? x : s;
-              })
-            }
-          >
-            {g.label}
-          </Button>
-        ))}
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger size="sm" className="w-44" aria-label={COPY.status}>
             <SelectValue />
@@ -282,6 +354,12 @@ export function SpecMap({ data }: { data: SpecMapData }) {
             ))}
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2">
+          <Switch id="spec-map-only-related" checked={onlyRelated} onCheckedChange={setOnlyRelated} />
+          <Label htmlFor="spec-map-only-related" className="text-sm font-normal text-muted-foreground">
+            {COPY.onlyRelated}
+          </Label>
+        </div>
         <div className="ml-auto flex items-center gap-1">
           <Button size="icon-sm" variant="outline" onClick={() => zoomBy(1 / 1.25)} aria-label={COPY.zoomOut}>
             <Minus />
@@ -295,11 +373,27 @@ export function SpecMap({ data }: { data: SpecMapData }) {
           </Button>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">{COPY.hint}</p>
+
+      {sel ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-sm">
+          <span className="text-muted-foreground">{COPY.focusedOn}</span>
+          <span className="font-medium text-foreground">{sel.title}</span>
+          {elsewhere.map((g) => (
+            <Button key={g.key} size="xs" variant="outline" onClick={() => setStream(g.key)}>
+              {COPY.relatedIn(relatedByStream.get(g.key)!, g.label)}
+            </Button>
+          ))}
+          <Button size="xs" variant="ghost" className="ml-auto" onClick={clearSelection}>
+            {COPY.clear}
+          </Button>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">{COPY.hint}</p>
+      )}
 
       <div
         ref={viewport}
-        className="relative min-h-[32rem] flex-1 cursor-grab touch-none overflow-hidden rounded-md border border-border bg-muted/30 active:cursor-grabbing"
+        className="relative min-h-[28rem] flex-1 cursor-grab touch-none overflow-hidden rounded-md border border-border bg-muted/30 active:cursor-grabbing"
         onPointerDown={(e) => {
           if ((e.target as HTMLElement).closest("button")) return;
           drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
@@ -326,39 +420,43 @@ export function SpecMap({ data }: { data: SpecMapData }) {
               </marker>
             </defs>
             {visibleEdges.map(([a, b]) => {
-              const on = chain !== null && chain.has(a) && chain.has(b);
+              const on = related !== null && related.has(a) && related.has(b);
               return (
                 <path
                   key={`${a}-${b}`}
                   d={curve(layout.pos[a]!, layout.pos[b]!)}
                   fill="none"
                   stroke={on ? "var(--foreground)" : "var(--muted-foreground)"}
-                  strokeOpacity={chain === null ? 0.35 : on ? 0.9 : 0.08}
-                  strokeWidth={on ? 1.75 : 1}
+                  strokeOpacity={related === null ? 0.35 : on ? 0.8 : 0.08}
+                  strokeWidth={on ? 1.5 : 1}
                   markerEnd={`url(#${on ? "spec-map-arrow-on" : "spec-map-arrow"})`}
                 />
               );
             })}
-            {shownLinks.map(([a, b]) => (
-              <path key={`l${a}-${b}`} d={curve(layout.pos[b]!, layout.pos[a]!)} fill="none" stroke="var(--foreground)" strokeOpacity={0.7} strokeDasharray="6 4" strokeWidth={1.5} />
-            ))}
           </svg>
 
-          {layout.columns.map((c) => (
-            <div key={c.level} className="absolute flex items-center gap-2" style={{ left: c.x, top: c.y, width: CARD_W, height: HEAD_H - 12 }}>
-              <span className="size-3 shrink-0 rounded-sm" style={{ background: c.colour }} />
-              <button
-                type="button"
-                onClick={() => setCollapsed((s) => { const x = new Set(s); if (x.has(c.level)) x.delete(c.level); else x.add(c.level); return x; })}
-                className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground hover:underline"
-                aria-expanded={!c.collapsed}
-              >
-                {c.collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
-                <span className="truncate">{c.label}</span>
-              </button>
-              <span className="text-xs tabular-nums text-muted-foreground">{c.collapsed || c.shown === c.total ? c.total : `${c.shown}/${c.total}`}</span>
-            </div>
-          ))}
+          {layout.columns.map((c) => {
+            const Icon = LEVEL_ICON[c.level];
+            return (
+              <div key={c.level} className="absolute flex items-center gap-2" style={{ left: c.x, top: 0, width: CARD_W, height: HEAD_H - 12 }}>
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border bg-card text-[11px] font-semibold tabular-nums text-muted-foreground">
+                  {c.index + 1}
+                </span>
+                <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <button
+                  type="button"
+                  onClick={() => setCollapsed((s) => { const x = new Set(s); if (x.has(c.level)) x.delete(c.level); else x.add(c.level); return x; })}
+                  disabled={focusing}
+                  className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground enabled:hover:underline"
+                  aria-expanded={!c.collapsed}
+                >
+                  {focusing ? null : c.collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+                  <span className="truncate">{c.label}</span>
+                </button>
+                <span className="text-xs tabular-nums text-muted-foreground">{c.collapsed || c.shown === c.total ? c.total : `${c.shown}/${c.total}`}</span>
+              </div>
+            );
+          })}
           {layout.columns
             .filter((c) => c.collapsed)
             .map((c) => (
@@ -376,34 +474,39 @@ export function SpecMap({ data }: { data: SpecMapData }) {
           {nodes.map((n, i) => {
             const p = layout.pos[i];
             if (!p) return null;
-            const info = LEVEL_INFO.get(n.level);
+            const Icon = LEVEL_ICON[n.level];
+            const dot = statusDot(n.status);
+            const dimmed = related !== null && !focusing && !related.has(i);
             return (
               <button
                 key={i}
                 type="button"
                 onClick={() => select(i)}
-                title={n.title}
-                className={`absolute flex flex-col justify-center rounded-md border border-l-4 bg-card px-2.5 text-left shadow-xs transition-opacity hover:bg-muted ${
-                  i === selected ? "ring-2 ring-foreground" : compatible.has(i) ? "ring-2 ring-[var(--chart-2)]" : ""
-                } ${dim(i) ? "opacity-25" : ""}`}
-                style={{ left: p.x, top: p.y, width: CARD_W, height: CARD_H, borderLeftColor: LEVEL_COLOURS[(info?.index ?? 0) % LEVEL_COLOURS.length] }}
+                title={n.status ? `${n.title} — ${n.status}` : n.title}
+                className={`absolute flex items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs transition-opacity hover:bg-muted ${
+                  i === selected ? "border-foreground ring-2 ring-foreground" : compatible.has(i) ? "border-foreground/60 ring-1 ring-foreground/40" : "border-border"
+                } ${dimmed ? "opacity-25" : ""}`}
+                style={{ left: p.x, top: p.y, width: CARD_W, height: CARD_H }}
               >
-                <span className="w-full truncate text-xs font-medium text-foreground">{n.title}</span>
-                <span className="w-full truncate text-[11px] text-muted-foreground">
-                  {[n.code, n.status, n.sub].filter(Boolean).join(" · ") || "—"}
+                <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-xs font-medium text-foreground">{n.title}</span>
+                  <span className="truncate text-[11px] text-muted-foreground">{[n.code, n.sub].filter(Boolean).join(" · ") || "—"}</span>
                 </span>
+                {dot ? <span className={`size-2.5 shrink-0 rounded-full ${dot}`} aria-label={n.status ?? undefined} /> : null}
               </button>
             );
           })}
         </div>
       </div>
 
-      <Sheet open={sel !== null} onOpenChange={(open) => {
-          if (open) return;
-          setSelected(null);
-          setRecord(null);
-          setCompatible(new Set());
-        }} modal={false}>
+      <Sheet
+        open={sel !== null}
+        onOpenChange={(open) => {
+          if (!open) clearSelection();
+        }}
+        modal={false}
+      >
         <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-xl" onInteractOutside={(e) => e.preventDefault()}>
           <SheetHeader className="border-b border-border">
             <SheetTitle className="text-sm font-medium text-muted-foreground">{sel ? LEVEL_INFO.get(sel.level)?.label : ""}</SheetTitle>
