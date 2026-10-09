@@ -41,6 +41,7 @@ import {
 } from "@/lib/spec/catalog-table-model";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
 import type { SpecMapData } from "@/lib/spec/spec-map";
+import type { ProductOptionState } from "@/lib/spec/product-view";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
 import {
   loadMapCompatible,
@@ -86,6 +87,17 @@ const MOVE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 /** Many-to-many and large: shown on demand. */
 const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
 const ALL = "all";
+/**
+ * A focused standard product's offered options, by how the product gets them (as Studio's product
+ * view shows them): listed by the product itself, derived by the rules, added by an exception.
+ * Told apart by line style, since colour means status.
+ */
+const OFFER_ORDER: ProductOptionState[] = ["listed", "derived", "added"];
+const OFFER_DASH: Record<ProductOptionState, string | undefined> = {
+  listed: undefined,
+  derived: "6 4",
+  added: "1 3",
+};
 
 /**
  * One icon per depth, the same in every stream (Eric, 2026-10-09), high to low: a group of groups,
@@ -207,6 +219,9 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   // ── selection: the chain up and down, cross-stream links, and the rules' compatibility ──
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
+  const [offers, setOffers] = useState<Map<number, ProductOptionState>>(
+    new Map(),
+  );
   const [record, setRecord] = useState<{
     for: number;
     res: Awaited<ReturnType<typeof loadMapRecord>>;
@@ -240,6 +255,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     if (selected === null) return;
     const n = nodes[selected]!;
     setCompatible(new Set());
+    setOffers(new Map());
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
         loadMapRecord(n.level, n.id),
@@ -247,15 +263,20 @@ export function SpecMap({ data }: { data: SpecMapData }) {
       ]);
       setRecord({ for: selected, res: rec });
       if (compat.ok) {
-        const want = new Set([
-          ...compat.data.products.map((id) => `product:${id}`),
-          ...compat.data.options.map((id) => `customizationOption:${id}`),
+        const want = new Map<string, ProductOptionState | null>([
+          ...compat.data.products.map((id) => [`product:${id}`, null] as const),
+          ...compat.data.options.map(
+            (o) => [`customizationOption:${o.id}`, o.state] as const,
+          ),
         ]);
-        setCompatible(
-          new Set(
-            nodes.flatMap((m, i) =>
-              want.has(`${m.level}:${m.id}`) ? [i] : [],
-            ),
+        const found = nodes.flatMap((m, i) => {
+          const k = `${m.level}:${m.id}`;
+          return want.has(k) ? [[i, want.get(k)!] as const] : [];
+        });
+        setCompatible(new Set(found.map(([i]) => i)));
+        setOffers(
+          new Map(
+            found.flatMap(([i, state]) => (state ? [[i, state] as const] : [])),
           ),
         );
       }
@@ -282,7 +303,25 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
   const group = TABLE_GROUPS.find((g) => g.key === stream) ?? TABLE_GROUPS[0]!;
-  const levels = useMemo(() => group.levels.map((l) => l.key), [group]);
+  /**
+   * A focused standard product brings the options it offers into its own stream, as a column right
+   * after it, so the product → option lines run straight across. Known from the selection alone, so
+   * the columns are settled before the cards glide; the options rise in once the rules answer.
+   */
+  const offering =
+    focusing &&
+    nodes[selected!]!.level === "product" &&
+    stream === streamOf("product");
+  const levels = useMemo(() => {
+    const own = group.levels.map((l) => l.key);
+    if (!offering) return own;
+    const at = own.indexOf("product") + 1;
+    return [
+      ...own.slice(0, at),
+      "customizationOption" as TableKey,
+      ...own.slice(at),
+    ];
+  }, [group, offering]);
   const colW = Math.max(
     MIN_COL_W,
     Math.floor((areaW - PAD * 2) / levels.length),
@@ -299,7 +338,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
       place(
         levels,
         (level) =>
-          collapsed.has(level)
+          collapsed.has(level) || streamOf(level) !== stream
             ? []
             : (byLevel.get(level) ?? []).filter(statusOk),
         parentsOf,
@@ -313,14 +352,33 @@ export function SpecMap({ data }: { data: SpecMapData }) {
     const f = place(
       levels,
       (level) =>
-        (byLevel.get(level) ?? []).filter(
-          (i) => related!.has(i) && statusOk(i),
-        ),
+        offering && streamOf(level) !== stream
+          ? [...offers.keys()]
+              .filter(statusOk)
+              .sort(
+                (a, b) =>
+                  OFFER_ORDER.indexOf(offers.get(a)!) -
+                    OFFER_ORDER.indexOf(offers.get(b)!) || a - b,
+              )
+          : (byLevel.get(level) ?? []).filter(
+              (i) => related!.has(i) && statusOk(i),
+            ),
       parentsOf,
       colW,
     );
     return f;
-  }, [focusing, levels, byLevel, related, statusOk, parentsOf, colW]);
+  }, [
+    focusing,
+    offering,
+    offers,
+    stream,
+    levels,
+    byLevel,
+    related,
+    statusOk,
+    parentsOf,
+    colW,
+  ]);
 
   const targetOf = (i: number) =>
     focus ? (focus.pos.get(i) ?? rest.pos.get(i)) : rest.pos.get(i);
@@ -438,7 +496,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   useLayoutEffect(() => {
     const pos = new Map<number, Pos>();
-    for (const i of drawn) if (inStream(i) && !isGone(i)) pos.set(i, posOf(i)!);
+    for (const i of drawn) if (onMap(i) && !isGone(i)) pos.set(i, posOf(i)!);
     shown.current = { pos };
   });
 
@@ -463,6 +521,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
   // ── render ──────────────────────────────────────────────────────────────────
   const inStream = (i: number) => streamOf(nodes[i]!.level) === stream;
+  /** Drawn in this stream: its own records, and a focused product's offered options. */
+  const onMap = (i: number) => inStream(i) || (offering && offers.has(i));
   const isGone = (i: number) =>
     from
       ? !from.pos.has(i)
@@ -477,7 +537,15 @@ export function SpecMap({ data }: { data: SpecMapData }) {
   const arrows = focus
     ? edges.filter(([a, b]) => focus.pos.has(a) && focus.pos.has(b))
     : edges.filter(([a, b]) => rest.pos.has(a) && rest.pos.has(b));
+  /** A focused product → each option it offers, styled by how it is offered. */
+  const offerArrows =
+    offering && focus && !from && focus.pos.has(selected!)
+      ? [...offers].filter(([i]) => focus.pos.has(i))
+      : [];
   const sel = selected !== null ? nodes[selected]! : null;
+  const relatedOffers = [...offers.keys()].filter((i) =>
+    focus?.pos.has(i),
+  ).length;
   const relatedIn = (level: TableKey) =>
     related ? [...related].filter((i) => nodes[i]!.level === level).length : 0;
   const elsewhere = TABLE_GROUPS.filter(
@@ -580,6 +648,27 @@ export function SpecMap({ data }: { data: SpecMapData }) {
             <span className="truncate font-medium text-foreground">
               {sel.title}
             </span>
+            {offering && offers.size ? (
+              <span className="hidden shrink-0 items-center gap-3 text-xs text-muted-foreground lg:flex">
+                {OFFER_ORDER.map((k) => (
+                  <span key={k} className="inline-flex items-center gap-1.5">
+                    <svg width="20" height="6" aria-hidden>
+                      <line
+                        x1="0"
+                        y1="3"
+                        x2="20"
+                        y2="3"
+                        stroke={LINE.on}
+                        strokeWidth={1.25}
+                        strokeDasharray={OFFER_DASH[k]}
+                        strokeLinecap={k === "added" ? "round" : undefined}
+                      />
+                    </svg>
+                    {COPY.offerKind[k]}
+                  </span>
+                ))}
+              </span>
+            ) : null}
             {elsewhere.map((g) => (
               <Button
                 key={g.key}
@@ -660,7 +749,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   return (
                     <path
                       key={`${a}-${b}`}
-                      d={elbow(posOf(a)!, posOf(b)!, cardW)}
+                      d={elbow(posOf(a)!, posOf(b)!, cardW, colW)}
                       stroke={LINE[k]}
                       strokeWidth={k === "on" ? 1.25 : 1}
                       markerEnd={`url(#spec-map-arrow-${k})`}
@@ -668,10 +757,54 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   );
                 })}
               </g>
+              {/* Separate from the arrows above: the offers arrive after the move, and fade in on their own. */}
+              <g
+                key={`offers-${selected}-${offers.size}`}
+                fill="none"
+                strokeLinejoin="round"
+                className="animate-in fade-in fill-mode-backwards duration-200 delay-300"
+              >
+                {offerArrows.map(([i, state]) => (
+                  <path
+                    key={i}
+                    d={elbow(posOf(selected!)!, posOf(i)!, cardW, colW)}
+                    stroke={LINE.on}
+                    strokeWidth={1.25}
+                    strokeDasharray={OFFER_DASH[state]}
+                    strokeLinecap={state === "added" ? "round" : undefined}
+                    markerEnd="url(#spec-map-arrow-on)"
+                  />
+                ))}
+              </g>
             </svg>
 
             {levels.map((level, li) => {
               const Icon = iconOf(level);
+              if (streamOf(level) !== stream)
+                return (
+                  <div
+                    key={level}
+                    className="absolute flex items-center gap-2"
+                    style={{
+                      left: PAD + li * colW,
+                      top: 8,
+                      width: cardW,
+                      height: HEAD_H - 16,
+                    }}
+                  >
+                    <Icon
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
+                      <ChevronDown className="size-4 shrink-0" />
+                      <span className="truncate">{COPY.offered}</span>
+                    </span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {focus?.pos.size ? relatedOffers : "…"}
+                    </span>
+                  </div>
+                );
               const total = (byLevel.get(level) ?? []).length;
               const isCollapsed = collapsed.has(level);
               const count = focus
@@ -692,7 +825,7 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   }}
                 >
                   <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border bg-card text-[11px] font-semibold tabular-nums text-muted-foreground">
-                    {li + 1}
+                    {(LEVEL_INFO.get(level)?.index ?? li) + 1}
                   </span>
                   <Icon
                     className="size-4 shrink-0 text-muted-foreground"
@@ -758,8 +891,9 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                   ))}
 
             {drawn.map((i) => {
-              if (!inStream(i)) return null;
+              if (!onMap(i)) return null;
               const n = nodes[i]!;
+              const offer = offering ? offers.get(i) : undefined;
               const p = posOf(i)!;
               const Icon = iconOf(n.level);
               const dot = statusDot(n.status);
@@ -787,8 +921,15 @@ export function SpecMap({ data }: { data: SpecMapData }) {
                 >
                   <button
                     type="button"
-                    onClick={() => select(i, false)}
-                    title={n.status ? `${n.title} — ${n.status}` : n.title}
+                    // An offered option belongs to the Customizations stream: selecting it goes there.
+                    onClick={() => select(i, !inStream(i))}
+                    title={[
+                      n.title,
+                      offer ? COPY.offerKind[offer] : null,
+                      n.status,
+                    ]
+                      .filter(Boolean)
+                      .join(" — ")}
                     tabIndex={gone ? -1 : undefined}
                     aria-hidden={gone ? true : undefined}
                     className={`flex size-full items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs hover:bg-muted ${
@@ -903,13 +1044,21 @@ function adjacency(
  * Parent's right edge → child's left edge as an angled line: out, along a shared vertical just past
  * the parent's column, then in. Every line from one column shares that vertical, so they overlap
  * into one trunk instead of fanning out (Eric, 2026-10-09).
+ *
+ * A line that skips a column (a focused product's property values, past its offered options) bridges
+ * over that column's cards, just under the headers, and comes down the child column's own trunk.
  */
-function elbow(a: Pos, b: Pos, cardW: number): string {
+function elbow(a: Pos, b: Pos, cardW: number, colW: number): string {
   const x1 = a.x + cardW;
   const y1 = a.y + CARD_H / 2;
   const x2 = b.x - 1;
   const y2 = b.y + CARD_H / 2;
   const mx = x1 + Math.round(GUTTER / 2);
+  if (b.x - a.x > colW * 1.5) {
+    const bridge = HEAD_H - 6;
+    const mx2 = b.x - Math.round(GUTTER / 2);
+    return `M${x1},${y1} H${mx} V${bridge} H${mx2} V${y2} H${x2}`;
+  }
   return y1 === y2
     ? `M${x1},${y1} H${x2}`
     : `M${x1},${y1} H${mx} V${y2} H${x2}`;

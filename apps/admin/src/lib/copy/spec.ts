@@ -357,6 +357,8 @@ export const ADMIN_SPEC_MAP_COPY = {
   panelLabel: "Selected record",
   close: "Close",
   compatible: (n: number) => `${n} compatible record${n === 1 ? "" : "s"}`,
+  offered: "Offered customizations",
+  offerKind: { listed: "Direct", derived: "Derived by rules", added: "Added by exception" },
   loading: "Loading…",
   notFound: "This record is no longer published.",
   unreachable: "The Spec Map could not be loaded.",
