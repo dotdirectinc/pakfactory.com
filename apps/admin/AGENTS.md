@@ -62,7 +62,7 @@ ADMIN_DEV_BYPASS=true
 ADMIN_DEV_BYPASS_ZOHO_USER_ID=zoho-user-sales-1
 ```
 
-Active only when `NODE_ENV=development`, `ADMIN_DEV_BYPASS=true`, and not `VERCEL_ENV=production`. Opens http://localhost:4000/requests without login; `/login` redirects home. Header shows **Dev Mode**. Logic: [`src/lib/auth/dev-bypass.ts`](src/lib/auth/dev-bypass.ts). Backend restores full auth on [PROD-2415](https://dotdirect.atlassian.net/browse/PROD-2415) in [`src/lib/auth/require-internal-user.ts`](src/lib/auth/require-internal-user.ts).
+Active only when `NODE_ENV=development`, `ADMIN_DEV_BYPASS=true`, and not `VERCEL_ENV=production`. Opens http://localhost:4000 without login (the home dashboard); `/login` redirects home. Header shows **Dev Mode**. Logic: [`src/lib/auth/dev-bypass.ts`](src/lib/auth/dev-bypass.ts). Backend restores full auth on [PROD-2415](https://dotdirect.atlassian.net/browse/PROD-2415) in [`src/lib/auth/require-internal-user.ts`](src/lib/auth/require-internal-user.ts).
 
 Without `ADMIN_DEV_BYPASS=true`, use real Supabase login: set `ADMIN_INTERNAL_ACCOUNT_ALLOWLIST` to `your-email@example.com:zoho-user-sales-1` and sign in on `/login`. Active `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` must be set in the repo root `.env.local` — run `pnpm env:staging` (or `pnpm env:prod`) if you only have `_STAGING` / `_PROD` suffixed keys.
 
@@ -100,13 +100,52 @@ Authenticated chrome is [`AdminShell`](src/components/layout/admin-shell.tsx): d
 
 Global search open / dialog behavior stays under ADR-018 (below). Do not bake pixel heights or max-widths into ADRs; change chrome in these files.
 
+## Dashboard UI scaffold (surfaces, modules, panels, widgets)
+
+**Binding for agents and humans.** Admin dashboard UI uses SaaS / product-system language — not marketing “hero”, “case study”, or “section band” names.
+
+| Layer | Meaning | File / export pattern |
+| --- | --- | --- |
+| **Surface / view** | Whole page type | `{feature}-view.tsx` → `HomeView` |
+| **Module** | Related widgets on one surface | `{job}.tsx` under the feature folder → `MetricStrip` |
+| **Panel** | Focused interactive block (assistant, filters) | `{name}-panel.tsx` → `PakAiPanel` |
+| **Widget** | Props-only reusable tile | `ui/{name}.tsx` under the feature → `MetricStat` |
+
+### Placement (agents must follow)
+
+- Feature-cluster under `src/components/{feature}/` (e.g. `home/`, `requests/`).
+- Modules and panels live **next to the owning surface**, not in a global `components/modules/` until a second surface imports them. “Module” is a **role name**, not a top-level folder.
+- Widgets live in `{feature}/ui/` and stay **props-only** (no feature copy modules, no sample-metrics, no toast strings). Modules and panels own data wiring and Coming Soon.
+- Do **not** create empty `components/modules/` or `components/ui/` “just in case.”
+- Shell chrome stays in `components/layout/`. Do not call the shell a surface.
+- Kebab-case file name === export stem (ADR-005). Drop redundant `{feature}-` prefixes inside that feature folder.
+- Prefer `@pakfactory/ui` primitives (`Card`, `Button`, `Input`, `Badge`, `ChartContainer`). Do not edit existing `packages/ui` primitives for features.
+
+### Promotion ladder (when reuse is real, not speculative)
+
+| Trigger | Action |
+| --- | --- |
+| Second admin surface needs the same **module** | Move to `src/components/modules/{name}.tsx` |
+| Second admin feature needs the same **widget** | Move to `src/components/ui/{name}.tsx` |
+| Second **app** needs the same widget | Promote into `@pakfactory/ui` (ADR-019) |
+
+Worked example: [`src/components/home/`](src/components/home/) — `home-view.tsx` (surface), modules (`metric-strip`, `greeting`, `insight-grid`), panel (`pak-ai-panel`), widgets under `home/ui/`.
+
+## Home
+
+`/` is the staff home surface ([`HomeView`](src/components/home/home-view.tsx)). Layout: metric strip → greeting (signed-in display name) → PakAI panel + quick actions → insight grid. Built from `@pakfactory/ui` primitives plus home widgets.
+
+Numbers in [`src/lib/home/sample-metrics.ts`](src/lib/home/sample-metrics.ts) are **sample**. Replace that file when analytics lands: GA4 for sessions and conversion rate, PostHog for product and customization popularity, and the request adapter for lead counts. PakAI suggestion pills run a **client mock** that generates mixed widgets (`pak-ai-presets.ts`); Recents / Add / Voice / View report still toast Coming Soon.
+
+Sign-in returns to `/`. The sidebar Home link is only current on `/`.
+
 ## Requests index
 
 `/requests` follows a Shopify Orders–style index: page title + All / local search strip + dense table in a white card ([`request-list.tsx`](src/components/requests/request-list.tsx)).
 
 List rows use **`RequestSummary`** from [`@pakfactory/request/request`](../../packages/request/src/request.ts) (`contactName`, `timeline`, `lineCount`, `contactIndustry`, plus ref / company / email / entryKind / submittedAt). When extending the summary, keep mock [`toSummary`](../../packages/request/src/adapters/mock-requests.ts) and Supabase [`toRequestSummary`](src/lib/adapters/rfq-to-domain.ts) in sync.
 
-Do **not** invent RFQ workflow statuses, metrics sparklines, Export/Create, or bulk checkboxes until product asks.
+Do **not** invent RFQ workflow statuses, metrics sparklines, Export/Create, or bulk checkboxes on the requests index until product asks. The home dashboard’s sample charts are the exception above.
 
 ## Global search (ADR-018)
 

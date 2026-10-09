@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Inbox, Settings, SlidersHorizontal } from "lucide-react";
+import {
+  FileText,
+  House,
+  Inbox,
+  Settings,
+  SlidersHorizontal,
+} from "lucide-react";
 import { cn } from "@pakfactory/ui/lib/utils";
 
 type NavIcon = typeof Inbox;
@@ -35,6 +41,13 @@ type NavGroupItem = {
 type NavEntry = NavLinkItem | NavGroupItem;
 
 const NAV: readonly NavEntry[] = [
+  {
+    type: "link",
+    href: "/",
+    label: "Home",
+    icon: House,
+    match: (path) => path === "/",
+  },
   {
     type: "group",
     id: "leads",

@@ -14,7 +14,7 @@ export default async function AdminShellLayout({
 }: {
   children: ReactNode;
 }) {
-  const { user } = await requireInternalUser("/requests");
+  const { user } = await requireInternalUser("/");
   const specAccess = await hasRegistryGrant();
   // Memoised per request with hasRegistryGrant's own call — no second round trip.
   const me = specAccess ? await fetchSpecMe() : null;
