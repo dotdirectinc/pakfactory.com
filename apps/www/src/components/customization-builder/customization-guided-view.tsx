@@ -15,6 +15,7 @@ import {
     type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
+import type {PrintableSide} from '@/lib/customization-builder/printable-sides';
 
 type CustomizationGuidedViewProps = {
     steps: BuilderStep[];
@@ -29,6 +30,7 @@ type CustomizationGuidedViewProps = {
     dimensionRange?: ProductDimensionRange;
     dimensionInput?: string;
     dimensionAxisIds?: readonly string[];
+    printableSides?: PrintableSide[];
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -41,10 +43,7 @@ type CustomizationGuidedViewProps = {
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) => void;
-    onPrintedSideChange: (patch: {
-        printOutside?: PrintSideValue;
-        printInside?: PrintSideValue;
-    }) => void;
+    onPrintedSideChange: (slug: string, next: PrintSideValue) => void;
     onPrintingConsultation: () => void;
     onBack: () => void;
     onNext: () => void;
@@ -63,6 +62,7 @@ export function CustomizationGuidedView({
     dimensionRange,
     dimensionInput,
     dimensionAxisIds,
+    printableSides = [],
     onSelectStep,
     onSelectConsultation,
     onSelectType,
@@ -86,7 +86,7 @@ export function CustomizationGuidedView({
     const isLast = stepIndex >= steps.length - 1;
     const step = steps[stepIndex];
     const canAdvance = step
-        ? isStepReady(state, step, dimensionAxisIds)
+        ? isStepReady(state, step, dimensionAxisIds, printableSides)
         : false;
 
     function handleSelectStep(key: BuilderStepKey) {
@@ -108,6 +108,7 @@ export function CustomizationGuidedView({
             dimensionRange={dimensionRange}
             dimensionInput={dimensionInput}
             dimensionAxisIds={dimensionAxisIds}
+            printableSides={printableSides}
             onSelectCategory={handleSelectStep}
             onSelectConsultation={onSelectConsultation}
             onSelectType={onSelectType}

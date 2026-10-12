@@ -153,9 +153,19 @@ export type ProductDimensionRange = {
     depthMax?: number;
 };
 
+export type ProductPropertyValue = {
+    title: string;
+    slug: string;
+};
+
 export type ProductProperty = {
     label: string;
+    /** Joined value titles for spec / display rows. */
     value: string;
+    /** Sanity `property.slug` when present (e.g. printable-sides). */
+    propertySlug?: string;
+    /** Individual values with slugs for builder / rules wiring. */
+    values?: ProductPropertyValue[];
 };
 
 export type ProductFaq = {

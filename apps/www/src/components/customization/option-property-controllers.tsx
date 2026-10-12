@@ -120,6 +120,7 @@ type DisplayOption = {
     id: string;
     title: string;
     imageUrl?: string;
+    imageAlt?: string;
     color?: string;
     appearance?: 'consultation' | 'customColor';
     kindOfSlug?: string;
@@ -148,6 +149,7 @@ function mapFieldOptions(
         id: o.id,
         title: o.title,
         ...(o.imageUrl ? {imageUrl: o.imageUrl} : {}),
+        ...(o.imageAlt ? {imageAlt: o.imageAlt} : {}),
         ...(o.color ? {color: o.color} : {}),
         ...(o.appearance === 'customColor'
             ? {appearance: 'customColor' as const}

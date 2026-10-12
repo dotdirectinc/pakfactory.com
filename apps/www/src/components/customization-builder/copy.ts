@@ -49,6 +49,8 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     /** Printing-step Printed Side gate (before Method / Color). */
     printOutside: 'Print Outside',
     printInside: 'Print Inside',
+    /** `{side}` = Printable Sides value title (Outside, Front Panel, …). */
+    printSideLabel: 'Print {side}',
     printedSideYes: 'Yes',
     printedSideNo: 'No',
     /** Pantone Spot / Hybrid option detail controllers. */

@@ -52,6 +52,11 @@ export type RequestLine = {
     dimensionInput?: string;
     /** Product dimensionRange in mm from Sanity (snapshotted at add). */
     dimensionRange?: ProductDimensionRange;
+    /**
+     * Product Printable Sides (Sanity) snapshotted at add — drives Printing gate
+     * on /request reopen without a live catalog fetch.
+     */
+    printableSides?: {slug: string; title: string}[];
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
@@ -73,6 +78,7 @@ export type AddLineInput = {
     customizationRules?: CustomizationRulesSnapshot;
     dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
+    printableSides?: {slug: string; title: string}[];
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
@@ -215,6 +221,27 @@ function isRequestLine(value: unknown): value is RequestLine {
         delete line.dimensionInput;
     } else if (typeof line.dimensionInput === 'string') {
         line.dimensionInput = line.dimensionInput.trim();
+    }
+    if (line.printableSides !== undefined) {
+        if (!Array.isArray(line.printableSides)) {
+            delete line.printableSides;
+        } else {
+            line.printableSides = line.printableSides
+                .filter(
+                    (side): side is {slug: string; title: string} =>
+                        Boolean(side) &&
+                        typeof side === 'object' &&
+                        typeof side.slug === 'string' &&
+                        Boolean(side.slug.trim()) &&
+                        typeof side.title === 'string' &&
+                        Boolean(side.title.trim()),
+                )
+                .map((side) => ({
+                    slug: side.slug.trim(),
+                    title: side.title.trim(),
+                }));
+            if (line.printableSides.length === 0) delete line.printableSides;
+        }
     }
     return true;
 }
@@ -489,6 +516,9 @@ export function createRequestLine(input: AddLineInput): RequestLine {
             : {}),
         ...(input.dimensionRange
             ? {dimensionRange: input.dimensionRange}
+            : {}),
+        ...(input.printableSides?.length
+            ? {printableSides: input.printableSides}
             : {}),
         quantities: [...input.quantities].filter((n) => n > 0).sort((a, b) => a - b),
         contents: input.contents.trim(),

@@ -24,6 +24,8 @@ import {
     type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
+import type {PrintableSide} from '@/lib/customization-builder/printable-sides';
+import {shouldShowPrintedSideGate} from '@/lib/customization-builder/printable-sides';
 
 type BuilderThreeColumnProps = {
     steps: BuilderStep[];
@@ -39,6 +41,7 @@ type BuilderThreeColumnProps = {
     dimensionRange?: ProductDimensionRange;
     dimensionInput?: string;
     dimensionAxisIds?: readonly string[];
+    printableSides?: PrintableSide[];
     onSelectCategory: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -51,10 +54,7 @@ type BuilderThreeColumnProps = {
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) => void;
-    onPrintedSideChange?: (patch: {
-        printOutside?: PrintSideValue;
-        printInside?: PrintSideValue;
-    }) => void;
+    onPrintedSideChange?: (slug: string, next: PrintSideValue) => void;
     onPrintingConsultation?: () => void;
 };
 
@@ -72,6 +72,7 @@ export function BuilderThreeColumn({
     dimensionRange,
     dimensionInput,
     dimensionAxisIds,
+    printableSides = [],
     onSelectCategory,
     onSelectConsultation,
     onSelectType,
@@ -89,11 +90,16 @@ export function BuilderThreeColumn({
     const answer = getAnswer(state, step.key);
     const printingStep = isPrintingCategoryStep(step);
     const consultationSelected = answer.status === 'not-sure';
-    // Any Yes (even if the other side is still unset) → Method / Color list.
-    const methodsEligible = wantsAnyPrint(state);
+    // Gate hidden or any Yes → Method / Color list.
+    const methodsEligible = wantsAnyPrint(state, printableSides);
     const showPrintingOptions = printingStep && methodsEligible;
     // Alone under pills when no Yes; list owns the end card when methods show.
     const showGateConsultation = printingStep && !methodsEligible;
+    const showGate =
+        printingStep &&
+        shouldShowPrintedSideGate(printableSides) &&
+        onPrintedSideChange &&
+        onPrintingConsultation;
     const face: DimensionFace | null =
         step.kind === 'dimensions'
             ? activeTypeId === 'internal'
@@ -145,18 +151,17 @@ export function BuilderThreeColumn({
                         numbered={numberedRail}
                         maxReachableIndex={maxReachableIndex}
                         dimensionAxisIds={dimensionAxisIds}
+                        printableSides={printableSides}
                         onSelect={onSelectCategory}
                         onClearCategory={onClearCategory}
                     />
                 </div>
                 <div className="flex min-h-0 min-w-0 flex-col overflow-y-auto border-b border-border md:border-b-0 md:border-r">
-                    {printingStep &&
-                    onPrintedSideChange &&
-                    onPrintingConsultation ? (
+                    {showGate ? (
                         <div className="shrink-0">
                             <PrintedSideGate
-                                printOutside={state.printOutside ?? ''}
-                                printInside={state.printInside ?? ''}
+                                sides={printableSides}
+                                values={state.printedSides ?? {}}
                                 onChange={onPrintedSideChange}
                                 onNeedConsultation={onPrintingConsultation}
                                 consultationSelected={

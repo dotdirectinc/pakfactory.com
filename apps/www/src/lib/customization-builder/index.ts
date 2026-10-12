@@ -70,3 +70,10 @@ export {
     PRINTING_CATEGORY_SLUG,
     dimensionEntryNoteKey,
 } from '@/lib/customization-builder/types';
+
+export {
+    PRINTABLE_SIDES_PROPERTY_SLUG,
+    resolvePrintableSides,
+    shouldShowPrintedSideGate,
+    type PrintableSide,
+} from '@/lib/customization-builder/printable-sides';
