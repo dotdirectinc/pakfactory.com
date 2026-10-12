@@ -3,6 +3,10 @@ import {compareCategorySlugs} from '@/lib/catalog/customization-category-order';
 import {orderTypesInCategory} from '@pakfactory/sanity/customization-type-order';
 import {orderOptionsInType} from '@pakfactory/sanity/option-order';
 import {
+    shouldShowPrintedSideGate,
+    type PrintableSide,
+} from '@/lib/customization-builder/printable-sides';
+import {
     DIMENSIONS_STEP_KEY,
     EMPTY_BUILDER_STATE,
     EMPTY_DIMENSIONS,
@@ -43,8 +47,7 @@ export function createEmptyBuilderState(): CustomizationBuilderState {
         entryNotes: {},
         propertySelections: {},
         propertySelectionSummaries: {},
-        printOutside: '',
-        printInside: '',
+        printedSides: {},
     };
 }
 
@@ -55,31 +58,77 @@ export function isPrintingCategoryStep(step: BuilderStep): boolean {
     );
 }
 
-export function isPrintedSideComplete(
+function printedSideAnswer(
     state: CustomizationBuilderState,
-): boolean {
-    return Boolean(state.printOutside && state.printInside);
+    slug: string,
+): PrintSideValue {
+    const value = state.printedSides?.[slug];
+    return value === 'yes' || value === 'no' || value === '' ? value : '';
 }
 
-export function wantsAnyPrint(state: CustomizationBuilderState): boolean {
-    return state.printOutside === 'yes' || state.printInside === 'yes';
+/** True when the gate is hidden, or every configured side has Yes/No. */
+export function isPrintedSideComplete(
+    state: CustomizationBuilderState,
+    sides: PrintableSide[] = [],
+): boolean {
+    if (!shouldShowPrintedSideGate(sides)) return true;
+    return sides.every((side) => {
+        const value = printedSideAnswer(state, side.slug);
+        return value === 'yes' || value === 'no';
+    });
+}
+
+/** Gate hidden → treat print as on. Else any configured side Yes. */
+export function wantsAnyPrint(
+    state: CustomizationBuilderState,
+    sides: PrintableSide[] = [],
+): boolean {
+    if (!shouldShowPrintedSideGate(sides)) return true;
+    return sides.some((side) => printedSideAnswer(state, side.slug) === 'yes');
 }
 
 /**
- * Rail / card summary for Print Outside / Print Inside.
- * Not set | Outside only | Inside only | Both Outside & Inside | None
+ * Rail / card summary for printable sides.
+ * Gate hidden (no sides) → "Print". One side → side title / None.
+ * Multi → Outside only / Inside only / Both… / joined yes labels / None.
  */
 export function formatPrintedSideSummary(
     state: CustomizationBuilderState,
+    sides: PrintableSide[] = [],
 ): string {
-    const outside = state.printOutside ?? '';
-    const inside = state.printInside ?? '';
-    if (!outside || !inside) return 'Not set';
-    if (outside === 'yes' && inside === 'yes') return 'Both Outside & Inside';
-    if (outside === 'yes' && inside === 'no') return 'Outside only';
-    if (outside === 'no' && inside === 'yes') return 'Inside only';
-    if (outside === 'no' && inside === 'no') return 'None';
-    return 'Not set';
+    if (!shouldShowPrintedSideGate(sides)) return 'Print';
+    if (!isPrintedSideComplete(state, sides)) return 'Not set';
+
+    const yes = sides.filter(
+        (side) => printedSideAnswer(state, side.slug) === 'yes',
+    );
+    const no = sides.filter(
+        (side) => printedSideAnswer(state, side.slug) === 'no',
+    );
+
+    if (yes.length === 0) return 'None';
+
+    if (sides.length === 1) return yes[0]!.title;
+
+    const slugs = new Set(sides.map((side) => side.slug));
+    const classicOutsideInside =
+        sides.length === 2 && slugs.has('outside') && slugs.has('inside');
+
+    if (classicOutsideInside) {
+        const outside = printedSideAnswer(state, 'outside');
+        const inside = printedSideAnswer(state, 'inside');
+        if (outside === 'yes' && inside === 'yes') {
+            return 'Both Outside & Inside';
+        }
+        if (outside === 'yes' && inside === 'no') return 'Outside only';
+        if (outside === 'no' && inside === 'yes') return 'Inside only';
+    }
+
+    if (no.length === 0) {
+        return yes.map((side) => side.title).join(' & ');
+    }
+    if (yes.length === 1) return `${yes[0]!.title} only`;
+    return yes.map((side) => side.title).join(', ');
 }
 
 function parsePrintSideValue(value: unknown): PrintSideValue {
@@ -88,16 +137,17 @@ function parsePrintSideValue(value: unknown): PrintSideValue {
 }
 
 /**
- * Printing step ready when: gate consultation, both No (None), or any Yes
- * with method / consultation answer.
+ * Printing step ready when: gate consultation, all No (None), or any Yes
+ * with method / consultation answer. Gate hidden → methods-only readiness.
  */
 export function isPrintingStepReady(
     state: CustomizationBuilderState,
     answer: StepAnswer | undefined,
+    sides: PrintableSide[] = [],
 ): boolean {
     if (answer?.status === 'not-sure') return true;
-    if (!isPrintedSideComplete(state)) return false;
-    if (!wantsAnyPrint(state)) return true;
+    if (!isPrintedSideComplete(state, sides)) return false;
+    if (!wantsAnyPrint(state, sides)) return true;
     return isAnswerReady(answer);
 }
 
@@ -105,32 +155,35 @@ export function isStepReady(
     state: CustomizationBuilderState,
     step: BuilderStep,
     dimensionAxisIds?: readonly string[],
+    printableSides: PrintableSide[] = [],
 ): boolean {
     const answer = getAnswer(state, step.key);
     if (step.kind === 'dimensions') {
         return isAnswerReady(answer, dimensionAxisIds);
     }
     if (isPrintingCategoryStep(step)) {
-        return isPrintingStepReady(state, answer);
+        return isPrintingStepReady(state, answer, printableSides);
     }
     return isAnswerReady(answer);
 }
 
 /**
- * Patch Print Outside / Inside. Both No clears methods (None). Picking Yes/No
- * leaves a prior gate-level consultation answer.
+ * Patch one or more printable-side answers. All No clears methods (None).
+ * Picking Yes/No leaves a prior gate-level consultation answer.
  */
 export function patchPrintedSide(
     state: CustomizationBuilderState,
-    patch: {printOutside?: PrintSideValue; printInside?: PrintSideValue},
+    patch: Record<string, PrintSideValue>,
+    sides: PrintableSide[],
     printingStepKey: BuilderStepKey = PRINTING_CATEGORY_SLUG,
 ): CustomizationBuilderState {
-    const printOutside = patch.printOutside ?? state.printOutside ?? '';
-    const printInside = patch.printInside ?? state.printInside ?? '';
+    const printedSides: Partial<Record<string, PrintSideValue>> = {
+        ...(state.printedSides ?? {}),
+        ...patch,
+    };
     let next: CustomizationBuilderState = {
         ...state,
-        printOutside,
-        printInside,
+        printedSides,
     };
 
     // Leaving gate consultation when the buyer answers the side toggles.
@@ -144,12 +197,16 @@ export function patchPrintedSide(
         };
     }
 
-    if (printOutside === 'no' && printInside === 'no') {
+    if (
+        shouldShowPrintedSideGate(sides) &&
+        sides.every((side) => printedSides[side.slug] === 'no')
+    ) {
         const cleared = clearStep(next, printingStepKey);
         return {
             ...cleared,
-            printOutside: 'no',
-            printInside: 'no',
+            printedSides: Object.fromEntries(
+                sides.map((side) => [side.slug, 'no' as PrintSideValue]),
+            ),
         };
     }
 
@@ -166,8 +223,7 @@ export function selectPrintingConsultation(
     const cleared = clearStep(state, printingStepKey);
     return {
         ...cleared,
-        printOutside: '',
-        printInside: '',
+        printedSides: {},
         answers: {
             ...cleared.answers,
             [printingStepKey]: {status: 'not-sure'},
@@ -180,12 +236,16 @@ export function summarizePrintingStep(
     state: CustomizationBuilderState,
     answer: StepAnswer,
     specialistLabel: string,
-    options?: {propertySummaries?: PropertySummariesByOption},
+    options?: {
+        propertySummaries?: PropertySummariesByOption;
+        printableSides?: PrintableSide[];
+    },
 ): string {
+    const sides = options?.printableSides ?? [];
     if (answer.status === 'not-sure') return specialistLabel;
-    if (!isPrintedSideComplete(state)) return 'Not set';
-    const side = formatPrintedSideSummary(state);
-    if (!wantsAnyPrint(state)) return side;
+    if (!isPrintedSideComplete(state, sides)) return 'Not set';
+    const side = formatPrintedSideSummary(state, sides);
+    if (!wantsAnyPrint(state, sides)) return side;
     const methods = summarizeAnswer(answer, specialistLabel, options);
     if (methods === 'Not set') return side;
     return `${side} · ${methods}`;
@@ -236,9 +296,11 @@ export function firstUnresolvedStepIndex(
     state: CustomizationBuilderState,
     steps: BuilderStep[],
     dimensionAxisIds?: readonly string[],
+    printableSides: PrintableSide[] = [],
 ): number {
     const index = steps.findIndex(
-        (step) => !isStepReady(state, step, dimensionAxisIds),
+        (step) =>
+            !isStepReady(state, step, dimensionAxisIds, printableSides),
     );
     return index === -1 ? steps.length : index;
 }
@@ -246,7 +308,13 @@ export function firstUnresolvedStepIndex(
 /** Any self-serve signal means the item is configured and skips guided. */
 export function isBuilderConfigured(state: CustomizationBuilderState): boolean {
     if (state.guidedComplete) return true;
-    if (isPrintedSideComplete(state)) return true;
+    if (
+        Object.values(state.printedSides ?? {}).some(
+            (value) => value === 'yes' || value === 'no',
+        )
+    ) {
+        return true;
+    }
     return Object.values(state.answers).some(
         (answer) => answer !== undefined && answer.status !== 'unset',
     );
@@ -260,9 +328,12 @@ export function isBuilderReady(
     state: CustomizationBuilderState,
     steps: BuilderStep[],
     dimensionAxisIds?: readonly string[],
+    printableSides: PrintableSide[] = [],
 ): boolean {
     if (steps.length === 0) return true;
-    return steps.every((step) => isStepReady(state, step, dimensionAxisIds));
+    return steps.every((step) =>
+        isStepReady(state, step, dimensionAxisIds, printableSides),
+    );
 }
 
 export function formatFaceSummary(
@@ -568,8 +639,7 @@ export function clearStep(
     if (key === PRINTING_CATEGORY_SLUG) {
         return {
             ...cleared,
-            printOutside: '',
-            printInside: '',
+            printedSides: {},
         };
     }
     return cleared;
@@ -686,6 +756,7 @@ export function patchPropertySelections(
 export function fillUnsetWithConsultation(
     state: CustomizationBuilderState,
     stepKeys?: BuilderStepKey[],
+    printableSides: PrintableSide[] = [],
 ): CustomizationBuilderState {
     const answers = {...state.answers};
     const keys =
@@ -694,12 +765,12 @@ export function fillUnsetWithConsultation(
     for (const key of keys) {
         const current = answers[key];
         if (!current || current.status === 'unset') {
-            // None (both No) or gate-level Not sure already decided printing —
+            // None (all No) or gate-level Not sure already decided printing —
             // do not overwrite with a second consultation marker on Save / Done.
             if (
                 key === PRINTING_CATEGORY_SLUG &&
-                isPrintedSideComplete(state) &&
-                !wantsAnyPrint(state)
+                isPrintedSideComplete(state, printableSides) &&
+                !wantsAnyPrint(state, printableSides)
             ) {
                 continue;
             }
@@ -726,11 +797,13 @@ export function patchEntryNote(
 export function markGuidedComplete(
     state: CustomizationBuilderState,
     steps?: BuilderStep[],
+    printableSides: PrintableSide[] = [],
 ): CustomizationBuilderState {
     const stepKeys = steps?.map((step) => step.key);
     return fillUnsetWithConsultation(
         {...state, guidedComplete: true},
         stepKeys,
+        printableSides,
     );
 }
 
@@ -738,6 +811,7 @@ export function toRequestCustomizations(
     state: CustomizationBuilderState,
     specialistLabel: string,
     steps?: BuilderStep[],
+    printableSides: PrintableSide[] = [],
 ): BuilderRequestCustomization[] {
     const out: BuilderRequestCustomization[] = [];
     const keys: BuilderStepKey[] = [
@@ -752,8 +826,8 @@ export function toRequestCustomizations(
     // Printing may be ready as None with an unset answer — still emit the side.
     if (
         !keys.includes(PRINTING_CATEGORY_SLUG) &&
-        isPrintedSideComplete(state) &&
-        !wantsAnyPrint(state)
+        isPrintedSideComplete(state, printableSides) &&
+        !wantsAnyPrint(state, printableSides)
     ) {
         keys.push(PRINTING_CATEGORY_SLUG);
     }
@@ -768,16 +842,25 @@ export function toRequestCustomizations(
 
         if (
             printing &&
-            isPrintedSideComplete(state) &&
+            isPrintedSideComplete(state, printableSides) &&
             answer?.status !== 'not-sure'
         ) {
-            const sideLabel = formatPrintedSideSummary(state);
-            out.push({
-                id: `${PRINTING_CATEGORY_SLUG}-side`,
-                label: sideLabel,
-                category: PRINTING_CATEGORY_SLUG,
-            });
-            if (!wantsAnyPrint(state)) continue;
+            // Multi-side gate: emit once complete. Gate hidden: only with methods.
+            if (
+                shouldShowPrintedSideGate(printableSides) ||
+                answer?.status === 'set'
+            ) {
+                const sideLabel = formatPrintedSideSummary(
+                    state,
+                    printableSides,
+                );
+                out.push({
+                    id: `${PRINTING_CATEGORY_SLUG}-side`,
+                    label: sideLabel,
+                    category: PRINTING_CATEGORY_SLUG,
+                });
+            }
+            if (!wantsAnyPrint(state, printableSides)) continue;
         }
 
         if (!answer || answer.status === 'unset') continue;
@@ -803,7 +886,11 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
     if (!value || typeof value !== 'object') {
         return createEmptyBuilderState();
     }
-    const raw = value as Partial<CustomizationBuilderState>;
+    const raw = value as Partial<CustomizationBuilderState> & {
+        /** Legacy fixed Outside / Inside keys (pre printable-sides gate). */
+        printOutside?: unknown;
+        printInside?: unknown;
+    };
     const answers: CustomizationBuilderState['answers'] = {};
 
     if (raw.answers && typeof raw.answers === 'object') {
@@ -872,14 +959,29 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
         }
     }
 
+    const printedSides: Partial<Record<string, PrintSideValue>> = {};
+    if (raw.printedSides && typeof raw.printedSides === 'object') {
+        for (const [slug, value] of Object.entries(
+            raw.printedSides as Record<string, unknown>,
+        )) {
+            if (!slug.trim()) continue;
+            printedSides[slug] = parsePrintSideValue(value);
+        }
+    } else {
+        // Legacy drafts stored fixed Outside / Inside keys.
+        const legacyOutside = parsePrintSideValue(raw.printOutside);
+        const legacyInside = parsePrintSideValue(raw.printInside);
+        if (legacyOutside) printedSides.outside = legacyOutside;
+        if (legacyInside) printedSides.inside = legacyInside;
+    }
+
     return {
         answers,
         guidedComplete: Boolean(raw.guidedComplete),
         entryNotes,
         propertySelections,
         propertySelectionSummaries,
-        printOutside: parsePrintSideValue(raw.printOutside),
-        printInside: parsePrintSideValue(raw.printInside),
+        printedSides,
     };
 }
 

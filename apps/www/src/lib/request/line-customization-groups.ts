@@ -2,6 +2,7 @@ import {
     PRINTING_CATEGORY_SLUG,
     formatPrintedSideSummary,
     isPrintedSideComplete,
+    shouldShowPrintedSideGate,
     visiblePropertySummaries,
 } from '@/lib/customization-builder';
 import type {RequestLine} from '@/lib/request/request.storage';
@@ -56,13 +57,17 @@ export function lineCustomizationGroups(
     line: RequestLine,
 ): LineCustomizationGroup[] {
     const builder = line.customizationBuilder;
+    const printableSides = line.printableSides ?? [];
+    const printingAnswer = builder?.answers?.[PRINTING_CATEGORY_SLUG];
     const printedSideReady = builder
-        ? isPrintedSideComplete(builder)
+        ? shouldShowPrintedSideGate(printableSides)
+            ? isPrintedSideComplete(builder, printableSides)
+            : printingAnswer?.status === 'set' &&
+              isPrintedSideComplete(builder, printableSides)
         : false;
-    const printingConsultation =
-        builder?.answers?.[PRINTING_CATEGORY_SLUG]?.status === 'not-sure';
+    const printingConsultation = printingAnswer?.status === 'not-sure';
     const printedSideLabel = printedSideReady
-        ? formatPrintedSideSummary(builder!)
+        ? formatPrintedSideSummary(builder!, printableSides)
         : printingConsultation
           ? 'Specialist to advise'
           : null;

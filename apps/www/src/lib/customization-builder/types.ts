@@ -46,7 +46,7 @@ export type PropertySelectionSummaryItem = {
     imageUrl?: string;
 };
 
-/** Print Outside / Print Inside gate on the Printing step (Yes / No). */
+/** Per-face Yes / No on the Printing-step gate. */
 export type PrintSideValue = '' | 'yes' | 'no';
 
 export type CustomizationBuilderState = {
@@ -68,10 +68,11 @@ export type CustomizationBuilderState = {
     propertySelectionSummaries?: Partial<
         Record<string, PropertySelectionSummaryItem[]>
     >;
-    /** Printing-step gate: artwork on the outside face. */
-    printOutside?: PrintSideValue;
-    /** Printing-step gate: artwork on the inside face. */
-    printInside?: PrintSideValue;
+    /**
+     * Printing-step gate answers keyed by Printable Sides value slug
+     * (`outside`, `inside`, `front-panel`, …). Empty when the gate is hidden.
+     */
+    printedSides?: Partial<Record<string, PrintSideValue>>;
 };
 
 export type BuilderChoice = {
@@ -164,8 +165,7 @@ export const EMPTY_BUILDER_STATE: CustomizationBuilderState = {
     entryNotes: {},
     propertySelections: {},
     propertySelectionSummaries: {},
-    printOutside: '',
-    printInside: '',
+    printedSides: {},
 };
 
 export type CatalogOptionLike = Pick<

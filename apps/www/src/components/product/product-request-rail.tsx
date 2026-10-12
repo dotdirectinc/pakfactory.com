@@ -8,6 +8,7 @@ import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
 import {useProductPdpDraft} from '@/components/product/product-pdp-draft';
 import {REQUEST_COPY} from '@/lib/copy/request';
+import {resolvePrintableSides} from '@/lib/customization-builder';
 
 /**
  * PDP buy-box rail — quantity, contents, customization, Add to request.
@@ -36,6 +37,7 @@ export function ProductRequestRail() {
         handleAdd,
     } = useProductPdpDraft();
     const isInspiration = product.kind === 'inspiration';
+    const printableSides = resolvePrintableSides(product.properties);
 
     return (
         <div className="mt-8 space-y-6">
@@ -84,6 +86,7 @@ export function ProductRequestRail() {
                     productTitle={product.title}
                     dimensionInput={product.dimensionInput}
                     dimensionRange={product.dimensionRange}
+                    printableSides={printableSides}
                     preset={isInspiration}
                 />
             </section>

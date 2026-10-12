@@ -12,6 +12,7 @@ import type {
     PropertySelectionSummaryItem,
     StepAnswer,
 } from '@/lib/customization-builder';
+import type {PrintableSide} from '@/lib/customization-builder/printable-sides';
 
 type CustomizationWorkspaceViewProps = {
     steps: BuilderStep[];
@@ -24,6 +25,7 @@ type CustomizationWorkspaceViewProps = {
     dimensionRange?: ProductDimensionRange;
     dimensionInput?: string;
     dimensionAxisIds?: readonly string[];
+    printableSides?: PrintableSide[];
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -36,10 +38,7 @@ type CustomizationWorkspaceViewProps = {
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) => void;
-    onPrintedSideChange: (patch: {
-        printOutside?: PrintSideValue;
-        printInside?: PrintSideValue;
-    }) => void;
+    onPrintedSideChange: (slug: string, next: PrintSideValue) => void;
     onPrintingConsultation: () => void;
 };
 
@@ -53,6 +52,7 @@ export function CustomizationWorkspaceView({
     dimensionRange,
     dimensionInput,
     dimensionAxisIds,
+    printableSides = [],
     onSelectStep,
     onSelectConsultation,
     onSelectType,
@@ -75,6 +75,7 @@ export function CustomizationWorkspaceView({
             dimensionRange={dimensionRange}
             dimensionInput={dimensionInput}
             dimensionAxisIds={dimensionAxisIds}
+            printableSides={printableSides}
             onSelectCategory={onSelectStep}
             onSelectConsultation={onSelectConsultation}
             onSelectType={onSelectType}

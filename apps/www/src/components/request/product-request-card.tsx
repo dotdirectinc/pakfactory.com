@@ -241,6 +241,7 @@ export function ProductRequestCard({
                     builderDraft,
                     CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
                     buildStepsFromCatalog(available),
+                    line.printableSides ?? [],
                 ),
             });
         }
@@ -415,6 +416,7 @@ export function ProductRequestCard({
                 productTitle={title}
                 dimensionInput={line.dimensionInput}
                 dimensionRange={line.dimensionRange}
+                printableSides={line.printableSides}
                 customizationRules={line.customizationRules}
             />
 

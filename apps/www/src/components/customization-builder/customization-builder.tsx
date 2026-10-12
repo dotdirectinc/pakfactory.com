@@ -45,6 +45,7 @@ import {
     type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
+import type {PrintableSide} from '@/lib/customization-builder/printable-sides';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import {resolveProductDims} from '@pakfactory/sanity/resolve-product-dims';
 
@@ -62,6 +63,11 @@ export type CustomizationBuilderProps = {
     dimensionInput?: string;
     /** Sanity product dimensionRange in mm. */
     dimensionRange?: ProductDimensionRange;
+    /**
+     * Product Printable Sides values (Sanity property). Drives Printing gate
+     * row count; empty / single → gate hidden, print treated as on.
+     */
+    printableSides?: PrintableSide[];
     /**
      * The product's customization rules (PROD-2556). Narrows each step to what the other
      * answers still allow. Absent (production before its rebuild, or an older request
@@ -117,6 +123,7 @@ export function CustomizationBuilder({
     initialStepKey,
     dimensionInput,
     dimensionRange,
+    printableSides = [],
     customizationRules,
 }: CustomizationBuilderProps) {
     const dimensionAxisIds = useMemo(
@@ -303,12 +310,14 @@ export function CustomizationBuilder({
     const printingStepKey =
         steps.find(isPrintingCategoryStep)?.key ?? PRINTING_CATEGORY_SLUG;
 
-    function handlePrintedSideChange(patch: {
-        printOutside?: PrintSideValue;
-        printInside?: PrintSideValue;
-    }) {
-        const next = patchPrintedSide(value, patch, printingStepKey);
-        if (!wantsAnyPrint(next)) {
+    function handlePrintedSideChange(slug: string, nextValue: PrintSideValue) {
+        const next = patchPrintedSide(
+            value,
+            {[slug]: nextValue},
+            printableSides,
+            printingStepKey,
+        );
+        if (!wantsAnyPrint(next, printableSides)) {
             setActiveOptionId(null);
             setActiveTypeId(null);
         }
@@ -340,7 +349,7 @@ export function CustomizationBuilder({
     }
 
     function finishGuided(state: CustomizationBuilderState = value) {
-        onChange(markGuidedComplete(state, steps));
+        onChange(markGuidedComplete(state, steps, printableSides));
         onOpenChange(false);
     }
 
@@ -368,6 +377,7 @@ export function CustomizationBuilder({
             fillUnsetWithConsultation(
                 value,
                 steps.map((step) => step.key),
+                printableSides,
             ),
         );
         onOpenChange(false);
@@ -416,6 +426,7 @@ export function CustomizationBuilder({
                             dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
                             dimensionAxisIds={dimensionAxisIds}
+                            printableSides={printableSides}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
                             onSelectType={selectType}
@@ -444,6 +455,7 @@ export function CustomizationBuilder({
                             dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
                             dimensionAxisIds={dimensionAxisIds}
+                            printableSides={printableSides}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
                             onSelectType={selectType}

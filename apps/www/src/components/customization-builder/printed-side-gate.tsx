@@ -1,18 +1,16 @@
 'use client';
 
 import {HighlightItem} from '@pakfactory/ui/components/highlight-item';
-import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import type {PrintableSide} from '@/lib/customization-builder/printable-sides';
+import {shouldShowPrintedSideGate} from '@/lib/customization-builder/printable-sides';
 import type {PrintSideValue} from '@/lib/customization-builder';
 
 type PrintedSideGateProps = {
-    printOutside: PrintSideValue;
-    printInside: PrintSideValue;
-    onChange: (patch: {
-        printOutside?: PrintSideValue;
-        printInside?: PrintSideValue;
-    }) => void;
+    sides: PrintableSide[];
+    values: Partial<Record<string, PrintSideValue>>;
+    onChange: (slug: string, next: PrintSideValue) => void;
     onNeedConsultation: () => void;
     /** Gate-level Need consultation is selected. */
     consultationSelected?: boolean;
@@ -23,84 +21,115 @@ type PrintedSideGateProps = {
     showConsultation?: boolean;
 };
 
-function SideToggle({
+function YesNoSegment({
+    id,
     label,
     value,
     onValueChange,
 }: {
+    id: string;
     label: string;
     value: PrintSideValue;
     onValueChange: (next: PrintSideValue) => void;
 }) {
+    const on = value === 'yes';
+    const labelId = `print-side-${id}`;
     return (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <p className="text-sm font-medium leading-snug text-foreground">
+        <div className="flex items-center justify-between gap-4">
+            <p
+                id={labelId}
+                className="text-sm font-medium leading-snug text-foreground"
+            >
                 {label}
             </p>
             <div
-                className="inline-flex w-fit shrink-0 rounded-lg bg-input p-[3px]"
-                role="group"
-                aria-label={label}
+                role="switch"
+                aria-checked={on}
+                aria-labelledby={labelId}
+                tabIndex={0}
+                className="relative inline-grid shrink-0 grid-cols-2 rounded-full bg-muted p-1"
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onValueChange(on ? 'no' : 'yes');
+                    }
+                    if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        onValueChange('no');
+                    }
+                    if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        onValueChange('yes');
+                    }
+                }}
             >
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-pressed={value === 'no'}
-                    onClick={() => onValueChange('no')}
+                <span
+                    aria-hidden
                     className={cn(
-                        'h-7 rounded-md px-3',
-                        value === 'no'
-                            ? 'bg-background text-foreground shadow-sm hover:bg-background'
-                            : 'text-foreground/60 hover:bg-transparent hover:text-foreground',
+                        'pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-background shadow-sm transition-transform duration-200',
+                        on && 'translate-x-[calc(100%+0.25rem)]',
                     )}
+                />
+                <button
+                    type="button"
+                    tabIndex={-1}
+                    className={cn(
+                        'relative z-10 min-w-10 cursor-pointer px-3 py-1 text-center text-xs transition-colors',
+                        !on
+                            ? 'font-medium text-foreground'
+                            : 'text-muted-foreground',
+                    )}
+                    onClick={() => onValueChange('no')}
                 >
                     {CUSTOMIZATION_BUILDER_COPY.printedSideNo}
-                </Button>
-                <Button
+                </button>
+                <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-pressed={value === 'yes'}
-                    onClick={() => onValueChange('yes')}
+                    tabIndex={-1}
                     className={cn(
-                        'h-7 rounded-md px-3',
-                        value === 'yes'
-                            ? 'bg-background text-foreground shadow-sm hover:bg-background'
-                            : 'text-foreground/60 hover:bg-transparent hover:text-foreground',
+                        'relative z-10 min-w-10 cursor-pointer px-3 py-1 text-center text-xs transition-colors',
+                        on
+                            ? 'font-medium text-foreground'
+                            : 'text-muted-foreground',
                     )}
+                    onClick={() => onValueChange('yes')}
                 >
                     {CUSTOMIZATION_BUILDER_COPY.printedSideYes}
-                </Button>
+                </button>
             </div>
         </div>
     );
 }
 
 /**
- * Printing-step gate: Print Outside / Print Inside before Method + Color.
+ * Printing-step gate: one No|Yes per Printable Sides value (1+).
+ * Labels are always “Print {side}” so the rail summary matches the control.
  * Need consultation uses the same HighlightItem card as other categories.
  */
 export function PrintedSideGate({
-    printOutside,
-    printInside,
+    sides,
+    values,
     onChange,
     onNeedConsultation,
     consultationSelected = false,
     showConsultation = true,
 }: PrintedSideGateProps) {
+    if (!shouldShowPrintedSideGate(sides)) return null;
+
     return (
         <div className="flex flex-col gap-4 border-b border-border px-3 py-4">
-            <SideToggle
-                label={CUSTOMIZATION_BUILDER_COPY.printOutside}
-                value={printOutside}
-                onValueChange={(next) => onChange({printOutside: next})}
-            />
-            <SideToggle
-                label={CUSTOMIZATION_BUILDER_COPY.printInside}
-                value={printInside}
-                onValueChange={(next) => onChange({printInside: next})}
-            />
+            {sides.map((side) => (
+                <YesNoSegment
+                    key={side.slug}
+                    id={side.slug}
+                    label={CUSTOMIZATION_BUILDER_COPY.printSideLabel.replace(
+                        '{side}',
+                        side.title,
+                    )}
+                    value={values[side.slug] ?? ''}
+                    onValueChange={(next) => onChange(side.slug, next)}
+                />
+            ))}
             {showConsultation ? (
                 <div className="mt-2 border-t border-border pt-4">
                     <HighlightItem

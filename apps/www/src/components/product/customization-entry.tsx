@@ -22,6 +22,7 @@ import {
     summarizeAnswer,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PrintableSide,
     type PropertySummariesByOption,
     type StepAnswer,
 } from '@/lib/customization-builder';
@@ -43,6 +44,8 @@ type CustomizationEntryProps = {
     productTitle?: string;
     dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
+    /** Product Printable Sides — drives Printing gate rows. */
+    printableSides?: PrintableSide[];
     /**
      * Inspiration products: options are pre-selected. Shows preset copy,
      * "Change" row actions, and hides the specialist revert link.
@@ -152,6 +155,7 @@ export function CustomizationEntry({
     productTitle,
     dimensionInput,
     dimensionRange,
+    printableSides,
     preset = false,
 }: CustomizationEntryProps) {
     const [open, setOpen] = useState(false);
@@ -257,6 +261,7 @@ export function CustomizationEntry({
                 initialStepKey={initialStepKey}
                 dimensionInput={dimensionInput}
                 dimensionRange={dimensionRange}
+                printableSides={printableSides}
                 customizationRules={customizationRules}
             />
         </div>

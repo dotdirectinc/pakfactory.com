@@ -17,6 +17,7 @@ import {
     type BuilderStepKey,
     type CustomizationBuilderState,
 } from '@/lib/customization-builder';
+import type {PrintableSide} from '@/lib/customization-builder/printable-sides';
 
 type CustomizationCategoryRailProps = {
     steps: BuilderStep[];
@@ -26,6 +27,7 @@ type CustomizationCategoryRailProps = {
     /** Indices greater than this are locked (guided). Omit for workspace. */
     maxReachableIndex?: number;
     dimensionAxisIds?: readonly string[];
+    printableSides?: PrintableSide[];
     onSelect: (key: BuilderStepKey) => void;
     onClearCategory?: (key: BuilderStepKey) => void;
 };
@@ -37,6 +39,7 @@ export function CustomizationCategoryRail({
     numbered = false,
     maxReachableIndex,
     dimensionAxisIds,
+    printableSides = [],
     onSelect,
     onClearCategory,
 }: CustomizationCategoryRailProps) {
@@ -51,16 +54,24 @@ export function CustomizationCategoryRail({
                     maxReachableIndex !== undefined &&
                     index > maxReachableIndex;
                 const answer = getAnswer(state, item.key);
-                const ready = isStepReady(state, item, dimensionAxisIds);
+                const ready = isStepReady(
+                    state,
+                    item,
+                    dimensionAxisIds,
+                    printableSides,
+                );
                 const propertySummaries = state.propertySelectionSummaries;
                 const printing = isPrintingCategoryStep(item);
-                const sideComplete = isPrintedSideComplete(state);
+                const sideComplete = isPrintedSideComplete(
+                    state,
+                    printableSides,
+                );
                 const summaryText = printing
                     ? summarizePrintingStep(
                           state,
                           answer,
                           CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
-                          {propertySummaries},
+                          {propertySummaries, printableSides},
                       )
                     : summarizeAnswer(
                           answer,

@@ -324,7 +324,11 @@ export const CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS = /* groq */ `
   "description": coalesce(pt::text(description), shortDescription),
   "properties": properties[defined(property)]{
     "label": property->title,
-    "values": values[]->title
+    "propertySlug": property->slug.current,
+    "values": values[]->{
+      title,
+      "slug": slug.current
+    }
   },
   // Line style-card image fallback matches any linked style (PROD-2843).
   "productStyles": coalesce(
@@ -387,7 +391,11 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
   ),
   "properties": properties[defined(property)]{
     "label": property->title,
-    "values": values[]->title
+    "propertySlug": property->slug.current,
+    "values": values[]->{
+      title,
+      "slug": slug.current
+    }
   },
   ${PRODUCT_FAQS_INHERITED},
   "relatedProducts": relatedProducts[@->{"ok": ${PRODUCT_LISTED}}.ok == true]->{
@@ -1121,9 +1129,15 @@ export type CatalogStyleRefDoc = {
   faqs?: CatalogProductFaqDoc[] | null;
 };
 
+export type CatalogProductPropertyValueDoc = {
+  title?: string | null;
+  slug?: string | null;
+};
+
 export type CatalogProductPropertyDoc = {
   label?: string | null;
-  values?: (string | null)[] | null;
+  propertySlug?: string | null;
+  values?: (CatalogProductPropertyValueDoc | string | null)[] | null;
 };
 
 /** Facet-ready property row on the product library query (PROD-1845). */

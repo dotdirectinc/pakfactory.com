@@ -25,6 +25,7 @@ import {
     buildStepsFromCatalog,
     createEmptyBuilderState,
     isBuilderConfigured,
+    resolvePrintableSides,
     seedFromCustomizations,
     toRequestCustomizations,
     type CustomizationBuilderState,
@@ -277,10 +278,12 @@ export function ProductPdpDraftProvider({
 
     const handleAdd = useCallback(() => {
         if (!ready) return;
+        const printableSides = resolvePrintableSides(product.properties);
         const customizations = toRequestCustomizations(
             builderState,
             CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
             buildStepsFromCatalog(product.availableCustomizations),
+            printableSides,
         );
         addLine({
             productSlug: product.slug,
@@ -299,6 +302,7 @@ export function ProductPdpDraftProvider({
             ...(product.dimensionRange
                 ? {dimensionRange: product.dimensionRange}
                 : {}),
+            ...(printableSides.length ? {printableSides} : {}),
             quantities: volumes,
             contents,
             customizations,

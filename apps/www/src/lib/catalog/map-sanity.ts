@@ -36,6 +36,7 @@ import type {
     ProductLineRef,
     ProductLineRelatedRef,
     ProductProperty,
+    ProductPropertyValue,
     ProductStyleRef,
 } from '@/lib/catalog/types';
 import {hasDetailPage, isConfigurable, toLifecycle} from '@/lib/catalog/types';
@@ -647,11 +648,28 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
     for (const row of doc.properties ?? []) {
         const label = row?.label?.trim();
         if (!label) continue;
-        const value = (row.values ?? [])
-            .map((v) => v?.trim())
-            .filter((v): v is string => Boolean(v))
-            .join(', ');
-        properties.push({label, value: value || 'N/A'});
+        const propertySlug = row?.propertySlug?.trim() || undefined;
+        const valueItems: ProductPropertyValue[] = [];
+        for (const raw of row.values ?? []) {
+            if (typeof raw === 'string') {
+                const title = raw.trim();
+                if (title) valueItems.push({title, slug: ''});
+                continue;
+            }
+            const title = raw?.title?.trim();
+            if (!title) continue;
+            valueItems.push({
+                title,
+                slug: raw?.slug?.trim() || '',
+            });
+        }
+        const value = valueItems.map((v) => v.title).join(', ');
+        properties.push({
+            label,
+            value: value || 'N/A',
+            ...(propertySlug ? {propertySlug} : {}),
+            ...(valueItems.length > 0 ? {values: valueItems} : {}),
+        });
     }
 
     const faqs = mapFaqs(doc.faqs);
