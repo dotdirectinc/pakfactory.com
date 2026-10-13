@@ -199,7 +199,7 @@ export type SyncRun = {
     documents?: number;
     proposed?: { frame: string; items: number }[];
     loaded?: SyncRunLoaded[];
-    report?: { unresolved?: unknown[]; unknownStatus?: unknown[]; reportOnly?: Record<string, number> };
+    report?: { unresolved?: unknown[]; unknownStatus?: unknown[]; reportOnly?: Record<string, number>; rulesDrift?: RulesDrift };
     /** An automatic run left the frames alone because one was waiting for review. */
     skipped?: string;
   } | null;
@@ -294,8 +294,13 @@ export type SyncHistoryRun = {
   documents: number | null;
   recheck_error: string | null;
   skipped?: string | null;
+  /** Sync Changes only (PROD-2986): customization rules where the registry and Sanity disagree. */
+  rules_drift?: RulesDrift | null;
   frames: SyncHistoryFrame[];
 };
+
+/** Customization rules where the registry and Sanity disagree, decided or not (PROD-2986, ADR-025). */
+export type RulesDrift = { total: number; byKind: Record<string, number> };
 
 /** Past and current syncs, newest first, with their frames, decisions and re-checks. */
 export async function listSyncHistory(limit = 30) {
