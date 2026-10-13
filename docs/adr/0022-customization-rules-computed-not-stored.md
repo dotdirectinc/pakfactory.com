@@ -1,6 +1,6 @@
 # ADR-022: The customization model after the four-field retirement — rules are computed, not stored
 
-**Status:** **Accepted** (2026-09-24). Decisions **1–5 describe what shipped**; **6–7 were implemented in PROD-2595 (pakfactory.com #630) with Richard's answers to the four open questions, and confirmed 2026-09-24**. **Supersedes [ADR-017](0017-customization-availability-axes-and-role.md) § 1** (the four availability fields) and the Registry-ownership premise ADR-017 rests on. ADR-017's §§ 2, 3, 5 and 6 are untouched — see "What ADR-017 keeps".
+**Status:** **Accepted** (2026-09-24). **§ 2 (Sanity owns the rules; the registry is the history log) is superseded by [ADR-025](0025-spec-system-owns-catalog-relations.md)** once that record is Accepted — the Spec registry owns the rules, edited through reviewed frames; §§ 1 and 3–7 stand. Decisions **1–5 describe what shipped**; **6–7 were implemented in PROD-2595 (pakfactory.com #630) with Richard's answers to the four open questions, and confirmed 2026-09-24**. **Supersedes [ADR-017](0017-customization-availability-axes-and-role.md) § 1** (the four availability fields) and the Registry-ownership premise ADR-017 rests on. ADR-017's §§ 2, 3, 5 and 6 are untouched — see "What ADR-017 keeps".
 
 ## Context
 
