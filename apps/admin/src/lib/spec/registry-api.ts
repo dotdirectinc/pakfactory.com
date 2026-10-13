@@ -77,7 +77,7 @@ async function accessToken(): Promise<string | null> {
 async function call<T>(
   path: string,
   init?: { method?: string; body?: unknown },
-): Promise<{ ok: true; data: T; page?: { has_more: boolean } } | { ok: false; status: number; error: string; code?: string }> {
+): Promise<{ ok: true; data: T; page?: { has_more: boolean } } | { ok: false; status: number; error: string; code?: string; errors?: string[] }> {
   const token = await accessToken();
   let res: Response;
   try {
@@ -99,15 +99,18 @@ async function call<T>(
   }
 
   const body = (await res.json().catch(() => null)) as
-    | { data?: T; page?: { has_more: boolean }; error?: string; code?: string }
+    | { data?: T; page?: { has_more: boolean }; error?: string | { code?: string; message?: string; errors?: string[] }; code?: string }
     | null;
 
   if (!res.ok) {
+    // Most errors are `{ error: string, code }`; a refused rule edit is `{ error: { code, message, errors[] } }`.
+    const err = body?.error;
     return {
       ok: false,
       status: res.status,
-      error: body?.error ?? `Registry API returned ${res.status}.`,
-      code: body?.code,
+      error: (typeof err === "string" ? err : err?.message) ?? `Registry API returned ${res.status}.`,
+      code: typeof err === "object" && err ? err.code : body?.code,
+      ...(typeof err === "object" && err?.errors ? { errors: err.errors } : {}),
     };
   }
   return { ok: true, data: (body?.data ?? body) as T, page: body?.page };
@@ -305,4 +308,28 @@ export type RulesDrift = { total: number; byKind: Record<string, number> };
 /** Past and current syncs, newest first, with their frames, decisions and re-checks. */
 export async function listSyncHistory(limit = 30) {
   return call<SyncHistoryRun[]>(`/api/v1/sync-runs/history?limit=${limit}`);
+}
+
+// ── Rule edits (PROD-2962 → backend PROD-2987) ─────────────────────────────────────────────────
+
+/** An edit as the backend takes it: registry ids. */
+export type RegistryRuleEdit =
+  | { kind: "typeSettings"; typeId: string; decidedBy?: "product" | "customization"; customerSelects?: "one" | "many" }
+  | { kind: "requirements"; typeId: string; groups: ({ typeId: string } | { categoryId: string })[][] }
+  | { kind: "pair"; a: string; b: string; compatible: boolean }
+  | { kind: "offer"; productId: string; optionId: string; offered: boolean }
+  | { kind: "exception"; productId: string; optionId: string; mode: "add" | "remove"; reason: string | null };
+
+export type RuleEditResult = {
+  changeset_id: string;
+  frame: string;
+  state: "draft" | "approved";
+  sentences: string[];
+  items: number;
+  written: { applied: number; stale: number; failed: number } | null;
+};
+
+/** One frame from a set of rule edits; `approve` = Submit & approve. */
+export async function submitRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; approve: boolean; note?: string; impact?: unknown }) {
+  return call<RuleEditResult>("/api/v1/rule-edits", { method: "POST", body });
 }

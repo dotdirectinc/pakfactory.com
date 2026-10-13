@@ -6,6 +6,7 @@ import { Badge } from "@pakfactory/ui/components/badge";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
 import { isTableKey, type TableKey } from "@/lib/spec/catalog-table-model";
 import { SpecRegistryId } from "@/components/spec/spec-registry-id";
+import { SpecRuleEditor } from "@/components/spec/spec-rule-editor";
 import { ADMIN_SPEC_RECORD_COPY as COPY } from "@/lib/copy/spec";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
@@ -68,9 +69,11 @@ export function SpecRecordView({
               {COPY.rules} <ArrowUpRight className="size-4" />
             </Link>
           ) : null}
-          <p className="text-xs text-muted-foreground">{COPY.readOnly(r.dataset)}</p>
+          <p className="text-xs text-muted-foreground">{r.key === "product" || r.key === "customizationOption" || r.key === "customizationType" ? COPY.rulesEditable(r.dataset) : COPY.readOnly(r.dataset)}</p>
         </div>
       </header>
+
+      <SpecRuleEditor level={r.key} id={r.id} title={r.title} />
 
       {r.images.length > 1 ? (
         <section className="flex flex-col gap-2">

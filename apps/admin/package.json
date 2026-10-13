@@ -4,6 +4,7 @@
   "versionCode": 1,
   "private": true,
   "scripts": {
+    "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +",
     "dev": "next dev --port ${PORT:-4000}",
     "build": "next build",
     "start": "next start --port ${PORT:-4000}",

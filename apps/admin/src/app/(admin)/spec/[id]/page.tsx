@@ -1,3 +1,4 @@
+import { SpecEditSummary } from "@/components/spec/spec-edit-summary";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
@@ -66,6 +67,8 @@ export default async function SpecChangesetPage({
           {cs.source} · {items.length.toLocaleString()} changes
         </p>
       </div>
+
+      {cs.source === "spec-edit" ? <SpecEditSummary summary={cs.summary ?? {}} /> : null}
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium text-foreground">{ADMIN_SPEC_COPY.itemsHeading}</h2>
