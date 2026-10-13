@@ -320,6 +320,14 @@ export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
   recheckPending: "Not re-checked yet — the next sync of this kind checks it.",
   recheckError: (e: string) => `This sync could not re-check earlier frames: ${e}`,
   unnamedRow: "a row",
+  rulesMatch: "Customization rules: the registry matches Sanity",
+  rulesDrift: (total: number, byKind: Record<string, number>) => {
+    const label: Record<string, string> = { types: "type settings", requirements: "requirements", pairs: "compatible pairs", offers: "product offers", exceptions: "exceptions" };
+    const parts = Object.entries(byKind).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${label[k] ?? k}`);
+    return `Customization rules: ${total} ${total === 1 ? "difference" : "differences"} between the registry and Sanity${parts.length ? ` (${parts.join(" · ")})` : ""}`;
+  },
+  rulesDriftHint:
+    "Every rule where the registry and Sanity disagree, including changes waiting for review or discarded. 0 means the registry holds exactly what Sanity holds.",
 } as const;
 
 /** Sanity-bound items in a frame (PROD-2751): before → Notion, and how the approved write went. */

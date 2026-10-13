@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
-import type { SyncHistoryFrame, SyncHistoryRun } from "@/lib/spec/registry-api";
+import type { RulesDrift, SyncHistoryFrame, SyncHistoryRun } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SYNC_COPY as SYNC, ADMIN_SPEC_SYNC_HISTORY_COPY as COPY } from "@/lib/copy/spec";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
@@ -49,6 +49,7 @@ export function SpecSyncHistoryRun({ run }: { run: SyncHistoryRun }) {
       {run.state === "failed" && run.error ? <p className="break-words text-sm text-destructive">{run.error}</p> : null}
       {run.recheck_error ? <p className="text-xs text-muted-foreground">{COPY.recheckError(run.recheck_error)}</p> : null}
       {run.state === "done" && run.skipped ? <p className="text-sm text-muted-foreground">{SYNC.skipped}</p> : null}
+      <RulesDriftLine drift={run.state === "done" ? run.rules_drift : null} />
       {run.state === "done" && !run.skipped && run.frames.length === 0 ? <p className="text-sm text-muted-foreground">{COPY.noFrames}</p> : null}
       {run.frames.length ? (
         <ul className="flex flex-col gap-2 border-l border-border pl-3">
@@ -73,5 +74,15 @@ export function SpecSyncHistoryRun({ run }: { run: SyncHistoryRun }) {
         </ul>
       ) : null}
     </li>
+  );
+}
+
+/** Sync Changes: whether the registry's customization rules match Sanity (PROD-2986). */
+export function RulesDriftLine({ drift }: { drift: RulesDrift | null | undefined }) {
+  if (!drift) return null;
+  return (
+    <p className={`text-sm ${drift.total ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`} title={COPY.rulesDriftHint}>
+      {drift.total ? COPY.rulesDrift(drift.total, drift.byKind) : COPY.rulesMatch}
+    </p>
   );
 }
