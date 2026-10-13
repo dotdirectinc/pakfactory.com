@@ -70,7 +70,7 @@ Everything above runs on the **development** dataset. Production follows PROD-29
 
 ### 7. Not decided here
 
-- **Structure.** Moving parents and properties to the registry needs one more decision: how a record created in Studio gets its parents (set on create in Studio and changed only in Spec System afterwards, or created from Spec System). It gets its own record.
+- **Structure.** Moving parents and properties to the registry needs one more decision: how a record created in Studio gets its parents (set on create in Studio and changed only in Spec System afterwards, or created from Spec System). It gets its own record: settled by [ADR-026](0026-spec-system-owns-catalog-structure.md) (Studio creates with parents; the Spec System moves).
 - **Studio's input to the package.** Studio's Derived panel feeds the package every option, active or not, while www and admin feed active options only, so Studio can show availability the site does not. A separate fix, not a change to this decision.
 
 ## What ADR-022 keeps
