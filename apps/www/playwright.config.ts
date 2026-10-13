@@ -39,10 +39,13 @@ export default defineConfig({
     fullyParallel: true,
     forbidOnly: Boolean(process.env.CI),
     retries: process.env.CI ? 1 : 0,
-    // The local dev server compiles each route on first hit; keep local runs gentle.
-    workers: target === 'local' ? 2 : undefined,
-    timeout: target === 'local' ? 180_000 : 90_000,
-    expect: {timeout: target === 'local' ? 30_000 : 15_000},
+    // Both targets are slow on a page's FIRST visit: the local dev server compiles
+    // each route, and staging (a preview build) skips catalog pre-rendering
+    // (PROD-2979), so a style/PDP/solution page renders on demand. Waits are
+    // sized for that cold hit, not for a warm page.
+    workers: 2,
+    timeout: 180_000,
+    expect: {timeout: 45_000},
     reporter: process.env.CI
         ? [['list'], ['html', {outputFolder: 'e2e/.report', open: 'never'}]]
         : [['list']],
@@ -50,7 +53,7 @@ export default defineConfig({
         baseURL,
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
-        navigationTimeout: target === 'local' ? 120_000 : 45_000,
+        navigationTimeout: 120_000,
         extraHTTPHeaders: bypassSecret
             ? {
                   'x-vercel-protection-bypass': bypassSecret,
