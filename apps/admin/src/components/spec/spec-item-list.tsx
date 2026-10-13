@@ -17,7 +17,7 @@ const isBlock = (b: unknown): b is Block => Boolean(b) && typeof b === "object" 
  * reviewer can read both sides. `marks: false` drops the list markers, to tell a wording change from
  * a formatting-only one.
  */
-function plain(v: unknown, marks = true, labels: Record<string, string> = {}): string {
+export function plain(v: unknown, marks = true, labels: Record<string, string> = {}): string {
   if (v === null || v === undefined) return "";
   // A reference (a product's line, an option's type, one of its solutions): its name, from the
   // labels the sync stored with the row — otherwise the reviewer would see nothing at all.
@@ -202,6 +202,11 @@ export function SpecItemList({ items, exclusion = null }: ListProps) {
                 </Badge>
               ) : null}
               {r.item.apply_error ? <span className="w-full text-xs text-destructive">{r.item.apply_error}</span> : null}
+              {r.item.overrode?.length ? (
+                <span className="w-full text-xs text-amber-800 dark:text-amber-300">
+                  {SANITY.overrode(r.item.overrode.map((o) => `${o.field}: ${plain(o.was, true, (r.item.payload.labels ?? {}) as Record<string, string>) || "—"}`).join("; "))}
+                </span>
+              ) : null}
               {r.item.entity_type === "sanity_document" ? <SanityCompare item={r.item} /> : null}
             </li>
           ))}

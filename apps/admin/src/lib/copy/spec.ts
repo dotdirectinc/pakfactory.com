@@ -333,6 +333,8 @@ export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
 
 /** Sanity-bound items in a frame (PROD-2751): before → Notion, and how the approved write went. */
 export const ADMIN_SPEC_SANITY_ITEM_COPY = {
+  /** A written rule edit replaced a Studio change made after it was proposed (ADR-025 § 4, amended 2026-10-13). */
+  overrode: (what: string) => `Overrode Studio's value — ${what}. Kept here so it can be put back.`,
   compare: "Compare",
   before: "Sanity now",
   after: "Notion",
@@ -447,4 +449,14 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   notStandard: "Only a standard product's offers can be edited.",
   frameNote: "Note:",
   frameImpact: "Impact when submitted",
+} as const;
+
+/** The frame page, before approving a Spec System edit (ADR-025 § 4, amended 2026-10-13). */
+export const ADMIN_SPEC_OVERRIDE_COPY = {
+  title: (n: number) => `Approving overrides ${n} ${n === 1 ? "change" : "changes"} made in Studio since this was proposed`,
+  lead: "The approved Spec System change wins. Each Studio value below is replaced, and kept on the frame so it can be put back.",
+  row: (title: string, field: string) => `${title} — ${field}`,
+  now: "In Studio now",
+  proposedOver: "When proposed",
+  unreachable: "Could not check Studio for changes since this was proposed.",
 } as const;
