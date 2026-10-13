@@ -21,18 +21,22 @@ export async function startRequestFromPool(page: Page, expected: number): Promis
 }
 
 /**
- * Pick from a Radix dropdown by keyboard: open, typeahead the label, Enter.
- * Clicking the item is flaky — the menu repositions while the long form scrolls,
- * so Playwright waits forever for it to be "stable". Assert the trigger took it.
+ * Pick from a Radix dropdown: open it, focus the item, press Enter.
+ *
+ * Not a click — the menu repositions while the long form scrolls, so Playwright
+ * waits forever for the item to be "stable". Not typeahead either — on the
+ * production build focus does not always move into the menu when it opens, so
+ * typed keys land nowhere (seen on staging 2026-10-13). Focusing the item
+ * directly depends on neither.
  */
 async function pickFromDropdown(page: Page, trigger: Locator, label: string) {
-    await trigger.click();
     const item = page.getByRole('menuitemradio', {name: label, exact: true});
-    await expect(item).toBeAttached();
-    await page.keyboard.type(label);
-    await expect(item).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(item).toBeHidden();
+    await expect(async () => {
+        if (!(await item.isVisible())) await trigger.click();
+        await item.focus({timeout: 2_000});
+        await item.press('Enter', {timeout: 2_000});
+        await expect(item).toBeHidden({timeout: 2_000});
+    }).toPass({timeout: 20_000});
 }
 
 /** Country, then the region dropdown it reveals. */
