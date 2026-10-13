@@ -13,7 +13,7 @@ const Logo = ({ className }: { className?: string }) => {
       <Image
         src="/logo.png"
         alt='PakFactory'
-        width={135}
+        width={134}
         height={32}
         className='h-8 w-auto'
         priority

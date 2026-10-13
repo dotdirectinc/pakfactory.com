@@ -174,6 +174,21 @@ export function isSanityCdnUrl(src: string): boolean {
 }
 
 /**
+ * Intrinsic size from a Sanity CDN asset URL, whose filename ends `-<w>x<h>.<ext>`
+ * (e.g. `…-640x360.png`). Null for any other URL.
+ */
+export function sanityImageDimensions(
+  src: string,
+): {width: number; height: number} | null {
+  if (!isSanityCdnUrl(src)) return null;
+  const match = /-(\d+)x(\d+)\.[a-z0-9]+$/i.exec(new URL(src).pathname);
+  if (!match) return null;
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  return width > 0 && height > 0 ? {width, height} : null;
+}
+
+/**
  * Resolved alt text for a Sanity image field. GROQ projects `alt` as a
  * coalesce of the per-use override and the asset-level `altText` set in the
  * Media library; this reads it safely and treats blank as absent.
