@@ -9,7 +9,7 @@ import {getPublishedSanityClient, getSanityClient} from '@/lib/sanity/client';
  * Is this request inside a Presentation / draft-mode session?
  *
  * `draftMode()` is a dynamic API: it THROWS when there is no request scope, and
- * `generateStaticParams` has none — `/products/[slug]` calls `listLines()` and
+ * `generateStaticParams` has none — `/products/[slug]` calls `listLineStyleParams()` and
  * `/solutions/[slug]` calls `listSolutionPageSlugs()` from there. The throw is
  * caught and treated as "not a draft", which keeps static generation on the
  * cached published path. Without the catch, making a data module draft-aware

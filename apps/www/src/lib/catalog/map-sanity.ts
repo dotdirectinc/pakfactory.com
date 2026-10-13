@@ -5,6 +5,7 @@ import {
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
+    type CatalogProductRelatedIndexDoc,
     type CatalogPropertyValueDetailDoc,
     type PageSectionDoc,
 } from '@pakfactory/sanity/queries';
@@ -39,6 +40,7 @@ import type {
     ProductPropertyValue,
     ProductStyleRef,
 } from '@/lib/catalog/types';
+import type {RelatedProductCandidate} from '@/lib/catalog/related-products';
 import {hasDetailPage, isConfigurable, toLifecycle} from '@/lib/catalog/types';
 import {solutionHref, WWW_ROUTES} from '@/lib/www-routes';
 
@@ -541,6 +543,33 @@ function mapLibraryStyleRefs(
         out.push({slug: styleSlug, title});
     }
     return out;
+}
+
+/**
+ * Related Products index entry (PROD-3004). Keeps exactly the products
+ * {@link mapSanityProduct} keeps from the card projection, which carries no
+ * `productStyles`: titled, with a titled line and primary style.
+ */
+export function mapSanityProductRelatedIndexEntry(
+    doc: CatalogProductRelatedIndexDoc,
+): RelatedProductCandidate | null {
+    const slug = doc.slug?.trim();
+    if (!slug || !doc.title) return null;
+    const lineSlug = doc.productLine?.slug?.trim();
+    if (!lineSlug || !doc.productLine?.title?.trim()) return null;
+    const styleSlug = doc.productStyle?.slug?.trim();
+    if (!styleSlug || !doc.productStyle?.title?.trim()) return null;
+    const industryTitle = doc.industry?.title?.trim();
+    const industrySlug = doc.industry?.slug?.trim();
+    return {
+        slug,
+        kind: doc.kind === 'inspiration' ? 'inspiration' : 'standard',
+        productLine: {slug: lineSlug},
+        productStyle: {slug: styleSlug},
+        ...(industryTitle && industrySlug
+            ? {industry: {title: industryTitle, slug: industrySlug}}
+            : {}),
+    };
 }
 
 export function mapSanityProduct(doc: CatalogProductDoc): Product | null {

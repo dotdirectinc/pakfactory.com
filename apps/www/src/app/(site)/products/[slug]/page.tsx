@@ -2,7 +2,11 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {ProductDetailView} from '@/components/product/product-detail-view';
 import {ProductLineLanding} from '@/components/product/product-line-landing-view';
-import {getByProductsSegment, listLines, listProducts} from '@/lib/catalog/catalog';
+import {
+    getByProductsSegment,
+    listLineStyleParams,
+    listProductRelatedIndex,
+} from '@/lib/catalog/catalog';
 import {staticParamsExceptPreview} from '@/lib/static-params';
 
 export const revalidate = 60;
@@ -13,7 +17,11 @@ type PageProps = {
 
 export async function generateStaticParams(): Promise<{slug: string}[]> {
     return staticParamsExceptPreview(async () => {
-        const [lines, products] = await Promise.all([listLines(), listProducts()]);
+        // Slim reads: the full line and product lists are too big to cache (PROD-3004).
+        const [lines, products] = await Promise.all([
+            listLineStyleParams(),
+            listProductRelatedIndex(),
+        ]);
         return [
             ...lines.map((line) => ({slug: line.slug})),
             ...products.map((product) => ({slug: product.slug})),

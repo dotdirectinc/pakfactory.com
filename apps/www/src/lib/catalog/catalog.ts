@@ -10,10 +10,13 @@ import {
     CATALOG_PRODUCT_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LIBRARY_QUERY,
     CATALOG_PRODUCT_OFFER_INDEX_QUERY,
+    CATALOG_PRODUCT_RELATED_INDEX_QUERY,
+    CATALOG_PRODUCT_LINE_PARAMS_QUERY,
     CATALOG_PRODUCT_LINE_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCT_STYLE_PAGE_QUERY,
+    CATALOG_PRODUCTS_BY_SLUGS_QUERY,
     CATALOG_PRODUCTS_QUERY,
     CUSTOMIZATION_CATALOG_PAGE_QUERY,
     CUSTOMIZATION_COMPATIBILITY_PAGE_QUERY,
@@ -30,6 +33,7 @@ import {
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
     type CatalogProductOfferIndexDoc,
+    type CatalogProductRelatedIndexDoc,
     type CatalogProductLineDoc,
     type CatalogStyleRefDoc,
     type SolutionStylesForBreadcrumbDoc,
@@ -54,6 +58,7 @@ import {
     mapSanityProductLibraryItem,
     mapSanityProductLibraryLineMeta,
     mapSanityProductLine,
+    mapSanityProductRelatedIndexEntry,
     mapStyleRef,
 } from '@/lib/catalog/map-sanity';
 import {
@@ -63,6 +68,7 @@ import {
 import {
     filterCuratedRelatedProducts,
     pickRelatedProducts,
+    type RelatedProductCandidate,
 } from '@/lib/catalog/related-products';
 import {breadcrumbStyleFromBundle} from '@/lib/catalog/resolve-breadcrumb-style';
 import type {
@@ -280,7 +286,61 @@ export async function listRelatedProductSiblings(
     if (product.relatedProducts && product.relatedProducts.length > 0) {
         return filterCuratedRelatedProducts(product, product.relatedProducts);
     }
-    return pickRelatedProducts(product, await listProducts());
+    const index = await listProductRelatedIndex();
+    const slugs = pickRelatedProducts(product, index).map((item) => item.slug);
+    if (slugs.length === 0) return [];
+    return readThrough(
+        () => fetchSanityProductsBySlugs(slugs),
+        () => getCachedProductsBySlugs(slugs),
+    );
+}
+
+/**
+ * Related Products candidates (PROD-3004): slug + kind + line/style/industry
+ * for every listed product. Small enough to cache, unlike {@link listProducts}.
+ */
+async function fetchSanityProductRelatedIndex(): Promise<RelatedProductCandidate[]> {
+    if (!isSanityConfigured()) return [];
+    try {
+        const docs = await (await draftAwareClient()).fetch<
+            CatalogProductRelatedIndexDoc[]
+        >(CATALOG_PRODUCT_RELATED_INDEX_QUERY);
+        return (docs ?? [])
+            .map(mapSanityProductRelatedIndexEntry)
+            .filter((item): item is RelatedProductCandidate => item != null);
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity related index failed:', err);
+    }
+}
+
+/** Full cards for the picked slugs, returned in the order the picker chose. */
+async function fetchSanityProductsBySlugs(slugs: string[]): Promise<Product[]> {
+    if (!isSanityConfigured()) return [];
+    try {
+        const docs = await (await draftAwareClient()).fetch<CatalogProductDoc[]>(
+            CATALOG_PRODUCTS_BY_SLUGS_QUERY,
+            {slugs},
+        );
+        const bySlug = new Map<string, Product>();
+        for (const doc of docs ?? []) {
+            const product = mapSanityProduct(doc);
+            if (product) bySlug.set(product.slug, product);
+        }
+        return slugs.flatMap((slug) => bySlug.get(slug) ?? []);
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity related products fetch failed:', err);
+    }
+}
+
+function getCachedProductsBySlugs(slugs: string[]) {
+    return sanityCache(
+        () => fetchSanityProductsBySlugs(slugs),
+        [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}:by-slugs:${slugs.join(',')}`],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+        },
+    )();
 }
 
 async function fetchSanityCustomizationLibrary(): Promise<
@@ -348,6 +408,49 @@ const getCachedProducts = sanityCache(
     {
         revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
         tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+const getCachedProductRelatedIndex = sanityCache(
+    fetchSanityProductRelatedIndex,
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}:related-index`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+/** One line's static-param slugs (PROD-3004). */
+export type LineStyleParams = {slug: string; styleSlugs: string[]};
+
+/**
+ * Line + style slugs for `generateStaticParams`, built by the same
+ * {@link mapSanityProductLine} as {@link listLines}, so the pages listed match.
+ * listLines() carries every product card (~2.8 MB) and can never be cached.
+ */
+async function fetchSanityLineStyleParams(): Promise<LineStyleParams[]> {
+    if (!isSanityConfigured()) return [];
+    try {
+        const docs = await (await draftAwareClient()).fetch<CatalogProductLineDoc[]>(
+            CATALOG_PRODUCT_LINE_PARAMS_QUERY,
+        );
+        return (docs ?? []).flatMap((doc) => {
+            const line = mapSanityProductLine(doc);
+            return line
+                ? [{slug: line.slug, styleSlugs: line.styles.map((style) => style.slug)}]
+                : [];
+        });
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity line params failed:', err);
+    }
+}
+
+const getCachedLineStyleParams = sanityCache(
+    fetchSanityLineStyleParams,
+    [`${WWW_CATALOG_LINES_CACHE_TAG}:params`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_LINES_CACHE_TAG, WWW_CATALOG_PRODUCTS_CACHE_TAG],
     },
 );
 
@@ -423,8 +526,17 @@ function getCachedLineExists(slug: string) {
  * request-scoped and uncached by design; published reads keep the cache exactly
  * as before.
  */
+export async function listLineStyleParams(): Promise<LineStyleParams[]> {
+    return readThrough(fetchSanityLineStyleParams, getCachedLineStyleParams);
+}
+
 export async function listLines(): Promise<ProductLine[]> {
     return readThrough(fetchSanityLines, getCachedLines);
+}
+
+/** Slim per-product identity for Related Products and static params (PROD-3004). */
+export async function listProductRelatedIndex(): Promise<RelatedProductCandidate[]> {
+    return readThrough(fetchSanityProductRelatedIndex, getCachedProductRelatedIndex);
 }
 
 export async function listProducts(): Promise<Product[]> {
