@@ -12,16 +12,25 @@ import {
     getProductCatalogPage,
     listProductLibrary,
 } from '@/lib/catalog/catalog';
+import {
+    PRODUCT_CATALOG_COPY_FALLBACKS,
+    resolveCatalogPageCopy,
+    type ResolvedCatalogPageCopy,
+} from '@/lib/catalog/catalog-page-copy';
 
 /** ISR floor — keep literal for Next.js (PROD-2456). */
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-    title: 'Products',
-    description: 'Browse packaging products and styles.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const page = await getProductCatalogPage();
+    const copy = resolveCatalogPageCopy(page, PRODUCT_CATALOG_COPY_FALLBACKS);
+    return {
+        title: copy.metaTitle,
+        description: copy.metaDescription,
+    };
+}
 
-async function ProductCatalogGrid() {
+async function ProductCatalogGrid({copy}: {copy: ResolvedCatalogPageCopy}) {
     const library = await listProductLibrary();
 
     return (
@@ -30,6 +39,10 @@ async function ProductCatalogGrid() {
             urlSync
             showPageChrome={false}
             hideCatalogBorderTop
+            searchPlaceholder={copy.searchPlaceholder}
+            emptyMessage={copy.emptyMessage}
+            resetLabel={copy.resetLabel}
+            productLineFacetLabel={copy.productLineFacetLabel}
         />
     );
 }
@@ -42,12 +55,17 @@ async function ProductCatalogPageSections() {
     return <SectionRenderer sections={sections} />;
 }
 
-export default function ProductsIndexPage() {
+export default async function ProductsIndexPage() {
+    const page = await getProductCatalogPage();
+    const copy = resolveCatalogPageCopy(page, PRODUCT_CATALOG_COPY_FALLBACKS);
+
     return (
         <>
-            <ProductCatalogPageChrome />
-            <Suspense fallback={<ProductCatalogPanelLoading hideCatalogBorderTop />}>
-                <ProductCatalogGrid />
+            <ProductCatalogPageChrome heading={copy.h1} intro={copy.intro} />
+            <Suspense
+                fallback={<ProductCatalogPanelLoading hideCatalogBorderTop />}
+            >
+                <ProductCatalogGrid copy={copy} />
             </Suspense>
             <Suspense fallback={null}>
                 <ProductCatalogPageSections />

@@ -31,6 +31,7 @@ type ProductCatalogFiltersDrawerProps = {
     selectedStyles?: string[];
     styleCounts?: Record<string, number>;
     onToggleStyle?: (value: string) => void;
+    resetLabel?: string;
 };
 
 export function ProductCatalogFiltersDrawer({
@@ -46,6 +47,7 @@ export function ProductCatalogFiltersDrawer({
     selectedStyles = [],
     styleCounts = {},
     onToggleStyle,
+    resetLabel = 'Clear all',
 }: ProductCatalogFiltersDrawerProps) {
     const visibleFacets = sharedFacets.filter(
         (facet) => facet.options.length > 0,
@@ -125,7 +127,7 @@ export function ProductCatalogFiltersDrawer({
                         className="h-auto px-0"
                         onClick={onReset}
                     >
-                        Clear all
+                        {resetLabel}
                     </Button>
                     <Button
                         type="button"

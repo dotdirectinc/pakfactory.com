@@ -1,5 +1,9 @@
 import {defineField, defineType} from 'sanity'
 import {PackageIcon} from '@sanity/icons'
+import {
+  catalogPageCopyFields,
+  catalogPageCopyFieldsets,
+} from '../lib/catalog-page-copy-fields'
 import {groupsFor, GROUPS} from '../lib/field-groups'
 import {filtersField} from '../lib/filters-field'
 import {pageSectionsField, SECTION_ALLOW} from './sections'
@@ -10,7 +14,7 @@ import {pageSectionsField, SECTION_ALLOW} from './sections'
  * www still serves the **Default** fixed id `productCatalogPage` only. Extra
  * layouts are prep/draft until a settings “active layout” pointer exists.
  * The faceted product grid is route-owned; `sections` render **below** that
- * grid. H1 / intro / SEO stay hardcoded on the www route in this pass.
+ * grid. H1, intro, SEO, and catalog UI labels are editable here (PROD-3001).
  *
  * Optional `previewImage` is Studio chrome only.
  */
@@ -19,7 +23,8 @@ export const productCatalogPage = defineType({
   title: 'Product Catalog Page',
   type: 'document',
   icon: PackageIcon,
-  groups: groupsFor(['content', 'filters', 'sections']),
+  groups: groupsFor(['content', 'filters', 'sections', 'seo']),
+  fieldsets: catalogPageCopyFieldsets,
   fields: [
     defineField({
       name: 'title',
@@ -40,7 +45,8 @@ export const productCatalogPage = defineType({
         'Screenshot of this catalog layout. Shown in the Product Catalog Pages list. ' +
         'Leave empty to use the default icon. Not shown on the site.',
     }),
-    filtersField({ group: GROUPS.filters, declaredBy: 'productLine' }),
+    ...catalogPageCopyFields(),
+    filtersField({group: GROUPS.filters, declaredBy: 'productLine'}),
     pageSectionsField(
       SECTION_ALLOW.catalogIndex,
       'sections',

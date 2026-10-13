@@ -35,6 +35,7 @@ type ProductCatalogFiltersProps = {
     selectedStyles?: string[];
     styleCounts?: Record<string, number>;
     onToggleStyle?: (value: string) => void;
+    resetLabel?: string;
 };
 
 export function ProductCatalogFilters({
@@ -49,6 +50,7 @@ export function ProductCatalogFilters({
     selectedStyles = [],
     styleCounts = {},
     onToggleStyle,
+    resetLabel = 'Reset Filter',
 }: ProductCatalogFiltersProps) {
     const visibleFacets = sharedFacets.filter(
         (facet) => facet.options.length > 0,
@@ -67,7 +69,7 @@ export function ProductCatalogFilters({
                     className="ml-auto h-auto px-0 py-0 text-sm"
                     onClick={onReset}
                 >
-                    Reset Filter
+                    {resetLabel}
                 </Button>
             </div>
 

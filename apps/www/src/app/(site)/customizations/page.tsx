@@ -12,15 +12,32 @@ import {
     getCustomizationCatalogPage,
     listCustomizations,
 } from '@/lib/catalog/catalog';
+import {
+    CUSTOMIZATION_CATALOG_COPY_FALLBACKS,
+    resolveCatalogPageCopy,
+    type ResolvedCatalogPageCopy,
+} from '@/lib/catalog/catalog-page-copy';
 
 /** ISR floor — keep literal for Next.js (PROD-2456). */
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-    title: 'Customizations',
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const page = await getCustomizationCatalogPage();
+    const copy = resolveCatalogPageCopy(
+        page,
+        CUSTOMIZATION_CATALOG_COPY_FALLBACKS,
+    );
+    return {
+        title: copy.metaTitle,
+        description: copy.metaDescription,
+    };
+}
 
-async function CustomizationCatalogGrid() {
+async function CustomizationCatalogGrid({
+    copy,
+}: {
+    copy: ResolvedCatalogPageCopy;
+}) {
     const library = await listCustomizations();
 
     return (
@@ -28,6 +45,11 @@ async function CustomizationCatalogGrid() {
             library={library}
             urlSync
             showPageChrome={false}
+            searchPlaceholder={copy.searchPlaceholder}
+            emptyMessage={copy.emptyMessage}
+            resetLabel={copy.resetLabel}
+            productLineFacetLabel={copy.productLineFacetLabel}
+            categoryHint={copy.categoryHint}
         />
     );
 }
@@ -40,12 +62,21 @@ async function CustomizationCatalogPageSections() {
     return <SectionRenderer sections={sections} />;
 }
 
-export default function CustomizationsIndexPage() {
+export default async function CustomizationsIndexPage() {
+    const page = await getCustomizationCatalogPage();
+    const copy = resolveCatalogPageCopy(
+        page,
+        CUSTOMIZATION_CATALOG_COPY_FALLBACKS,
+    );
+
     return (
         <>
-            <CustomizationCatalogPageChrome />
+            <CustomizationCatalogPageChrome
+                heading={copy.h1}
+                intro={copy.intro}
+            />
             <Suspense fallback={<CustomizationCatalogPanelLoading />}>
-                <CustomizationCatalogGrid />
+                <CustomizationCatalogGrid copy={copy} />
             </Suspense>
             <Suspense fallback={null}>
                 <CustomizationCatalogPageSections />

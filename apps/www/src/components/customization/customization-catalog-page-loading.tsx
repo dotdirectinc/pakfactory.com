@@ -5,11 +5,11 @@ import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {CustomizationCatalogFiltersSkeleton} from '@/components/customization/customization-catalog-filters';
 import {CustomizationCatalogListSkeleton} from '@/components/customization/customization-catalog-list';
 import {CustomizationCatalogToolbarSkeleton} from '@/components/customization/customization-catalog-toolbar-skeleton';
+import {CUSTOMIZATION_CATALOG_COPY_FALLBACKS} from '@/lib/catalog/catalog-page-copy';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
-const CUSTOMIZATIONS_HEADING = 'Customizations';
-const CUSTOMIZATIONS_INTRO =
-    "Discover our diverse customizations — PakFactory has a curated library of packaging solutions to elevate your brand's packaging experience.";
+const CUSTOMIZATIONS_HEADING = CUSTOMIZATION_CATALOG_COPY_FALLBACKS.h1;
+const CUSTOMIZATIONS_INTRO = CUSTOMIZATION_CATALOG_COPY_FALLBACKS.intro;
 
 /**
  * Fixed breadcrumb + heading for `/customizations` — shared by the page and

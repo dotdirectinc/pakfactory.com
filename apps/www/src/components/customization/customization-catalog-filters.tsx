@@ -30,6 +30,8 @@ type CustomizationCatalogFiltersProps = {
     onToggle: (facetId: string, value: string) => void;
     onReset: () => void;
     showCategoryHint?: boolean;
+    resetLabel?: string;
+    categoryHint?: string;
 };
 
 export function CustomizationCatalogFilters({
@@ -42,6 +44,9 @@ export function CustomizationCatalogFilters({
     onToggle,
     onReset,
     showCategoryHint = false,
+    resetLabel = 'Reset Filter',
+    categoryHint =
+        'More attribute filters appear once you pick a category above.',
 }: CustomizationCatalogFiltersProps) {
     const visibleFacets = [...sharedFacets, ...categoryFacets].filter(
         (facet) => facet.options.length > 0,
@@ -60,7 +65,7 @@ export function CustomizationCatalogFilters({
                     className="ml-auto h-auto px-0 py-0 text-sm"
                     onClick={onReset}
                 >
-                    Reset Filter
+                    {resetLabel}
                 </Button>
             </div>
 
@@ -85,11 +90,8 @@ export function CustomizationCatalogFilters({
                 </div>
             ))}
 
-            {showCategoryHint ? (
-                <p className="text-xs text-muted-foreground">
-                    More attribute filters appear once you pick a category
-                    above.
-                </p>
+            {showCategoryHint && categoryHint ? (
+                <p className="text-xs text-muted-foreground">{categoryHint}</p>
             ) : null}
         </aside>
     );

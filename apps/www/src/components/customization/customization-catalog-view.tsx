@@ -18,6 +18,11 @@ type CustomizationCatalogViewProps = {
     hideCatalogBorderTop?: boolean;
     heading?: string | null;
     intro?: string | null;
+    searchPlaceholder?: string;
+    emptyMessage?: string;
+    resetLabel?: string;
+    productLineFacetLabel?: string;
+    categoryHint?: string;
 };
 
 export function CustomizationCatalogView({
@@ -28,6 +33,11 @@ export function CustomizationCatalogView({
     hideCatalogBorderTop = false,
     heading,
     intro,
+    searchPlaceholder,
+    emptyMessage,
+    resetLabel,
+    productLineFacetLabel,
+    categoryHint,
 }: CustomizationCatalogViewProps) {
     return (
         <>
@@ -52,6 +62,11 @@ export function CustomizationCatalogView({
                 urlSync={urlSync}
                 initialCategory={initialCategory}
                 hideCatalogBorderTop={hideCatalogBorderTop}
+                searchPlaceholder={searchPlaceholder}
+                emptyMessage={emptyMessage}
+                resetLabel={resetLabel}
+                productLineFacetLabel={productLineFacetLabel}
+                categoryHint={categoryHint}
             />
         </>
     );
