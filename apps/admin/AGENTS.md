@@ -264,6 +264,23 @@ PROD-2614. The customer-facing view of the same rules, for staff: **read-only un
 - **Payloads:** Current rules 432 → 68 KB; product page ~285 → 38 KB; customization page 11 KB; products list 109 KB (all rows, so the filter searches everything; drawn 50 at a time with **Load more**).
 - Current rules' tab is in the URL (`?tab=options`), and `/spec/loading.tsx` shows a skeleton while a view builds.
 
+## Spec System — Spec Map (read-only)
+
+PROD-2960 (#836, #837, #839). `/spec/map` draws the Catalog as a diagram: one stream at a time (Products / Customizations / Solutions tabs), one column per level, arrows parent → child. Same levels and records as `/spec/catalog`; nothing is editable.
+
+| File | Role |
+|---|---|
+| [`lib/spec/spec-map.ts`](src/lib/spec/spec-map.ts) | One cached Sanity read: every record as a card, arrows as `[parent, child]` indexes (~3,000 cards, ~6,600 arrows) |
+| [`components/spec/spec-map.tsx`](src/components/spec/spec-map.tsx) | Layout from fixed card heights (no layout library), selection, glide, lines |
+| [`app/(admin)/spec/map/actions.ts`](src/app/(admin)/spec/map/actions.ts) | `loadMapRecord` (the panel — the shared record view, [`spec-record-view.tsx`](src/components/spec/spec-record-view.tsx)) and `loadMapCompatible` (from the rules) |
+
+- **Eric's rules (2026-10-09):** colour means status (green active, yellow active internal, red not active, grey other); levels are told apart by number and icon; no zoom or pan, columns fill the width; a click gathers the related cards at the top, gliding from where they were on screen, and hides the rest; the record panel slides in beside the map. Lines are angled and share a trunk per column.
+- **A focused standard product** gets an **Offered customizations** column right after it, from `getProductView` (`resolveForProduct`, the same engine as Studio's product view). Three groups — Direct (`listed`, solid line), Derived by rules (`derived`, dashed), Added by exception (`added`, dotted) — each collapsible with a count; only Direct starts open. Inside a group, options sit under their customization type (taken from the map's own type → option arrows). A filter box narrows by option name or code (not type names); kind chips in the focus bar show one kind. Removed options and derived options' partners are not drawn — the product's rules view lists them. Property-value lines bridge over the column just under the headers.
+- **Column names** on the Products tab are short (Lines / Styles / Standard / Property values, `MAP_LABEL`); the full name is the header's tooltip, and the Catalog and panel keep theirs.
+- **Browser checks:** scroll the map with JS (`area.scrollTop`) — the scroll tool misses the inner container. The glide uses timers, not animation frames, because a background tab pauses frames.
+
+**Sidebar (Spec System):** Spec Map / Catalog / Frames to approve / Current rules / Help (Richard, 2026-10-09). The admin layout fetches draft changesets (`listDraftChangesets`); when any exist, "Frames to approve" is bold with a count pill. Unreachable registry → no pill. The count refreshes on reload or after a frame is decided, not in the background.
+
 ## Customization Library
 
 | Route | Role today |
