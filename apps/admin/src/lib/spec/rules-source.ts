@@ -73,7 +73,7 @@ export type RulesSource = {
   /** Built once per request; every resolution below reuses them. */
   graph: ReturnType<typeof buildDependencyGraph>;
   index: ReturnType<typeof buildCompatibilityIndex>;
-  /** id → display name, for types, options and categories. */
+  /** id → display name, for types, options, categories and standard products. */
   name: (id: string) => string;
   /** id → registry id and code; undefined for a document the registry has not registered. */
   identity: (id: string) => RegistryIdentity | undefined;
@@ -115,6 +115,8 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
   for (const c of result.categories) names.set(c._id, c.title ?? c._id);
   for (const t of catalog.types) names.set(t._id, t.title ?? t._id);
   for (const o of catalog.options) names.set(o._id, o.title ?? o._id);
+  // Products too: the rule-edit checks and the impact name them (PROD-2962).
+  for (const p of result.products) names.set(p._id, p.title ?? p._id);
   const identities = new Map((result.identity ?? []).map(({ _id, entityId, entityCode }) => [_id, { entityId, entityCode }]));
 
   return {
