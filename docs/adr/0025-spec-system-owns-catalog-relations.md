@@ -1,6 +1,6 @@
 # ADR-025: The Spec System owns catalog relations, edited through reviewed frames
 
-**Status:** **Proposed** (2026-10-13) — decision taken by Richard on 2026-10-09; becomes Accepted when Richard accepts this record. **Supersedes [ADR-022](0022-customization-rules-computed-not-stored.md) § 2** ("Sanity owns the rules; the registry is the history log"). ADR-022 §§ 1 and 3–7 stand — see "What ADR-022 keeps". Applies to `admin`, `studio`, `www` (read side unchanged) and the Spec registry (`pakfactory.com-backend`). Tickets: PROD-2959 and its sub-tasks.
+**Status:** **Proposed** (2026-10-13) — decision taken by Richard on 2026-10-09; becomes Accepted when Richard accepts this record. **Amended 2026-10-13** (Richard): the approved Spec System change wins over Studio (§ 3 "Write", § 2 switch timing) — see "Amendment 2026-10-13". **Supersedes [ADR-022](0022-customization-rules-computed-not-stored.md) § 2** ("Sanity owns the rules; the registry is the history log"). ADR-022 §§ 1 and 3–7 stand — see "What ADR-022 keeps". Applies to `admin`, `studio`, `www` (read side unchanged) and the Spec registry (`pakfactory.com-backend`). Tickets: PROD-2959 and its sub-tasks.
 
 ## Context
 
@@ -36,9 +36,9 @@ Sanity keeps the rule fields as a **pushed copy**: every reader (Studio, www, ad
 Two editable sources for one field is the problem this ADR exists to end. The switch is made in two stages:
 
 1. **Trial** — Studio stays editable. Studio edits reach the registry through Sync Changes (extended to the rule fields, PROD-2986), so the registry stays current. Conflicts are caught, not silent (§ 4).
-2. **Switch** — only after the full path passes on development: the rule fields become **read-only in Studio** ("Edited in Spec System", with a link), and Sync Changes stops proposing them (PROD-2988). A **drift check** — every rule where the registry and Sanity disagree — stays as an alarm.
+2. **Switch** — as soon as the first end-to-end test passes on development (amended 2026-10-13; was "after a trial"), behind a flag that can make the fields editable again: the rule fields become **read-only in Studio** ("Edited in Spec System", with a link), and Sync Changes stops proposing them (PROD-2988). A **drift check** — every rule where the registry and Sanity disagree — stays as an alarm.
 
-The read-only switch is deliberately **last**: until Spec edit → approve → push → visible in Studio and on the site is proven, Studio remains the way to change a rule.
+The read-only switch is deliberately **last**: until Spec edit → approve → push → visible in Studio and on the site is proven, Studio remains the way to change a rule. It follows that proof directly rather than a long trial: every conflict below exists only while both systems can edit a field.
 
 ### 3. Edits are reviewed frames, with an impact check
 
@@ -48,7 +48,7 @@ Each set of edits becomes **one frame** (the same changesets as every other cata
 
 - **Impact check before the frame exists.** The admin runs the shared package on the catalog with and without the pending edits and shows which products gain or lose which options. **Blocking errors** (Studio's hard rules: no self-pairs or repeats, no two options of a one-choice type paired, exceptions only on customization-decided types, required references exist) prevent submitting and are re-checked by the server. **Warnings** need an explicit "I understand": products losing options, an exception becoming redundant or conflicting, inspiration pre-selections no longer offered, an option left with no compatible partner. The impact is stored with the frame and **re-computed when the frame is reviewed**, so the approver decides on current facts.
 - **Approval** — by an approver, or **Submit & approve** in one step for approvers and admins (recorded as both).
-- **Write** — the registry is updated, then the change is **pushed to Sanity immediately** (not on the worker's next tick). If Sanity changed since the edit was made, the item is **stale**: Sanity's value is kept and the item is listed in write problems. Nothing is overwritten silently.
+- **Write** — the registry is updated, then the change is **pushed to Sanity immediately** (not on the worker's next tick). **The approved change wins** (amended 2026-10-13): the frame carries the change itself — set a value, add or replace one entry, remove one entry — applied to the published document and its draft as they are when written, so a colleague's change to another entry is kept and only what the edit names is forced. A Studio change to those entries made since the proposal is **shown to the approver before approving**, then overridden and **recorded on the item** so it can be put back. Nothing is overwritten silently. *(Was: the item became stale and Sanity's value was kept.)*
 
 The cost against today's Studio path (publish → live) is the approval step; with Submit & approve an approver's change is live in about the time a Studio publish takes.
 
@@ -73,6 +73,19 @@ Everything above runs on the **development** dataset. Production follows PROD-29
 - **Structure.** Moving parents and properties to the registry needs one more decision: how a record created in Studio gets its parents (set on create in Studio and changed only in Spec System afterwards, or created from Spec System). It gets its own record: settled by [ADR-026](0026-spec-system-owns-catalog-structure.md) (Studio creates with parents; the Spec System moves).
 - **Studio's input to the package.** Studio's Derived panel feeds the package every option, active or not, while www and admin feed active options only, so Studio can show availability the site does not. A separate fix, not a change to this decision.
 
+## Amendment 2026-10-13 — the approved change wins
+
+Decided by Richard on 2026-10-13, after the four trial cases were checked against the code:
+
+| Case | Behaviour |
+| --- | --- |
+| A Studio draft exists when an edit is submitted | Allowed; the change is applied to the draft as well as the published document |
+| Studio changes the entry between submit and approval | Shown to the approver ("approving overrides …"); on approval overridden and recorded |
+| Studio changes the field after the write | Stands; the next Sync Changes proposes it. Prevented only by the switch |
+| A Sync Changes frame proposed **before** an approved edit is approved **after** it | Refused — the most recent proposal wins, not the most recent approval |
+
+Notion frames are unchanged (stale, never overwritten). The switch (§ 2) follows the first end-to-end pass on development. Implemented by `pakfactory.com-backend` #341 (`sanityOps.ts`, `approve_changeset` check, `changeset_item.overrode`).
+
 ## What ADR-022 keeps
 
 | ADR-022 | Status |
@@ -91,7 +104,7 @@ Everything above runs on the **development** dataset. Production follows PROD-29
 
 **Slower than publish, by one step.** Studio's publish → live becomes edit → approve → push → live. Submit & approve keeps an approver's change close to publish speed; anyone else's waits for review, which is the point of review.
 
-**One more system to keep in step during the trial.** Until the switch, a Studio edit and a pending Spec System frame on the same field produce a stale item, and the edit has to be redone. The drift check makes any divergence visible.
+**One more system to keep in step during the trial.** Until the switch, a Studio edit made after a Spec System edit was proposed is overridden when that edit is approved — shown to the approver first and recorded. A Studio edit made after the write stands until someone changes it again; only the switch prevents that. The drift check makes any divergence visible.
 
 **Other writers must route through the registry.** After the switch, scripts that patch rule fields (e.g. `relation-correction`) go through the registry; Notion sync never touched the rule fields and is unaffected.
 
@@ -104,5 +117,5 @@ Everything above runs on the **development** dataset. Production follows PROD-29
 - [ADR-022](0022-customization-rules-computed-not-stored.md) — the model this keeps (§§ 1, 3–7) and the ownership it supersedes (§ 2)
 - [ADR-017](0017-customization-availability-axes-and-role.md) — the earlier registry ownership
 - `packages/sanity/src/customization-rules/` — the shared package (`resolve.ts`, `dependencies.ts`, README)
-- `pakfactory.com-backend`: `src/services/catalogSync/sanityApply.ts` (frame → Sanity, stale check), `scripts/lib/sanity-sync.mjs` (Sync Changes), `docs/catalog-ownership-map.md`
+- `pakfactory.com-backend`: `src/services/catalogSync/sanityApply.ts` + `sanityOps.ts` (frame → Sanity: ops applied to the current document, overrides recorded), `scripts/lib/sanity-sync.mjs` (Sync Changes), `docs/catalog-ownership-map.md`
 - Tickets: PROD-2959 · PROD-2926 (Catalog) · PROD-2960 (Spec Map) · PROD-2961 (registry rule tables + import) · PROD-2986 (Sync Changes carries rules + drift check) · PROD-2987 (rule edit API, immediate push) · PROD-2962 (editing UI + impact check + end-to-end test) · PROD-2988 (read-only switch) · PROD-2963 (production)

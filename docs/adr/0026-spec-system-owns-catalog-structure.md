@@ -33,16 +33,17 @@ Moving a record moves everything under it. Before submitting, the impact check l
 
 The rules Studio applies to the parent fields today are enforced by the structure edit API; a move Studio would refuse is refused before a frame exists.
 
-### 5. A trial, then the switch
+### 5. A short trial, then the switch
 
-Studio stays editable while the path is proven on development. After PROD-3006 and PROD-3007 pass there, the parent fields become **read-only in Studio once a record is published** (PROD-3008); they stay editable while a record is being created.
+Studio stays editable only while the path is proven on development. As soon as PROD-3006 and PROD-3007 pass there, the parent fields become **read-only in Studio once a record is published** (PROD-3008), behind a flag that can make them editable again; they stay editable while a record is being created.
 
-### 6. Both sides are checked during the trial
+### 6. The approved change wins; the most recent proposal wins
 
-While Studio and the Spec System can both change the same field, neither may silently replace the other:
+As amended in ADR-025 (2026-10-13), and for moves too:
 
-- A frame's **Sanity** items already carry the value they saw and become *stale* rather than overwrite (ADR-025 § 4).
-- A frame's **registry** items carry the registry value they saw, and approval refuses an item whose registry value has changed since — so a Sync Changes frame proposed before a Spec System edit cannot quietly undo it in the registry. (Today only Sanity items are checked; this applies to rule items as well and lands before structure editing.)
+- A move's Sanity items carry the change itself and are applied to each document as it is when written. A Studio change to the same parent field made since the proposal is shown to the approver, then overridden and recorded so it can be put back.
+- A frame proposed **before** another frame was approved cannot undo what that frame changed: approval refuses it ("changed since this frame was proposed … sync again"). So a Sync Changes frame from before a Spec System move cannot put the old parent back in the registry.
+- A Studio change made after the write stands until changed again; only the switch (§ 5) prevents it, which is why the switch follows the first end-to-end pass rather than a long trial.
 
 ### 7. Not decided here
 
