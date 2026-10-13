@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { fetchSpecMe, submitRuleEdits, type RegistryRuleEdit, type RuleEditResult } from "@/lib/spec/registry-api";
 import { loadRulesSource, type Loaded } from "@/lib/spec/rules-source";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
-import { computeImpact, type Impact, type RuleEditDraft } from "@/lib/spec/rule-edits";
+import { computeImpact, describeEdit, focusAfter, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
 import { getRuleEditorData, type RuleEditorData } from "@/lib/spec/rule-editor-data";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import { typeidToUuid } from "@/lib/spec/typeid";
@@ -25,15 +25,57 @@ export async function loadRuleEditor(level: string, id: string): Promise<Loaded<
   return data.ok ? { ok: true, data: { ...data.data, canEdit: allowed } } : data;
 }
 
-/** The impact check: the storefront's own engine before and after, per standard product. */
-export async function previewRuleEdits(edits: RuleEditDraft[]): Promise<Loaded<Impact & { names: Record<string, string> }>> {
+export type Preview = Impact & {
+  names: Record<string, string>;
+  /** One sentence per edit, in the edits' order. */
+  sentences: string[];
+  /** The focused record after the edits — what the Spec Map draws as the preview. */
+  focus: FocusAfter | null;
+};
+
+/**
+ * The impact check: the storefront's own engine before and after, per standard product; and, for
+ * the record in focus, what it offers (or who offers it) once the edits apply.
+ */
+export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus | null): Promise<Loaded<Preview>> {
   if (!(await canEdit())) return { ok: false, error: "Editing rules needs an approver or admin grant." };
   const res = await loadRulesSource();
   if (!res.ok) return res;
   const { catalog, products, name } = res.data;
   const impact = computeImpact(catalog, products, edits, name);
   const ids = new Set([...impact.products.flatMap((p) => [...p.gained, ...p.lost])]);
-  return { ok: true, data: { ...impact, names: Object.fromEntries([...ids].map((id) => [id, name(id)])) } };
+  return {
+    ok: true,
+    data: {
+      ...impact,
+      names: Object.fromEntries([...ids].map((id) => [id, name(id)])),
+      sentences: edits.map((e) => describeEdit(e, name)),
+      focus: focus ? focusAfter(catalog, products, edits, focus) : null,
+    },
+  };
+}
+
+/** Whether this person may edit, and what the diagram needs to pick the right edit for "offer this here". */
+export async function loadRuleMeta(): Promise<Loaded<{ canEdit: boolean; meta: RuleMeta | null }>> {
+  if (!(await canEdit())) return { ok: true, data: { canEdit: false, meta: null } };
+  const res = await loadRulesSource();
+  if (!res.ok) return res;
+  const { catalog, products } = res.data;
+  const exceptions = (mode: "add" | "remove") =>
+    products.flatMap((p) => (p.customizationExceptions ?? []).filter((e) => e.mode === mode).map((e) => `${p._id}|${e.optionId}`));
+  return {
+    ok: true,
+    data: {
+      canEdit: true,
+      meta: {
+        optionType: Object.fromEntries(catalog.options.map((o) => [o._id, o.typeId])),
+        decidedBy: Object.fromEntries(catalog.types.map((t) => [t._id, t.availabilityDecidedBy])),
+        standard: products.map((p) => p._id),
+        addExceptions: exceptions("add"),
+        removeExceptions: exceptions("remove"),
+      },
+    },
+  };
 }
 
 export type SubmitResult = { ok: true; data: RuleEditResult } | { ok: false; error: string; errors?: string[] };

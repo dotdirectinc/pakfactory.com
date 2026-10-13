@@ -84,3 +84,23 @@ describe("typeid → uuid", () => {
     assert.equal(typeidToUuid(undefined), null);
   });
 });
+
+describe("rule edits — the diagram's preview and edits", () => {
+  it("names how the product offers each option, before and after", async () => {
+    const { focusAfter } = await import("./rule-edits");
+    const before = focusAfter(catalog(), products(), [], { level: "product", id: "mailer" });
+    assert.deepEqual(before, { level: "product", id: "mailer", options: [{ id: "matte", state: "derived" }, { id: "kraft", state: "listed" }] });
+    const after = focusAfter(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "gloss", mode: "add", reason: "OK" }], { level: "product", id: "mailer" });
+    assert.ok(after?.level === "product" && after.options.some((o) => o.id === "gloss" && o.state === "added"));
+    assert.deepEqual(focusAfter(catalog(), products(), [{ kind: "pair", a: "matte", b: "kraft", compatible: false }], { level: "customizationOption", id: "matte" }),
+      { level: "customizationOption", id: "matte", products: [] });
+  });
+  it("turns 'offer it / take it away' into an offer for product-decided options and an exception otherwise", async () => {
+    const { offerEdit } = await import("./rule-edits");
+    const meta = { optionType: { matte: "finish", kraft: "material" }, decidedBy: { finish: "customization" as const, material: "product" as const }, standard: ["mailer"], addExceptions: [], removeExceptions: ["mailer|matte"] };
+    assert.deepEqual(offerEdit(meta, "mailer", "kraft", false), { kind: "offer", productId: "mailer", optionId: "kraft", offered: false });
+    assert.deepEqual(offerEdit({ ...meta, removeExceptions: [] }, "mailer", "matte", false), { kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: "" });
+    assert.deepEqual(offerEdit(meta, "mailer", "matte", true), { kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: null });
+    assert.equal(offerEdit(meta, "preset", "kraft", true), null);
+  });
+});

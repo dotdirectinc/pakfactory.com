@@ -209,3 +209,73 @@ export function blockingErrors(catalog: SummaryCatalog, products: SummaryProduct
   }
   return errors;
 }
+
+export type OfferState = "listed" | "derived" | "added";
+export type RuleFocus = { level: "product" | "customizationOption"; id: string };
+export type FocusAfter =
+  | { level: "product"; id: string; options: { id: string; state: OfferState }[] }
+  | { level: "customizationOption"; id: string; products: string[] };
+
+/** What a product offers and how — the same naming as the product view (`product-view.ts`). */
+export function offerStates(catalog: SummaryCatalog, product: SummaryProduct, graph = buildDependencyGraph(catalog), index = buildCompatibilityIndex(catalog.options)) {
+  const r = resolveForProduct(catalog, product, graph, index);
+  const added = new Set(r.exceptions.filter((e) => e.effect === "added").map((e) => e.optionId));
+  const out = new Map<string, OfferState>();
+  for (const type of catalog.types) {
+    for (const id of r.availableByType.get(type._id) ?? []) {
+      out.set(id, type.availabilityDecidedBy === "product" ? "listed" : added.has(id) ? "added" : "derived");
+    }
+  }
+  return out;
+}
+
+/** The focused record after the edits: a product's offered options, or the products offering an option. */
+export function focusAfter(catalog: SummaryCatalog, products: SummaryProduct[], edits: RuleEditDraft[], focus: RuleFocus): FocusAfter | null {
+  const after = applyEdits(catalog, products, edits);
+  if (focus.level === "product") {
+    const p = after.products.find((x) => x._id === focus.id);
+    if (!p) return null;
+    return { level: "product", id: focus.id, options: [...offerStates(after.catalog, p)].map(([id, state]) => ({ id, state })) };
+  }
+  const option = after.catalog.options.find((o) => o._id === focus.id);
+  if (!option) return null;
+  const graph = buildDependencyGraph(after.catalog);
+  const index = buildCompatibilityIndex(after.catalog.options);
+  return {
+    level: "customizationOption",
+    id: focus.id,
+    products: after.products.filter((p) => (resolveForProduct(after.catalog, p, graph, index).availableByType.get(option.typeId) ?? []).includes(focus.id)).map((p) => p._id),
+  };
+}
+
+/** Enough of the catalog to turn "offer this option on this product" into the right edit. */
+export type RuleMeta = {
+  optionType: Record<string, string>;
+  decidedBy: Record<string, "product" | "customization">;
+  standard: string[];
+  /** "productId|optionId" for each existing exception, by mode. */
+  addExceptions: string[];
+  removeExceptions: string[];
+};
+
+/**
+ * The edit that makes `productId` offer (or stop offering) `optionId`, given what it does today.
+ * Product-decided options are listed by the product; the others go through an exception, which
+ * needs a reason (left empty here — the tray asks for it, and an empty one blocks submitting).
+ * Returns null when the product cannot carry it (not a standard product, unknown option).
+ */
+export function offerEdit(meta: RuleMeta, productId: string, optionId: string, want: boolean): RuleEditDraft | null {
+  if (!meta.standard.includes(productId)) return null;
+  const decided = meta.decidedBy[meta.optionType[optionId] ?? ""];
+  if (!decided) return null;
+  if (decided === "product") return { kind: "offer", productId, optionId, offered: want };
+  const pair = `${productId}|${optionId}`;
+  if (want) {
+    return meta.removeExceptions.includes(pair)
+      ? { kind: "exception", productId, optionId, mode: "remove", reason: null }
+      : { kind: "exception", productId, optionId, mode: "add", reason: "" };
+  }
+  return meta.addExceptions.includes(pair)
+    ? { kind: "exception", productId, optionId, mode: "add", reason: null }
+    : { kind: "exception", productId, optionId, mode: "remove", reason: "" };
+}
