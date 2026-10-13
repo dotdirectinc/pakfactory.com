@@ -51,6 +51,8 @@ export type ChangesetItem = {
   excluded_at?: string | null;
   /** This change was not in the frame this one replaced — new since the last sync (2026-10-06). */
   is_new?: boolean;
+  /** Studio values this write replaced (ADR-025 § 4, amended 2026-10-13): kept so they can be put back. */
+  overrode?: { document: string; field: string; was: unknown }[] | null;
 };
 
 export type ChangesetDetail = ChangesetSummary & {
@@ -332,4 +334,11 @@ export type RuleEditResult = {
 /** One frame from a set of rule edits; `approve` = Submit & approve. */
 export async function submitRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; approve: boolean; note?: string; impact?: unknown }) {
   return call<RuleEditResult>("/api/v1/rule-edits", { method: "POST", body });
+}
+
+/** What approving a pending frame would override in Studio (ADR-025 § 4, amended 2026-10-13). */
+export type FrameOverride = { item_id: string; title: string; document: string; field: string; was: unknown; proposed_over: unknown; labels: Record<string, string> };
+
+export async function getFrameOverrides(id: string) {
+  return call<FrameOverride[]>(`/api/v1/changesets/${encodeURIComponent(id)}/overrides`);
 }

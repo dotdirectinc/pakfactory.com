@@ -1,3 +1,4 @@
+import { SpecFrameOverrides } from "@/components/spec/spec-frame-overrides";
 import { SpecEditSummary } from "@/components/spec/spec-edit-summary";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -90,6 +91,7 @@ export default async function SpecChangesetPage({
 
       {cs.state === "draft" ? (
         <>
+          {cs.source === "spec-edit" ? <SpecFrameOverrides changesetId={cs.id} /> : null}
           {resyncKind ? <SpecResyncButton kind={resyncKind} dataset={resyncDataset} /> : null}
           <SpecDecisionBar
             changesetId={cs.id}
