@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 
+import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+
 import {mapSectionAlign, mapSectionPaddingBlock} from './map-section-chrome';
-import {shouldInheritSectionList} from './merge-solution-sections';
+import {applyFaqInherit, shouldInheritSectionList} from './merge-solution-sections';
 
 /**
  * Draft mode (Presentation / staging preview) stega-encodes Studio strings:
@@ -25,5 +27,28 @@ describe('section helpers are stega-safe (draft mode)', () => {
     it('reads encoded align / padding enums', () => {
         assert.equal(mapSectionAlign(withStega('center')), 'center');
         assert.equal(mapSectionPaddingBlock(withStega('lg')), 'lg');
+    });
+
+    it('replaces leftover FAQs when an encoded page source is set', () => {
+        const [section] = applyFaqInherit(
+            [
+                {
+                    _key: 'faq',
+                    _type: 'faqSection',
+                    listSource: withStega('page'),
+                    faqs: [
+                        {
+                            question: 'Stale template question',
+                            answerPlain: 'Stale answer.',
+                        },
+                    ],
+                } as PageSectionDoc,
+            ],
+            [{question: 'Page question', answerPlain: 'Page answer.'}],
+        ) as [{faqs?: {question?: string}[]}];
+        assert.deepEqual(
+            section.faqs?.map((faq) => faq.question),
+            ['Page question'],
+        );
     });
 });

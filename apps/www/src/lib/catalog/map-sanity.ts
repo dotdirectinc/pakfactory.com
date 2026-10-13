@@ -994,8 +994,9 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
     const shortDescription = doc.shortDescription?.trim();
     const metaTitle = doc.metaTitle?.trim();
     const metaDescription = doc.metaDescription?.trim();
-    const description =
-        doc.description?.trim() || shortDescription || '';
+    // Hero intro reads this field (PROD-2812). Long Description only —
+    // shortDescription stays on its own field for cards and section tokens.
+    const description = doc.description?.trim() || '';
 
     const sections = (doc.sections ?? []).filter(
         (section): section is PageSectionDoc =>

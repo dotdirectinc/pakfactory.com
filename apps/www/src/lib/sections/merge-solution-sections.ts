@@ -152,7 +152,12 @@ export function applyCaseStudyInherit(
 }
 
 /**
- * Fill empty `faqSection.faqs` from host document FAQs when listSource allows.
+ * Fill `faqSection.faqs` from host document FAQs when listSource allows.
+ *
+ * Explicit `page` always uses the host list (PROD-2978). Studio hides the FAQ
+ * array on that chip, so leftover refs are stale, not an editor override.
+ * `custom` never inherits. Unset + a non-empty array stays the legacy override
+ * (ADR-020 §8).
  */
 export function applyFaqInherit(
     sections: PageSectionDoc[],
@@ -168,8 +173,11 @@ export function applyFaqInherit(
         if (section._type !== 'faqSection') return section;
         const row = section as PageSectionFaqSectionDoc;
         const faqs = row.faqs ?? [];
-        if (!shouldInheritSectionList(row.listSource, faqs)) return section;
-        return {...row, faqs: fallback};
+        const source = stegaClean(row.listSource);
+        if (source === 'page' || shouldInheritSectionList(row.listSource, faqs)) {
+            return {...row, faqs: fallback};
+        }
+        return section;
     });
 }
 

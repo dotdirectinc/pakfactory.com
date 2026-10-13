@@ -316,6 +316,78 @@ describe('assembleProductLineLanding', () => {
         assert.equal(section.faqs?.[0]?.question, 'What is MOQ?');
     });
 
+    it('replaces leftover template FAQs when listSource is page (PROD-2978)', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'rigid-boxes',
+                title: 'Rigid Boxes',
+                faqs: [
+                    {
+                        question: 'What is rigid box packaging?',
+                        answerPlain: 'A two-piece setup box.',
+                    },
+                ],
+                templateSections: [
+                    {
+                        _key: 'faq',
+                        _type: 'faqSection',
+                        listSource: 'page',
+                        faqs: [
+                            {
+                                question: 'What are corrugated cardboard boxes?',
+                                answerPlain: 'A different product line.',
+                            },
+                        ],
+                    } as never,
+                ],
+            }),
+        );
+        const section = model.pageSections[0] as {
+            faqs?: {question?: string}[];
+        };
+        assert.deepEqual(
+            section.faqs?.map((faq) => faq.question),
+            ['What is rigid box packaging?'],
+        );
+    });
+
+    it('keeps leftover FAQs when listSource is custom or unset', () => {
+        for (const listSource of ['custom', undefined] as const) {
+            const model = assembleProductLineLanding(
+                line({
+                    slug: 'rigid-boxes',
+                    title: 'Rigid Boxes',
+                    faqs: [
+                        {
+                            question: 'What is rigid box packaging?',
+                            answerPlain: 'A two-piece setup box.',
+                        },
+                    ],
+                    templateSections: [
+                        {
+                            _key: 'faq',
+                            _type: 'faqSection',
+                            ...(listSource ? {listSource} : {}),
+                            faqs: [
+                                {
+                                    question: 'Will I receive a proof?',
+                                    answerPlain: 'Yes, before production.',
+                                },
+                            ],
+                        } as never,
+                    ],
+                }),
+            );
+            const section = model.pageSections[0] as {
+                faqs?: {question?: string}[];
+            };
+            assert.deepEqual(
+                section.faqs?.map((faq) => faq.question),
+                ['Will I receive a proof?'],
+            );
+        }
+    });
+
     it('uses line sections when no template is set', () => {
         const model = assembleProductLineLanding(
             line({
@@ -521,29 +593,41 @@ describe('assembleProductLineLanding', () => {
         assert.equal(model.heroLayout, 'bottomBar');
     });
 
-    it('keeps an authored rigid-boxes H1', () => {
+    it('keeps an authored rigid-boxes H1 and Description intro', () => {
         const model = assembleProductLineLanding(
             line({
                 slug: 'rigid-boxes',
                 title: 'Rigid Boxes',
                 h1: 'Custom Rigid Boxes',
-                shortDescription: 'Authored intro.',
+                shortDescription: 'Short card line.',
+                description: 'Authored intro.',
             }),
         );
         assert.equal(model.h1, 'Custom Rigid Boxes');
         assert.equal(model.intro, 'Authored intro.');
     });
 
-    it('prefers shortDescription over description for the hero intro', () => {
+    it('uses description for the hero intro and ignores shortDescription (PROD-2812)', () => {
         const model = assembleProductLineLanding(
             line({
                 slug: 'test-rigid-boxes',
                 title: '[Test] Rigid Boxes',
                 shortDescription: 'Short hero line.',
-                description: 'Long body copy that should not appear in the hero.',
+                description: 'Long body copy that should appear in the hero.',
             }),
         );
-        assert.equal(model.intro, 'Short hero line.');
+        assert.equal(model.intro, 'Long body copy that should appear in the hero.');
+    });
+
+    it('does not fill the hero intro from shortDescription when description is empty', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'folding-cartons',
+                title: 'Folding Cartons',
+                shortDescription: 'Short only.',
+            }),
+        );
+        assert.equal(model.intro, '');
     });
 
     it('prefers authored featured icon and featured image over rigid-boxes mocks', () => {
