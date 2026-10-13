@@ -21,8 +21,15 @@ pnpm --filter @pakfactory/www test:e2e:staging    # deployed www-new-release (st
 A submit goes through the `submitRequest` server action → backend API → the
 staging database (and on to the CRM). By default each flow fills every required
 field, asserts **Request a quote** is enabled, and stops. With `E2E_SUBMIT=1` it
-submits and asserts the success dialog shows an `RFQ-` ref. Locally that needs
-the backend at `BACKEND_API_BASE_URL` (`localhost:8080`) running.
+submits and asserts the success dialog shows an `RFQ-YYYY-NNNNN` ref. Locally that
+needs the backend at `BACKEND_API_BASE_URL` (`localhost:8080`) running.
+
+Each test submits one request, so pick one test with `-g`. Match the title with
+its colon: `-g "A1:"`, because `-g "A1"` also matches A10.
+
+```
+E2E_SUBMIT=1 pnpm test:e2e -g "A1:"
+```
 
 Every free-text value starts with `[E2E]` and the contact is
 `e2e+rfq@dotdirect.ca`, so submitted rows are findable and removable.

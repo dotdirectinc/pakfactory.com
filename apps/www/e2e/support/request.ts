@@ -1,5 +1,6 @@
 import {expect, type Locator, type Page} from '@playwright/test';
 import {BUYER, submitEnabled} from './fixtures';
+import {RFQ_REF_PATTERN} from '../../src/lib/request/contract.rules';
 import {pickFirstQuantity} from './pdp';
 
 /**
@@ -170,8 +171,9 @@ export async function submitAndConfirm(page: Page): Promise<string> {
     await submitButton(page).click();
     const dialog = page.getByRole('dialog').filter({hasText: 'Request submitted'});
     await expect(dialog).toBeVisible({timeout: 30_000});
-    const ref = (await dialog.textContent())?.match(/RFQ-\d+/)?.[0];
-    expect(ref, 'success dialog shows an RFQ ref').toBeTruthy();
+    // Take the whole token, then hold it to the backend's format (RFQ-2026-00042).
+    const ref = (await dialog.textContent())?.match(/RFQ-[\d-]+/)?.[0];
+    expect(ref, 'success dialog shows an RFQ ref').toMatch(RFQ_REF_PATTERN);
     console.log(`submitted ${ref}`);
     return ref!;
 }
