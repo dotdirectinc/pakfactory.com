@@ -10,6 +10,17 @@ import type {
 import {productHref, WWW_ROUTES} from '@/lib/www-routes';
 
 /**
+ * Style landing hero copy (PROD-2980). Description only — short description
+ * stays on cards and listings.
+ */
+export function styleHeroDescription(style: {
+    description?: string | null;
+    shortDescription?: string | null;
+}): string | undefined {
+    return style.description?.trim() || undefined;
+}
+
+/**
  * Breadcrumb + heading for a product style landing — available once
  * `getStyle` resolves; the library grid can load after.
  */
@@ -20,10 +31,7 @@ export function ProductStyleChrome({
     line: ProductLine;
     style: ProductStyleRef;
 }) {
-    const description =
-        style.shortDescription?.trim() ||
-        style.description?.trim() ||
-        undefined;
+    const description = styleHeroDescription(style);
     const {imageUrl, imageAlt} = resolveStyleCardImage(style, line);
 
     return (

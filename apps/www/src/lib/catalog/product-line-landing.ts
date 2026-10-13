@@ -26,8 +26,8 @@ import {productHref} from '@/lib/www-routes';
 export const RIGID_BOXES_MOCK_H1 = 'Made to be kept.';
 
 /**
- * Placeholder intro until design supplies copy. Used only when both
- * shortDescription and description are empty on rigid-boxes.
+ * Placeholder intro until design supplies copy. Used only when Description
+ * is empty on rigid-boxes (PROD-2812). Short description is not a hero source.
  */
 export const RIGID_BOXES_MOCK_INTRO =
     'Premium rigid packaging built to be kept, gifted, and remembered.';
@@ -442,8 +442,6 @@ function resolveH1(line: ProductLine): string {
 }
 
 function resolveIntro(line: ProductLine): string {
-    const fromShort = line.shortDescription?.trim();
-    if (fromShort) return fromShort;
     const fromDescription = line.description?.trim();
     if (fromDescription) return fromDescription;
     const mock = LINE_MOCKS[line.slug];

@@ -553,13 +553,20 @@ const LINE_FEATURED_ICON = /* groq */ `kitMark{
   "alt": ${IMAGE_ALT}
 }`;
 
-/** One style card on a line's styles grid. Shared by both halves of LINE_STYLES below. */
+/**
+ * One style card on a line's styles grid. Shared by both halves of LINE_STYLES
+ * below and by the style page query.
+ *
+ * `description` is the long field only (PROD-2980). Do not coalesce
+ * `shortDescription` into it — the style hero must be able to tell them apart.
+ * Cards still prefer `shortDescription` in the assembler.
+ */
 const LINE_STYLE_CARD_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
   shortDescription,
-  "description": coalesce(pt::text(description), shortDescription),
+  "description": pt::text(description),
   ${STYLE_CARD_IMAGE},
   "hasPage": ${LINE_STYLE_HAS_PAGE},
   // The style's own FAQs; the style page falls back to the line's when empty.
