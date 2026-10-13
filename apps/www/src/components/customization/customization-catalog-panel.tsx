@@ -35,7 +35,10 @@ import {
 } from '@/lib/catalog/library-wire';
 import {useCatalogQueryState} from '@/lib/catalog/use-catalog-query-state';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
-import type {CustomizationFacetDef} from '@/lib/catalog/types';
+import {
+    CUSTOMIZATION_PRODUCT_LINE_FACET_ID,
+    type CustomizationFacetDef,
+} from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
 const ALL_CATEGORY = CUSTOMIZATION_CATALOG_ALL_CATEGORY;
@@ -55,6 +58,11 @@ type CustomizationCatalogPanelProps = {
     initialCategory?: string | null;
     /** Drop the desktop sticky strip top border (embed under a headed section). */
     hideCatalogBorderTop?: boolean;
+    searchPlaceholder?: string;
+    emptyMessage?: string;
+    resetLabel?: string;
+    productLineFacetLabel?: string;
+    categoryHint?: string;
 };
 
 export function CustomizationCatalogPanel({
@@ -62,11 +70,26 @@ export function CustomizationCatalogPanel({
     urlSync = true,
     initialCategory = null,
     hideCatalogBorderTop = false,
+    searchPlaceholder = 'Search customizations',
+    emptyMessage,
+    resetLabel,
+    productLineFacetLabel,
+    categoryHint,
 }: CustomizationCatalogPanelProps) {
     const library = useMemo(
         () => unpackCustomizationLibrary(packedLibrary),
         [packedLibrary],
     );
+    const sharedFacets = useMemo(() => {
+        const facets = library.facetCatalog.shared;
+        const label = productLineFacetLabel?.trim();
+        if (!label) return facets;
+        return facets.map((facet) =>
+            facet.id === CUSTOMIZATION_PRODUCT_LINE_FACET_ID
+                ? {...facet, title: label}
+                : facet,
+        );
+    }, [library.facetCatalog.shared, productLineFacetLabel]);
     const tabs: CustomizationCatalogTab[] = useMemo(
         () => [{label: 'All', value: ALL_CATEGORY}, ...library.tabs],
         [library.tabs],
@@ -289,8 +312,8 @@ export function CustomizationCatalogPanel({
                     onChange={(event) => {
                         setDraftQuery(event.target.value);
                     }}
-                    placeholder="Search customizations"
-                    aria-label="Search customizations"
+                    placeholder={searchPlaceholder}
+                    aria-label={searchPlaceholder}
                     className="rounded-md py-2 pl-9"
                 />
             </div>
@@ -442,26 +465,30 @@ export function CustomizationCatalogPanel({
                     tabs.map((tab) => [tab.value, countForTab(tab.value)]),
                 )}
                 onSelectCategory={selectCategory}
-                sharedFacets={library.facetCatalog.shared}
+                sharedFacets={sharedFacets}
                 categoryFacets={categoryFacets}
                 selections={selections}
                 countsByFacet={countsByFacet}
                 onToggle={onToggle}
                 onReset={onReset}
                 showCategoryHint={category === ALL_CATEGORY}
+                resetLabel={resetLabel}
+                categoryHint={categoryHint}
             />
 
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-4">
                 <CustomizationCatalogFilters
                     resultCount={filtered.length}
                     totalCount={library.items.length}
-                    sharedFacets={library.facetCatalog.shared}
+                    sharedFacets={sharedFacets}
                     categoryFacets={categoryFacets}
                     selections={selections}
                     countsByFacet={countsByFacet}
                     onToggle={onToggle}
                     onReset={onReset}
                     showCategoryHint={category === ALL_CATEGORY}
+                    resetLabel={resetLabel}
+                    categoryHint={categoryHint}
                 />
 
                 <div
@@ -473,7 +500,10 @@ export function CustomizationCatalogPanel({
                     )}
                     aria-busy={isAppending || isSearchUpdating}
                 >
-                    <CustomizationCatalogList items={shown} />
+                    <CustomizationCatalogList
+                        items={shown}
+                        emptyMessage={emptyMessage}
+                    />
                     {isAppending ? (
                         <CustomizationCatalogListSkeleton
                             count={appendCount}

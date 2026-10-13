@@ -1,5 +1,9 @@
 import {defineField, defineType} from 'sanity'
 import {ComponentIcon} from '@sanity/icons'
+import {
+  catalogPageCopyFields,
+  catalogPageCopyFieldsets,
+} from '../lib/catalog-page-copy-fields'
 import {groupsFor, GROUPS} from '../lib/field-groups'
 import {filtersField} from '../lib/filters-field'
 import {pageSectionsField, SECTION_ALLOW} from './sections'
@@ -11,7 +15,7 @@ import {pageSectionsField, SECTION_ALLOW} from './sections'
  * www still serves the **Default** fixed id `customizationCatalogPage` only.
  * Extra layouts are prep/draft until a settings “active layout” pointer exists.
  * The faceted customizations grid is route-owned; `sections` render **below**
- * that grid. H1 / intro / SEO stay hardcoded on the www route in this pass.
+ * that grid. H1, intro, SEO, and catalog UI labels are editable here (PROD-3001).
  * `customizationsCatalog` is not allowlisted here (would nest a second library).
  *
  * Optional `previewImage` is Studio chrome only.
@@ -21,7 +25,8 @@ export const customizationCatalogPage = defineType({
   title: 'Customization Catalog Page',
   type: 'document',
   icon: ComponentIcon,
-  groups: groupsFor(['content', 'filters', 'sections']),
+  groups: groupsFor(['content', 'filters', 'sections', 'seo']),
+  fieldsets: catalogPageCopyFieldsets,
   fields: [
     defineField({
       name: 'title',
@@ -42,7 +47,8 @@ export const customizationCatalogPage = defineType({
         'Screenshot of this catalog layout. Shown in the Customization Catalog Pages list. ' +
         'Leave empty to use the default icon. Not shown on the site.',
     }),
-    filtersField({ group: GROUPS.filters, declaredBy: 'customizationType' }),
+    ...catalogPageCopyFields({categoryHint: true}),
+    filtersField({group: GROUPS.filters, declaredBy: 'customizationType'}),
     pageSectionsField(
       SECTION_ALLOW.catalogIndex,
       'sections',

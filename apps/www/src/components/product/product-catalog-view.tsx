@@ -26,6 +26,9 @@ type ProductCatalogViewProps = {
     heading?: string | null;
     intro?: string | null;
     emptyMessage?: string;
+    searchPlaceholder?: string;
+    resetLabel?: string;
+    productLineFacetLabel?: string;
     productHrefQuery?: ProductCatalogPanelProps['productHrefQuery'];
     cardMetaByProductId?: ProductCatalogPanelProps['cardMetaByProductId'];
     /** Leading controls on the sticky search strip (e.g. Category filters). */
@@ -43,6 +46,9 @@ export function ProductCatalogView({
     heading,
     intro,
     emptyMessage,
+    searchPlaceholder,
+    resetLabel,
+    productLineFacetLabel,
     productHrefQuery,
     cardMetaByProductId,
     toolbarStart,
@@ -71,6 +77,9 @@ export function ProductCatalogView({
                 urlSync={urlSync}
                 hideCatalogBorderTop={hideCatalogBorderTop}
                 emptyMessage={emptyMessage}
+                searchPlaceholder={searchPlaceholder}
+                resetLabel={resetLabel}
+                productLineFacetLabel={productLineFacetLabel}
                 productHrefQuery={productHrefQuery}
                 cardMetaByProductId={cardMetaByProductId}
                 toolbarStart={toolbarStart}

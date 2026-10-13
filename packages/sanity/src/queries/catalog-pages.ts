@@ -19,6 +19,16 @@ export type CatalogIndexPageDoc = {
   _type: string
   title?: string | null
   sections?: PageSectionDoc[] | null
+  /** Hero + SEO + catalog UI labels (hub pages only — PROD-3001). */
+  h1?: string | null
+  intro?: string | null
+  metaTitle?: string | null
+  metaDescription?: string | null
+  searchPlaceholder?: string | null
+  emptyMessage?: string | null
+  resetLabel?: string | null
+  productLineFacetLabel?: string | null
+  categoryHint?: string | null
 }
 
 const CATALOG_INDEX_PAGE_PROJECTION = /* groq */ `{
@@ -28,9 +38,26 @@ const CATALOG_INDEX_PAGE_PROJECTION = /* groq */ `{
   "sections": sections[]${PAGE_SECTIONS_PROJECTION}
 }`
 
+/** Hub catalogs only — hero / SEO / UI copy (PROD-3001). */
+const CATALOG_HUB_PAGE_PROJECTION = /* groq */ `{
+  _id,
+  _type,
+  title,
+  h1,
+  intro,
+  metaTitle,
+  metaDescription,
+  searchPlaceholder,
+  emptyMessage,
+  resetLabel,
+  productLineFacetLabel,
+  categoryHint,
+  "sections": sections[]${PAGE_SECTIONS_PROJECTION}
+}`
+
 export const PRODUCT_CATALOG_PAGE_QUERY = /* groq */ `*[
   _id == "productCatalogPage"
-][0]${CATALOG_INDEX_PAGE_PROJECTION}`
+][0]${CATALOG_HUB_PAGE_PROJECTION}`
 
 /** Default Product Style Page layout (fallback when a style has no template). */
 export const PRODUCT_STYLE_PAGE_QUERY = /* groq */ `*[
@@ -52,7 +79,7 @@ export const PRODUCT_DETAIL_PAGE_QUERY = /* groq */ `*[
 
 export const CUSTOMIZATION_CATALOG_PAGE_QUERY = /* groq */ `*[
   _id == "customizationCatalogPage"
-][0]${CATALOG_INDEX_PAGE_PROJECTION}`
+][0]${CATALOG_HUB_PAGE_PROJECTION}`
 
 /** Default Customization Compatibility Page layout (PROD-2921). */
 export const CUSTOMIZATION_COMPATIBILITY_PAGE_QUERY = /* groq */ `*[

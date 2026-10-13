@@ -58,6 +58,9 @@ export type ProductCatalogPanelProps = {
     toolbarStart?: ReactNode;
     /** Trailing control beside Search products (e.g. Copy link). */
     toolbarEnd?: ReactNode;
+    searchPlaceholder?: string;
+    resetLabel?: string;
+    productLineFacetLabel?: string;
 };
 
 function toggleValue(list: string[], value: string): string[] {
@@ -75,11 +78,24 @@ export function ProductCatalogPanel({
     cardMetaByProductId,
     toolbarStart,
     toolbarEnd,
+    searchPlaceholder = 'Search products',
+    resetLabel,
+    productLineFacetLabel,
 }: ProductCatalogPanelProps) {
     const library = useMemo(
         () => unpackProductLibrary(packedLibrary),
         [packedLibrary],
     );
+    const sharedFacets = useMemo(() => {
+        const facets = library.facetCatalog.shared;
+        const label = productLineFacetLabel?.trim();
+        if (!label) return facets;
+        return facets.map((facet) =>
+            facet.id === PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID
+                ? {...facet, title: label}
+                : facet,
+        );
+    }, [library.facetCatalog.shared, productLineFacetLabel]);
     const facetIds = useMemo(() => {
         const ids = library.facetCatalog.shared.map((facet) => facet.id);
         ids.push(PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID);
@@ -296,8 +312,8 @@ export function ProductCatalogPanel({
                     onChange={(event) => {
                         setDraftQuery(event.target.value);
                     }}
-                    placeholder="Search products"
-                    aria-label="Search products"
+                    placeholder={searchPlaceholder}
+                    aria-label={searchPlaceholder}
                     className="rounded-md py-2 pl-9"
                 />
             </div>
@@ -305,7 +321,7 @@ export function ProductCatalogPanel({
     }
 
     const filterProps = {
-        sharedFacets: library.facetCatalog.shared,
+        sharedFacets,
         selections,
         countsByFacet,
         onToggle: onToggleLineOrOther,
@@ -314,6 +330,7 @@ export function ProductCatalogPanel({
         selectedStyles,
         styleCounts,
         onToggleStyle,
+        resetLabel,
     };
 
     return (

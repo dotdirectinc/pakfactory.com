@@ -5,11 +5,11 @@ import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {ProductCatalogFiltersSkeleton} from '@/components/product/product-catalog-filters';
 import {ProductCatalogListSkeleton} from '@/components/product/product-catalog-list';
 import {ProductCatalogToolbarSkeleton} from '@/components/product/product-catalog-toolbar-skeleton';
+import {PRODUCT_CATALOG_COPY_FALLBACKS} from '@/lib/catalog/catalog-page-copy';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
-const PRODUCTS_HEADING = 'Products';
-const PRODUCTS_INTRO =
-    'Custom packaging solutions tailored to your brand.';
+const PRODUCTS_HEADING = PRODUCT_CATALOG_COPY_FALLBACKS.h1;
+const PRODUCTS_INTRO = PRODUCT_CATALOG_COPY_FALLBACKS.intro;
 
 /**
  * Fixed breadcrumb + heading for `/products` — shared by the page and
