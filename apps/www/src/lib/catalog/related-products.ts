@@ -6,11 +6,20 @@ export const RELATED_PRODUCTS_CAP = 6;
  * Build Related Products: same kind; style-first, then same-industry fill
  * (PROD-2780). Hosts without an industry fall back to same-line fill after style.
  */
-export function pickRelatedProducts(
-    host: Product,
-    candidates: Product[],
+/**
+ * What the picker reads. A full `Product` qualifies, and so does the slim
+ * related index (PROD-3004), so the PDP never has to load every product card.
+ */
+export type RelatedProductCandidate = Pick<Product, 'slug' | 'kind' | 'industry'> & {
+    productLine: Pick<Product['productLine'], 'slug'>;
+    productStyle: Pick<Product['productStyle'], 'slug'>;
+};
+
+export function pickRelatedProducts<T extends RelatedProductCandidate>(
+    host: RelatedProductCandidate,
+    candidates: T[],
     cap: number = RELATED_PRODUCTS_CAP,
-): Product[] {
+): T[] {
     const styleSlug = host.productStyle.slug;
     const lineSlug = host.productLine.slug;
     const industrySlug = host.industry?.slug;
@@ -19,7 +28,7 @@ export function pickRelatedProducts(
         (item) => item.slug !== host.slug && item.kind === host.kind,
     );
 
-    const sameIndustry = (item: Product) =>
+    const sameIndustry = (item: RelatedProductCandidate) =>
         !industrySlug || item.industry?.slug === industrySlug;
 
     const styleFirst = pool.filter(
@@ -32,7 +41,7 @@ export function pickRelatedProducts(
         : pool.filter((item) => item.productLine.slug === lineSlug);
 
     const seen = new Set<string>();
-    const out: Product[] = [];
+    const out: T[] = [];
     for (const item of [...styleFirst, ...fill]) {
         if (seen.has(item.slug)) continue;
         seen.add(item.slug);

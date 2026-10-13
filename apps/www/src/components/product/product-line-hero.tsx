@@ -121,7 +121,6 @@ function FeaturedIconImage({
             alt={alt}
             width={srcPx}
             height={srcPx}
-            quality={90}
             className="size-full object-cover"
             priority
             unoptimized

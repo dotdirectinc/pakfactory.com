@@ -145,4 +145,18 @@ describe('pickRelatedProducts (PROD-2780)', () => {
             ['same-style', 'same-line'],
         );
     });
+
+    it('picks the same products from the slim index as from full cards (PROD-3004)', () => {
+        const slim = candidates.map((item) => ({
+            slug: item.slug,
+            kind: item.kind,
+            productLine: {slug: item.productLine.slug},
+            productStyle: {slug: item.productStyle.slug},
+            ...(item.industry ? {industry: item.industry} : {}),
+        }));
+        assert.deepEqual(
+            pickRelatedProducts(host, slim).map((item) => item.slug),
+            pickRelatedProducts(host, candidates).map((item) => item.slug),
+        );
+    });
 });

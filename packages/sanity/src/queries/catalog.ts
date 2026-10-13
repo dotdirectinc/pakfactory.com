@@ -315,6 +315,21 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ}
 `;
 
+/** Listed styles a product belongs to, own or via `basedOn` (PROD-2843). */
+const PRODUCT_MEMBERSHIP_STYLES = /* groq */ `"productStyles": coalesce(
+    productStyle[]->{
+      title,
+      "slug": slug.current,
+      status
+    },
+    basedOn->productStyle[]->{
+      title,
+      "slug": slug.current,
+      status
+    },
+    []
+  )[defined(slug) && ${LINE_STYLE_LISTED}]{title, slug}`;
+
 /**
  * Product-line hero / standard preview dialog — card fields plus specs.
  * Description prefers long PT text (PDP order), not shortDescription-first cards.
@@ -331,19 +346,7 @@ export const CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS = /* groq */ `
     }
   },
   // Line style-card image fallback matches any linked style (PROD-2843).
-  "productStyles": coalesce(
-    productStyle[]->{
-      title,
-      "slug": slug.current,
-      status
-    },
-    basedOn->productStyle[]->{
-      title,
-      "slug": slug.current,
-      status
-    },
-    []
-  )[defined(slug) && ${LINE_STYLE_LISTED}]{title, slug}
+  ${PRODUCT_MEMBERSHIP_STYLES}
 `;
 
 /**
@@ -533,6 +536,54 @@ export type CatalogProductOfferIndexDoc = {
   rulesProduct?: CatalogRulesProductDoc | null;
 };
 
+/**
+ * Related Products candidate index (PROD-3004). The same products, in the same
+ * order, as {@link CATALOG_PRODUCTS_QUERY}, with only what the picker reads:
+ * kind, industry, line and style identity. The full card list is ~2.3 MB once
+ * mapped, over Next's 2 MB data-cache limit, so it was refetched on every PDP.
+ */
+export const CATALOG_PRODUCT_RELATED_INDEX_QUERY = /* groq */ `*[
+  _type == "product" &&
+  defined(slug.current) &&
+  ${PRODUCT_LISTED}
+] | order(title asc) {
+  title,
+  "slug": slug.current,
+  kind,
+  "industry": coalesce(
+    solutions[@->solutionType == "industry"][0]->{
+      title,
+      "slug": slug.current
+    },
+    solutions[0]->{
+      title,
+      "slug": slug.current
+    }
+  ),
+  "productLine": coalesce(productLine, basedOn->productLine)->{title, "slug": slug.current},
+  "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->{title, "slug": slug.current}
+}`;
+
+type CatalogRefIdentityDoc = {title?: string | null; slug?: string | null} | null;
+
+export type CatalogProductRelatedIndexDoc = {
+  title?: string | null;
+  slug: string | null;
+  kind?: string | null;
+  industry?: CatalogRefIdentityDoc;
+  productLine?: CatalogRefIdentityDoc;
+  productStyle?: CatalogRefIdentityDoc;
+};
+
+/** Card fields for the handful of products the related picker chose (PROD-3004). */
+export const CATALOG_PRODUCTS_BY_SLUGS_QUERY = /* groq */ `*[
+  _type == "product" &&
+  slug.current in $slugs &&
+  ${PRODUCT_LISTED}
+]{
+  ${CATALOG_PRODUCT_CARD_FIELDS}
+}`;
+
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   _type == "product" &&
   slug.current == $slug &&
@@ -682,6 +733,39 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   ${LINE_STYLE_LISTED}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LINE_FIELDS}
+}`;
+
+/**
+ * `/products/[slug]` and `/products/[slug]/[styleSlug]` static params (PROD-3004).
+ * The same lines, and the same inputs to `line.styles`, as
+ * {@link CATALOG_PRODUCT_LINES_QUERY}: the line's own styles plus each listed
+ * standard product's style. That query also carries every product card, ~2.8 MB,
+ * past Next's 2 MB data-cache limit; params need slugs only.
+ */
+export const CATALOG_PRODUCT_LINE_PARAMS_QUERY = /* groq */ `*[
+  _type == "productLine" &&
+  defined(slug.current) &&
+  ${LINE_STYLE_LISTED}
+] | order(title asc) {
+  title,
+  "slug": slug.current,
+  "styles": ${LINE_STYLES},
+  "products": *[_type == "product" &&
+    productLine._ref == ^._id &&
+    ${KIND_STANDARD} &&
+    defined(slug.current) &&
+    ${PRODUCT_LISTED}
+  ] | order(title asc) {
+    title,
+    "slug": slug.current,
+    "productLine": coalesce(productLine, basedOn->productLine)->{title, "slug": slug.current},
+    "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->{
+      title,
+      "slug": slug.current,
+      "hasPage": ${LINE_STYLE_HAS_PAGE}
+    },
+    ${PRODUCT_MEMBERSHIP_STYLES}
+  }
 }`;
 
 export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[

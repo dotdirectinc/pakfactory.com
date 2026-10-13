@@ -10,7 +10,7 @@ import {ProductStyleChrome} from '@/components/product/product-style-view';
 import {
     getProductStylePage,
     getStyle,
-    listLines,
+    listLineStyleParams,
     listProductStyleLibrary,
 } from '@/lib/catalog/catalog';
 import {resolveStyleFaqs} from '@/lib/catalog/faq-inheritance';
@@ -28,9 +28,9 @@ export async function generateStaticParams(): Promise<
     {slug: string; styleSlug: string}[]
 > {
     return staticParamsExceptPreview(async () => {
-        const lines = await listLines();
+        const lines = await listLineStyleParams();
         return lines.flatMap((line) =>
-            line.styles.map((style) => ({slug: line.slug, styleSlug: style.slug})),
+            line.styleSlugs.map((styleSlug) => ({slug: line.slug, styleSlug})),
         );
     });
 }

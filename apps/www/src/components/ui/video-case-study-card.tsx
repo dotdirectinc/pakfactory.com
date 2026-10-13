@@ -7,7 +7,7 @@ import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {SanityImage} from '@/components/ui/sanity-image';
-import {isSanityCdnUrl} from '@/lib/sanity/image';
+import {isSanityCdnUrl, sanityImageDimensions} from '@/lib/sanity/image';
 import {
     MEDIA_DISSOLVE_MS,
     mediaDissolveTransitionClass,
@@ -37,6 +37,22 @@ type VideoCaseStudyCardProps = {
     card: VideoCaseStudyCardData;
     className?: string;
 };
+
+/**
+ * Logo width/height in the asset's own aspect ratio at 2x the `h-20` display
+ * height. A fixed 280x80 box let CSS change the width only, which Next warns
+ * about; a true ratio scales both. Non-Sanity URLs keep the old box.
+ */
+const LOGO_INTRINSIC_HEIGHT = 160;
+
+function logoBox(src: string): {width: number; height: number} {
+    const size = sanityImageDimensions(src);
+    if (!size) return {width: 280, height: 80};
+    return {
+        width: Math.round((LOGO_INTRINSIC_HEIGHT * size.width) / size.height),
+        height: LOGO_INTRINSIC_HEIGHT,
+    };
+}
 
 /**
  * Portrait case-study card — poster, optional muted MP4 hover, catalog-style
@@ -167,8 +183,7 @@ export function VideoCaseStudyCard({
                     <Image
                         src={card.logo.src}
                         alt={card.logo.alt || card.brand}
-                        width={280}
-                        height={80}
+                        {...logoBox(card.logo.src)}
                         className="h-20 w-auto max-w-[280px] object-contain brightness-0 invert"
                     />
                 ) : (
