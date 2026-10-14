@@ -95,11 +95,6 @@ function mapCardImage(
     };
 }
 
-function readingMinutes(value: number | null | undefined): number | null {
-    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-    return Math.max(1, Math.round(value));
-}
-
 /** Sanity card → `NewsCard`; null when a required field is missing. */
 export function mapNewsCard(doc: PressReleaseCardDoc): NewsCard | null {
     const title = doc.title?.trim();
@@ -120,7 +115,6 @@ export function mapNewsCard(doc: PressReleaseCardDoc): NewsCard | null {
         dateLabel: formatNewsDate(published),
         year: YEAR_FORMAT.format(published),
         image: mapCardImage(doc.image, doc.videoUrl, title),
-        readingMinutes: readingMinutes(doc.readingTimeMinutes),
     };
 }
 
@@ -178,7 +172,6 @@ export function mapNewsItem(doc: PressReleaseDetailDoc): NewsItem | null {
                       hotspot: doc.heroMedia?.imageHotspot,
                       alt: doc.heroMedia?.alt,
                   },
-        readingTimeMinutes: doc.readingTimeMinutes,
     });
     if (!card) return null;
 

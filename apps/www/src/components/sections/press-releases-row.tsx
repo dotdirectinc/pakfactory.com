@@ -55,12 +55,6 @@ function RelatedNewsItem({item}: {item: NewsCard}) {
                 </h3>
                 <ArrowLink href={item.href} size="sm" srSuffix={item.title}>
                     Read more
-                    {item.readingMinutes ? (
-                        <span className="font-normal text-muted-foreground">
-                            {' '}
-                            ({item.readingMinutes} min read)
-                        </span>
-                    ) : null}
                 </ArrowLink>
             </div>
         </article>

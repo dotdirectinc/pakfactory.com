@@ -29,6 +29,7 @@ Breadcrumb is `Home / Newsroom` (`/ title` on detail). A "Company" parent was dr
 - **Only published-by-date releases show.** Every query gates `publishedAt <= now()`; scheduled drafts are off (PROD-2228).
 - **Boilerplate** ("About PakFactory" + media contact) comes from Global Settings → Company, not from each release.
 - **No Media Assets tab** — there is no content model for it yet.
+- **No read time** on the release page or in More announcements — removed per review (Eric, 2026-10-14); the queries no longer compute it.
 
 ## Components
 

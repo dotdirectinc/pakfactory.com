@@ -75,9 +75,9 @@ function HeroFigure({
 }
 
 /**
- * Release header (PROD-2918): category eyebrow, H1, summary, date · read time,
- * share buttons, feature image + caption. Pattern: blog `PostDetailHeader`,
- * www tokens.
+ * Release header (PROD-2918): category eyebrow, H1, summary, date, share
+ * buttons, feature image + caption. No read time (removed per review,
+ * 2026-10-14). Pattern: blog `PostDetailHeader`, www tokens.
  */
 export function NewsDetailHeader({
     item,
@@ -116,12 +116,6 @@ export function NewsDetailHeader({
                 <div className="flex flex-wrap items-center justify-between gap-4 border-y border-dashed border-border py-4">
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-muted-foreground">
                         <time dateTime={item.publishedAt}>{item.dateLabel}</time>
-                        {item.readingMinutes ? (
-                            <>
-                                <span aria-hidden>·</span>
-                                <span>{item.readingMinutes} min read</span>
-                            </>
-                        ) : null}
                         {item.lastModified && item.lastModifiedLabel ? (
                             <>
                                 <span aria-hidden>·</span>

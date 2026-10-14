@@ -67,12 +67,6 @@ describe('mapNewsCard (PROD-2913)', () => {
             'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
         );
     });
-
-    it('rounds reading time and never shows 0 minutes', () => {
-        assert.equal(mapNewsCard(card({readingTimeMinutes: 0.2}))?.readingMinutes, 1);
-        assert.equal(mapNewsCard(card({readingTimeMinutes: 2.6}))?.readingMinutes, 3);
-        assert.equal(mapNewsCard(card({readingTimeMinutes: null}))?.readingMinutes, null);
-    });
 });
 
 describe('mapNewsItem (PROD-2918)', () => {

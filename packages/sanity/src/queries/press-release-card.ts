@@ -4,7 +4,6 @@
  * `newsroom.ts` can both import it without importing each other.
  */
 
-import {READING_TIME_MINUTES_PROJECTION} from './blog'
 
 /**
  * Card image — the feature image, or the video thumbnail override in video
@@ -38,8 +37,7 @@ export const PRESS_RELEASE_CARD_FIELDS = /* groq */ `{
   category,
   publishedAt,
   "videoUrl": select(heroMedia.mediaType == "video" => heroMedia.videoUrl),
-  "image": ${PRESS_RELEASE_CARD_IMAGE},
-  ${READING_TIME_MINUTES_PROJECTION}
+  "image": ${PRESS_RELEASE_CARD_IMAGE}
 }`
 
 export type PressReleaseCategory =
@@ -66,5 +64,4 @@ export type PressReleaseCardDoc = {
   publishedAt?: string | null
   videoUrl?: string | null
   image?: PressReleaseCardImageDoc | null
-  readingTimeMinutes?: number | null
 }

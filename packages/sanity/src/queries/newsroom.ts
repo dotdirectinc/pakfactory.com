@@ -12,7 +12,6 @@
  * id — the same contract as the catalog detail templates (`catalog-pages.ts`).
  */
 
-import {READING_TIME_MINUTES_PROJECTION} from './blog'
 import {
   PRESS_RELEASE_CARD_FIELDS,
   PRESS_RELEASE_LIVE,
@@ -82,7 +81,6 @@ export const PRESS_RELEASE_BY_SLUG_QUERY = /* groq */ `*[
   },
   imageCaption,
   "body": body${PRESS_RELEASE_BODY},
-  ${READING_TIME_MINUTES_PROJECTION},
   metaTitle,
   metaDescription,
   canonicalUrl,
@@ -177,7 +175,6 @@ export type PressReleaseDetailDoc = {
   } | null
   imageCaption?: string | null
   body?: unknown[] | null
-  readingTimeMinutes?: number | null
   metaTitle?: string | null
   metaDescription?: string | null
   canonicalUrl?: string | null
