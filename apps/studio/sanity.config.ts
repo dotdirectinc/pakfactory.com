@@ -5,6 +5,7 @@ import { presentationTool } from 'sanity/presentation'
 import { visionTool } from '@sanity/vision'
 import { colorInput } from '@sanity/color-input'
 import { media } from 'sanity-plugin-media'
+import { vercelProtectionBypassTool } from '@sanity/vercel-protection-bypass'
 import {
   documentInternationalization,
   useDeleteTranslationAction,
@@ -479,6 +480,19 @@ const sitePresentation = () =>
 // no Presentation tab, rather than one that always errors.
 const sitePresentationPlugins = SITE_PREVIEW_RAW ? [sitePresentation()] : []
 
+// staging.pakfactory.com sits behind Vercel Authentication, and the browser does
+// not send its login cookie into Presentation's cross-site iframe (a logged-in
+// tab works; the same URL framed is refused): the iframe gets Vercel's 401 wall
+// (`X-Frame-Options: DENY`), the
+// draft-mode route never runs, and Presentation reports "Unable to connect" in
+// every workspace (2026-10-14). This tool stores the Vercel "Protection Bypass
+// for Automation" secret as a private document in the Studio's dataset;
+// Presentation then adds `x-vercel-protection-bypass` +
+// `x-vercel-set-bypass-cookie=samesitenone` to the preview URL. One secret per
+// dataset, so it lives in one workspace (Global) — and only where a protected
+// site target is wired: the production Studio previews the public apex.
+const vercelBypassPlugins = SITE_PREVIEW_RAW ? [vercelProtectionBypassTool()] : []
+
 export default defineConfig([
   // Ten workspaces (PROD-2329 D1 + PROD-2330 D2, per D39; Newsroom added by
   // PROD-2909), in switcher order: Blog · Case Studies · Newsroom · Products ·
@@ -751,6 +765,7 @@ export default defineConfig([
     plugins: [
       structureTool({ structure: globalStructure, defaultDocumentNode }),
       ...sitePresentationPlugins,
+      ...vercelBypassPlugins,
       colorInput(),
       media(),
       visionTool(),
