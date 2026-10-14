@@ -39,7 +39,7 @@ export function describeEdit(e: RuleEditDraft, name: Names): string {
     case "exception":
       return e.reason === null
         ? `${name(e.productId)}: drop the "${e.mode}" exception for ${name(e.optionId)}`
-        : `${name(e.productId)}: ${e.mode} ${name(e.optionId)} as an exception — "${e.reason}"`;
+        : `${name(e.productId)}: ${e.mode} ${name(e.optionId)} as an exception — ${e.reason.trim() ? `"${e.reason}"` : "reason needed"}`;
   }
 }
 
@@ -210,10 +210,12 @@ export function blockingErrors(catalog: SummaryCatalog, products: SummaryProduct
   return errors;
 }
 
-export type OfferState = "listed" | "derived" | "added";
+/** How a product gets an option — or `removed`: the rules give it, but an exception takes it away. */
+export type OfferState = "listed" | "derived" | "added" | "removed";
+export type ProductException = { optionId: string; mode: "add" | "remove"; reason?: string };
 export type RuleFocus = { level: "product" | "customizationOption"; id: string };
 export type FocusAfter =
-  | { level: "product"; id: string; options: { id: string; state: OfferState }[] }
+  | { level: "product"; id: string; options: { id: string; state: OfferState }[]; exceptions: ProductException[] }
   | { level: "customizationOption"; id: string; products: string[] };
 
 /** What a product offers and how — the same naming as the product view (`product-view.ts`). */
@@ -221,6 +223,8 @@ export function offerStates(catalog: SummaryCatalog, product: SummaryProduct, gr
   const r = resolveForProduct(catalog, product, graph, index);
   const added = new Set(r.exceptions.filter((e) => e.effect === "added").map((e) => e.optionId));
   const out = new Map<string, OfferState>();
+  // Taken away by an exception: kept, so the map can still show (and restore) it.
+  for (const e of r.exceptions) if (e.effect === "removed") out.set(e.optionId, "removed");
   for (const type of catalog.types) {
     for (const id of r.availableByType.get(type._id) ?? []) {
       out.set(id, type.availabilityDecidedBy === "product" ? "listed" : added.has(id) ? "added" : "derived");
@@ -235,7 +239,11 @@ export function focusAfter(catalog: SummaryCatalog, products: SummaryProduct[], 
   if (focus.level === "product") {
     const p = after.products.find((x) => x._id === focus.id);
     if (!p) return null;
-    return { level: "product", id: focus.id, options: [...offerStates(after.catalog, p)].map(([id, state]) => ({ id, state })) };
+    return {
+      level: "product", id: focus.id,
+      options: [...offerStates(after.catalog, p)].map(([id, state]) => ({ id, state })),
+      exceptions: (p.customizationExceptions ?? []).map((e) => ({ optionId: e.optionId, mode: e.mode, ...(e.reason ? { reason: e.reason } : {}) })),
+    };
   }
   const option = after.catalog.options.find((o) => o._id === focus.id);
   if (!option) return null;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Undo2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Undo2 } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { Checkbox } from "@pakfactory/ui/components/checkbox";
 import { Input } from "@pakfactory/ui/components/input";
@@ -288,10 +288,24 @@ export function RuleEditBar() {
   const s = useRuleEditSession();
   if (!s || (!s.editing && !s.edits.length && !s.result?.ok)) return null;
   if (!s.editing && !s.edits.length) return <SubmitResultNote />;
+  return <EditBar />;
+}
+
+function EditBar() {
+  const s = useRuleEditSession()!;
+  const [open, setOpen] = useState(false);
   const p = s.preview;
   const settled = p && !s.checking && p.sentences.length === s.edits.length;
   return (
-    <div role="region" aria-label={COPY.barLabel} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-foreground/20 bg-card px-3 py-2 text-sm shadow-sm">
+    <div role="region" aria-label={COPY.barLabel} className="sticky bottom-0 z-20 flex flex-col rounded-md border border-foreground/20 bg-card text-sm shadow-sm">
+      {/* The details the panel shows — every pending change (with undo and reasons) and the full impact. */}
+      {open && s.edits.length ? (
+        <div className="grid max-h-[40vh] gap-4 overflow-y-auto border-b border-border p-3 md:grid-cols-2">
+          <PendingTray />
+          <ImpactBox />
+        </div>
+      ) : null}
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
       <span className="font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : COPY.editingHint}</span>
       {s.edits.length ? (
         <span className="text-muted-foreground">
@@ -304,7 +318,13 @@ export function RuleEditBar() {
       {settled && p.warnings.length && !p.errors.length ? (
         <span className="flex items-center gap-2 text-amber-800 dark:text-amber-300">⚠ {COPY.barWarnings(p.warnings.length)} <Acknowledge /></span>
       ) : null}
+      {s.edits.length ? (
+        <Button size="xs" variant="ghost" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          {open ? <ChevronDown /> : <ChevronUp />} {open ? COPY.hideDetails : COPY.showDetails}
+        </Button>
+      ) : null}
       <div className="ml-auto"><SubmitButtons /></div>
+    </div>
     </div>
   );
 }

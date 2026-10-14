@@ -44,10 +44,13 @@ import {
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
 import type { SpecMapData } from "@/lib/spec/spec-map";
 import type { ProductOptionState } from "@/lib/spec/product-view";
+/** How a focused product gets an option, or "removed": the rules give it, an exception takes it away. */
+type OfferKind = ProductOptionState | "removed";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
 import { RuleEditBar, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
 import { Picker } from "@/components/spec/spec-rule-editor";
 import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT } from "@/lib/copy/spec";
+import { describeEdit } from "@/lib/spec/rule-edits";
 import {
   loadMapCompatible,
   loadMapRecord,
@@ -97,8 +100,9 @@ const ALL = "all";
  * view shows them): listed by the product itself, derived by the rules, added by an exception.
  * Told apart by line style, since colour means status.
  */
-const OFFER_ORDER: ProductOptionState[] = ["listed", "derived", "added"];
-const OFFER_DASH: Record<ProductOptionState, string | undefined> = {
+const OFFER_ORDER: OfferKind[] = ["listed", "derived", "added", "removed"];
+const OFFER_DASH: Record<OfferKind, string | undefined> = {
+  removed: "1 4",
   listed: undefined,
   derived: "6 4",
   added: "1 3",
@@ -117,7 +121,7 @@ const INDENT = 20;
 const RAIL = 8;
 
 type OfferGroup = {
-  state: ProductOptionState;
+  state: OfferKind;
   y: number;
   /** Options matching the filter, of `total`. */
   shown: number;
@@ -129,7 +133,7 @@ type OfferLayout = {
   filterY: number;
   groups: OfferGroup[];
   types: { key: string; title: string; y: number }[];
-  rails: { state: ProductOptionState; y1: number; ticks: number[] }[];
+  rails: { state: OfferKind; y1: number; ticks: number[] }[];
 };
 
 /**
@@ -279,15 +283,17 @@ function SpecMapView({ data }: { data: SpecMapData }) {
 
   // ── selection: the chain up and down, cross-stream links, and the rules' compatibility ──
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
-  const [offers, setOffers] = useState<Map<number, ProductOptionState>>(
+  /** The focused product's exceptions, per option card (from the rules view). */
+  const [exceptions, setExceptions] = useState<Map<number, { mode: "add" | "remove"; reason?: string }>>(new Map());
+  const [offers, setOffers] = useState<Map<number, OfferKind>>(
     new Map(),
   );
   /** Kept from product to product, so the same question can be asked of the next one. */
-  const [offerKinds, setOfferKinds] = useState<Set<ProductOptionState>>(
+  const [offerKinds, setOfferKinds] = useState<Set<OfferKind>>(
     () => new Set(OFFER_ORDER),
   );
-  const [openGroups, setOpenGroups] = useState<Set<ProductOptionState>>(
-    () => new Set<ProductOptionState>(["listed"]),
+  const [openGroups, setOpenGroups] = useState<Set<OfferKind>>(
+    () => new Set<OfferKind>(["listed"]),
   );
   const [offerQ, setOfferQ] = useState("");
   const [record, setRecord] = useState<{
@@ -311,20 +317,27 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     const n = selected !== null ? nodes[selected]! : null;
     if (!f || !n || f.id !== n.id || !session.edits.length) return null;
     if (f.level === "product") {
-      return { offers: new Map(f.options.flatMap((o) => { const i = indexOf.get(`customizationOption:${o.id}`); return i === undefined ? [] : [[i, o.state] as const]; })), products: null };
+      return {
+        offers: new Map(f.options.flatMap((o) => { const i = indexOf.get(`customizationOption:${o.id}`); return i === undefined ? [] : [[i, o.state] as const]; })),
+        exceptions: new Map(f.exceptions.flatMap((e) => { const i = indexOf.get(`customizationOption:${e.optionId}`); return i === undefined ? [] : [[i, { mode: e.mode, reason: e.reason }] as const]; })),
+        products: null,
+      };
     }
-    return { offers: null, products: new Set(f.products.flatMap((id) => { const i = indexOf.get(`product:${id}`); return i === undefined ? [] : [i]; })) };
+    return { offers: null, exceptions: null, products: new Set(f.products.flatMap((id) => { const i = indexOf.get(`product:${id}`); return i === undefined ? [] : [i]; })) };
   }, [session.preview, session.edits.length, selected, nodes, indexOf]);
   /** Per card: what the edits do to it — gained, lost, or offered another way. */
   const diff = useMemo(() => {
-    const d = new Map<number, { kind: "gain" | "lose" | "change"; was?: ProductOptionState }>();
+    const d = new Map<number, { kind: "gain" | "lose" | "change"; was?: OfferKind }>();
     if (after?.offers) {
-      for (const [i, st] of after.offers) {
+      // "removed" is on the map but not offered: going to or from it is a loss or a gain.
+      const on = (k?: OfferKind) => k !== undefined && k !== "removed";
+      for (const i of new Set([...offers.keys(), ...after.offers.keys()])) {
         const was = offers.get(i);
-        if (!was) d.set(i, { kind: "gain" });
-        else if (was !== st) d.set(i, { kind: "change", was });
+        const now = after.offers.get(i);
+        if (on(was) && !on(now)) d.set(i, { kind: "lose" });
+        else if (!on(was) && on(now)) d.set(i, { kind: "gain" });
+        else if (on(was) && was !== now) d.set(i, { kind: "change", was });
       }
-      for (const i of offers.keys()) if (!after.offers.has(i)) d.set(i, { kind: "lose" });
     }
     if (after?.products) {
       for (const i of after.products) if (!compatible.has(i)) d.set(i, { kind: "gain" });
@@ -339,6 +352,18 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     for (const [i, st] of after.offers) m.set(i, st);
     return m;
   }, [offers, after]);
+  /** Exceptions as drawn: with the pending edits applied while previewing. */
+  const shownExceptions = after?.exceptions ?? exceptions;
+  /** The pending edits that name a card's product–option pair (shown even when they change no offer). */
+  const pendingOn = useCallback((i: number) => {
+    if (selected === null) return [];
+    const sel0 = nodes[selected]!;
+    const n = nodes[i]!;
+    const pair = sel0.level === "product" && n.level === "customizationOption" ? [sel0.id, n.id]
+      : sel0.level === "customizationOption" && n.level === "product" ? [n.id, sel0.id] : null;
+    if (!pair) return [];
+    return session.edits.filter((e) => (e.kind === "offer" || e.kind === "exception") && e.productId === pair[0] && e.optionId === pair[1]);
+  }, [selected, nodes, session.edits]);
   const compatibleShown = useMemo(() => {
     const extra = after?.offers ? [...after.offers.keys()] : after?.products ? [...after.products] : [];
     if (!extra.length) return compatible;
@@ -373,6 +398,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     const n = nodes[selected]!;
     setCompatible(new Set());
     setOffers(new Map());
+    setExceptions(new Map());
     setOfferQ("");
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
@@ -381,7 +407,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       ]);
       setRecord({ for: selected, res: rec });
       if (compat.ok) {
-        const want = new Map<string, ProductOptionState | null>([
+        const want = new Map<string, OfferKind | null>([
           ...compat.data.products.map((id) => [`product:${id}`, null] as const),
           ...compat.data.options.map(
             (o) => [`customizationOption:${o.id}`, o.state] as const,
@@ -392,6 +418,10 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           return want.has(k) ? [[i, want.get(k)!] as const] : [];
         });
         setCompatible(new Set(found.map(([i]) => i)));
+        setExceptions(new Map(compat.data.exceptions.flatMap((e) => {
+          const i = indexOf.get(`customizationOption:${e.optionId}`);
+          return i === undefined ? [] : [[i, { mode: e.mode, reason: e.reason }] as const];
+        })));
         setOffers(
           new Map(
             found.flatMap(([i, state]) => (state ? [[i, state] as const] : [])),
@@ -399,7 +429,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         );
       }
     });
-  }, [selected, nodes, session.version]);
+  }, [selected, nodes, session.version, indexOf]);
 
   const relatedByStream = useMemo(() => {
     const m = new Map<string, number>();
@@ -718,9 +748,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       ? focus.offer
       : null;
   /** Options per kind (status filter applied), for the focus bar's chips. */
-  const offerCount = (state: ProductOptionState) =>
+  const offerCount = (state: OfferKind) =>
     [...shownOffers].filter(([i, k]) => k === state && statusOk(i)).length;
-  const toggleKind = (state: ProductOptionState) =>
+  const toggleKind = (state: OfferKind) =>
     setOfferKinds((ks) => {
       // From "all": show only this kind. Otherwise toggle it; turning off the last one shows all again.
       if (ks.size === OFFER_ORDER.length) return new Set([state]);
@@ -743,7 +773,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     const n = nodes[i]!;
     const pair =
       sel!.level === "product" && n.level === "customizationOption" && offering && shownOffers.has(i)
-        ? { p: sel!.id, o: n.id, offeredNow: offers.has(i) }
+        ? { p: sel!.id, o: n.id, offeredNow: offers.has(i) && offers.get(i) !== "removed" }
         : sel!.level === "customizationOption" && n.level === "product" && compatibleShown.has(i)
           ? { p: n.id, o: sel!.id, offeredNow: compatible.has(i) }
           : null;
@@ -758,7 +788,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     if (sel.level === "product") {
       return nodes.flatMap((n, i) =>
         n.level === "customizationOption" && !(after?.offers ?? offers).has(i)
-          ? [{ id: n.id, title: n.title, group: parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "" }]
+          ? [{
+              id: n.id,
+              title: n.title,
+              group: [
+                parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "",
+                session.meta?.decidedBy[session.meta.optionType[n.id] ?? ""] === "customization" ? EDIT.asException : "",
+              ].filter(Boolean).join(" · "),
+            }]
           : []);
     }
     const standard = new Set(session.meta?.standard ?? []);
@@ -1241,6 +1278,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               // its translate and start it from the map's top-left corner.
               const arriving = !from && focus !== null && !rest.pos.has(i);
               const change = diff.get(i);
+              const pending = pendingOn(i);
+              const exc = offer ? shownExceptions.get(i) : undefined;
               const target = editTarget(i);
               const row = Math.max(0, Math.round((p.y - HEAD_H) / ROW_H));
               return (
@@ -1265,6 +1304,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                       n.title,
                       offer ? COPY.offerKind[offer] : null,
                       change?.kind === "gain" ? EDIT.previewGain : change?.kind === "lose" ? EDIT.previewLose : change?.was ? EDIT.previewChange(COPY.offerKind[change.was]) : null,
+                      exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}` : null,
+                      pending.length ? EDIT.pendingHere(pending.map((e) => describeEdit(e, session.names)).join("; ")) : null,
                       n.status,
                     ]
                       .filter(Boolean)
@@ -1302,6 +1343,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                         {n.title}
                       </span>
                       <span className="truncate text-[11px] text-muted-foreground">
+                        {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)} · </span> : null}
                         {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
                       </span>
                     </span>
@@ -1312,6 +1354,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                       />
                     ) : null}
                   </button>
+                  {pending.length && !change && !gone ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white"
+                    >
+                      ✎
+                    </span>
+                  ) : null}
                   {change && !gone ? (
                     <span
                       aria-hidden
@@ -1321,7 +1371,17 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     </span>
                   ) : null}
                   {target && !gone ? (
-                    change?.kind === "lose" ? (
+                    offer === "removed" && change?.kind !== "lose" ? (
+                      <button
+                        type="button"
+                        aria-label={EDIT.offerAgain(n.title)}
+                        title={EDIT.offerAgain(n.title)}
+                        onClick={() => offerOn(target.p, target.o, true, false)}
+                        className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-xs hover:text-foreground"
+                      >
+                        <Undo2 className="size-3" />
+                      </button>
+                    ) : change?.kind === "lose" ? (
                       target.direct ? (
                         <button
                           type="button"
@@ -1410,7 +1470,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
 }
 
 /** A short sample of a kind's line, for the chips and group headers. */
-function OfferSwatch({ state }: { state: ProductOptionState }) {
+function OfferSwatch({ state }: { state: OfferKind }) {
   return (
     <svg width="18" height="6" className="shrink-0" aria-hidden>
       <line

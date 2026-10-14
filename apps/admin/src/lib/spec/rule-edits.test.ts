@@ -89,7 +89,11 @@ describe("rule edits — the diagram's preview and edits", () => {
   it("names how the product offers each option, before and after", async () => {
     const { focusAfter } = await import("./rule-edits");
     const before = focusAfter(catalog(), products(), [], { level: "product", id: "mailer" });
-    assert.deepEqual(before, { level: "product", id: "mailer", options: [{ id: "matte", state: "derived" }, { id: "kraft", state: "listed" }] });
+    assert.deepEqual(before, { level: "product", id: "mailer", options: [{ id: "matte", state: "derived" }, { id: "kraft", state: "listed" }], exceptions: [] });
+    // A remove exception keeps the option on the map, as "removed", and lists the exception.
+    const removed = focusAfter(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: "Too thin" }], { level: "product", id: "mailer" });
+    assert.ok(removed?.level === "product" && removed.options.some((o) => o.id === "matte" && o.state === "removed"));
+    assert.deepEqual(removed?.level === "product" && removed.exceptions, [{ optionId: "matte", mode: "remove", reason: "Too thin" }]);
     const after = focusAfter(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "gloss", mode: "add", reason: "OK" }], { level: "product", id: "mailer" });
     assert.ok(after?.level === "product" && after.options.some((o) => o.id === "gloss" && o.state === "added"));
     assert.deepEqual(focusAfter(catalog(), products(), [{ kind: "pair", a: "matte", b: "kraft", compatible: false }], { level: "customizationOption", id: "matte" }),

@@ -6,6 +6,7 @@ import { getCustomizationView, getProductView } from "@/lib/spec/cached-views";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import type { Loaded } from "@/lib/spec/rules-source";
 import type { ProductOptionState } from "@/lib/spec/product-view";
+import type { ProductException } from "@/lib/spec/rule-edits";
 
 /**
  * The Spec Map's side panel (PROD-2960). Read-only; the same grant as every Spec page, checked here
@@ -32,18 +33,23 @@ export async function loadMapRecord(level: string, id: string): Promise<Loaded<C
 export async function loadMapCompatible(
   level: string,
   id: string,
-): Promise<Loaded<{ products: string[]; options: { id: string; state: ProductOptionState }[] }>> {
+): Promise<Loaded<{ products: string[]; options: { id: string; state: ProductOptionState | "removed" }[]; exceptions: ProductException[] }>> {
   if (!(await granted())) return { ok: false, error: "No access to Spec System" };
   if (level === "product") {
     const res = await getProductView(id);
     if (!res.ok) return res;
-    const options = (res.data?.categories ?? []).flatMap((c) => c.types.flatMap((t) => t.options.map((o) => ({ id: o.id, state: o.state }))));
-    return { ok: true, data: { products: [], options } };
+    const types = (res.data?.categories ?? []).flatMap((c) => c.types);
+    const options = [
+      ...types.flatMap((t) => t.options.map((o) => ({ id: o.id, state: o.state }))),
+      // Taken away by one of the product's exceptions: drawn as "Removed by exception", restorable.
+      ...types.flatMap((t) => t.removed.filter((r) => r.byException).map((r) => ({ id: r.id, state: "removed" as const }))),
+    ];
+    return { ok: true, data: { products: [], options, exceptions: res.data?.configurator.exceptions ?? [] } };
   }
   if (level === "customizationOption") {
     const res = await getCustomizationView(id);
     if (!res.ok) return res;
-    return { ok: true, data: { products: (res.data?.offering ?? []).map((p) => p.id), options: [] } };
+    return { ok: true, data: { products: (res.data?.offering ?? []).map((p) => p.id), options: [], exceptions: [] } };
   }
-  return { ok: true, data: { products: [], options: [] } };
+  return { ok: true, data: { products: [], options: [], exceptions: [] } };
 }
