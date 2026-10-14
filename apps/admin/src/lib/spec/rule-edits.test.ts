@@ -134,3 +134,14 @@ describe("rule edits — effect-first sentences, no-effect edits, map buttons (2
     assert.deepEqual(mapEdit(meta, "preset", "kraft", "stop", "listed"), { ok: false, reason: "not-standard" });
   });
 });
+
+describe("rule edits — inspiration products (2026-10-14)", () => {
+  it("warns when a base product would stop offering an option an inspiration product pre-selects", () => {
+    const insp = [{ _id: "gift", title: "Gift Mailer", basedOn: "mailer", preselected: ["matte", "kraft"] }, { _id: "other", title: "Plain", basedOn: "mailer", preselected: ["kraft"] }];
+    const r = computeImpact(catalog(), products(), [{ kind: "pair", a: "matte", b: "kraft", compatible: false }], names, insp);
+    const w = r.warnings.find((x) => x.code === "preselection-lost");
+    assert.ok(w);
+    assert.match(w.text, /^1 inspiration product pre-selects an option its base would no longer offer: Gift Mailer \(Matte\)/);
+    assert.equal(computeImpact(catalog(), products(), [{ kind: "offer", productId: "mailer", optionId: "white", offered: true }], names, insp).warnings.length, 0);
+  });
+});

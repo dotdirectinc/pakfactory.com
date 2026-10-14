@@ -362,7 +362,7 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
 export const ADMIN_SPEC_MAP_COPY = {
   title: "Spec Map",
   lead:
-    "One stream at a time, one column per level, arrows from each record to the records below it. Click a card to see only what it is connected to — up, down and, for products and options, what the rules make them compatible with. Edit a record's customization rules in its panel; everything else in Studio.",
+    "One stream at a time, one column per level, arrows from each record to the records below it. Click a card to see only what it is connected to — up, down and, for products and options, what the rules make them compatible with. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
   hint: "Click a card to see what it is connected to · click a level's name to collapse or expand it.",
   search: "Find by name or registry code",
   status: "Status",
@@ -467,6 +467,10 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   undoPending: (title: string) => `Undo your change to ${title}`,
   staleCard: "This card was out of date — the map is refreshing. Try again in a moment.",
   refreshingMap: "Updating…",
+  preselected: "pre-selected",
+  presetBase: (base: string, n: number) => `Offers come from ${base} · ${n} pre-selected — edit there`,
+  presetBaseTitle: (base: string) =>
+    `An inspiration product offers what ${base} offers; its rules are edited there. Its pre-selections are changed in Studio.`,
   pendingHere: (sentences: string) => `Pending: ${sentences}`,
   exceptionChip: (mode: "add" | "remove") => `exception · ${mode}`,
   asException: "exception, needs a reason",

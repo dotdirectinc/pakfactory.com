@@ -2,6 +2,7 @@
 
 import { fetchSpecMe } from "@/lib/spec/registry-api";
 import { getCatalogRecord, type CatalogRecord } from "@/lib/spec/catalog-record";
+import { loadRulesSource } from "@/lib/spec/rules-source";
 import { getCustomizationView, getProductView } from "@/lib/spec/cached-views";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import type { Loaded } from "@/lib/spec/rules-source";
@@ -33,10 +34,26 @@ export async function loadMapRecord(level: string, id: string): Promise<Loaded<C
 export async function loadMapCompatible(
   level: string,
   id: string,
-): Promise<Loaded<{ products: string[]; options: { id: string; state: ProductOptionState | "removed" }[]; exceptions: ProductException[] }>> {
+): Promise<Loaded<{
+  products: string[];
+  options: { id: string; state: ProductOptionState | "removed" }[];
+  exceptions: ProductException[];
+  /** An inspiration product: the product its offers come from, and what it pre-selects. */
+  base?: { id: string; title: string };
+  preselected?: string[];
+}>> {
   if (!(await granted())) return { ok: false, error: "No access to Spec System" };
-  if (level === "product") {
-    const res = await getProductView(id);
+  let preset: { base: { id: string; title: string }; preselected: string[] } | null = null;
+  if (level === "inspiration") {
+    // No rules of its own: it offers what its base offers (2026-10-14), and pre-selects some of it.
+    const src = await loadRulesSource();
+    if (!src.ok) return src;
+    const insp = src.data.inspirations.find((x) => x._id === id);
+    if (!insp) return { ok: true, data: { products: [], options: [], exceptions: [] } };
+    preset = { base: { id: insp.basedOn, title: src.data.name(insp.basedOn) }, preselected: insp.preselected };
+  }
+  if (level === "product" || preset) {
+    const res = await getProductView(preset ? preset.base.id : id);
     if (!res.ok) return res;
     const types = (res.data?.categories ?? []).flatMap((c) => c.types);
     const options = [
@@ -44,7 +61,7 @@ export async function loadMapCompatible(
       // Taken away by one of the product's exceptions: drawn as "Removed by exception", restorable.
       ...types.flatMap((t) => t.removed.filter((r) => r.byException).map((r) => ({ id: r.id, state: "removed" as const }))),
     ];
-    return { ok: true, data: { products: [], options, exceptions: res.data?.configurator.exceptions ?? [] } };
+    return { ok: true, data: { products: [], options, exceptions: res.data?.configurator.exceptions ?? [], ...(preset ?? {}) } };
   }
   if (level === "customizationOption") {
     const res = await getCustomizationView(id);

@@ -286,6 +286,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
 
   // ── selection: the chain up and down, cross-stream links, and the rules' compatibility ──
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
+  /** For an inspiration product in focus: the product its offers come from, and its pre-selections. */
+  const [preset, setPreset] = useState<{ base: { id: string; title: string }; preselected: Set<number> } | null>(null);
   /** This record's offers have arrived (edit controls wait for them). */
   const [compatLoaded, setCompatLoaded] = useState(false);
   /** The focused product's exceptions, per option card (from the rules view). */
@@ -405,6 +407,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     setOffers(new Map());
     setExceptions(new Map());
     setCompatLoaded(false);
+    setPreset(null);
     setOfferQ("");
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
@@ -426,6 +429,10 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           return want.has(k) ? [[i, want.get(k)!] as const] : [];
         });
         setCompatible(new Set(found.map(([i]) => i)));
+        setPreset(compat.data.base ? {
+          base: compat.data.base,
+          preselected: new Set((compat.data.preselected ?? []).flatMap((o) => { const i = indexOf.get(`customizationOption:${o}`); return i === undefined ? [] : [i]; })),
+        } : null);
         setExceptions(new Map(compat.data.exceptions.flatMap((e) => {
           const i = indexOf.get(`customizationOption:${e.optionId}`);
           return i === undefined ? [] : [[i, { mode: e.mode, reason: e.reason }] as const];
@@ -464,14 +471,15 @@ function SpecMapView({ data }: { data: SpecMapData }) {
    * after it, so the product → option lines run straight across. Known from the selection alone, so
    * the columns are settled before the cards glide; the options rise in once the rules answer.
    */
+  // A standard product — or an inspiration product, which shows its base's offers (2026-10-14).
   const offering =
     focusing &&
-    nodes[selected!]!.level === "product" &&
-    stream === streamOf("product");
+    (nodes[selected!]!.level === "product" || nodes[selected!]!.level === "inspiration") &&
+    stream === streamOf(nodes[selected!]!.level);
   const levels = useMemo(() => {
     const own = group.levels.map((l) => l.key);
     if (!offering) return own;
-    const at = own.indexOf("product") + 1;
+    const at = Math.max(own.indexOf("product"), own.indexOf("inspiration")) + 1;
     return [
       ...own.slice(0, at),
       "customizationOption" as TableKey,
@@ -948,6 +956,11 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                 ))}
               </span>
             ) : null}
+            {preset && sel.level === "inspiration" ? (
+              <Button size="xs" variant="outline" title={EDIT.presetBaseTitle(preset.base.title)} onClick={() => selectBy("product", preset.base.id)}>
+                {EDIT.presetBase(preset.base.title, preset.preselected.size)}
+              </Button>
+            ) : null}
             {elsewhere.map((g) => (
               <Button
                 key={g.key}
@@ -1364,6 +1377,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                         {n.title}
                       </span>
                       <span className="truncate text-[11px] text-muted-foreground">
+                        {preset?.preselected.has(i) ? <span className="font-medium text-blue-700 dark:text-blue-400">{EDIT.preselected} · </span> : null}
                         {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)}{noEffect ? ` ${EDIT.noEffect}` : ""} · </span> : null}
                         {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
                       </span>

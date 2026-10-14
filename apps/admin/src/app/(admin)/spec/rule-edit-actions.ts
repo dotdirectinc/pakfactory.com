@@ -41,8 +41,8 @@ export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus
   if (!(await canEdit())) return { ok: false, error: "Editing rules needs an approver or admin grant." };
   const res = await loadRulesSource();
   if (!res.ok) return res;
-  const { catalog, products, name } = res.data;
-  const impact = computeImpact(catalog, products, edits, name);
+  const { catalog, products, name, inspirations } = res.data;
+  const impact = computeImpact(catalog, products, edits, name, inspirations);
   const ids = new Set([...impact.products.flatMap((p) => [...p.gained, ...p.lost])]);
   return {
     ok: true,
@@ -85,8 +85,8 @@ export async function submitRuleEditsAction(edits: RuleEditDraft[], opts: { appr
   if (!(await canEdit())) return { ok: false, error: "Editing rules needs an approver or admin grant." };
   const res = await loadRulesSource();
   if (!res.ok) return res;
-  const { catalog, products, name, identity, dataset } = res.data;
-  const impact = computeImpact(catalog, products, edits, name);
+  const { catalog, products, name, identity, dataset, inspirations } = res.data;
+  const impact = computeImpact(catalog, products, edits, name, inspirations);
   if (impact.errors.length) return { ok: false, error: impact.errors[0]!, errors: impact.errors };
 
   // Sanity id → registry id (the document's entityId TypeID).

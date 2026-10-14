@@ -101,7 +101,9 @@ export function applyEdits(catalog: SummaryCatalog, products: SummaryProduct[], 
 }
 
 export type ImpactProduct = { id: string; title: string; gained: string[]; lost: string[] };
-export type ImpactWarning = { code: "loses-options" | "exception-redundant" | "exception-conflict" | "no-partners" | "type-switch"; text: string };
+export type ImpactWarning = { code: "loses-options" | "exception-redundant" | "exception-conflict" | "no-partners" | "type-switch" | "preselection-lost"; text: string };
+/** An inspiration product: what it is based on, and what it pre-selects (see rules-source.ts). */
+export type ImpactInspiration = { _id: string; title?: string; basedOn: string; preselected: string[] };
 export type Impact = {
   errors: string[];
   warnings: ImpactWarning[];
@@ -119,7 +121,7 @@ const offeredBy = (r: ReturnType<typeof resolveForProduct>) => new Set([...r.ava
  * What a set of edits does, with the storefront's own engine: every standard product resolved before
  * and after; the options each gains or loses; Studio's blocking rules; and the warnings to acknowledge.
  */
-export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[], edits: RuleEditDraft[], name: Names): Impact {
+export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[], edits: RuleEditDraft[], name: Names, inspirations: ImpactInspiration[] = []): Impact {
   const errors = blockingErrors(catalog, products, edits, name);
   const after = applyEdits(catalog, products, edits);
   const resolveAll = (c: SummaryCatalog, ps: SummaryProduct[]) => {
@@ -150,6 +152,20 @@ export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[
   if (losers.length) {
     const lost = losers.reduce((n, c) => n + c.lost.length, 0);
     warnings.unshift({ code: "loses-options", text: `${losers.length} ${losers.length === 1 ? "product loses" : "products lose"} ${lost} ${lost === 1 ? "option" : "options"} in total.` });
+  }
+  // An inspiration product offers what its base offers and pre-selects some of it: an option its base
+  // stops offering leaves it pre-selecting something that is not sold (PROD-2962 scope, 2026-10-14).
+  const lostBy = new Map(changed.filter((c) => c.lost.length).map((c) => [c.id, new Set(c.lost)]));
+  const broken = inspirations.flatMap((i) => {
+    const lost = lostBy.get(i.basedOn);
+    const hit = lost ? i.preselected.filter((o) => lost.has(o)) : [];
+    return hit.length ? [`${i.title ?? i._id} (${hit.map(name).join(", ")})`] : [];
+  });
+  if (broken.length) {
+    warnings.push({
+      code: "preselection-lost",
+      text: `${broken.length} inspiration ${broken.length === 1 ? "product pre-selects" : "products pre-select"} an option its base would no longer offer: ${broken.slice(0, 8).join("; ")}${broken.length > 8 ? `; and ${broken.length - 8} more` : ""}. Change their pre-selections in Studio.`,
+    });
   }
   // An option left with no compatible partner is never derived anywhere (empty fails closed).
   const partnersAfter = buildCompatibilityIndex(after.catalog.options).pairs;
