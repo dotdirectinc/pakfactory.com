@@ -51,7 +51,7 @@ type OfferKind = ProductOptionState | "removed";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
 import { RuleEditBar, RuleEditPanel, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
 import { Picker } from "@/components/spec/spec-rule-editor";
-import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT } from "@/lib/copy/spec";
+import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT, ADMIN_SPEC_RULE_EDIT_COPY as EDIT_FOLD } from "@/lib/copy/spec";
 import { describeEdit, editKey, mapEdit } from "@/lib/spec/rule-edits";
 import {
   loadMapCompatible,
@@ -141,9 +141,11 @@ type OfferLayout = {
   x: number;
   filterY: number;
   groups: OfferGroup[];
-  types: { key: string; title: string; y: number }[];
+  types: GroupLabel[];
   rails: { state: OfferKind; y1: number; ticks: number[] }[];
 };
+/** A group heading: in edit mode it folds (2026-10-14); folded, it says how many cards and whether one changed. */
+type GroupLabel = { key: string; title: string; y: number; count?: number; folded?: boolean; changed?: boolean };
 
 /**
  * One icon per depth, the same in every stream (Eric, 2026-10-09), high to low: a group of groups,
@@ -295,6 +297,15 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
   /** For an inspiration product in focus: the product its offers come from, and its pre-selections. */
   const [preset, setPreset] = useState<{ base: { id: string; title: string }; preselected: Set<number> } | null>(null);
+  /** Folded group headings in the edit layouts, cleared with the selection. */
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  useEffect(() => setFolded(new Set()), [selected]);
+  const toggleFold = (key: string) => setFolded((f) => {
+    const x = new Set(f);
+    if (x.has(key)) x.delete(key);
+    else x.add(key);
+    return x;
+  });
   /** The option edit layout's column filters ("compatible" / "product"), cleared with the selection. */
   const [colQ, setColQ] = useState<Record<string, string>>({});
   useEffect(() => setColQ({}), [selected]);
@@ -379,6 +390,19 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     for (const [i, st] of after.offers) m.set(i, st);
     return m;
   }, [offers, after]);
+  /** Cards a pending edit names or changes — a folded group holding one is flagged. */
+  const touched = useMemo(() => {
+    const ids = session.edits.flatMap((e) =>
+      e.kind === "pair" ? [e.a, e.b] : e.kind === "offer" || e.kind === "exception" ? [e.productId, e.optionId] : []);
+    const out = new Set<number>(diff.keys());
+    for (const id of ids) {
+      for (const lv of ["customizationOption", "product"]) {
+        const i = indexOf.get(`${lv}:${id}`);
+        if (i !== undefined) out.add(i);
+      }
+    }
+    return out;
+  }, [session.edits, diff, indexOf]);
   /** An option's compatible options as drawn: today's, plus the edits' gains; losses stay, marked. */
   const compatOptionsShown = useMemo(() => {
     const extra = after && "compatOptions" in after && after.compatOptions ? [...after.compatOptions] : [];
@@ -615,11 +639,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         for (const i of c.items) f.pos.delete(i);
         const groups = new Map<string, number[]>();
         for (const i of c.items.filter(hit)) groups.set(c.groupOf(i), [...(groups.get(c.groupOf(i)) ?? []), i]);
-        const labels: { key: string; title: string; y: number }[] = [];
+        const labels: GroupLabel[] = [];
         let y = HEAD_H + FILTER_H;
         for (const [g, cards] of [...groups].sort((a, b) => a[0].localeCompare(b[0]))) {
-          labels.push({ key: `${c.key}:${g}`, title: g || EDIT.noGroup, y });
+          const groupKey = `${c.key}:${g}`;
+          const isFolded = !needle && folded.has(groupKey);
+          labels.push({ key: groupKey, title: g || EDIT.noGroup, y, count: cards.length, folded: isFolded, changed: cards.some((i) => touched.has(i)) });
           y += TYPE_H;
+          if (isFolded) continue;
           for (const i of cards.sort((a, b) => nodes[a]!.title.localeCompare(nodes[b]!.title))) {
             f.pos.set(i, { x, y });
             y += ROW_H;
@@ -670,12 +697,18 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         const [cb, tb] = typeRank(b[0]);
         return ca - cb || ta - tb;
       })) {
+        const typeKey = `${state}:${t}`;
+        const isFolded = editLayout && !needle && folded.has(typeKey);
         offer.types.push({
-          key: `${state}:${t}`,
+          key: typeKey,
           title: t >= 0 ? nodes[t]!.title : COPY.otherType,
           y,
+          count: cards.length,
+          folded: isFolded,
+          changed: cards.some((i) => touched.has(i)),
         });
         y += TYPE_H;
+        if (isFolded) continue;
         for (const i of cards.sort((a, b) =>
           nodes[a]!.title.localeCompare(nodes[b]!.title),
         )) {
@@ -708,6 +741,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     compatibleShown,
     compatOptionsShown,
     colQ,
+    folded,
+    touched,
   ]);
 
   const targetOf = (i: number) =>
@@ -1418,13 +1453,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   ) : null}
                 </div>
                 {c.labels.map((l) => (
-                  <span
-                    key={l.key}
-                    className="absolute truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-                    style={{ left: c.x, top: l.y, width: cardW, lineHeight: `${TYPE_H}px` }}
-                  >
-                    {l.title}
-                  </span>
+                  <GroupHeading key={l.key} label={l} left={c.x} width={cardW} foldable onToggle={() => toggleFold(l.key)} />
                 ))}
               </div>
             )) : null}
@@ -1485,18 +1514,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   </button>
                 ))}
                 {offerUi.types.map((t) => (
-                  <span
-                    key={t.key}
-                    className="absolute truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-                    style={{
-                      left: offerUi.x + INDENT,
-                      top: t.y,
-                      width: cardW - INDENT,
-                      lineHeight: `${TYPE_H}px`,
-                    }}
-                  >
-                    {t.title}
-                  </span>
+                  <GroupHeading key={t.key} label={t} left={offerUi.x + INDENT} width={cardW - INDENT} foldable={editLayout} onToggle={() => toggleFold(t.key)} />
                 ))}
               </div>
             ) : null}
@@ -1781,6 +1799,29 @@ function CardAction({ icon: Icon, label, onClick, tone }: { icon: LucideIcon; la
       className={`absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-xs ${tone === "danger" ? "hover:border-red-500 hover:text-red-600" : "hover:text-foreground"}`}
     >
       <Icon className="size-3.5" />
+    </button>
+  );
+}
+
+/** A group's heading over its cards; in edit mode a button that folds the group. */
+function GroupHeading({ label: l, left, width, foldable, onToggle }: { label: GroupLabel; left: number; width: number; foldable: boolean; onToggle: () => void }) {
+  const text = "truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground";
+  if (!foldable) {
+    return <span className={`absolute ${text}`} style={{ left, top: l.y, width, lineHeight: `${TYPE_H}px` }}>{l.title}</span>;
+  }
+  return (
+    <button
+      type="button"
+      aria-expanded={!l.folded}
+      onClick={onToggle}
+      title={l.folded ? EDIT_FOLD.unfold(l.title) : EDIT_FOLD.fold(l.title)}
+      className="absolute flex items-center gap-1 rounded hover:bg-muted"
+      style={{ left, top: l.y, width, height: TYPE_H }}
+    >
+      {l.folded ? <ChevronRight className="size-3 shrink-0 text-muted-foreground" /> : <ChevronDown className="size-3 shrink-0 text-muted-foreground" />}
+      <span className={text}>{l.title}</span>
+      {l.folded ? <span className="text-[11px] tabular-nums text-muted-foreground">{l.count}</span> : null}
+      {l.folded && l.changed ? <span className="size-1.5 shrink-0 rounded-full bg-blue-600" aria-label={EDIT_FOLD.changed} /> : null}
     </button>
   );
 }

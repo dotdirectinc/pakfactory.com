@@ -478,6 +478,9 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   unsavedOnSwitch: (n: number, tab: string) =>
     `${n} unsaved ${n === 1 ? "change" : "changes"} — switching to ${tab} leaves rule editing. Submit them from the panel, or discard them and switch.`,
   discardAndSwitch: "Discard and switch",
+  fold: (group: string) => `Fold ${group}`,
+  unfold: (group: string) => `Show ${group}`,
+  changed: "has a pending change",
   keepEditing: "Keep editing",
   filterCompatible: "Filter compatible options",
   filterProducts: "Filter products",
