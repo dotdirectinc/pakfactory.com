@@ -77,8 +77,16 @@ import { ADMIN_SPEC_MAP_COPY as COPY } from "@/lib/copy/spec";
 const CARD_H = 48;
 const ROW_H = 56;
 const HEAD_H = 48;
+/**
+ * The gap between columns, for the arrows' trunks: 72px when there is room, never under 28px. Columns
+ * share the map's width — the map never scrolls sideways (Richard, 2026-10-14: the layout is laid out
+ * to fit; a column minimum made it wider than the screen once a panel was open).
+ */
 const GUTTER = 72;
-const MIN_COL_W = 240;
+const MIN_GUTTER = 28;
+/** A card narrower than this squeezes the side panel first (down to MIN_PANEL_W). */
+const MIN_CARD_W = 150;
+const MIN_PANEL_W = 320;
 const PAD = 16;
 const MOVE_MS = 450;
 /**
@@ -266,13 +274,20 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const area = useRef<HTMLDivElement>(null);
   const row = useRef<HTMLDivElement>(null);
   const [rowW, setRowW] = useState(1200);
+  /** The map box's own border and vertical scrollbar, which its columns must leave room for. */
+  const [areaChrome, setAreaChrome] = useState(0);
 
   useLayoutEffect(() => {
     const el = row.current;
     if (!el) return;
-    setRowW(el.clientWidth);
-    const ro = new ResizeObserver(() => setRowW(el.clientWidth));
+    const measure = () => {
+      setRowW(el.clientWidth);
+      if (area.current) setAreaChrome(area.current.offsetWidth - area.current.clientWidth);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
+    if (area.current) ro.observe(area.current);
     return () => ro.disconnect();
   }, []);
 
@@ -560,10 +575,6 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const [showValues, setShowValues] = useState(false);
   useEffect(() => setShowValues(false), [selected]);
 
-  /** The panel's width, so the map's columns for the new selection are known in the same render. */
-  const panelW =
-    selected === null ? 0 : editLayout ? Math.min(EDIT_PANEL_W, Math.floor(rowW * 0.4)) : Math.min(PANEL_W, Math.floor(rowW * 0.45));
-  const areaW = rowW - (panelW ? panelW + PANEL_GAP : 0);
 
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
   const group = TABLE_GROUPS.find((g) => g.key === stream) ?? TABLE_GROUPS[0]!;
@@ -592,11 +603,24 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       ...own.slice(at),
     ];
   }, [group, offering, editLayout, selLevel, focusing, showValues]);
+  /**
+   * The panel's width, so the map's columns for the new selection are known in the same render. It
+   * gives way (to MIN_PANEL_W) before the cards get narrower than MIN_CARD_W.
+   */
+  const wantPanelW =
+    selected === null ? 0 : editLayout ? Math.min(EDIT_PANEL_W, Math.floor(rowW * 0.4)) : Math.min(PANEL_W, Math.floor(rowW * 0.45));
+  const mapNeeds = PAD * 2 + levels.length * (MIN_CARD_W + MIN_GUTTER) + areaChrome;
+  const panelW = wantPanelW
+    ? Math.max(Math.min(wantPanelW, MIN_PANEL_W), Math.min(wantPanelW, rowW - PANEL_GAP - mapNeeds))
+    : 0;
+  const areaW = rowW - (panelW ? panelW + PANEL_GAP : 0) - areaChrome;
+  // Every column shares the width: the diagram fits its box and scrolls only down.
   const colW = Math.min(
     editLayout ? EDIT_MAX_COL_W : Number.POSITIVE_INFINITY,
-    Math.max(MIN_COL_W, Math.floor((areaW - PAD * 2) / levels.length)),
+    Math.max(1, Math.floor((areaW - PAD * 2) / levels.length)),
   );
-  const cardW = colW - GUTTER;
+  const gutter = Math.max(MIN_GUTTER, Math.min(GUTTER, Math.round(colW * 0.22)));
+  const cardW = colW - gutter;
   /** Headers run on into the gutter (nothing is drawn there at their height), so names fit narrow columns. */
   const headW = colW - 16;
   const statusOk = useCallback(
@@ -1262,7 +1286,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       <div ref={row} className="flex min-h-[28rem] flex-1 gap-3">
         <div
           ref={area}
-          className="relative min-w-0 flex-1 overflow-auto rounded-md border border-border bg-muted/30"
+          className="relative min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-border bg-muted/30 [scrollbar-gutter:stable]"
         >
           <div className="relative" style={{ width, height: height + PAD }}>
             <svg
@@ -1817,10 +1841,11 @@ function elbow(a: Pos, b: Pos, cardW: number, colW: number): string {
   const y1 = a.y + CARD_H / 2;
   const x2 = b.x - 1;
   const y2 = b.y + CARD_H / 2;
-  const mx = x1 + Math.round(GUTTER / 2);
+  const gap = colW - cardW;
+  const mx = x1 + Math.round(gap / 2);
   if (b.x - a.x > colW * 1.5) {
     const bridge = HEAD_H - 6;
-    const mx2 = b.x - Math.round(GUTTER / 2);
+    const mx2 = b.x - Math.round(gap / 2);
     return `M${x1},${y1} H${mx} V${bridge} H${mx2} V${y2} H${x2}`;
   }
   return y1 === y2
