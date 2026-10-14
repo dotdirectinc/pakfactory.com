@@ -97,6 +97,28 @@ export {
 } from './queries/case-studies';
 
 export {
+    LATEST_PRESS_RELEASES_MAX,
+    LATEST_PRESS_RELEASES_QUERY,
+    NEWSROOM_CATALOG_PAGE_QUERY,
+    NEWSROOM_PRESS_SETTINGS_QUERY,
+    PRESS_RELEASE_BY_SLUG_QUERY,
+    PRESS_RELEASE_CARD_FIELDS,
+    PRESS_RELEASE_LIVE,
+    PRESS_RELEASE_SITEMAP_QUERY,
+    PRESS_RELEASE_SLUGS_QUERY,
+    PRESS_RELEASES_LIST_QUERY,
+    type NewsroomCatalogPageDoc,
+    type NewsroomLayoutDoc,
+    type NewsroomPressSettingsDoc,
+    type PressReleaseCardDoc,
+    type PressReleaseCardImageDoc,
+    type PressReleaseCategory,
+    type PressReleaseDetailDoc,
+    type PressReleaseSitemapEntry,
+    type PressReleaseSlugDoc,
+} from './queries/newsroom';
+
+export {
     CASE_STUDY_RESERVED_SLUGS,
     isBlockedCaseStudySlug,
     type CaseStudyReservedSlug,
@@ -236,6 +258,7 @@ export {
     type PageSectionLogoWallItemDoc,
     type PageSectionMediaFeatureDoc,
     type PageSectionGeneralCtaDoc,
+    type PageSectionPressReleasesRowDoc,
     type PageSectionSignatureProblemDoc,
     type PageSectionSignatureSystemDoc,
     type PageSectionStepDoc,

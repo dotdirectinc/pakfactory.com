@@ -5,6 +5,8 @@ import {
   type CaseStudySitemapEntry,
 } from "@pakfactory/sanity/queries";
 import { absoluteUrl } from "@/lib/site";
+import { listNewsSitemapEntries } from "@/lib/newsroom/newsroom";
+import { WWW_ROUTES, newsItemHref } from "@/lib/www-routes";
 import { buildUrlset, type SitemapUrlEntry } from "@pakfactory/sitemap";
 
 export const revalidate = 300;
@@ -17,7 +19,12 @@ export const revalidate = 300;
 // package's `xmlResponse`: this route uses `stale-while-revalidate=600`, which
 // that helper does not emit. Escaping is the only intended behaviour change.
 
+function lastmodDate(value: string | null | undefined) {
+  return value ? { lastmod: new Date(value).toISOString().split("T")[0] } : {};
+}
+
 export async function GET() {
+  const newsEntries = await listNewsSitemapEntries();
   const slugEntries = isSanityConfigured()
     ? await getPublishedSanityClient()
         .fetch<CaseStudySitemapEntry[]>(CASE_STUDY_SITEMAP_QUERY)
@@ -33,6 +40,12 @@ export async function GET() {
       ...(entry.lastmod
         ? { lastmod: new Date(entry.lastmod).toISOString().split("T")[0] }
         : {}),
+    })),
+    // Newsroom (PROD-2913 / PROD-2918) — published, past-release-time only.
+    { loc: absoluteUrl(WWW_ROUTES.newsroom) },
+    ...newsEntries.map((entry) => ({
+      loc: absoluteUrl(newsItemHref(entry.slug)),
+      ...lastmodDate(entry.lastmod),
     })),
   ];
 

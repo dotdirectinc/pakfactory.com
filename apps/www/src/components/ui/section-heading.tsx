@@ -1,9 +1,7 @@
 import type {ReactNode} from 'react';
-import Link from 'next/link';
-import {ChevronRight} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import {Icon} from '@/components/ui/icon';
+import {ArrowLink} from '@/components/ui/arrow-link';
 
 /** Bracketed V5 kicker, e.g. `[ Specifications ]`. */
 export function formatSectionEyebrow(text: string): string {
@@ -41,21 +39,7 @@ type SectionHeadingProps = {
 };
 
 function SectionHeadingCtaLink({cta}: {cta: SectionHeadingCta}) {
-    return (
-        <Link
-            href={cta.href}
-            className="group inline-flex shrink-0 items-center gap-2 text-base font-medium text-foreground"
-        >
-            <span className="underline-offset-4 group-hover:underline">
-                {cta.label}
-            </span>
-            <Icon
-                icon={ChevronRight}
-                size="sm"
-                className="transition-transform duration-300 ease-out group-hover:translate-x-0.5"
-            />
-        </Link>
-    );
+    return <ArrowLink href={cta.href}>{cta.label}</ArrowLink>;
 }
 
 /**
