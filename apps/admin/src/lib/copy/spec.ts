@@ -44,9 +44,11 @@ export const ADMIN_SPEC_COPY = {
 
 /** Current rules (PROD-2560): read from Sanity, computed by the shared rules package. */
 export const ADMIN_SPEC_RULES_COPY = {
-  title: "Current rules",
+  title: "Spec rules",
   lead:
-    "What the rules say right now, read from Sanity and computed by the same code the storefront and Studio use. Edit rules in Studio; this page follows on its next load.",
+    "What the rules say right now, computed by the same code the storefront and Studio use. To change a rule, open its record (\"edit\" on any row) — or select it on the Map — and use Edit rules; approved changes show here on the next load.",
+  edit: "edit",
+  editTitle: (name: string) => `Edit the rules of ${name}`,
   datasetNote: (dataset: string) => `Sanity dataset: ${dataset}`,
   unreachable: "Sanity could not be read, so the current rules cannot be shown.",
   tabs: {

@@ -1,5 +1,6 @@
 "use client";
 
+import { recordHref, type TableKey } from "@/lib/spec/catalog-table-model";
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -148,7 +149,10 @@ function TypeTable({ types }: { types: RuleTypeRow[] }) {
           {sorted.map((t) => (
             <tr key={t.id} className="border-t border-border align-top">
               <td className="px-3 py-2">
-                <div className="font-medium text-foreground">{t.title}</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-medium text-foreground">{t.title}</span>
+                  <EditLink level="customizationType" id={t.id} name={t.title} />
+                </div>
                 <div className="text-xs text-muted-foreground">
                   {t.categoryTitle}
                   {t.customerSelects === "many" ? " · pick several" : ""}
@@ -288,6 +292,7 @@ function OptionRow({ option: o }: { option: RuleOptionRow }) {
             >
               {COPY.openOption}
             </Link>
+            <EditLink level="customizationOption" id={o.id} name={o.title} />
           </span>
           <span className={cn("text-xs tabular-nums", STATUS_TONE[o.status])}>
             {o.status === "offered" ? `${o.productCount} products` : COPY.optionStatus[o.status]}
@@ -345,7 +350,9 @@ function ExceptionTable({ rules }: { rules: CurrentRules }) {
           <tbody>
             {rules.exceptions.map((e, i) => (
               <tr key={i} className="border-t border-border">
-                <td className="px-3 py-2">{e.productTitle}</td>
+                <td className="px-3 py-2">
+                  <span className="flex items-baseline gap-2">{e.productTitle} {e.productId ? <EditLink level="product" id={e.productId} name={e.productTitle} /> : null}</span>
+                </td>
                 <td className="px-3 py-2">{e.optionTitle}</td>
                 <td className="px-3 py-2">{e.mode}</td>
                 <td className={cn("px-3 py-2", e.effect === "added" || e.effect === "removed" ? "" : "text-destructive")}>
@@ -455,5 +462,19 @@ function LegacyCoverage() {
         </table>
       </div>
     </div>
+  );
+}
+
+/** To the record's page, where its Customization rules can be edited (Richard, 2026-10-14). */
+function EditLink({ level, id, name }: { level: TableKey; id: string; name: string }) {
+  return (
+    <Link
+      href={recordHref(level, id)}
+      title={COPY.editTitle(name)}
+      className="text-xs font-medium text-primary hover:underline"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {COPY.edit}
+    </Link>
   );
 }

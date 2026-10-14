@@ -58,6 +58,8 @@ export type RuleOptionRow = {
 };
 
 export type RuleExceptionRow = {
+  productId: string;
+  optionId: string;
   productTitle: string;
   optionTitle: string;
   mode: "add" | "remove";
@@ -159,6 +161,8 @@ async function buildCurrentRules(): Promise<Loaded<CurrentRules & { partners: Re
   });
 
   const exceptions: RuleExceptionRow[] = summary.exceptions.map((e) => ({
+    productId: e.productId,
+    optionId: e.optionId,
     productTitle: productName.get(e.productId) ?? e.productId,
     optionTitle: label(e.optionId),
     mode: e.mode,

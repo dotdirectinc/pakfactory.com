@@ -3,7 +3,7 @@ import { getCurrentRules } from "@/lib/spec/current-rules";
 import { SpecRulesView } from "@/components/spec/spec-rules-view";
 import { ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
 
-export const metadata = { title: "Current rules" };
+export const metadata = { title: "Spec rules" };
 
 export default async function SpecRulesPage() {
   // Same gate as the rest of /spec: 404 without a registry grant.
