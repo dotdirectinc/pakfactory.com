@@ -11,6 +11,7 @@ import type {
     PageSectionProductStylesRowDoc,
     PageSectionProductsRowDoc,
     PageSectionGeneralCtaDoc,
+    PageSectionPressReleasesRowDoc,
     PageSectionProductLinesRowDoc,
     PageSectionSolutionsRowDoc,
     PageSectionStatsDoc,
@@ -34,6 +35,7 @@ import {HeroSpotlightFullBleed} from '@/components/sections/hero-spotlight-full-
 import {InspirationGallery} from '@/components/sections/inspiration-gallery';
 import {LogoWall} from '@/components/sections/logo-wall';
 import {GeneralCta} from '@/components/sections/general-cta';
+import {PressReleasesRow} from '@/components/sections/press-releases-row';
 import {ProductsRow} from '@/components/sections/products-row';
 import {SignatureSystem} from '@/components/sections/signature-system';
 import {Stats} from '@/components/sections/stats';
@@ -48,6 +50,7 @@ import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
 import {mapExpertiseSequence} from '@/lib/sections/map-expertise-sequence';
 import {mapFaqSection} from '@/lib/sections/map-faq-section';
 import {mapGeneralCta} from '@/lib/sections/map-general-cta';
+import {mapPressReleasesRow} from '@/lib/sections/map-press-releases-row';
 import {mapHeroFinder, mapHeroFinderFullscreen, mapHeroSpotlight} from '@/lib/sections/map-hero';
 import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
@@ -317,6 +320,17 @@ function StatsFromSanity(section: PageSectionStatsDoc) {
  * Components receive the GROQ section doc. Only wired types are registered;
  * unknown `_type`s are handled by SectionRenderer (no-op / dev alert).
  */
+/**
+ * `items` arrive already resolved: pins from GROQ, or — for an empty row — the
+ * latest releases filled in by `lib/newsroom` (it knows which release to
+ * exclude; the registry does not).
+ */
+function PressReleasesRowFromSanity(section: PageSectionPressReleasesRowDoc) {
+    const mapped = mapPressReleasesRow(section);
+    if (mapped.items.length === 0) return null;
+    return <PressReleasesRow id={`press-releases-${section._key}`} {...mapped} />;
+}
+
 export const SECTION_COMPONENTS: Record<
     string,
     ComponentType<PageSection> | undefined
@@ -347,4 +361,6 @@ export const SECTION_COMPONENTS: Record<
     productLinesRow: ProductLinesRowFromSanity as ComponentType<PageSection>,
     productsRow: ProductsRowFromSanity as ComponentType<PageSection>,
     solutionsRow: SolutionsRowFromSanity as ComponentType<PageSection>,
+    pressReleasesRow:
+        PressReleasesRowFromSanity as ComponentType<PageSection>,
 };

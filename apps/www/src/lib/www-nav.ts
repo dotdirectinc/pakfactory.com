@@ -249,6 +249,7 @@ export function buildFooterColumns(navItems: PrimaryNavItem[]): FooterColumns {
           { label: "About Us", href: `${WWW_URL}/about` },
           { label: "Contact Us", href: `${WWW_URL}/contact` },
           { label: "Case Studies", href: `${WWW_URL}/case-studies` },
+          { label: "Newsroom", href: `${WWW_URL}/newsroom` },
           { label: "Hours & Locations", href: `${WWW_URL}/locations` },
           { label: "Careers", href: `${WWW_URL}/careers` },
           { label: "Help Center", href: `${WWW_URL}/help` },

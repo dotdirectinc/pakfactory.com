@@ -19,6 +19,7 @@ import {
   WWW_EXPERTISE_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
   WWW_HOME_PAGE_CACHE_TAG,
+  WWW_NEWSROOM_CACHE_TAG,
   WWW_SOLUTIONS_CACHE_TAG,
   WWW_WEBSITE_NAVIGATION_CACHE_TAG,
   wwwExpertiseTag,
@@ -41,6 +42,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "solution", "solutionIndustryPage", "solutionStyle", "solutionStylePage", "productLine", "productLinePage", "expertiseStage", "expertiseStagePage", "expertiseService", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
  *     "productCatalogPage", "productStylePage", "productDetailPage", "customizationCatalogPage", "customizationCompatibilityPage", "customizationDetailPage",
+ *     "pressRelease", "newsroomCatalogPage", "newsroomDetailPage",
  *     "faq", "websiteNavigation", "settings"
  *   ]
  *
@@ -87,6 +89,13 @@ const CATALOG_CUSTOMIZATION_TYPES = new Set([
   "customizationOption",
   "customizationCategory",
   "customizationType",
+]);
+
+/** Newsroom content + its two layout documents (PROD-2909). */
+const NEWSROOM_TYPES = new Set([
+  "pressRelease",
+  "newsroomCatalogPage",
+  "newsroomDetailPage",
 ]);
 
 /** Documents that can change what `/` renders (homePage + hero spotlight targets). */
@@ -273,6 +282,28 @@ export async function POST(request: Request) {
       revalidatePath("/expertise/[slug]", "page");
       revalidated.push("/expertise/[slug]");
     }
+  }
+
+  // Newsroom (PROD-2913 / PROD-2918). One tag for the listing, both layouts and
+  // every release: releases list each other under "More announcements", and the
+  // boilerplate on every release comes from `settings`. FAQs can sit in either
+  // layout's FAQ section.
+  const touchesNewsroom =
+    !type ||
+    NEWSROOM_TYPES.has(type) ||
+    type === "settings" ||
+    type === FAQ_TYPE;
+  if (touchesNewsroom) {
+    tags.add(WWW_NEWSROOM_CACHE_TAG);
+    revalidatePath("/newsroom");
+    revalidated.push("/newsroom");
+    if (type === "pressRelease" && slug) {
+      revalidatePath(`/newsroom/${slug}`);
+      revalidated.push(`/newsroom/${slug}`);
+    }
+    // Other releases may list this one, so every detail page refreshes too.
+    revalidatePath("/newsroom/[slug]", "page");
+    revalidated.push("/newsroom/[slug]");
   }
 
   // PROD-2666 — Home is the homePage sections plus whatever its heroes point at

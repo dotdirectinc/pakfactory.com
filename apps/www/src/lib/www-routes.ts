@@ -4,6 +4,7 @@ export const WWW_ROUTES = {
     products: '/products',
     customizations: '/customizations',
     caseStudies: '/case-studies',
+    newsroom: '/newsroom',
     solutions: '/solutions',
     expertise: '/expertise',
     about: '/about',
@@ -60,6 +61,11 @@ export function customizationCompatibleHref(
     const base = `${WWW_ROUTES.customizations}/${category}/${handle}/compatible`;
     const qs = query.replace(/^\?/, '');
     return qs ? `${base}?${qs}` : base;
+}
+
+/** Press release detail (PROD-2918). */
+export function newsItemHref(slug: string): string {
+    return `${WWW_ROUTES.newsroom}/${slug}`;
 }
 
 export function solutionHref(slug: string): string {

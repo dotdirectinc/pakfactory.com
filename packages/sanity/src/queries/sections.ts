@@ -14,6 +14,11 @@ import {
 } from './status-gates';
 import {FEATURED_VIDEO_URL_FIELD} from './featured-video';
 import {
+  PRESS_RELEASE_CARD_FIELDS,
+  PRESS_RELEASE_REF_LIVE,
+  type PressReleaseCardDoc,
+} from './press-release-card';
+import {
   CATALOG_IMAGE_ALT,
   CATALOG_IMAGE_SRC,
   CATALOG_VIDEO_SRC,
@@ -572,6 +577,11 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   _type == "postsRow" => {
     ${SECTION_CHROME}
   },
+  _type == "pressReleasesRow" => {
+    ${SECTION_CHROME},
+    count,
+    "items": curatedItems[${PRESS_RELEASE_REF_LIVE}]->${PRESS_RELEASE_CARD_FIELDS}
+  },
   _type == "generalCta" => {
     heading,
     body,
@@ -1086,6 +1096,17 @@ export type PageSectionHeroFinderDoc = PageSectionHeroCopyFields & {
 };
 
 /** Shallow / unwired section until a renderer maps it. */
+/**
+ * Press release row (PROD-2909). `items` holds live pinned releases only; when
+ * it is empty the host fills it with the latest `count` (see newsroom.ts).
+ */
+export type PageSectionPressReleasesRowDoc = PageSectionChromeFields & {
+    _type: 'pressReleasesRow';
+    _key: string;
+    count?: number | null;
+    items?: PressReleaseCardDoc[] | null;
+};
+
 export type PageSectionStubDoc = PageSectionChromeFields & {
     _type: string;
     _key: string;
@@ -1112,4 +1133,5 @@ export type PageSectionDoc =
     | PageSectionBenefitsDoc
     | PageSectionGeneralCtaDoc
     | PageSectionStepsDoc
+    | PageSectionPressReleasesRowDoc
     | PageSectionStubDoc;

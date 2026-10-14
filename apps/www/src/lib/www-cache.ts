@@ -23,6 +23,12 @@ export const WWW_EXPERTISE_CACHE_TAG = 'www-expertise';
 export const WWW_HOME_PAGE_CACHE_TAG = 'www-home-page';
 /** Case-study listing, listing page doc and every detail (related studies cross-reference). */
 export const WWW_CASE_STUDIES_CACHE_TAG = 'www-case-studies';
+/**
+ * Newsroom listing, both layouts, every release and the press boilerplate
+ * (PROD-2913 / PROD-2918). One tag: releases cross-reference each other in
+ * "More announcements", and there are only a handful a year.
+ */
+export const WWW_NEWSROOM_CACHE_TAG = 'www-newsroom';
 
 export const wwwProductTag = (slug: string) => `www-product:${slug}`;
 export const wwwSolutionTag = (slug: string) => `www-solution:${slug}`;
