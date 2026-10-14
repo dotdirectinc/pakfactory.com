@@ -23,6 +23,7 @@ const TONE: Record<
   customization: 'primary',
   expertise: 'caution',
   resource: 'default',
+  newsroom: 'positive',
   client: 'positive',
   layout: 'default',
   cta: 'primary',

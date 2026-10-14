@@ -13,6 +13,7 @@ import type { SanityClient } from 'sanity'
 export const AUTO_REDIRECT_GROUP = {
   blogPosts: 'blog',
   caseStudies: 'case-studies',
+  newsroom: 'newsroom',
 } as const
 
 export type RedirectGroupRef = { _type: 'reference'; _ref: string }

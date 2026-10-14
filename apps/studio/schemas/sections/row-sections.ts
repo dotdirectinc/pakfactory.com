@@ -12,6 +12,7 @@ import {
   DownloadIcon,
   BookIcon,
   DocumentsIcon,
+  BellIcon,
 } from '@sanity/icons'
 import { SectionItemPreview } from '../../components/SectionItemPreview'
 import { rowSectionFields } from '../../lib/row-section-fields'
@@ -139,6 +140,27 @@ export const postsRow = rowSection({
   sourceTo: [{ type: 'blogCategory' }], curatedTo: [{ type: 'post' }], itemNoun: 'posts',
 })
 
+// ── Newsroom ─────────────────────────────────────────────────────────────────
+// Named after the type it lists, not the page it sits on — every row follows
+// `{plural type}Row` / "{Singular type} row". "News row" would break §1.2:
+// there is no `news` type, so an editor would see **News row** in the insert
+// menu and **Press Releases** in the sidebar. It also leaves room for a
+// `newsCoverageRow` later. The band still RENDERS as "More announcements" —
+// that is the `heading` field's default, a different thing from the type name.
+//
+// No `sourceTo`: press-release categories are a string enum rather than
+// documents, so there is nothing to source from (`logoWall` omits it too).
+// 🔴 That makes this a CURATION-ONLY row — the factory gives it `count` +
+// `curatedItems` and no List source control, so there is no built-in derive.
+// Empty `curatedItems` therefore has to mean "the latest `count` releases,
+// excluding the one being read", resolved in GROQ — the same contract
+// `post.relatedPosts` already carries. That is what makes "More announcements"
+// free, and why `pressRelease` carries no `relatedNews` field.
+export const pressReleasesRow = rowSection({
+  name: 'pressReleasesRow', title: 'Press release row', icon: BellIcon,
+  curatedTo: [{ type: 'pressRelease' }], itemNoun: 'announcements',
+})
+
 export const rowSections = [
   caseStudiesRow,
   logoWall,
@@ -152,4 +174,5 @@ export const rowSections = [
   dielinesRow,
   glossaryStrip,
   postsRow,
+  pressReleasesRow,
 ]

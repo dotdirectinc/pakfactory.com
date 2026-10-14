@@ -74,6 +74,7 @@ const FAMILY = {
   customization: ['customizationsRow', 'customizationsCatalog'],
   expertise: ['expertiseSequence', 'signatureSystem'],
   resource: ['guidesRow', 'dielinesRow', 'glossaryStrip', 'postsRow'],
+  newsroom: ['pressReleasesRow'],
   client: ['logoWall'],
   layout: [
     'richText',
@@ -99,6 +100,7 @@ const INSERT_GROUPS: SectionInsertGroup[] = [
   },
   { name: 'expertise', title: SECTION_ENTITY_TITLE.expertise, of: [...FAMILY.expertise] },
   { name: 'resource', title: SECTION_ENTITY_TITLE.resource, of: [...FAMILY.resource] },
+  { name: 'newsroom', title: SECTION_ENTITY_TITLE.newsroom, of: [...FAMILY.newsroom] },
   { name: 'client', title: SECTION_ENTITY_TITLE.client, of: [...FAMILY.client] },
   { name: 'layout', title: SECTION_ENTITY_TITLE.layout, of: [...FAMILY.layout] },
   { name: 'cta', title: SECTION_ENTITY_TITLE.cta, of: [...FAMILY.cta] },
@@ -166,6 +168,15 @@ export const SECTION_ALLOW = {
     // Solutions-tab band for product-line Inspiration browser (not full FAMILY.solution).
     'inspirationIndustry',
   ],
+  // Newsroom (PROD-2909). Four section types, not the catalogue bands: a press
+  // release must not be able to drop the full faceted product grid underneath
+  // itself, and keeping the set this small means the page stays a newsroom page
+  // no matter who edits it. `generalCta` is what renders the
+  // "Media inquiries → press@pakfactory.com" band — heading and button
+  // overridden, no new section needed. `faqSection` is unused at launch and
+  // allowed because a newsroom eventually wants a media FAQ.
+  newsroomIndex: [...FAMILY.newsroom, 'generalCta', 'faqSection', 'richText'],
+  newsroomDetail: [...FAMILY.newsroom, 'generalCta', 'faqSection', 'richText'],
   marketPage: [
     ...FAMILY.solution,
     ...FAMILY.caseStudy,

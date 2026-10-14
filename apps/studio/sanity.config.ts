@@ -18,12 +18,14 @@ import {
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
 import { publishCaseStudy } from './actions/publishCaseStudy'
+import { publishPressRelease } from './actions/publishPressRelease'
 import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopicsPage'
 import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
 import { CHANNELS } from './lib/channels'
 import {
   blogStructure,
   caseStudiesStructure,
+  newsroomStructure,
   productsStructure,
   customizationStructure,
   solutionsWorkspaceStructure,
@@ -86,7 +88,7 @@ const BLOG_PREVIEW_RAW =
 const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
   ? BLOG_PREVIEW_RAW
   : `${BLOG_PREVIEW_RAW}/`
-// SITE preview BASE — the www app at its ROOT, for the seven content workspaces
+// SITE preview BASE — the www app at its ROOT, for the eight content workspaces
 // whose documents live outside /case-studies and /blog (PROD-2494). This is a
 // DIFFERENT surface from WWW_PREVIEW_BASE above: that one is path-scoped to
 // `/case-studies/` because nginx forwards only that prefix at the apex, and the
@@ -101,7 +103,7 @@ const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
 //
 // Env-driven, with no fallback (PROD-2494 AC: "no hard-coded host"). Trailing
 // slash required, as for the other two bases.
-// Presence of this variable is the RELEASE SWITCH for the seven site-root
+// Presence of this variable is the RELEASE SWITCH for the eight site-root
 // workspaces. No fallback on purpose: when it is unset, those workspaces get no
 // Presentation tab at all.
 //
@@ -377,6 +379,15 @@ const documentActions = (
       action.action === 'publish' ? publishCaseStudy : action,
     )
   }
+  // A press-release URL gets quoted inside articles other people publish, so a
+  // slug change without a redirect breaks a link in someone else's archive
+  // (PROD-2909). Scoped to `/newsroom/{slug}` — the blog's `publishWithRedirect`
+  // would file it at the site root.
+  if (context.schemaType === 'pressRelease') {
+    actions = actions.map((action) =>
+      action.action === 'publish' ? publishPressRelease : action,
+    )
+  }
 
   if (isBlogI18nSchemaType(context.schemaType)) {
     actions = [
@@ -430,8 +441,8 @@ const releasesAndScheduleDisabled = {
   scheduledDrafts: { enabled: false as const },
 }
 
-// Presentation for the seven content workspaces (PROD-2494). One factory rather
-// than seven copies: every workspace previews the same origin with the same
+// Presentation for the eight content workspaces (PROD-2494). One factory rather
+// than eight copies: every workspace previews the same origin with the same
 // resolver map, and the only thing that varies is which documents you arrive
 // from. `enable` is RELATIVE so it resolves under the base path, matching the
 // blog and case-studies tools above.
@@ -464,14 +475,16 @@ const sitePresentation = () =>
   })
 
 // Empty when no site-root preview target is wired — see SITE_PREVIEW_RAW above.
-// Spread into the seven site-root workspaces so an unreleased surface simply has
+// Spread into the eight site-root workspaces so an unreleased surface simply has
 // no Presentation tab, rather than one that always errors.
 const sitePresentationPlugins = SITE_PREVIEW_RAW ? [sitePresentation()] : []
 
 export default defineConfig([
-  // Nine workspaces (PROD-2329 D1 + PROD-2330 D2, per D39), in switcher order:
-  // Blog · Case Studies · Products · Customization · Solutions · Expertise ·
-  // Resources · Main Website · Global. `admin` and `website` are retired, and an
+  // Ten workspaces (PROD-2329 D1 + PROD-2330 D2, per D39; Newsroom added by
+  // PROD-2909), in switcher order: Blog · Case Studies · Newsroom · Products ·
+  // Customization · Solutions · Expertise · Resources · Main Website · Global.
+  // The three editorial workspaces lead — the split is one-per-job, editorial
+  // team first. `admin` and `website` are retired, and an
   // "All Content" workspace is intentionally absent — D39 change (4) rejects it:
   // every workspace registers the FULL schema, so an unfiled type stays reachable
   // by search and in every reference picker, and Vision (array::unique(*[]._type))
@@ -580,6 +593,29 @@ export default defineConfig([
         ],
         resolve: { locations: caseStudiesWorkspaceLocations },
       }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Newsroom — comms team. Press Release · News Coverage (PROD-2909). The
+  //    catalog/detail LAYOUTS live in Main Website → Newsroom Pages. ─────────
+  {
+    name: 'newsroom',
+    title: `Newsroom${datasetSuffix}`,
+    basePath: '/newsroom',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    // `pressRelease` needs `documentActions` so `publishPressRelease` runs
+    // (slug-change redirect + `publishedAt` backfill); without it Sanity's stock
+    // publish is used and neither happens.
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: newsroomStructure, defaultDocumentNode }),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -721,7 +757,7 @@ export default defineConfig([
     ],
   },
 
-  // All nine workspaces are present (PROD-2329 D1 + PROD-2330 D2, per D39). The
+  // All ten workspaces are present (PROD-2329 D1 + PROD-2330 D2, per D39). The
   // four D2 areas ship with the types that exist today; their pending types join
   // when built: Expertise Service (Expertise); FAQ/Help Category/Dieline
   // (Resources); Home/Content/Legal Page + Website Navigation (Main Website —

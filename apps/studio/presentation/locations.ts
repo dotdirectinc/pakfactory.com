@@ -491,6 +491,50 @@ export const siteLocations: DocumentLocationResolvers = {
           }
         : notOnSite('Add a slug to give this case study a URL.'),
   }),
+
+  // ── Newsroom (PROD-2909) ──────────────────────────────────────────────────
+  // Real hrefs, although `/newsroom` is not on the site until PROD-2907 /
+  // PROD-2908 land. Unlike `faq` / `guide` / `dieline` below — which have live
+  // documents and would hand editors a 404 today — there are zero press
+  // releases, so no resolver here can fire before the routes exist. The first
+  // release is authored after launch, against the real page.
+  pressRelease: defineLocations({
+    select: { title: 'title', slug: 'slug.current' },
+    resolve: (doc) =>
+      doc?.slug
+        ? {
+            locations: [
+              {
+                title: doc.title || 'Press release',
+                href: `/newsroom/${doc.slug}`,
+              },
+              { title: 'Newsroom', href: '/newsroom' },
+            ],
+          }
+        : notOnSite('Add a slug to give this release a URL.'),
+  }),
+  newsroomCatalogPage: defineLocations({
+    select: { title: 'title' },
+    resolve: (doc) => ({
+      locations: [{ title: doc?.title || 'Newsroom', href: '/newsroom' }],
+    }),
+  }),
+  newsroomDetailPage: defineLocations({
+    select: { title: 'title' },
+    resolve: () =>
+      notOnSite(
+        'Applies to every press release that selects this template.',
+      ),
+  }),
+  // Coverage is somebody else's article on somebody else's site. We link to it;
+  // we never host it, so there is nothing of ours to preview.
+  newsCoverage: defineLocations({
+    select: { title: 'headline' },
+    resolve: () =>
+      notOnSite(
+        'Coverage links out to the outlet\u2019s own site — it has no page here.',
+      ),
+  }),
   // Listing pages are pinned singletons addressed by _id, not by slug — the
   // schema has no slug field at all.
   listingPage: defineLocations({

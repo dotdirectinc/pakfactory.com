@@ -24,6 +24,7 @@ import {
     ThLargeIcon,
     AddIcon,
     PlayIcon,
+    BellIcon,
 } from '@sanity/icons';
 import type {
     DividerBuilder,
@@ -1051,6 +1052,43 @@ export const expertiseStructure = (
                 .child(S.documentTypeList('expertiseService').title('Expertise Services')),
         ]);
 
+/** Newsroom workspace (PROD-2909) — comms owns this, on its own cadence, with a
+ *  sign-off chain nothing else has, so it earns a workspace the way Case Studies
+ *  does. Document count is not the test — Expertise already exists with two types.
+ *  The catalog and detail LAYOUTS live in Main Website → Newsroom Pages: content
+ *  documents in the area workspace, page documents in Main Website (§3.1). */
+export const newsroomStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Newsroom')
+        .items([
+            ...sitePreviewHint(S),
+            // No `.icon()` on these two: `pressRelease` / `newsCoverage` declare
+            // their own, and `.schemaType()` picks it up — setting it again costs
+            // a type error against the baseline for an icon that already renders.
+            S.listItem()
+                .title('Press Releases')
+                .schemaType('pressRelease')
+                .child(
+                    S.documentTypeList('pressRelease')
+                        .title('Press Releases')
+                        .defaultOrdering([{field: 'publishedAt', direction: 'desc'}]),
+                ),
+            // Outside articles ABOUT us — a link, never a copy of the article.
+            // Ships empty if there is no coverage to list yet; the schema is not
+            // the blocker there, a PR push is.
+            S.listItem()
+                .title('News Coverage')
+                .schemaType('newsCoverage')
+                .child(
+                    S.documentTypeList('newsCoverage')
+                        .title('News Coverage')
+                        .defaultOrdering([{field: 'publishedAt', direction: 'desc'}]),
+                ),
+        ]);
+
 /** Resources workspace (PROD-2330 / D2) — the built types today (Glossary Term ·
  *  Guide · Help Article). FAQ · Help Category · Dieline join when they exist. */
 export const resourcesWorkspaceStructure = (
@@ -1240,6 +1278,36 @@ export const mainWebsiteStructure = (
                                         .id('caseStudiesPage')
                                         .schemaType('listingPage')
                                         .documentId('caseStudiesPage'),
+                                ),
+                        ]),
+                ),
+            // Newsroom layouts (PROD-2909). The releases themselves live in the
+            // Newsroom workspace; only the page docs are here.
+            S.listItem()
+                .title('Newsroom Pages')
+                .icon(BellIcon)
+                .child(
+                    S.list()
+                        .title('Newsroom Pages')
+                        .items([
+                            // Listing layouts — www serves the Default fixed id only
+                            // until an active-layout pointer exists, same as Products.
+                            S.listItem()
+                                .title('Newsroom Catalog Pages')
+                                .schemaType('newsroomCatalogPage')
+                                .child(
+                                    S.documentTypeList('newsroomCatalogPage').title(
+                                        'Newsroom Catalog Pages',
+                                    ),
+                                ),
+                            // Layout versions — each pressRelease selects one.
+                            S.listItem()
+                                .title('Newsroom Detail Pages')
+                                .schemaType('newsroomDetailPage')
+                                .child(
+                                    S.documentTypeList('newsroomDetailPage').title(
+                                        'Newsroom Detail Pages',
+                                    ),
                                 ),
                         ]),
                 ),
