@@ -18,8 +18,6 @@ import {
   CirclePlus,
   Layers2,
   Layers3,
-  PanelRightClose,
-  PanelRightOpen,
   Pencil,
   Search,
   Box,
@@ -51,7 +49,7 @@ import type { ProductOptionState } from "@/lib/spec/product-view";
 /** How a focused product gets an option, or "removed": the rules give it, an exception takes it away. */
 type OfferKind = ProductOptionState | "removed";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
-import { RuleEditBar, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
+import { RuleEditBar, RuleEditPanel, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
 import { Picker } from "@/components/spec/spec-rule-editor";
 import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT } from "@/lib/copy/spec";
 import { describeEdit, mapEdit } from "@/lib/spec/rule-edits";
@@ -95,11 +93,11 @@ const LINE = {
 const PANEL_W = 544;
 /** The gap between the map and the panel (Tailwind gap-3). */
 const PANEL_GAP = 12;
-/** The details panel folded to a rail while editing rules (2026-10-14). */
-const RAIL_W = 40;
+/** While editing rules the right side is the edit panel (pending changes, impact, buttons) — 2026-10-14. */
+const EDIT_PANEL_W = 400;
 /** Wide enough for long option names; the edit layout has two columns, which would otherwise be huge. */
 const EDIT_MAX_COL_W = 440;
-const PANEL_PREF = "spec-map-details-while-editing";
+
 const MOVE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 /** Many-to-many and large: shown on demand. */
 const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
@@ -472,21 +470,13 @@ function SpecMapView({ data }: { data: SpecMapData }) {
    * and property values become a breadcrumb; the details panel folds to a rail.
    */
   const editLayout = focusing && session.editing && (selLevel === "product" || selLevel === "customizationOption");
-  const [panelOpen, setPanelOpen] = useState(false);
-  useEffect(() => {
-    try { setPanelOpen(window.localStorage.getItem(PANEL_PREF) === "open"); } catch { /* no storage: folded */ }
-  }, []);
-  const togglePanel = () => setPanelOpen((o) => {
-    try { window.localStorage.setItem(PANEL_PREF, o ? "folded" : "open"); } catch { /* not remembered */ }
-    return !o;
-  });
   /** Property values are not part of any rule: a count while a product is focused, shown on request. */
   const [showValues, setShowValues] = useState(false);
   useEffect(() => setShowValues(false), [selected]);
 
   /** The panel's width, so the map's columns for the new selection are known in the same render. */
   const panelW =
-    selected === null ? 0 : editLayout && !panelOpen ? RAIL_W : Math.min(PANEL_W, Math.floor(rowW * 0.45));
+    selected === null ? 0 : editLayout ? Math.min(EDIT_PANEL_W, Math.floor(rowW * 0.4)) : Math.min(PANEL_W, Math.floor(rowW * 0.45));
   const areaW = rowW - (panelW ? panelW + PANEL_GAP : 0);
 
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
@@ -1491,12 +1481,17 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         </div>
 
         {/* The record slides in from the right and takes its place beside the map (Eric, 2026-10-09). */}
-        {sel && editLayout && !panelOpen ? (
-          <aside aria-label={COPY.panelLabel} style={{ width: panelW }} className="flex shrink-0 flex-col items-center rounded-md border border-border bg-card py-2">
-            <Button size="icon-sm" variant="ghost" onClick={togglePanel} aria-label={EDIT.showPanel} title={EDIT.showPanel}>
-              <PanelRightOpen />
-            </Button>
-            <span className="mt-2 text-xs text-muted-foreground [writing-mode:vertical-rl]">{EDIT.detailsRail}</span>
+        {sel && editLayout ? (
+          <aside aria-label={EDIT.barLabel} style={{ width: panelW }} className="flex shrink-0 flex-col overflow-hidden rounded-md border border-foreground/20 bg-card">
+            <RuleEditPanel
+              // Closing never discards pending changes — that is Cancel's job, said in words.
+              onClose={session.edits.length ? undefined : () => session.setEditing(false)}
+              details={
+                record?.for === selected && record.res.ok && record.res.data
+                  ? <SpecRecordView record={record.res.data as CatalogRecord} heading="h2" onSelect={selectBy} rulesEditor={false} />
+                  : <p className="text-sm text-muted-foreground">{COPY.loading}</p>
+              }
+            />
           </aside>
         ) : sel ? (
           <aside
@@ -1522,11 +1517,6 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                {editLayout ? (
-                  <Button size="icon-sm" variant="ghost" onClick={togglePanel} aria-label={EDIT.hidePanel} title={EDIT.hidePanel}>
-                    <PanelRightClose />
-                  </Button>
-                ) : null}
                 <Button
                   size="icon-sm"
                   variant="ghost"
@@ -1558,7 +1548,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           </aside>
         ) : null}
       </div>
-      <RuleEditBar />
+      {/* While editing, the panel on the right is the editor's companion; the bar is for after a submit. */}
+      {editLayout ? null : <RuleEditBar />}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { ChevronDown, ChevronUp, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Undo2, X } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { Checkbox } from "@pakfactory/ui/components/checkbox";
 import { Input } from "@pakfactory/ui/components/input";
@@ -378,6 +378,52 @@ function NoEffectBox() {
         <Checkbox checked={s.keepNoEffect} onCheckedChange={(v) => s.setKeepNoEffect(v === true)} />
         <span>{COPY.noEffectKeep}</span>
       </label>
+    </div>
+  );
+}
+
+/**
+ * The Spec Map's edit panel (2026-10-14): while editing, the right side is the editor's companion — what
+ * is pending, its impact, the note and the buttons — instead of a bar under the diagram. The record's
+ * details stay one tab away.
+ */
+export function RuleEditPanel({ details, onClose }: { details: React.ReactNode; onClose?: () => void }) {
+  const s = useRuleEditSession()!;
+  const [tab, setTab] = useState<"changes" | "details">("changes");
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex flex-col gap-2 border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : COPY.panelTitle}</span>
+          {onClose ? (
+            <Button size="icon-sm" variant="ghost" aria-label={COPY.closePanel} title={COPY.closePanel} onClick={onClose}><X /></Button>
+          ) : null}
+        </div>
+        <SubmitButtons />
+        <div role="tablist" className="flex gap-1 text-xs">
+          {(["changes", "details"] as const).map((t) => (
+            <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
+              className={`rounded-md px-2 py-1 font-medium ${tab === t ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              {t === "changes" ? COPY.tabChanges : COPY.tabDetails}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+        {tab === "details" ? details : s.edits.length ? (
+          <>
+            <PendingTray />
+            <ImpactBox />
+            <Textarea value={s.note} onChange={(e) => s.setNote(e.target.value)} placeholder={COPY.note} aria-label={COPY.note} rows={2} className="text-sm" />
+            <span className="text-xs text-muted-foreground">{COPY.devOnly}</span>
+          </>
+        ) : (
+          <>
+            <SubmitResultNote />
+            <p className="text-sm text-muted-foreground">{COPY.panelEmpty}</p>
+          </>
+        )}
+      </div>
     </div>
   );
 }
