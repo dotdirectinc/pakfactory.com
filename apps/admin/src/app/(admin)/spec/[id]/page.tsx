@@ -65,7 +65,7 @@ export default async function SpecChangesetPage({
           <Badge variant={cs.state === "draft" ? "secondary" : "outline"}>{cs.state}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          {cs.source} · {items.length.toLocaleString()} changes
+          {cs.source} · {(cs.source === "spec-edit" && typeof cs.summary?.edits === "number" ? cs.summary.edits : items.length).toLocaleString()} changes
         </p>
       </div>
 

@@ -11,7 +11,9 @@ type Impact = {
 };
 
 export function SpecEditSummary({ summary }: { summary: Record<string, unknown> }) {
-  const sentences = Array.isArray(summary.sentences) ? (summary.sentences as string[]) : [];
+  // The admin's effect-first sentences when the frame carries them (from 2026-10-14), else the server's.
+  const own = (summary.impact as { sentences?: unknown } | undefined)?.sentences;
+  const sentences = Array.isArray(own) ? (own as string[]) : Array.isArray(summary.sentences) ? (summary.sentences as string[]) : [];
   const note = typeof summary.note === "string" ? summary.note : null;
   const impact = (summary.impact && typeof summary.impact === "object" ? summary.impact : null) as Impact | null;
   return (

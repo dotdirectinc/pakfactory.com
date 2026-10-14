@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+import { SPEC_RULES_TAG } from "@/lib/spec/cache";
 import { decideChangeset, dismissSyncRun, requestSyncRun, setDocumentExclusion } from "@/lib/spec/registry-api";
 
 export type DecisionResult = { ok: true } | { ok: false; error: string };
@@ -25,6 +26,9 @@ export async function decideFrameAction(
   if (!res.ok) return { ok: false, error: res.error };
 
   // Both the list and this frame change: an approved frame leaves the pending list.
+  // An approved frame may have changed the rules (a Spec System edit is pushed to Sanity at once): the
+  // rules views must not keep serving the old answer.
+  if (decision === "approve") updateTag(SPEC_RULES_TAG);
   revalidatePath("/spec");
   revalidatePath(`/spec/${id}`);
   return { ok: true };

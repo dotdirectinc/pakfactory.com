@@ -89,11 +89,15 @@ describe("rule edits — the diagram's preview and edits", () => {
   it("names how the product offers each option, before and after", async () => {
     const { focusAfter } = await import("./rule-edits");
     const before = focusAfter(catalog(), products(), [], { level: "product", id: "mailer" });
-    assert.deepEqual(before, { level: "product", id: "mailer", options: [{ id: "matte", state: "derived" }, { id: "kraft", state: "listed" }] });
+    assert.deepEqual(before, { level: "product", id: "mailer", options: [{ id: "matte", state: "derived" }, { id: "kraft", state: "listed" }], exceptions: [] });
+    // A remove exception keeps the option on the map, as "removed", and lists the exception.
+    const removed = focusAfter(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: "Too thin" }], { level: "product", id: "mailer" });
+    assert.ok(removed?.level === "product" && removed.options.some((o) => o.id === "matte" && o.state === "removed"));
+    assert.deepEqual(removed?.level === "product" && removed.exceptions, [{ optionId: "matte", mode: "remove", reason: "Too thin" }]);
     const after = focusAfter(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "gloss", mode: "add", reason: "OK" }], { level: "product", id: "mailer" });
     assert.ok(after?.level === "product" && after.options.some((o) => o.id === "gloss" && o.state === "added"));
     assert.deepEqual(focusAfter(catalog(), products(), [{ kind: "pair", a: "matte", b: "kraft", compatible: false }], { level: "customizationOption", id: "matte" }),
-      { level: "customizationOption", id: "matte", products: [] });
+      { level: "customizationOption", id: "matte", products: [], compatible: [] });
   });
   it("turns 'offer it / take it away' into an offer for product-decided options and an exception otherwise", async () => {
     const { offerEdit } = await import("./rule-edits");
@@ -102,5 +106,50 @@ describe("rule edits — the diagram's preview and edits", () => {
     assert.deepEqual(offerEdit({ ...meta, removeExceptions: [] }, "mailer", "matte", false), { kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: "" });
     assert.deepEqual(offerEdit(meta, "mailer", "matte", true), { kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: null });
     assert.equal(offerEdit(meta, "preset", "kraft", true), null);
+  });
+});
+
+describe("rule edits — effect-first sentences, no-effect edits, map buttons (2026-10-14)", () => {
+  it("says what each exception does to the offer, and flags one that changes nothing", () => {
+    const withRemove = (): SummaryProduct[] => [{ ...products()[0]!, customizationExceptions: [{ optionId: "matte", mode: "remove", reason: "Too thin" }] }];
+    const again = computeImpact(catalog(), withRemove(), [{ kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: null }], names);
+    assert.equal(again.sentences[0], 'Mailer offers Matte again — drops the "remove" exception');
+    assert.deepEqual(again.noEffect, []);
+    const redundant = computeImpact(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "matte", mode: "add", reason: "x" }], names);
+    assert.match(redundant.sentences[0]!, /no change — a "add" exception for Matte has no effect \(the rules already give it\)/);
+    assert.deepEqual(redundant.noEffect, ["exc:mailer:matte"]);
+    const removes = computeImpact(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: "" }], names);
+    assert.equal(removes.sentences[0], "Mailer no longer offers Matte — by exception: reason needed");
+  });
+  it("a map button makes exactly the edit its card shows, or refuses when the card is out of date", async () => {
+    const { mapEdit } = await import("./rule-edits");
+    const meta = { optionType: {}, decidedBy: {}, standard: ["mailer"], addExceptions: [], removeExceptions: [] };
+    // The 15:35 case: "offer again" on a card still shown as removed, after the exception was already dropped.
+    assert.deepEqual(mapEdit(meta, "mailer", "matte", "offerAgain", "removed"), { ok: false, reason: "stale" });
+    assert.deepEqual(mapEdit({ ...meta, removeExceptions: ["mailer|matte"] }, "mailer", "matte", "offerAgain", "removed"),
+      { ok: true, edit: { kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: null } });
+    assert.deepEqual(mapEdit(meta, "mailer", "matte", "stop", "derived"),
+      { ok: true, edit: { kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: "" } });
+    assert.deepEqual(mapEdit(meta, "mailer", "kraft", "stop", "listed"), { ok: true, edit: { kind: "offer", productId: "mailer", optionId: "kraft", offered: false } });
+    assert.deepEqual(mapEdit(meta, "preset", "kraft", "stop", "listed"), { ok: false, reason: "not-standard" });
+  });
+});
+
+describe("rule edits — inspiration products (2026-10-14)", () => {
+  it("warns when a base product would stop offering an option an inspiration product pre-selects", () => {
+    const insp = [{ _id: "gift", title: "Gift Mailer", basedOn: "mailer", preselected: ["matte", "kraft"] }, { _id: "other", title: "Plain", basedOn: "mailer", preselected: ["kraft"] }];
+    const r = computeImpact(catalog(), products(), [{ kind: "pair", a: "matte", b: "kraft", compatible: false }], names, insp);
+    const w = r.warnings.find((x) => x.code === "preselection-lost");
+    assert.ok(w);
+    assert.match(w.text, /^1 inspiration product pre-selects an option its base would no longer offer: Gift Mailer \(Matte\)/);
+    assert.equal(computeImpact(catalog(), products(), [{ kind: "offer", productId: "mailer", optionId: "white", offered: true }], names, insp).warnings.length, 0);
+  });
+});
+
+describe("rule edits — an option's compatible options after the edits", () => {
+  it("lists them from either side of the pair", async () => {
+    const { focusAfter } = await import("./rule-edits");
+    const f = focusAfter(catalog(), products(), [{ kind: "pair", a: "white", b: "matte", compatible: true }], { level: "customizationOption", id: "matte" });
+    assert.deepEqual(f?.level === "customizationOption" && [...f.compatible].sort(), ["kraft", "white"]);
   });
 });

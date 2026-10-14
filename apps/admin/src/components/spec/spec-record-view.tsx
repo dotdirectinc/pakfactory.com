@@ -43,10 +43,17 @@ export function SpecRecordView({
   record: r,
   heading = "h1",
   onSelect,
+  rulesEditor = true,
 }: {
   record: CatalogRecord;
   heading?: "h1" | "h2";
   onSelect?: OnSelect;
+  /**
+   * The Customization rules section. Off in the Spec Map's panel (Richard, 2026-10-14): there the
+   * diagram and the bar under it are the editor, and two editors side by side read as redundant. The
+   * record's full page keeps it — the other way in.
+   */
+  rulesEditor?: boolean;
 }) {
   const Title = heading;
   const Section = heading === "h1" ? "h2" : "h3";
@@ -69,11 +76,11 @@ export function SpecRecordView({
               {COPY.rules} <ArrowUpRight className="size-4" />
             </Link>
           ) : null}
-          <p className="text-xs text-muted-foreground">{r.key === "product" || r.key === "customizationOption" || r.key === "customizationType" ? COPY.rulesEditable(r.dataset) : COPY.readOnly(r.dataset)}</p>
+          <p className="text-xs text-muted-foreground">{r.key === "product" || r.key === "customizationOption" || r.key === "customizationType" ? (rulesEditor ? COPY.rulesEditable(r.dataset) : COPY.rulesOnMap(r.dataset)) : COPY.readOnly(r.dataset)}</p>
         </div>
       </header>
 
-      <SpecRuleEditor level={r.key} id={r.id} title={r.title} />
+      {rulesEditor ? <SpecRuleEditor level={r.key} id={r.id} title={r.title} /> : null}
 
       {r.images.length > 1 ? (
         <section className="flex flex-col gap-2">

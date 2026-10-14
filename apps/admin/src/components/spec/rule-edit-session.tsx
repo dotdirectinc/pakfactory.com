@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Undo2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Undo2, X } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { Checkbox } from "@pakfactory/ui/components/checkbox";
 import { Input } from "@pakfactory/ui/components/input";
@@ -48,6 +48,15 @@ type Session = {
   version: number;
   /** Ready to submit: edits, a settled impact, no blocking errors, warnings acknowledged. */
   ready: boolean;
+  /** Edits that change nothing must be kept on purpose (2026-10-14). */
+  keepNoEffect: boolean;
+  setKeepNoEffect: (b: boolean) => void;
+  /** After a submit, until the views have re-read the rules: edit controls stay disabled. */
+  refreshing: boolean;
+  /** Called by a view once it has re-read the rules after a submit. */
+  markFresh: () => void;
+  /** Re-read the rules now (a view found itself out of date). */
+  refresh: () => void;
 };
 
 const Ctx = createContext<Session | null>(null);
@@ -71,6 +80,16 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   const [submitError, setSubmitError] = useState<Session["submitError"]>(null);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [version, setVersion] = useState(0);
+  const [keepNoEffect, setKeepNoEffect] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const markFresh = useCallback(() => setRefreshing(false), []);
+  const refresh = useCallback(() => { setRefreshing(true); setVersion((v) => v + 1); }, []);
+  // Never stuck: a view that does not report back still frees the controls.
+  useEffect(() => {
+    if (!refreshing) return;
+    const t = window.setTimeout(() => setRefreshing(false), 8000);
+    return () => window.clearTimeout(t);
+  }, [refreshing]);
 
   useEffect(() => {
     void loadRuleMeta().then((r) => {
@@ -113,6 +132,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   const focusKey = focus ? `${focus.level}:${focus.id}` : "";
   useEffect(() => {
     setAck(false);
+    setKeepNoEffect(false);
   }, [editsKey]);
   useEffect(() => {
     if (!edits.length) { setPreview(null); setPreviewError(null); return; }
@@ -125,7 +145,8 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
 
   // A preview for an older set of edits is not this set's: never offer to submit on it.
   const settled = preview !== null && preview.sentences.length === edits.length && !checking;
-  const ready = edits.length > 0 && settled && preview!.errors.length === 0 && (preview!.warnings.length === 0 || ack) && !submitting;
+  const ready = edits.length > 0 && settled && preview!.errors.length === 0 && (preview!.warnings.length === 0 || ack)
+    && (preview!.noEffect.length === 0 || keepNoEffect) && !submitting;
 
   const submit = useCallback((approve: boolean) => startSubmit(async () => {
     setSubmitError(null);
@@ -136,6 +157,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
       setNote("");
       setEditing(false);
       setPreview(null);
+      setRefreshing(true);
       setVersion((v) => v + 1);
     } else setSubmitError({ error: r.error, errors: r.errors });
   }), [edits, note]);
@@ -143,6 +165,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   const value: Session = {
     edits, put, remove, setOffered, clear, editing, setEditing, canEdit, meta, names, addNames, focus, setFocus,
     preview, checking, previewError, ack, setAck, note, setNote, submit, submitting, submitError, result, version, ready,
+    keepNoEffect, setKeepNoEffect, refreshing, markFresh, refresh,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -202,6 +225,7 @@ export function ImpactBox() {
       {s.previewError ? <p className="text-destructive">{s.previewError}</p> : !p || s.checking ? <p className="text-muted-foreground">{COPY.checking}</p> : (
         <>
           {p.errors.map((e) => <p key={e} role="alert" className="text-destructive">✕ {e}</p>)}
+          <NoEffectBox />
           <p>{p.totals.products ? COPY.totals(p.totals) : COPY.noProductChange}</p>
           {p.products.length ? (
             <ul className="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-md border border-border p-2 text-xs">
@@ -288,10 +312,29 @@ export function RuleEditBar() {
   const s = useRuleEditSession();
   if (!s || (!s.editing && !s.edits.length && !s.result?.ok)) return null;
   if (!s.editing && !s.edits.length) return <SubmitResultNote />;
+  return <EditBar />;
+}
+
+function EditBar() {
+  const s = useRuleEditSession()!;
+  const [open, setOpen] = useState(false);
+  // An exception needs its reason typed in the pending list: show it rather than only naming the problem.
+  const needsReason = s.edits.some((e) => e.kind === "exception" && e.reason !== null && !e.reason.trim());
+  useEffect(() => {
+    if (needsReason) setOpen(true);
+  }, [needsReason]);
   const p = s.preview;
   const settled = p && !s.checking && p.sentences.length === s.edits.length;
   return (
-    <div role="region" aria-label={COPY.barLabel} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-foreground/20 bg-card px-3 py-2 text-sm shadow-sm">
+    <div role="region" aria-label={COPY.barLabel} className="sticky bottom-0 z-20 flex flex-col rounded-md border border-foreground/20 bg-card text-sm shadow-sm">
+      {/* The details the panel shows — every pending change (with undo and reasons) and the full impact. */}
+      {open && s.edits.length ? (
+        <div className="grid max-h-[40vh] gap-4 overflow-y-auto border-b border-border p-3 md:grid-cols-2">
+          <PendingTray />
+          <ImpactBox />
+        </div>
+      ) : null}
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
       <span className="font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : COPY.editingHint}</span>
       {s.edits.length ? (
         <span className="text-muted-foreground">
@@ -301,10 +344,86 @@ export function RuleEditBar() {
             : p.totals.products ? COPY.totals(p.totals) : COPY.noProductChange}
         </span>
       ) : null}
+      {settled && p.noEffect.length && !s.keepNoEffect && !p.errors.length ? (
+        <span className="text-destructive">{COPY.noEffectTitle(p.noEffect.length)}</span>
+      ) : null}
       {settled && p.warnings.length && !p.errors.length ? (
         <span className="flex items-center gap-2 text-amber-800 dark:text-amber-300">⚠ {COPY.barWarnings(p.warnings.length)} <Acknowledge /></span>
       ) : null}
+      {s.edits.length ? (
+        <Button size="xs" variant="ghost" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          {open ? <ChevronDown /> : <ChevronUp />} {open ? COPY.hideDetails : COPY.showDetails}
+        </Button>
+      ) : null}
       <div className="ml-auto"><SubmitButtons /></div>
+    </div>
+    </div>
+  );
+}
+
+/**
+ * Edits that change nothing for any product (an exception the rules make redundant). Not submitted
+ * unless kept on purpose — 2026-10-14, a stale "offer again" made exactly such an edit.
+ */
+function NoEffectBox() {
+  const s = useRuleEditSession()!;
+  const p = s.preview;
+  if (!p?.noEffect.length) return null;
+  const lines = s.edits.flatMap((e, i) => (p.noEffect.includes(editKey(e)) ? [p.sentences[i]!] : []));
+  return (
+    <div role="alert" className="flex flex-col gap-1 rounded-md border border-destructive/40 bg-destructive/5 p-2">
+      <p className="font-medium text-destructive">{COPY.noEffectTitle(lines.length)}</p>
+      {lines.map((l) => <p key={l} className="text-foreground">• {l}</p>)}
+      <label className="mt-1 flex items-center gap-2 text-sm">
+        <Checkbox checked={s.keepNoEffect} onCheckedChange={(v) => s.setKeepNoEffect(v === true)} />
+        <span>{COPY.noEffectKeep}</span>
+      </label>
+    </div>
+  );
+}
+
+/**
+ * The Spec Map's edit panel (2026-10-14): while editing, the right side is the editor's companion — what
+ * is pending, its impact, the note and the buttons — instead of a bar under the diagram. The record's
+ * details stay one tab away.
+ */
+export function RuleEditPanel({ details, onClose }: { details: React.ReactNode; onClose?: () => void }) {
+  const s = useRuleEditSession()!;
+  const [tab, setTab] = useState<"changes" | "details">("changes");
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex flex-col gap-2 border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : COPY.panelTitle}</span>
+          {onClose ? (
+            <Button size="icon-sm" variant="ghost" aria-label={COPY.closePanel} title={COPY.closePanel} onClick={onClose}><X /></Button>
+          ) : null}
+        </div>
+        <SubmitButtons />
+        <div role="tablist" className="flex gap-1 text-xs">
+          {(["changes", "details"] as const).map((t) => (
+            <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
+              className={`rounded-md px-2 py-1 font-medium ${tab === t ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              {t === "changes" ? COPY.tabChanges : COPY.tabDetails}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+        {tab === "details" ? details : s.edits.length ? (
+          <>
+            <PendingTray />
+            <ImpactBox />
+            <Textarea value={s.note} onChange={(e) => s.setNote(e.target.value)} placeholder={COPY.note} aria-label={COPY.note} rows={2} className="text-sm" />
+            <span className="text-xs text-muted-foreground">{COPY.devOnly}</span>
+          </>
+        ) : (
+          <>
+            <SubmitResultNote />
+            <p className="text-sm text-muted-foreground">{COPY.panelEmpty}</p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

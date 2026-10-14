@@ -46,6 +46,12 @@ const QUERY = /* groq */ `{
       []
     )
   },
+  "inspirations": *[_type == "product" && kind == "inspiration" && !(_id in path("drafts.**")) && defined(basedOn)] {
+    _id,
+    title,
+    "basedOn": basedOn._ref,
+    "preselected": coalesce(availableCustomizations[preselected == true].customization._ref, [])
+  },
   "identity": *[
     _type in ["product", "customizationOption", "customizationType", "customizationCategory"] &&
     !(_id in path("drafts.**")) &&
@@ -65,11 +71,18 @@ export type SourceProduct = SummaryProduct & {
 /** The registry's identity of a document, as the catalog fill copies it into Sanity (PROD-2628). */
 export type RegistryIdentity = { entityId: string; entityCode: string };
 
+export type Inspiration = { _id: string; title?: string; basedOn: string; preselected: string[] };
+
 export type RulesSource = {
   dataset: string;
   catalog: SummaryCatalog;
   categories: { _id: string; title?: string }[];
   products: SourceProduct[];
+  /**
+   * Inspiration products: no rules of their own — they offer what their base ("Based on") offers — but
+   * they pre-select some of it (what the site's configurator starts from: `preselected == true`).
+   */
+  inspirations: Inspiration[];
   /** Built once per request; every resolution below reuses them. */
   graph: ReturnType<typeof buildDependencyGraph>;
   index: ReturnType<typeof buildCompatibilityIndex>;
@@ -86,6 +99,7 @@ type QueryResult = {
   categories: { _id: string; title?: string }[];
   products: SourceProduct[];
   identity: ({ _id: string } & RegistryIdentity)[];
+  inspirations?: Inspiration[];
 };
 
 export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
@@ -96,7 +110,9 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
     projectId,
     dataset: RULES_DATASET,
     apiVersion: getSanityApiVersion(),
-    useCdn: true,
+    // Not the CDN: it lags a write by seconds, and right after an approved rule edit that stale read was
+    // cached for a minute, so the Map still showed the old rule (2026-10-14). The views are cached anyway.
+    useCdn: false,
     perspective: "published",
   });
 
@@ -126,6 +142,7 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
       catalog,
       categories: result.categories,
       products: result.products.map((p) => ({ ...p, styleTitles: p.styleTitles ?? [] })),
+      inspirations: result.inspirations ?? [],
       graph: buildDependencyGraph(catalog),
       index: buildCompatibilityIndex(catalog.options),
       name: (id) => names.get(id) ?? id,

@@ -39,7 +39,7 @@ export function describeEdit(e: RuleEditDraft, name: Names): string {
     case "exception":
       return e.reason === null
         ? `${name(e.productId)}: drop the "${e.mode}" exception for ${name(e.optionId)}`
-        : `${name(e.productId)}: ${e.mode} ${name(e.optionId)} as an exception — "${e.reason}"`;
+        : `${name(e.productId)}: ${e.mode} ${name(e.optionId)} as an exception — ${e.reason.trim() ? `"${e.reason}"` : "reason needed"}`;
   }
 }
 
@@ -101,12 +101,18 @@ export function applyEdits(catalog: SummaryCatalog, products: SummaryProduct[], 
 }
 
 export type ImpactProduct = { id: string; title: string; gained: string[]; lost: string[] };
-export type ImpactWarning = { code: "loses-options" | "exception-redundant" | "exception-conflict" | "no-partners" | "type-switch"; text: string };
+export type ImpactWarning = { code: "loses-options" | "exception-redundant" | "exception-conflict" | "no-partners" | "type-switch" | "preselection-lost"; text: string };
+/** An inspiration product: what it is based on, and what it pre-selects (see rules-source.ts). */
+export type ImpactInspiration = { _id: string; title?: string; basedOn: string; preselected: string[] };
 export type Impact = {
   errors: string[];
   warnings: ImpactWarning[];
   products: ImpactProduct[];
   totals: { products: number; gained: number; lost: number };
+  /** One sentence per edit, in the edits' order, saying what it does to the product's offer. */
+  sentences: string[];
+  /** Keys of edits that create or keep an exception which changes nothing (feedback 2026-10-14). */
+  noEffect: string[];
 };
 
 const offeredBy = (r: ReturnType<typeof resolveForProduct>) => new Set([...r.availableByType.values()].flat());
@@ -115,7 +121,7 @@ const offeredBy = (r: ReturnType<typeof resolveForProduct>) => new Set([...r.ava
  * What a set of edits does, with the storefront's own engine: every standard product resolved before
  * and after; the options each gains or loses; Studio's blocking rules; and the warnings to acknowledge.
  */
-export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[], edits: RuleEditDraft[], name: Names): Impact {
+export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[], edits: RuleEditDraft[], name: Names, inspirations: ImpactInspiration[] = []): Impact {
   const errors = blockingErrors(catalog, products, edits, name);
   const after = applyEdits(catalog, products, edits);
   const resolveAll = (c: SummaryCatalog, ps: SummaryProduct[]) => {
@@ -147,6 +153,20 @@ export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[
     const lost = losers.reduce((n, c) => n + c.lost.length, 0);
     warnings.unshift({ code: "loses-options", text: `${losers.length} ${losers.length === 1 ? "product loses" : "products lose"} ${lost} ${lost === 1 ? "option" : "options"} in total.` });
   }
+  // An inspiration product offers what its base offers and pre-selects some of it: an option its base
+  // stops offering leaves it pre-selecting something that is not sold (PROD-2962 scope, 2026-10-14).
+  const lostBy = new Map(changed.filter((c) => c.lost.length).map((c) => [c.id, new Set(c.lost)]));
+  const broken = inspirations.flatMap((i) => {
+    const lost = lostBy.get(i.basedOn);
+    const hit = lost ? i.preselected.filter((o) => lost.has(o)) : [];
+    return hit.length ? [`${i.title ?? i._id} (${hit.map(name).join(", ")})`] : [];
+  });
+  if (broken.length) {
+    warnings.push({
+      code: "preselection-lost",
+      text: `${broken.length} inspiration ${broken.length === 1 ? "product pre-selects" : "products pre-select"} an option its base would no longer offer: ${broken.slice(0, 8).join("; ")}${broken.length > 8 ? `; and ${broken.length - 8} more` : ""}. Change their pre-selections in Studio.`,
+    });
+  }
   // An option left with no compatible partner is never derived anywhere (empty fails closed).
   const partnersAfter = buildCompatibilityIndex(after.catalog.options).pairs;
   const partnersBefore = buildCompatibilityIndex(catalog.options).pairs;
@@ -167,12 +187,72 @@ export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[
         : `${name(e.typeId)} switches to "decided by each product": these options are offered only where a product lists them, and exceptions on them stop counting.` });
     }
   }
+  // Each edit in words of what it does to the product's offer, not of the mechanism (2026-10-14: "drops
+  // the remove exception" read like a removal, and an exception that changes nothing read like a fix).
+  const diffOf = new Map(changed.map((c) => [c.id, c]));
+  const titleOf = new Map(products.map((p) => [p._id, p.title ?? p._id]));
+  const noEffect: string[] = [];
+  const sentences = edits.map((e) => {
+    if (e.kind === "offer") {
+      return e.offered ? `${name(e.productId)} now offers ${name(e.optionId)}` : `${name(e.productId)} no longer offers ${name(e.optionId)}`;
+    }
+    if (e.kind !== "exception") return describeEdit(e, name);
+    const P = titleOf.get(e.productId) ?? name(e.productId);
+    const O = name(e.optionId);
+    const d = diffOf.get(e.productId);
+    const gained = d?.gained.includes(e.optionId) ?? false;
+    const lost = d?.lost.includes(e.optionId) ?? false;
+    const had = (products.find((p) => p._id === e.productId)?.customizationExceptions ?? []).some((x) => x.optionId === e.optionId && x.mode === e.mode);
+    const why = e.reason === null ? "" : e.reason.trim() ? `"${e.reason}"` : "reason needed";
+    if (e.reason === null) {
+      if (gained) return `${P} offers ${O} again — drops the "${e.mode}" exception`;
+      if (lost) return `${P} no longer offers ${O} — drops the "${e.mode}" exception`;
+      return `${P}: drops the "${e.mode}" exception on ${O} — no change to what it offers`;
+    }
+    if (had) return `${P}: the "${e.mode}" exception on ${O} now reads ${why}`;
+    if (gained) return `${P} now offers ${O} — by exception: ${why}`;
+    if (lost) return `${P} no longer offers ${O} — by exception: ${why}`;
+    noEffect.push(editKey(e));
+    return `${P}: no change — a "${e.mode}" exception for ${O} has no effect (${e.mode === "add" ? "the rules already give it" : "the rules do not give it"})`;
+  });
   return {
     errors,
     warnings,
     products: changed,
     totals: { products: changed.length, gained: changed.reduce((n, c) => n + c.gained.length, 0), lost: changed.reduce((n, c) => n + c.lost.length, 0) },
+    sentences,
+    noEffect,
   };
+}
+
+/**
+ * The explicit edit behind a button on the Map, from what the card shows — never a different kind of
+ * edit when the rules have moved on (2026-10-14: "offer again" on a stale card became a new "add"
+ * exception). Returns the refusal instead when the card is out of date.
+ */
+export function mapEdit(
+  meta: RuleMeta,
+  productId: string,
+  optionId: string,
+  action: "stop" | "offerAgain",
+  shown: OfferState,
+): { ok: true; edit: RuleEditDraft } | { ok: false; reason: "stale" | "not-standard" } {
+  if (!meta.standard.includes(productId)) return { ok: false, reason: "not-standard" };
+  const pair = `${productId}|${optionId}`;
+  if (action === "offerAgain") {
+    // Only ever "drop the remove exception": if there is none, the card is out of date.
+    return meta.removeExceptions.includes(pair)
+      ? { ok: true, edit: { kind: "exception", productId, optionId, mode: "remove", reason: null } }
+      : { ok: false, reason: "stale" };
+  }
+  if (shown === "listed") return { ok: true, edit: { kind: "offer", productId, optionId, offered: false } };
+  if (shown === "added") {
+    return meta.addExceptions.includes(pair)
+      ? { ok: true, edit: { kind: "exception", productId, optionId, mode: "add", reason: null } }
+      : { ok: false, reason: "stale" };
+  }
+  if (shown === "derived") return { ok: true, edit: { kind: "exception", productId, optionId, mode: "remove", reason: "" } };
+  return { ok: false, reason: "stale" };
 }
 
 /** Studio's hard rules, in the admin's words (the server checks them again). */
@@ -210,17 +290,21 @@ export function blockingErrors(catalog: SummaryCatalog, products: SummaryProduct
   return errors;
 }
 
-export type OfferState = "listed" | "derived" | "added";
+/** How a product gets an option — or `removed`: the rules give it, but an exception takes it away. */
+export type OfferState = "listed" | "derived" | "added" | "removed";
+export type ProductException = { optionId: string; mode: "add" | "remove"; reason?: string };
 export type RuleFocus = { level: "product" | "customizationOption"; id: string };
 export type FocusAfter =
-  | { level: "product"; id: string; options: { id: string; state: OfferState }[] }
-  | { level: "customizationOption"; id: string; products: string[] };
+  | { level: "product"; id: string; options: { id: string; state: OfferState }[]; exceptions: ProductException[] }
+  | { level: "customizationOption"; id: string; products: string[]; compatible: string[] };
 
 /** What a product offers and how — the same naming as the product view (`product-view.ts`). */
 export function offerStates(catalog: SummaryCatalog, product: SummaryProduct, graph = buildDependencyGraph(catalog), index = buildCompatibilityIndex(catalog.options)) {
   const r = resolveForProduct(catalog, product, graph, index);
   const added = new Set(r.exceptions.filter((e) => e.effect === "added").map((e) => e.optionId));
   const out = new Map<string, OfferState>();
+  // Taken away by an exception: kept, so the map can still show (and restore) it.
+  for (const e of r.exceptions) if (e.effect === "removed") out.set(e.optionId, "removed");
   for (const type of catalog.types) {
     for (const id of r.availableByType.get(type._id) ?? []) {
       out.set(id, type.availabilityDecidedBy === "product" ? "listed" : added.has(id) ? "added" : "derived");
@@ -235,7 +319,11 @@ export function focusAfter(catalog: SummaryCatalog, products: SummaryProduct[], 
   if (focus.level === "product") {
     const p = after.products.find((x) => x._id === focus.id);
     if (!p) return null;
-    return { level: "product", id: focus.id, options: [...offerStates(after.catalog, p)].map(([id, state]) => ({ id, state })) };
+    return {
+      level: "product", id: focus.id,
+      options: [...offerStates(after.catalog, p)].map(([id, state]) => ({ id, state })),
+      exceptions: (p.customizationExceptions ?? []).map((e) => ({ optionId: e.optionId, mode: e.mode, ...(e.reason ? { reason: e.reason } : {}) })),
+    };
   }
   const option = after.catalog.options.find((o) => o._id === focus.id);
   if (!option) return null;
@@ -245,6 +333,7 @@ export function focusAfter(catalog: SummaryCatalog, products: SummaryProduct[], 
     level: "customizationOption",
     id: focus.id,
     products: after.products.filter((p) => (resolveForProduct(after.catalog, p, graph, index).availableByType.get(option.typeId) ?? []).includes(focus.id)).map((p) => p._id),
+    compatible: [...(index.pairs.get(focus.id) ?? [])].filter((x) => x !== focus.id),
   };
 }
 

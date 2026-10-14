@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
 import { Input } from "@pakfactory/ui/components/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@pakfactory/ui/components/select";
 import type { TableKey } from "@/lib/spec/catalog-table-model";
 import type { Choice, RuleEditorData } from "@/lib/spec/rule-editor-data";
-import { loadRuleEditor } from "@/app/(admin)/spec/rule-edit-actions";
+import { loadRecordEdits, loadRuleEditor, type RecordEdit } from "@/app/(admin)/spec/rule-edit-actions";
+import Link from "next/link";
 import { RuleEditFooter, SubmitResultNote, useRuleEditSession, WithRuleEditSession } from "@/components/spec/rule-edit-session";
 import { ADMIN_SPEC_RULE_EDIT_COPY as COPY } from "@/lib/copy/spec";
 
@@ -61,12 +62,13 @@ function RuleSection({ level, id, title }: { level: TableKey; id: string; title:
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-semibold text-foreground">{COPY.title}</h3>
         {data.kind !== "none" && data.canEdit && !s.editing ? (
-          <Button size="sm" variant="outline" onClick={() => s.setEditing(true)}>{COPY.edit}</Button>
+          <Button size="sm" variant="outline" disabled={s.refreshing} onClick={() => s.setEditing(true)}>{s.refreshing ? COPY.refreshing : COPY.edit}</Button>
         ) : null}
       </div>
       <SubmitResultNote />
       {data.kind === "none" ? <p className="text-sm text-muted-foreground">{data.reason}</p> : <Fields data={data} editing={editing} />}
       {editing ? <RuleEditFooter /> : null}
+      {data.kind !== "none" ? <RecordHistory id={id} title={title} /> : null}
     </section>
   );
 }
@@ -261,7 +263,7 @@ function ExceptionList({ items, onRemove }: { items: Exc[]; onRemove?: (e: Exc) 
         <li key={`${e.id}|${e.mode}`} className="flex items-start gap-2 text-sm">
           <Badge variant={e.mode === "add" ? "secondary" : "outline"}>{e.mode}</Badge>
           <span className="min-w-0 flex-1"><span className="font-medium">{e.title}</span> <span className="text-muted-foreground">— {e.reason || COPY.reasonMissing}</span></span>
-          {onRemove ? <Button size="icon-xs" variant="ghost" aria-label={COPY.remove(e.title)} onClick={() => onRemove(e)}><X /></Button> : null}
+          {onRemove ? <Button size="icon-xs" variant="ghost" aria-label={COPY.deleteException(e.title)} title={COPY.deleteException(e.title)} onClick={() => onRemove(e)}><Trash2 /></Button> : null}
         </li>
       ))}
     </ul>
@@ -309,6 +311,37 @@ export function Picker({ choices, placeholder, onPick, className = "max-w-sm" }:
           ))}
         </ul>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * This record's recent rule edits, with links (2026-10-14: after Submit & approve there was no way back
+ * to the frame, nor a way to see a rule had already been changed).
+ */
+function RecordHistory({ id, title }: { id: string; title: string }) {
+  const s = useRuleEditSession()!;
+  const [rows, setRows] = useState<RecordEdit[] | null>(null);
+  useEffect(() => {
+    void loadRecordEdits(id, title).then((r) => setRows(r.ok ? r.data : []));
+  }, [id, title, s.version]);
+  if (!rows?.length) return null;
+  return (
+    <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{COPY.historyTitle}</span>
+      <ul className="flex flex-col gap-1 text-sm">
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-baseline gap-2">
+            <Badge variant={r.state === "draft" ? "secondary" : "outline"} className="shrink-0">{r.state === "draft" ? "waiting" : r.state}</Badge>
+            <span className="min-w-0 flex-1">
+              {r.sentence}
+              {r.more ? <span className="text-muted-foreground"> {COPY.historyMore(r.more)}</span> : null}
+              <span className="block text-xs text-muted-foreground">{new Date(r.at).toLocaleString()}</span>
+            </span>
+            <Link href={`/spec/${r.id}`} className="shrink-0 text-xs font-medium text-primary hover:underline">{COPY.historyOpen}</Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

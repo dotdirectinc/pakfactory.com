@@ -79,7 +79,8 @@ const NAV: readonly NavEntry[] = [
       // The catalog as a diagram (PROD-2960): three streams, levels as columns, read-only.
       {
         href: "/spec/map",
-        label: "Spec Map",
+        // Short inside the Spec System group; outside it the name keeps its prefix ("Spec Map") — Richard, 2026-10-14.
+        label: "Map",
         match: (path) => path.startsWith("/spec/map"),
       },
       // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing —
@@ -94,7 +95,8 @@ const NAV: readonly NavEntry[] = [
       },
       {
         href: "/spec",
-        label: "Frames to approve",
+        // The registry's change desk: syncs, frames waiting (the count) and decided ones (Richard, 2026-10-14).
+        label: "Registry",
         count: "pendingFrames",
         match: (path) =>
           path === "/spec" ||
@@ -105,7 +107,7 @@ const NAV: readonly NavEntry[] = [
       },
       {
         href: "/spec/rules",
-        label: "Current rules",
+        label: "Rules",
         match: (path) => path === "/spec/rules" || path.startsWith("/spec/rules/"),
       },
       // What each page and button does, the catalog structure, syncing and registry codes (PROD-2771).
