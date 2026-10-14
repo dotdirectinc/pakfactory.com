@@ -1,6 +1,7 @@
 'use client';
 
 import {LayoutGrid, List, type LucideIcon} from 'lucide-react';
+import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {Icon} from '@/components/ui/icon';
@@ -20,7 +21,7 @@ const OPTIONS: {value: CatalogView; label: string; icon: LucideIcon}[] = [
     {value: 'grid', label: 'Grid view', icon: LayoutGrid},
 ];
 
-/** List / grid switch — two icon buttons, `aria-pressed` on the active one. Props-only (ADR-013). */
+/** List / grid switch — two ghost icon Buttons, `aria-pressed` on the active one. Props-only (ADR-013). */
 export function ViewToggle({
     value,
     onValueChange,
@@ -36,23 +37,23 @@ export function ViewToggle({
             {OPTIONS.map((option) => {
                 const active = option.value === value;
                 return (
-                    <button
+                    <Button
                         key={option.value}
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         aria-pressed={active}
                         aria-label={option.label}
                         title={option.label}
                         onClick={() => onValueChange(option.value)}
                         className={cn(
-                            'flex size-9 items-center justify-center rounded-[length:var(--radius-control)] transition-colors',
-                            'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                             active
                                 ? 'bg-muted text-foreground'
-                                : 'text-muted-foreground hover:text-foreground',
+                                : 'text-muted-foreground',
                         )}
                     >
                         <Icon icon={option.icon} size="md" />
-                    </button>
+                    </Button>
                 );
             })}
         </div>

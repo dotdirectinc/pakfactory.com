@@ -1,17 +1,19 @@
 'use client';
 
 import {useState, type SVGProps} from 'react';
-import {Check, Facebook, Link2, Linkedin} from 'lucide-react';
+import {Check, Facebook, Link, Linkedin} from 'lucide-react';
+import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {EXTERNAL_LINK_REL} from '@pakfactory/utilities/external-link';
 
 import {Icon} from '@/components/ui/icon';
 
-// X keeps its brand mark; LinkedIn / Facebook use lucide, as on case studies.
-function XMark(props: SVGProps<SVGSVGElement>) {
+// House set (PROD-2016, same as the site footer, blog and case studies):
+// lucide for LinkedIn / Facebook; X keeps its official brand mark.
+function XBrandIcon(props: SVGProps<SVGSVGElement>) {
     return (
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden {...props}>
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
         </svg>
     );
 }
@@ -23,9 +25,9 @@ type ShareButtonsProps = {
     className?: string;
 };
 
-/** Round icon button — lifts and tints on hover (blog `PostShareButtons`). */
+/** Outline icon Button, round, lifting and tinting on hover (blog `PostShareButtons`). */
 const ICON_BUTTON =
-    'flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0';
+    'rounded-full text-muted-foreground hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary motion-reduce:transition-none motion-reduce:hover:translate-y-0';
 
 /**
  * LinkedIn · X · Facebook · Copy link. Ported from the blog's
@@ -47,7 +49,7 @@ export function ShareButtons({url, title, className}: ShareButtonsProps) {
             id: 'x',
             label: 'Share on X',
             href: `https://x.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
-            icon: <XMark className="size-4" />,
+            icon: <XBrandIcon className="size-4" />,
         },
         {
             id: 'facebook',
@@ -70,25 +72,33 @@ export function ShareButtons({url, title, className}: ShareButtonsProps) {
     return (
         <div className={cn('flex items-center gap-2', className)}>
             {networks.map((network) => (
-                <a
+                <Button
                     key={network.id}
-                    href={network.href}
-                    target="_blank"
-                    rel={EXTERNAL_LINK_REL}
-                    aria-label={network.label}
+                    asChild
+                    variant="outline"
+                    size="icon"
                     className={ICON_BUTTON}
                 >
-                    {network.icon}
-                </a>
+                    <a
+                        href={network.href}
+                        target="_blank"
+                        rel={EXTERNAL_LINK_REL}
+                        aria-label={network.label}
+                    >
+                        {network.icon}
+                    </a>
+                </Button>
             ))}
-            <button
+            <Button
                 type="button"
+                variant="outline"
+                size="icon"
                 onClick={copyLink}
                 aria-label={copied ? 'Link copied' : 'Copy link'}
-                className={cn(ICON_BUTTON, 'cursor-pointer')}
+                className={ICON_BUTTON}
             >
-                <Icon icon={copied ? Check : Link2} />
-            </button>
+                <Icon icon={copied ? Check : Link} />
+            </Button>
             <span role="status" className="sr-only">
                 {copied ? 'Link copied to clipboard.' : ''}
             </span>

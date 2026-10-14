@@ -1,6 +1,7 @@
 'use client';
 
 import {useMemo} from 'react';
+import {Label} from '@pakfactory/ui/components/label';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {
     Select,
@@ -11,6 +12,7 @@ import {
 } from '@pakfactory/ui/components/select';
 
 import {NewsListItem} from '@/components/newsroom/news-list-item';
+import {CatalogTabBar, type CatalogTab} from '@/components/ui/catalog-tab-bar';
 import {MediaTileCard} from '@/components/ui/media-tile-card';
 import {ViewToggle, type CatalogView} from '@/components/ui/view-toggle';
 import {
@@ -30,7 +32,12 @@ const EXTRA_PARAMS: Record<string, CatalogExtraParamDef> = {
 
 const NO_FACETS: string[] = [];
 
-const HEADING_ID = 'newsroom-announcements-heading';
+const YEAR_ID = 'newsroom-year';
+const CATEGORY_ID = 'newsroom-category';
+
+/** Media assets (mockup's second tab) has no content model yet — Announcements only. */
+const ANNOUNCEMENTS_TAB = 'announcements';
+const TABS: CatalogTab[] = [{id: ANNOUNCEMENTS_TAB, label: 'Announcements'}];
 
 type NewsCatalogPanelProps = {
     items: NewsCard[];
@@ -41,7 +48,8 @@ function asView(value: string | undefined): CatalogView {
 }
 
 /**
- * `/newsroom` list (PROD-2913): year + category filters, list/grid toggle,
+ * `/newsroom` list (PROD-2913): Announcements tab bar carrying the category +
+ * year filters and list/grid toggle,
  * all mirrored to the URL (`?year=2026&category=award&view=grid`) the same way
  * the customization catalog syncs. Filtering is client-side: the newsroom
  * publishes a handful of releases a year, so the whole archive ships in the
@@ -93,85 +101,86 @@ export function NewsCatalogPanel({items}: NewsCatalogPanelProps) {
     return (
         <PageDielineSection innerClassName="pb-16 pt-8 md:pb-24 md:pt-12">
             {urlSyncListener}
-            <section aria-labelledby={HEADING_ID}>
-                <div className="flex flex-col gap-6 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
-                    <div className="flex flex-col gap-2">
-                        <h2
-                            id={HEADING_ID}
-                            className="text-3xl font-semibold leading-tight tracking-tight text-foreground"
-                        >
-                            Announcements
-                        </h2>
-                        <p className="text-base text-muted-foreground">
-                            Press releases and company news from PakFactory.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3">
+            <CatalogTabBar
+                tabs={TABS}
+                value={ANNOUNCEMENTS_TAB}
+                aria-label="Newsroom"
+                // Centred reading column (~1000px), as in the mockup; the skeleton matches.
+                className="mx-auto w-full max-w-5xl"
+                actions={
+                    <>
                         {categories.length > 1 ? (
-                            <Select
-                                value={category}
-                                onValueChange={(next) =>
-                                    setExtra('category', next)
-                                }
-                            >
-                                <SelectTrigger
-                                    className="w-52"
-                                    aria-label="Filter announcements by category"
+                            <div className="flex items-center gap-2">
+                                <Label
+                                    htmlFor={CATEGORY_ID}
+                                    className="font-normal text-muted-foreground"
                                 >
-                                    {/* Explicit label so the server HTML is not blank before hydration. */}
-                                    <SelectValue>
-                                        {categories.find(([id]) => id === category)?.[1] ??
-                                            'All categories'}
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={ALL}>
-                                        All categories
-                                    </SelectItem>
-                                    {categories.map(([id, label]) => (
-                                        <SelectItem key={id} value={id}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                    Category
+                                </Label>
+                                <Select
+                                    value={category}
+                                    onValueChange={(next) =>
+                                        setExtra('category', next)
+                                    }
+                                >
+                                    <SelectTrigger id={CATEGORY_ID} className="w-48">
+                                        {/* Explicit label so the server HTML is not blank before hydration. */}
+                                        <SelectValue>
+                                            {categories.find(([id]) => id === category)?.[1] ??
+                                                'All'}
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL}>All</SelectItem>
+                                        {categories.map(([id, label]) => (
+                                            <SelectItem key={id} value={id}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         ) : null}
                         {years.length > 0 ? (
-                            <Select
-                                value={year}
-                                onValueChange={(next) => setExtra('year', next)}
-                            >
-                                <SelectTrigger
-                                    className="w-32"
-                                    aria-label="Filter announcements by year"
+                            <div className="flex items-center gap-2">
+                                <Label
+                                    htmlFor={YEAR_ID}
+                                    className="font-normal text-muted-foreground"
                                 >
-                                    <SelectValue>
-                                        {year === ALL ? 'All years' : year}
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={ALL}>All years</SelectItem>
-                                    {years.map((value) => (
-                                        <SelectItem key={value} value={value}>
-                                            {value}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                    Year
+                                </Label>
+                                <Select
+                                    value={year}
+                                    onValueChange={(next) => setExtra('year', next)}
+                                >
+                                    <SelectTrigger id={YEAR_ID} className="w-28">
+                                        <SelectValue>
+                                            {year === ALL ? 'All' : year}
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL}>All</SelectItem>
+                                        {years.map((value) => (
+                                            <SelectItem key={value} value={value}>
+                                                {value}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         ) : null}
                         <ViewToggle
                             value={view}
                             onValueChange={(next) => setExtra('view', next)}
                             aria-label="Announcements layout"
                         />
-                    </div>
-                </div>
-
+                    </>
+                }
+            >
                 {visible.length === 0 ? (
                     <p
                         role="status"
-                        className="py-16 text-center text-base text-muted-foreground"
+                        className="py-12 text-center text-sm text-muted-foreground"
                     >
                         {emptyMessage}
                     </p>
@@ -201,7 +210,7 @@ export function NewsCatalogPanel({items}: NewsCatalogPanelProps) {
                         ))}
                     </ul>
                 )}
-            </section>
+            </CatalogTabBar>
         </PageDielineSection>
     );
 }

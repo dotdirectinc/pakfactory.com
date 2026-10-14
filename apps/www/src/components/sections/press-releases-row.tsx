@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import {ChevronRight} from 'lucide-react';
 import {
     PageDielineSection,
     type PageDielinePaddingBlock,
@@ -7,7 +6,8 @@ import {
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {NewsThumbnail} from '@/components/newsroom/news-thumbnail';
-import {Icon} from '@/components/ui/icon';
+import {ArrowLink} from '@/components/ui/arrow-link';
+import {SectionHeading} from '@/components/ui/section-heading';
 import type {NewsCard} from '@/lib/newsroom/types';
 
 export type PressReleasesRowProps = {
@@ -57,19 +57,16 @@ function RelatedNewsItem({item}: {item: NewsCard}) {
                         {item.title}
                     </Link>
                 </h3>
-                <Link
-                    href={item.href}
-                    className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary"
-                >
-                    Read more
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <ArrowLink href={item.href} size="sm" srSuffix={item.title}>
+                        Read more
+                    </ArrowLink>
                     {item.readingMinutes ? (
-                        <span className="font-normal text-muted-foreground">
-                            ({item.readingMinutes} min read)
+                        <span className="text-sm text-muted-foreground">
+                            {item.readingMinutes} min read
                         </span>
                     ) : null}
-                    <Icon icon={ChevronRight} />
-                    <span className="sr-only">: {item.title}</span>
-                </Link>
+                </div>
             </div>
         </article>
     );
@@ -91,7 +88,6 @@ export function PressReleasesRow({
     borderBottom = false,
 }: PressReleasesRowProps) {
     if (items.length === 0) return null;
-    const headingId = `${id}-heading`;
 
     return (
         <PageDielineSection
@@ -101,18 +97,14 @@ export function PressReleasesRow({
         >
             <section
                 id={id}
-                aria-labelledby={headingId}
+                aria-label={heading}
                 className="mx-auto flex max-w-3xl flex-col"
             >
-                <h2
-                    id={headingId}
-                    className="mb-4 text-3xl font-semibold leading-tight tracking-tight text-foreground"
-                >
-                    {heading}
-                </h2>
-                {intro ? (
-                    <p className="text-base text-muted-foreground">{intro}</p>
-                ) : null}
+                <SectionHeading
+                    title={heading}
+                    description={intro}
+                    className="mb-4"
+                />
                 <ul className="flex flex-col">
                     {items.map((item, index) => (
                         <li
@@ -127,13 +119,9 @@ export function PressReleasesRow({
                     ))}
                 </ul>
                 {cta ? (
-                    <Link
-                        href={cta.href}
-                        className="mt-8 inline-flex items-center gap-1 self-center text-base font-semibold text-primary"
-                    >
+                    <ArrowLink href={cta.href} className="mt-8 self-center">
                         {cta.label}
-                        <Icon icon={ChevronRight} />
-                    </Link>
+                    </ArrowLink>
                 ) : null}
             </section>
         </PageDielineSection>

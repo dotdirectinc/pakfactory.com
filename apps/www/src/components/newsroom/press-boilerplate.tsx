@@ -1,10 +1,13 @@
 import Link from 'next/link';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@pakfactory/ui/components/card';
 
 import type {PressBoilerplate as PressBoilerplateData} from '@/lib/newsroom/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
-
-const CARD_CLASS =
-    'flex flex-col gap-2 rounded-xl border border-border bg-card p-6 shadow-sm';
 
 const LINK_CLASS =
     'font-medium text-foreground underline underline-offset-4 hover:no-underline';
@@ -31,26 +34,24 @@ export function PressBoilerplate({
             </p>
             <div className="flex flex-col gap-4">
                 {description ? (
-                    <section className={CARD_CLASS} aria-labelledby="press-about">
-                        <h2
-                            id="press-about"
-                            className="text-base font-semibold text-foreground"
-                        >
-                            About {companyName}
-                        </h2>
-                        <p className="whitespace-pre-line text-base leading-7 text-muted-foreground">
+                    <Card className="gap-2">
+                        <CardHeader>
+                            <CardTitle>
+                                <h2 className="text-base">About {companyName}</h2>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="whitespace-pre-line text-base leading-7 text-muted-foreground">
                             {description}
-                        </p>
-                    </section>
+                        </CardContent>
+                    </Card>
                 ) : null}
-                <section className={CARD_CLASS} aria-labelledby="press-contact">
-                    <h2
-                        id="press-contact"
-                        className="text-base font-semibold text-foreground"
-                    >
-                        Media contact
-                    </h2>
-                    <p className="text-base leading-7 text-muted-foreground">
+                <Card className="gap-2">
+                    <CardHeader>
+                        <CardTitle>
+                            <h2 className="text-base">Media contact</h2>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-base leading-7 text-muted-foreground">
                         {pressEmail ? (
                             <>
                                 For media inquiries, email{' '}
@@ -67,8 +68,8 @@ export function PressBoilerplate({
                                 .
                             </>
                         )}
-                    </p>
-                </section>
+                    </CardContent>
+                </Card>
             </div>
         </>
     );

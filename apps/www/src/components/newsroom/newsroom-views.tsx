@@ -64,6 +64,7 @@ export function NewsroomDetailView({
         <>
             <JsonLd json={buildNewsArticleJsonLd(item, boilerplate, imageUrl)} />
             <PageBreadcrumbSection
+                showHome
                 items={[
                     {label: 'Home', href: WWW_ROUTES.home},
                     {label: NEWSROOM_HEADING, href: WWW_ROUTES.newsroom},

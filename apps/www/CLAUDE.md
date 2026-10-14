@@ -14,6 +14,7 @@ PakFactory **marketing site rebuild** — consultative packaging sales (quote / 
 | `(auth)` | `/login`, `/sign-up`, `/forgot-password`, `/reset-password`, `/verify` | Buyer auth via Supabase |
 | `(account)` | `/account`, `/account/profile`, `/account/requests` | Authenticated buyer area — off-white header + white `rounded-t-xl` main ([`account-shell.tsx`](src/components/account/account-shell.tsx)); `/account/requests` is a data table ([`account-request-list.tsx`](src/components/account/account-request-list.tsx)) |
 | `(request)` | `/request/products`, `/request/general`, `/request/services` | RFQ flows |
+| `(site)/newsroom` | `/newsroom`, `/newsroom/[slug]` | Newsroom listing + press release detail (PROD-2913 / PROD-2918) — [`docs/newsroom.md`](./docs/newsroom.md) |
 | `case-studies` | `/case-studies`, `/case-studies/[slug]` | Case study listing + detail; draft mode under `/case-studies/api/draft-mode/` |
 | API | `/api/revalidate`, `/api/wm`, `/api/dev/sanity-check` | Revalidate webhook, watermark, dev helpers |
 | Meta | `/robots.txt`, `/sitemap.xml`, `/llms.txt` | SEO / crawler surfaces |

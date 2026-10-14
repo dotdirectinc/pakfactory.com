@@ -22,6 +22,11 @@ type PageBreadcrumbSectionProps = {
     className?: string;
     /** Section band background; defaults to page background. */
     band?: PageDielineBand;
+    /**
+     * Keep the leading Home crumb (default drops it). For pages filed under a
+     * parent with no page of its own, e.g. `Home / Company / Newsroom`.
+     */
+    showHome?: boolean;
 };
 
 function isHomeCrumb(item: Crumb): boolean {
@@ -30,9 +35,9 @@ function isHomeCrumb(item: Crumb): boolean {
     return href === '/' || href === WWW_ROUTES.home;
 }
 
-/** Drop leading Home; section roots (one crumb left) hide the bar. */
-function visibleBreadcrumbItems(items: Crumb[]): Crumb[] {
-    if (items.length === 0) return [];
+/** Drop leading Home (unless kept); section roots (one crumb left) hide the bar. */
+function visibleBreadcrumbItems(items: Crumb[], showHome: boolean): Crumb[] {
+    if (items.length === 0 || showHome) return items;
     const [first, ...rest] = items;
     const withoutHome = first && isHomeCrumb(first) ? rest : items;
     return withoutHome;
@@ -42,8 +47,9 @@ export function PageBreadcrumbSection({
     items,
     className,
     band = 'default',
+    showHome = false,
 }: PageBreadcrumbSectionProps) {
-    const visible = visibleBreadcrumbItems(items);
+    const visible = visibleBreadcrumbItems(items, showHome);
     if (visible.length < 2) return null;
 
     // Inner-column border stays inside the dieline (not outer viewport bleed).
