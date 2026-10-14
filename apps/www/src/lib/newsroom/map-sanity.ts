@@ -76,9 +76,16 @@ function hotspotPosition(
     return `${Math.round(x * 100)}% ${Math.round(y * 100)}%`;
 }
 
-function youtubeThumbnail(videoUrl: string | null | undefined): string | null {
+/**
+ * YouTube poster. Cards use `hqdefault` (always exists); the hero uses
+ * `maxresdefault`, the case-study hero's standard (16:9, no letterbox).
+ */
+function youtubeThumbnail(
+    videoUrl: string | null | undefined,
+    size: 'hqdefault' | 'maxresdefault' = 'hqdefault',
+): string | null {
     const id = videoUrl ? getYouTubeId(videoUrl) : null;
-    return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+    return id ? `https://i.ytimg.com/vi/${id}/${size}.jpg` : null;
 }
 
 function mapCardImage(
@@ -93,11 +100,6 @@ function mapCardImage(
         alt: image?.alt?.trim() || title,
         objectPosition: hotspotPosition(image?.hotspot),
     };
-}
-
-function readingMinutes(value: number | null | undefined): number | null {
-    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-    return Math.max(1, Math.round(value));
 }
 
 /** Sanity card → `NewsCard`; null when a required field is missing. */
@@ -120,7 +122,6 @@ export function mapNewsCard(doc: PressReleaseCardDoc): NewsCard | null {
         dateLabel: formatNewsDate(published),
         year: YEAR_FORMAT.format(published),
         image: mapCardImage(doc.image, doc.videoUrl, title),
-        readingMinutes: readingMinutes(doc.readingTimeMinutes),
     };
 }
 
@@ -145,7 +146,7 @@ function mapHero(
             videoUrl,
             thumbnailSrc:
                 sanityImageBaseUrl(hero.videoThumbnailUrl) ??
-                youtubeThumbnail(videoUrl),
+                youtubeThumbnail(videoUrl, 'maxresdefault'),
         };
     }
     const src = sanityImageBaseUrl(hero.imageUrl);
@@ -178,7 +179,6 @@ export function mapNewsItem(doc: PressReleaseDetailDoc): NewsItem | null {
                       hotspot: doc.heroMedia?.imageHotspot,
                       alt: doc.heroMedia?.alt,
                   },
-        readingTimeMinutes: doc.readingTimeMinutes,
     });
     if (!card) return null;
 

@@ -39,8 +39,6 @@ export type NewsCard = {
     /** Calendar year in Toronto — the listing's year filter. */
     year: string;
     image: NewsImage | null;
-    /** Whole minutes, ≥ 1; null when the body is empty. */
-    readingMinutes: number | null;
 };
 
 export type NewsHeroMedia =
