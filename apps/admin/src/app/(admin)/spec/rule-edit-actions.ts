@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { fetchSpecMe, submitRuleEdits, type RegistryRuleEdit, type RuleEditResult } from "@/lib/spec/registry-api";
+import { fetchSpecMe, listAllChangesets, submitRuleEdits, type RegistryRuleEdit, type RuleEditResult } from "@/lib/spec/registry-api";
 import { loadRulesSource, type Loaded } from "@/lib/spec/rules-source";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
-import { computeImpact, describeEdit, focusAfter, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
+import { computeImpact, focusAfter, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
 import { getRuleEditorData, type RuleEditorData } from "@/lib/spec/rule-editor-data";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import { typeidToUuid } from "@/lib/spec/typeid";
@@ -49,7 +49,7 @@ export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus
     data: {
       ...impact,
       names: Object.fromEntries([...ids].map((id) => [id, name(id)])),
-      sentences: edits.map((e) => describeEdit(e, name)),
+      // Effect-first ("offers Flocking again — drops the remove exception"); see computeImpact.
       focus: focus ? focusAfter(catalog, products, edits, focus) : null,
     },
   };
@@ -110,11 +110,58 @@ export async function submitRuleEditsAction(edits: RuleEditDraft[], opts: { appr
 
   const r = await submitRuleEdits({
     dataset, edits: body, approve: opts.approve, note: opts.note,
-    impact: { totals: impact.totals, warnings: impact.warnings.map((w) => w.text), products: impact.products.slice(0, 50).map((p) => ({ title: p.title, gained: p.gained.map(name), lost: p.lost.map(name) })) },
+    impact: {
+      totals: impact.totals,
+      warnings: impact.warnings.map((w) => w.text),
+      products: impact.products.slice(0, 50).map((p) => ({ title: p.title, gained: p.gained.map(name), lost: p.lost.map(name) })),
+      // What the frame page shows for this edit, and what a record's own history finds it by.
+      sentences: impact.sentences,
+      records: [...new Set(edits.flatMap(recordsOf))],
+    },
   });
   if (!r.ok) return { ok: false, error: r.error, ...(r.errors ? { errors: r.errors } : {}) };
   // The rules views read Sanity; an approved edit changed it (updateTag: this person sees it at once).
   if (r.data.state === "approved") updateTag(SPEC_RULES_TAG);
   revalidatePath("/spec");
   return { ok: true, data: r.data };
+}
+
+/** The records an edit is about, by Sanity id — for a record's "Recent rule edits". */
+function recordsOf(e: RuleEditDraft): string[] {
+  switch (e.kind) {
+    case "typeSettings":
+    case "requirements": return [e.typeId];
+    case "pair": return [e.a, e.b];
+    case "offer":
+    case "exception": return [e.productId, e.optionId];
+  }
+}
+
+export type RecordEdit = { id: string; state: string; at: string; sentence: string; more: number };
+
+/**
+ * A record's recent rule edits (feedback 2026-10-14: after Submit & approve there was no way back to the
+ * frame, and no way to see a rule had already been changed). Frames from before 2026-10-14 carry no
+ * record list, so they are matched by the record's name in their sentences.
+ */
+export async function loadRecordEdits(id: string, title: string): Promise<Loaded<RecordEdit[]>> {
+  if (!(await canEdit())) return { ok: true, data: [] };
+  const res = await listAllChangesets();
+  if (!res.ok) return { ok: false, error: res.error };
+  const out = res.data
+    .filter((c) => c.source === "spec-edit")
+    .filter((c) => {
+      const impact = (c.summary?.impact ?? {}) as { records?: string[] };
+      if (Array.isArray(impact.records)) return impact.records.includes(id);
+      const sentences = Array.isArray(c.summary?.sentences) ? (c.summary.sentences as string[]) : [];
+      return sentences.some((x) => x.includes(title));
+    })
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 5)
+    .map((c) => {
+      const impact = (c.summary?.impact ?? {}) as { sentences?: string[] };
+      const sentences = impact.sentences ?? (Array.isArray(c.summary?.sentences) ? (c.summary.sentences as string[]) : []);
+      return { id: c.id, state: c.state, at: c.approved_at ?? c.created_at, sentence: sentences[0] ?? c.frame, more: Math.max(0, sentences.length - 1) };
+    });
+  return { ok: true, data: out };
 }

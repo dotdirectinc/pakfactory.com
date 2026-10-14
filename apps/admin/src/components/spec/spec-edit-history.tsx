@@ -21,7 +21,8 @@ export function SpecEditHistory({ changesets, limit = 15 }: { changesets: Change
       </div>
       <ul className="divide-y divide-border rounded-md border border-border">
         {edits.map((c) => {
-          const sentences = Array.isArray(c.summary?.sentences) ? (c.summary.sentences as string[]) : [];
+          const own = (c.summary?.impact as { sentences?: unknown } | undefined)?.sentences;
+          const sentences = Array.isArray(own) ? (own as string[]) : Array.isArray(c.summary?.sentences) ? (c.summary.sentences as string[]) : [];
           return (
             <li key={c.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2 text-sm">
               <Badge variant={c.state === "draft" ? "secondary" : "outline"}>{COPY.editsState[c.state] ?? c.state}</Badge>

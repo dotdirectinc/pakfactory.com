@@ -107,6 +107,10 @@ export type Impact = {
   warnings: ImpactWarning[];
   products: ImpactProduct[];
   totals: { products: number; gained: number; lost: number };
+  /** One sentence per edit, in the edits' order, saying what it does to the product's offer. */
+  sentences: string[];
+  /** Keys of edits that create or keep an exception which changes nothing (feedback 2026-10-14). */
+  noEffect: string[];
 };
 
 const offeredBy = (r: ReturnType<typeof resolveForProduct>) => new Set([...r.availableByType.values()].flat());
@@ -167,12 +171,72 @@ export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[
         : `${name(e.typeId)} switches to "decided by each product": these options are offered only where a product lists them, and exceptions on them stop counting.` });
     }
   }
+  // Each edit in words of what it does to the product's offer, not of the mechanism (2026-10-14: "drops
+  // the remove exception" read like a removal, and an exception that changes nothing read like a fix).
+  const diffOf = new Map(changed.map((c) => [c.id, c]));
+  const titleOf = new Map(products.map((p) => [p._id, p.title ?? p._id]));
+  const noEffect: string[] = [];
+  const sentences = edits.map((e) => {
+    if (e.kind === "offer") {
+      return e.offered ? `${name(e.productId)} now offers ${name(e.optionId)}` : `${name(e.productId)} no longer offers ${name(e.optionId)}`;
+    }
+    if (e.kind !== "exception") return describeEdit(e, name);
+    const P = titleOf.get(e.productId) ?? name(e.productId);
+    const O = name(e.optionId);
+    const d = diffOf.get(e.productId);
+    const gained = d?.gained.includes(e.optionId) ?? false;
+    const lost = d?.lost.includes(e.optionId) ?? false;
+    const had = (products.find((p) => p._id === e.productId)?.customizationExceptions ?? []).some((x) => x.optionId === e.optionId && x.mode === e.mode);
+    const why = e.reason === null ? "" : e.reason.trim() ? `"${e.reason}"` : "reason needed";
+    if (e.reason === null) {
+      if (gained) return `${P} offers ${O} again — drops the "${e.mode}" exception`;
+      if (lost) return `${P} no longer offers ${O} — drops the "${e.mode}" exception`;
+      return `${P}: drops the "${e.mode}" exception on ${O} — no change to what it offers`;
+    }
+    if (had) return `${P}: the "${e.mode}" exception on ${O} now reads ${why}`;
+    if (gained) return `${P} now offers ${O} — by exception: ${why}`;
+    if (lost) return `${P} no longer offers ${O} — by exception: ${why}`;
+    noEffect.push(editKey(e));
+    return `${P}: no change — a "${e.mode}" exception for ${O} has no effect (${e.mode === "add" ? "the rules already give it" : "the rules do not give it"})`;
+  });
   return {
     errors,
     warnings,
     products: changed,
     totals: { products: changed.length, gained: changed.reduce((n, c) => n + c.gained.length, 0), lost: changed.reduce((n, c) => n + c.lost.length, 0) },
+    sentences,
+    noEffect,
   };
+}
+
+/**
+ * The explicit edit behind a button on the Map, from what the card shows — never a different kind of
+ * edit when the rules have moved on (2026-10-14: "offer again" on a stale card became a new "add"
+ * exception). Returns the refusal instead when the card is out of date.
+ */
+export function mapEdit(
+  meta: RuleMeta,
+  productId: string,
+  optionId: string,
+  action: "stop" | "offerAgain",
+  shown: OfferState,
+): { ok: true; edit: RuleEditDraft } | { ok: false; reason: "stale" | "not-standard" } {
+  if (!meta.standard.includes(productId)) return { ok: false, reason: "not-standard" };
+  const pair = `${productId}|${optionId}`;
+  if (action === "offerAgain") {
+    // Only ever "drop the remove exception": if there is none, the card is out of date.
+    return meta.removeExceptions.includes(pair)
+      ? { ok: true, edit: { kind: "exception", productId, optionId, mode: "remove", reason: null } }
+      : { ok: false, reason: "stale" };
+  }
+  if (shown === "listed") return { ok: true, edit: { kind: "offer", productId, optionId, offered: false } };
+  if (shown === "added") {
+    return meta.addExceptions.includes(pair)
+      ? { ok: true, edit: { kind: "exception", productId, optionId, mode: "add", reason: null } }
+      : { ok: false, reason: "stale" };
+  }
+  if (shown === "derived") return { ok: true, edit: { kind: "exception", productId, optionId, mode: "remove", reason: "" } };
+  return { ok: false, reason: "stale" };
 }
 
 /** Studio's hard rules, in the admin's words (the server checks them again). */

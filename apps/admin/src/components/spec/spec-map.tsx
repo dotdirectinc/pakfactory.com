@@ -14,6 +14,8 @@ import {
   ArrowUpRight,
   ChevronDown,
   ChevronRight,
+  CircleMinus,
+  CirclePlus,
   Layers2,
   Layers3,
   Pencil,
@@ -50,7 +52,7 @@ import { SpecRecordView } from "@/components/spec/spec-record-view";
 import { RuleEditBar, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
 import { Picker } from "@/components/spec/spec-rule-editor";
 import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT } from "@/lib/copy/spec";
-import { describeEdit } from "@/lib/spec/rule-edits";
+import { describeEdit, mapEdit } from "@/lib/spec/rule-edits";
 import {
   loadMapCompatible,
   loadMapRecord,
@@ -284,6 +286,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
 
   // ── selection: the chain up and down, cross-stream links, and the rules' compatibility ──
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
+  /** This record's offers have arrived (edit controls wait for them). */
+  const [compatLoaded, setCompatLoaded] = useState(false);
   /** The focused product's exceptions, per option card (from the rules view). */
   const [exceptions, setExceptions] = useState<Map<number, { mode: "add" | "remove"; reason?: string }>>(new Map());
   const [offers, setOffers] = useState<Map<number, OfferKind>>(
@@ -304,7 +308,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const [, startLoading] = useTransition();
 
   // ── rule edits: the focused record after the session's edits, drawn as a preview ──
-  const { addNames, setFocus } = session;
+  const { addNames, setFocus, markFresh } = session;
   useEffect(() => {
     addNames(Object.fromEntries(nodes.map((n) => [n.id, n.title])));
   }, [nodes, addNames]);
@@ -400,6 +404,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     setCompatible(new Set());
     setOffers(new Map());
     setExceptions(new Map());
+    setCompatLoaded(false);
     setOfferQ("");
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
@@ -407,6 +412,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         loadMapCompatible(n.level, n.id),
       ]);
       setRecord({ for: selected, res: rec });
+      setCompatLoaded(true);
+      markFresh();
       if (compat.ok) {
         const want = new Map<string, OfferKind | null>([
           ...compat.data.products.map((id) => [`product:${id}`, null] as const),
@@ -430,7 +437,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         );
       }
     });
-  }, [selected, nodes, session.version, indexOf]);
+  }, [selected, nodes, session.version, indexOf, markFresh]);
 
   const relatedByStream = useMemo(() => {
     const m = new Map<string, number>();
@@ -763,8 +770,18 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const sel = selected !== null ? nodes[selected]! : null;
 
   // ── editing on the diagram: offer or stop offering an option on a product ──
-  const editingHere = session.editing && session.canEdit && sel !== null && (sel.level === "product" || sel.level === "customizationOption");
+  // Not on stale data: never while the map is re-reading the rules after a submit, or before this
+  // record's offers have loaded (2026-10-14).
+  const editingHere = session.editing && session.canEdit && !session.refreshing && compatLoaded && sel !== null && (sel.level === "product" || sel.level === "customizationOption");
   const [editNote, setEditNote] = useState<string | null>(null);
+  /** A Map button: the explicit edit for what the card shows, or a refusal when the card is stale. */
+  const act = (p: string, o: string, action: "stop" | "offerAgain", shown: OfferKind) => {
+    if (!session.meta) return;
+    const r = mapEdit(session.meta, p, o, action, shown);
+    if (r.ok) { setEditNote(null); session.put(r.edit); return; }
+    setEditNote(r.reason === "stale" ? EDIT.staleCard : EDIT.notStandard);
+    if (r.reason === "stale") session.refresh();
+  };
   const offerOn = (p: string, o: string, want: boolean, offeredNow: boolean) => {
     setEditNote(session.setOffered(p, o, want, offeredNow) ? null : EDIT.notStandard);
   };
@@ -948,8 +965,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               </Button>
             ))}
             {session.canEdit && !session.editing && (sel.level === "product" || sel.level === "customizationOption") ? (
-              <Button size="xs" variant="outline" className="ml-auto" onClick={() => session.setEditing(true)}>
-                <Pencil /> {EDIT.mapEdit}
+              <Button size="xs" variant="outline" className="ml-auto" disabled={session.refreshing} title={session.refreshing ? EDIT.refreshingMap : undefined} onClick={() => session.setEditing(true)}>
+                <Pencil /> {session.refreshing ? EDIT.refreshingMap : EDIT.mapEdit}
               </Button>
             ) : null}
             <Button
@@ -1375,38 +1392,18 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     </span>
                   ) : null}
                   {target && !gone ? (
-                    offer === "removed" && change?.kind !== "lose" ? (
-                      <button
-                        type="button"
-                        aria-label={EDIT.offerAgain(n.title)}
-                        title={EDIT.offerAgain(n.title)}
-                        onClick={() => offerOn(target.p, target.o, true, false)}
-                        className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-xs hover:text-foreground"
-                      >
-                        <Undo2 className="size-3" />
-                      </button>
-                    ) : change?.kind === "lose" ? (
-                      target.direct ? (
-                        <button
-                          type="button"
-                          aria-label={EDIT.restoreHere(n.title)}
-                          title={EDIT.restoreHere(n.title)}
-                          onClick={() => session.setOffered(target.p, target.o, true, true)}
-                          className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-xs hover:text-foreground"
-                        >
-                          <Undo2 className="size-3" />
-                        </button>
+                    // One meaning per icon (2026-10-14): ↺ only undoes your own pending change; ⊖ stops
+                    // offering; ⊕ offers again. Each makes exactly the edit its label says, or refuses.
+                    target.direct ? (
+                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => session.setOffered(target.p, target.o, true, true)} />
+                    ) : change ? null : sel!.level === "product" ? (
+                      offers.get(i) === "removed" ? (
+                        <CardAction icon={CirclePlus} label={EDIT.offerAgain(n.title)} onClick={() => act(target.p, target.o, "offerAgain", "removed")} />
+                      ) : offers.has(i) ? (
+                        <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => act(target.p, target.o, "stop", offers.get(i)!)} />
                       ) : null
                     ) : (
-                      <button
-                        type="button"
-                        aria-label={EDIT.removeHere(n.title)}
-                        title={EDIT.removeHere(n.title)}
-                        onClick={() => offerOn(target.p, target.o, false, target.offeredNow)}
-                        className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-xs hover:border-red-500 hover:text-red-600"
-                      >
-                        <X className="size-3" />
-                      </button>
+                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => offerOn(target.p, target.o, false, target.offeredNow)} />
                     )
                   ) : null}
                 </div>
@@ -1462,6 +1459,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   record={record.res.data as CatalogRecord}
                   heading="h2"
                   onSelect={selectBy}
+                  rulesEditor={false}
                 />
               )}
             </div>
@@ -1524,4 +1522,19 @@ function elbow(a: Pos, b: Pos, cardW: number, colW: number): string {
   return y1 === y2
     ? `M${x1},${y1} H${x2}`
     : `M${x1},${y1} H${mx} V${y2} H${x2}`;
+}
+
+/** A small round action on a card's corner. */
+function CardAction({ icon: Icon, label, onClick, tone }: { icon: LucideIcon; label: string; onClick: () => void; tone?: "danger" }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={`absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-xs ${tone === "danger" ? "hover:border-red-500 hover:text-red-600" : "hover:text-foreground"}`}
+    >
+      <Icon className="size-3.5" />
+    </button>
+  );
 }

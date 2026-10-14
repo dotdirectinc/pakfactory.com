@@ -108,3 +108,29 @@ describe("rule edits — the diagram's preview and edits", () => {
     assert.equal(offerEdit(meta, "preset", "kraft", true), null);
   });
 });
+
+describe("rule edits — effect-first sentences, no-effect edits, map buttons (2026-10-14)", () => {
+  it("says what each exception does to the offer, and flags one that changes nothing", () => {
+    const withRemove = (): SummaryProduct[] => [{ ...products()[0]!, customizationExceptions: [{ optionId: "matte", mode: "remove", reason: "Too thin" }] }];
+    const again = computeImpact(catalog(), withRemove(), [{ kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: null }], names);
+    assert.equal(again.sentences[0], 'Mailer offers Matte again — drops the "remove" exception');
+    assert.deepEqual(again.noEffect, []);
+    const redundant = computeImpact(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "matte", mode: "add", reason: "x" }], names);
+    assert.match(redundant.sentences[0]!, /no change — a "add" exception for Matte has no effect \(the rules already give it\)/);
+    assert.deepEqual(redundant.noEffect, ["exc:mailer:matte"]);
+    const removes = computeImpact(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: "" }], names);
+    assert.equal(removes.sentences[0], "Mailer no longer offers Matte — by exception: reason needed");
+  });
+  it("a map button makes exactly the edit its card shows, or refuses when the card is out of date", async () => {
+    const { mapEdit } = await import("./rule-edits");
+    const meta = { optionType: {}, decidedBy: {}, standard: ["mailer"], addExceptions: [], removeExceptions: [] };
+    // The 15:35 case: "offer again" on a card still shown as removed, after the exception was already dropped.
+    assert.deepEqual(mapEdit(meta, "mailer", "matte", "offerAgain", "removed"), { ok: false, reason: "stale" });
+    assert.deepEqual(mapEdit({ ...meta, removeExceptions: ["mailer|matte"] }, "mailer", "matte", "offerAgain", "removed"),
+      { ok: true, edit: { kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: null } });
+    assert.deepEqual(mapEdit(meta, "mailer", "matte", "stop", "derived"),
+      { ok: true, edit: { kind: "exception", productId: "mailer", optionId: "matte", mode: "remove", reason: "" } });
+    assert.deepEqual(mapEdit(meta, "mailer", "kraft", "stop", "listed"), { ok: true, edit: { kind: "offer", productId: "mailer", optionId: "kraft", offered: false } });
+    assert.deepEqual(mapEdit(meta, "preset", "kraft", "stop", "listed"), { ok: false, reason: "not-standard" });
+  });
+});
