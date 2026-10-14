@@ -370,8 +370,11 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
 export const ADMIN_SPEC_MAP_COPY = {
   title: "Spec Map",
   lead:
-    "One stream at a time, one column per level, each column its own A–Z list. Click a card to see only what it is connected to, with arrows — up, down and, for products and options, what the rules make them compatible with. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
-  hint: "Scroll each column on its own · click a card to see what it is connected to · hover a derived option to see what makes it available.",
+    "One stream at a time, one column per level, each column its own A–Z list; each header names how its column relates to the one before. Click a card to see only what it is connected to — grouped under what it hangs off and, for products and options, what the rules make them compatible with; hover a card to light up its own links. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
+  hint: "Scroll each column on its own · click a card to see what it is connected to · hover a card to light up its links.",
+  /** A column header's relation into it, ER-style: "Lines has →" over Styles. */
+  relation: (from: string, verb: string) => `${from} ${verb} →`,
+  verb: { has: "has", states: "states", declares: "declares", lists: "lists", matches: "matches", offers: "offers" },
   search: "Find by name or registry code",
   status: "Status",
   allStatuses: "All statuses",
@@ -387,7 +390,7 @@ export const ADMIN_SPEC_MAP_COPY = {
   via: (names: string[]) => `via ${names.join(", ")}`,
   derivedWhy: (names: string[]) => `Offered because it is compatible with ${names.join(", ")} — the product does not list it`,
   propertyCard:
-    "A property. Its arrows run from the records that state it (standard products or options) to the values they use. Properties and their values are edited in Studio.",
+    "A property. Standard products state it and options' types declare it; its values sit under it. Properties and their values are edited in Studio.",
   openFullPage: "Open full page",
   panelLabel: "Selected record",
   close: "Close",
