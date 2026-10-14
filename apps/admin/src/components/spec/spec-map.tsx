@@ -18,7 +18,7 @@ import {
   Layers3,
   Pencil,
   Search,
-  Square,
+  Box,
   Tag,
   Undo2,
   X,
@@ -138,11 +138,12 @@ type OfferLayout = {
 
 /**
  * One icon per depth, the same in every stream (Eric, 2026-10-09), high to low: a group of groups,
- * a group, one record, an attribute of records.
+ * a group, one record, an attribute of records. One record is a box, not a square: a square read as
+ * a checkbox next to the edit controls (Richard, 2026-10-14).
  */
-const DEPTH_ICON: LucideIcon[] = [Layers3, Layers2, Square, Tag];
+const DEPTH_ICON: LucideIcon[] = [Layers3, Layers2, Box, Tag];
 const iconOf = (level: TableKey) =>
-  DEPTH_ICON[LEVEL_INFO.get(level)?.index ?? 0] ?? Square;
+  DEPTH_ICON[LEVEL_INFO.get(level)?.index ?? 0] ?? Box;
 
 /** Status → badge colour. Anything else (coming soon) is neutral grey. */
 const STATUS_DOT: Record<string, string> = {
@@ -1280,6 +1281,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               const change = diff.get(i);
               const pending = pendingOn(i);
               const exc = offer ? shownExceptions.get(i) : undefined;
+              // An add exception on an option the rules already give (or a remove on one they do not)
+              // changes nothing — the engine calls it redundant; the card stays where the rules put it.
+              const noEffect = exc ? (exc.mode === "add" ? offer !== "added" : offer !== "removed") : false;
               const target = editTarget(i);
               const row = Math.max(0, Math.round((p.y - HEAD_H) / ROW_H));
               return (
@@ -1304,7 +1308,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                       n.title,
                       offer ? COPY.offerKind[offer] : null,
                       change?.kind === "gain" ? EDIT.previewGain : change?.kind === "lose" ? EDIT.previewLose : change?.was ? EDIT.previewChange(COPY.offerKind[change.was]) : null,
-                      exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}` : null,
+                      exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}${noEffect ? ` — ${EDIT.noEffectWhy(exc.mode)}` : ""}` : null,
                       pending.length ? EDIT.pendingHere(pending.map((e) => describeEdit(e, session.names)).join("; ")) : null,
                       n.status,
                     ]
@@ -1343,7 +1347,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                         {n.title}
                       </span>
                       <span className="truncate text-[11px] text-muted-foreground">
-                        {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)} · </span> : null}
+                        {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)}{noEffect ? ` ${EDIT.noEffect}` : ""} · </span> : null}
                         {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
                       </span>
                     </span>

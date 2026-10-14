@@ -450,6 +450,9 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   pendingHere: (sentences: string) => `Pending: ${sentences}`,
   exceptionChip: (mode: "add" | "remove") => `exception · ${mode}`,
   asException: "exception, needs a reason",
+  noEffect: "(no effect)",
+  noEffectWhy: (mode: "add" | "remove") =>
+    mode === "add" ? "no effect: the rules already give this option, so it stays under Derived" : "no effect: the rules do not give this option",
   showDetails: "Show details",
   hideDetails: "Hide details",
   notStandard: "Only a standard product's offers can be edited.",
