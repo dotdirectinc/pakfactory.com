@@ -38,17 +38,13 @@ function RelatedNewsItem({item}: {item: NewsCard}) {
                 />
             </Link>
             <div className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-3">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
-                    {item.categoryLabel ? (
-                        <>
-                            <span className="font-semibold uppercase tracking-[0.08em] text-primary">
-                                {item.categoryLabel}
-                            </span>
-                            <span aria-hidden>·</span>
-                        </>
-                    ) : null}
-                    <time dateTime={item.publishedAt}>{item.dateLabel}</time>
-                </div>
+                {/* Date only, as in the press-release design (no category badge). */}
+                <time
+                    dateTime={item.publishedAt}
+                    className="text-xs text-muted-foreground sm:text-sm"
+                >
+                    {item.dateLabel}
+                </time>
                 <h3 className="text-lg font-medium leading-snug tracking-tight text-foreground sm:text-2xl">
                     <Link
                         href={item.href}
@@ -57,16 +53,15 @@ function RelatedNewsItem({item}: {item: NewsCard}) {
                         {item.title}
                     </Link>
                 </h3>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <ArrowLink href={item.href} size="sm" srSuffix={item.title}>
-                        Read more
-                    </ArrowLink>
+                <ArrowLink href={item.href} size="sm" srSuffix={item.title}>
+                    Read more
                     {item.readingMinutes ? (
-                        <span className="text-sm text-muted-foreground">
-                            {item.readingMinutes} min read
+                        <span className="font-normal text-muted-foreground">
+                            {' '}
+                            ({item.readingMinutes} min read)
                         </span>
                     ) : null}
-                </div>
+                </ArrowLink>
             </div>
         </article>
     );
