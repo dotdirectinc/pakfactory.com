@@ -97,7 +97,7 @@ describe('mapNewsItem (PROD-2918)', () => {
         assert.deepEqual(item?.hero, {
             kind: 'video',
             videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
-            thumbnailSrc: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+            thumbnailSrc: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
         });
     });
 });

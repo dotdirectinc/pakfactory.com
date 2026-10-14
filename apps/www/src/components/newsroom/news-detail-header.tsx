@@ -1,11 +1,9 @@
 import Link from 'next/link';
-import {Play} from 'lucide-react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
-import {EXTERNAL_LINK_REL} from '@pakfactory/utilities/external-link';
 
-import {Icon} from '@/components/ui/icon';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {ShareButtons} from '@/components/ui/share-buttons';
+import {VideoFacade} from '@/components/ui/video-facade';
 import type {NewsHeroMedia, NewsItem} from '@/lib/newsroom/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -36,30 +34,14 @@ function HeroFigure({
                 />
             </div>
         ) : (
-            // Video releases link out to the video. The inline YouTube facade
-            // lives with case studies; promoting it to components/ui touches
-            // that shipped page, so it is a separate change.
-            <a
-                href={hero.videoUrl}
-                target="_blank"
-                rel={EXTERNAL_LINK_REL}
-                className="group relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl bg-muted"
-                aria-label={`Watch the video: ${title}`}
-            >
-                {hero.thumbnailSrc ? (
-                    <SanityImage
-                        src={hero.thumbnailSrc}
-                        alt=""
-                        fill
-                        priority
-                        sizes="(max-width: 768px) 100vw, 768px"
-                        className="object-cover"
-                    />
-                ) : null}
-                <span className="relative flex size-16 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-transform group-hover:scale-105">
-                    <Icon icon={Play} size="lg" className="translate-x-0.5" />
-                </span>
-            </a>
+            // Same click-to-play inline player as the case-study hero.
+            <VideoFacade
+                videoUrl={hero.videoUrl}
+                thumbnailUrl={hero.thumbnailSrc}
+                title={title}
+                sizes="(max-width: 768px) 100vw, 768px"
+                priority
+            />
         );
 
     return (
