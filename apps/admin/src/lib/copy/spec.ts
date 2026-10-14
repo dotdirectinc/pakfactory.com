@@ -370,8 +370,8 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
 export const ADMIN_SPEC_MAP_COPY = {
   title: "Spec Map",
   lead:
-    "One stream at a time, one column per level, arrows from each record to the records below it. Click a card to see only what it is connected to — up, down and, for products and options, what the rules make them compatible with. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
-  hint: "Click a card to see what it is connected to · click a level's name to collapse or expand it.",
+    "One stream at a time, one column per level, each column its own A–Z list. Click a card to see only what it is connected to, with arrows — up, down and, for products and options, what the rules make them compatible with. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
+  hint: "Scroll each column on its own · click a card to see what it is connected to · click a level's name to collapse or expand it.",
   search: "Find by name or registry code",
   status: "Status",
   allStatuses: "All statuses",

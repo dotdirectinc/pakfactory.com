@@ -276,19 +276,34 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const [rowW, setRowW] = useState(1200);
   /** The map box's own border and vertical scrollbar, which its columns must leave room for. */
   const [areaChrome, setAreaChrome] = useState(0);
+  /** The map box's inner height, and the row's height: the screen below the controls (2026-10-14). */
+  const [areaH, setAreaH] = useState(600);
+  const [boxH, setBoxH] = useState<number | null>(null);
+  /** The resting columns' own scroll lists, by level. */
+  const colRefs = useRef(new Map<TableKey, HTMLDivElement>());
 
   useLayoutEffect(() => {
     const el = row.current;
     if (!el) return;
     const measure = () => {
       setRowW(el.clientWidth);
-      if (area.current) setAreaChrome(area.current.offsetWidth - area.current.clientWidth);
+      if (area.current) {
+        setAreaChrome(area.current.offsetWidth - area.current.clientWidth);
+        setAreaH(area.current.clientHeight);
+      }
     };
+    // The map fills the screen below the controls (measured with the page at the top), at least 28rem.
+    const fit = () => setBoxH(Math.max(448, Math.floor(window.innerHeight - (el.getBoundingClientRect().top + window.scrollY) - 16)));
     measure();
+    fit();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     if (area.current) ro.observe(area.current);
-    return () => ro.disconnect();
+    window.addEventListener("resize", fit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+    };
   }, []);
 
   const parentsOf = useMemo(
@@ -808,6 +823,38 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const targetOf = (i: number) =>
     focus ? (focus.pos.get(i) ?? rest.pos.get(i)) : rest.pos.get(i);
 
+  /**
+   * At rest (nothing selected) each column is its own list, as tall as the screen, scrolled on its own,
+   * A→Z, with no arrows (Richard, 2026-10-14): at rest everything links to everything, and the arrows
+   * only mean something once a card is focused. Selecting a card switches to the diagram.
+   */
+  const columnsMode = selected === null;
+  const colPos = useMemo(() => {
+    const m = new Map<number, Pos>();
+    levels.forEach((level, li) => {
+      if (streamOf(level) !== stream || collapsed.has(level)) return;
+      (byLevel.get(level) ?? [])
+        .filter((i) => rest.pos.has(i))
+        .forEach((i, k) => m.set(i, { x: PAD + li * colW, y: HEAD_H + k * ROW_H }));
+    });
+    return m;
+  }, [levels, stream, collapsed, byLevel, rest, colW]);
+  /** Where a resting column's cards are on screen now (their list's scroll), for the glide into focus. */
+  const lastColumns = useRef<{ on: boolean; pos: Map<number, Pos> }>({ on: true, pos: new Map() });
+  useLayoutEffect(() => {
+    lastColumns.current = { on: columnsMode, pos: colPos };
+  });
+  const columnsOnScreen = () => {
+    const pos = new Map<number, Pos>();
+    for (const [i, p] of lastColumns.current.pos) {
+      const top = colRefs.current.get(nodes[i]!.level)?.scrollTop ?? 0;
+      const y = p.y - top;
+      // Cards scrolled out of their list have no place to glide from: they arrive instead.
+      if (y >= HEAD_H - CARD_H && y <= HEAD_H + areaH) pos.set(i, { x: p.x, y });
+    }
+    return pos;
+  };
+
   /*
    * Cards glide only when the selection changes — never on a resize, a filter or a collapse — and
    * they glide from where they were ON SCREEN (Eric, 2026-10-09): the map jumps to where the new
@@ -829,8 +876,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     lastFocusKey.current = focusKey;
     const el = area.current;
     if (!el) return;
-    const before = shown.current;
-    const back = clearedFrom !== null ? rest.pos.get(clearedFrom) : undefined;
+    const before = lastColumns.current.on ? { pos: columnsOnScreen() } : shown.current;
+    if (columnsMode && clearedFrom !== null) {
+      // Back to the columns: the record just cleared is put back in view, in its own column.
+      const at = colPos.get(clearedFrom);
+      const list = colRefs.current.get(nodes[clearedFrom]!.level);
+      if (at && list) list.scrollTop = Math.max(0, at.y - HEAD_H - list.clientHeight / 3);
+    }
+    const back = clearedFrom !== null && !columnsMode ? rest.pos.get(clearedFrom) : undefined;
     const was = el.scrollTop; // live: scrolling does not re-render
     const top = focus
       ? 0
@@ -982,7 +1035,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   }, [rest, focus]);
   const arrows = focus
     ? edges.filter(([a, b]) => focus.pos.has(a) && focus.pos.has(b))
-    : edges.filter(([a, b]) => rest.pos.has(a) && rest.pos.has(b));
+    : columnsMode
+      ? []
+      : edges.filter(([a, b]) => rest.pos.has(a) && rest.pos.has(b));
   /** Laid out and settled: the offered-options column's own parts (filter, group headers, rails). */
   const offerUi =
     offering && focus?.offer && !from && focus.pos.has(selected!)
@@ -1068,6 +1123,146 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const elsewhere = TABLE_GROUPS.filter(
     (g) => g.key !== stream && (relatedByStream.get(g.key) ?? 0) > 0,
   );
+
+  /** One card at a position — on the diagram, or inside a resting column's own scroll list. */
+  const renderCard = (i: number, p: Pos) => {
+              if (!onMap(i)) return null;
+              const n = nodes[i]!;
+              const offer = offering ? shownOffers.get(i) : undefined;
+              const Icon = iconOf(n.level);
+              const dot = statusDot(n.status);
+              const unrelated = !editLayout && related !== null && !related.has(i);
+              const gone = isGone(i);
+              // A related card from a collapsed level (property values) has no resting place: once the
+              // others have moved it rises into its own column from below, row by row (Eric, 2026-10-09).
+              // The rise is on an inner layer — an animation on the positioned element would override
+              // its translate and start it from the map's top-left corner.
+              const arriving = !from && focus !== null && !rest.pos.has(i);
+              const change = diff.get(i);
+              const pending = pendingOn(i);
+              // A compatible option of the option being edited (the middle column).
+              const compatCard = editingHere && sel?.level === "customizationOption" && n.level === "customizationOption" && i !== selected && compatOptionsShown.has(i);
+              const exc = offer ? shownExceptions.get(i) : undefined;
+              // An add exception on an option the rules already give (or a remove on one they do not)
+              // changes nothing — the engine calls it redundant; the card stays where the rules put it.
+              const noEffect = exc ? (exc.mode === "add" ? offer !== "added" : offer !== "removed") : false;
+              const target = editTarget(i);
+              const row = Math.max(0, Math.round((p.y - HEAD_H) / ROW_H));
+              return (
+                <div
+                  key={i}
+                  className={`absolute left-0 top-0 ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
+                  style={{
+                    width: offer ? cardW - INDENT : cardW,
+                    height: CARD_H,
+                    transform: `translate(${p.x}px, ${p.y}px)`,
+                    transition: moving
+                      ? `transform ${MOVE_MS}ms ${MOVE_EASE}, opacity ${MOVE_MS / 1.5}ms ease-out`
+                      : undefined,
+                    willChange: moving ? "transform, opacity" : undefined,
+                  }}
+                >
+                  <button
+                    type="button"
+                    // An offered option belongs to the Customizations stream: selecting it goes there.
+                    onClick={() => select(i, !inStream(i))}
+                    title={[
+                      n.title,
+                      offer ? COPY.offerKind[offer] : null,
+                      change?.kind === "gain" ? EDIT.previewGain : change?.kind === "lose" ? EDIT.previewLose : change?.was ? EDIT.previewChange(COPY.offerKind[change.was]) : null,
+                      exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}${noEffect ? ` — ${EDIT.noEffectWhy(exc.mode)}` : ""}` : null,
+                      pending.length ? EDIT.pendingHere(pending.map((e) => describeEdit(e, session.names)).join("; ")) : null,
+                      n.status,
+                    ]
+                      .filter(Boolean)
+                      .join(" — ")}
+                    tabIndex={gone ? -1 : undefined}
+                    aria-hidden={gone ? true : undefined}
+                    className={`flex size-full items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs hover:bg-muted ${
+                      i === selected
+                        ? "border-foreground ring-2 ring-foreground"
+                        : change?.kind === "gain"
+                          ? "border-green-600 ring-1 ring-green-600/50"
+                          : change?.kind === "lose"
+                            ? "border-dashed border-red-500 opacity-70"
+                            : change?.kind === "change"
+                              ? "border-amber-500 ring-1 ring-amber-500/50"
+                              : compatibleShown.has(i)
+                          ? "border-foreground/60 ring-1 ring-foreground/40"
+                          : "border-border"
+                    } ${arriving ? "animate-in fade-in slide-in-from-bottom-6 fill-mode-backwards duration-300 ease-out" : ""}`}
+                    style={
+                      arriving
+                        ? {
+                            // An offered option also arrives when its group opens, long after the move.
+                            animationDelay: `${(offer && !moving ? 0 : MOVE_MS) + Math.min(row, 12) * (offer ? 20 : 30)}ms`,
+                          }
+                        : undefined
+                    }
+                  >
+                    <Icon
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className={`truncate text-xs font-medium text-foreground ${change?.kind === "lose" ? "line-through" : ""}`}>
+                        {n.title}
+                      </span>
+                      <span className="truncate text-[11px] text-muted-foreground">
+                        {preset?.preselected.has(i) ? <span className="font-medium text-blue-700 dark:text-blue-400">{EDIT.preselected} · </span> : null}
+                        {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)}{noEffect ? ` ${EDIT.noEffect}` : ""} · </span> : null}
+                        {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
+                      </span>
+                    </span>
+                    {dot ? (
+                      <span
+                        className={`size-2.5 shrink-0 rounded-full ${dot}`}
+                        aria-label={n.status ?? undefined}
+                      />
+                    ) : null}
+                  </button>
+                  {pending.length && !change && !gone ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white"
+                    >
+                      ✎
+                    </span>
+                  ) : null}
+                  {change && !gone ? (
+                    <span
+                      aria-hidden
+                      className={`pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white ${change.kind === "gain" ? "bg-green-600" : change.kind === "lose" ? "bg-red-500" : "bg-amber-500"}`}
+                    >
+                      {change.kind === "gain" ? "+" : change.kind === "lose" ? "−" : "~"}
+                    </span>
+                  ) : null}
+                  {compatCard && !gone ? (
+                    pending.length ? (
+                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => pending.forEach((e) => session.remove(editKey(e)))} />
+                    ) : compatOptions.has(i) ? (
+                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.notCompatible(n.title)}
+                        onClick={() => session.put({ kind: "pair", a: sel!.id, b: n.id, compatible: false })} />
+                    ) : null
+                  ) : null}
+                  {target && !gone ? (
+                    // One meaning per icon (2026-10-14): ↺ only undoes your own pending change; ⊖ stops
+                    // offering; ⊕ offers again. Each makes exactly the edit its label says, or refuses.
+                    target.direct ? (
+                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => session.setOffered(target.p, target.o, true, true)} />
+                    ) : change ? null : sel!.level === "product" ? (
+                      offers.get(i) === "removed" ? (
+                        <CardAction icon={CirclePlus} label={EDIT.offerAgain(n.title)} onClick={() => act(target.p, target.o, "offerAgain", "removed")} />
+                      ) : offers.has(i) ? (
+                        <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => act(target.p, target.o, "stop", offers.get(i)!)} />
+                      ) : null
+                    ) : (
+                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => offerOn(target.p, target.o, false, target.offeredNow)} />
+                    )
+                  ) : null}
+                </div>
+              );
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -1283,15 +1478,15 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         </div>
       ) : null}
 
-      <div ref={row} className="flex min-h-[28rem] flex-1 gap-3">
+      <div ref={row} className="flex min-h-[28rem] flex-1 gap-3" style={boxH ? { height: boxH } : undefined}>
         <div
           ref={area}
           className="relative min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-border bg-muted/30 [scrollbar-gutter:stable]"
         >
-          <div className="relative" style={{ width, height: height + PAD }}>
+          <div className="relative" style={{ width, height: columnsMode ? Math.max(HEAD_H, areaH - 1) : height + PAD }}>
             <svg
               width={width}
-              height={height}
+              height={columnsMode ? Math.max(HEAD_H, areaH - 1) : height}
               className="pointer-events-none absolute inset-0"
               aria-hidden
             >
@@ -1579,145 +1774,29 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               </div>
             ) : null}
 
-            {drawn.map((i) => {
-              if (!onMap(i)) return null;
-              const n = nodes[i]!;
-              const offer = offering ? shownOffers.get(i) : undefined;
-              const p = posOf(i)!;
-              const Icon = iconOf(n.level);
-              const dot = statusDot(n.status);
-              const unrelated = !editLayout && related !== null && !related.has(i);
-              const gone = isGone(i);
-              // A related card from a collapsed level (property values) has no resting place: once the
-              // others have moved it rises into its own column from below, row by row (Eric, 2026-10-09).
-              // The rise is on an inner layer — an animation on the positioned element would override
-              // its translate and start it from the map's top-left corner.
-              const arriving = !from && focus !== null && !rest.pos.has(i);
-              const change = diff.get(i);
-              const pending = pendingOn(i);
-              // A compatible option of the option being edited (the middle column).
-              const compatCard = editingHere && sel?.level === "customizationOption" && n.level === "customizationOption" && i !== selected && compatOptionsShown.has(i);
-              const exc = offer ? shownExceptions.get(i) : undefined;
-              // An add exception on an option the rules already give (or a remove on one they do not)
-              // changes nothing — the engine calls it redundant; the card stays where the rules put it.
-              const noEffect = exc ? (exc.mode === "add" ? offer !== "added" : offer !== "removed") : false;
-              const target = editTarget(i);
-              const row = Math.max(0, Math.round((p.y - HEAD_H) / ROW_H));
-              return (
-                <div
-                  key={i}
-                  className={`absolute left-0 top-0 ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
-                  style={{
-                    width: offer ? cardW - INDENT : cardW,
-                    height: CARD_H,
-                    transform: `translate(${p.x}px, ${p.y}px)`,
-                    transition: moving
-                      ? `transform ${MOVE_MS}ms ${MOVE_EASE}, opacity ${MOVE_MS / 1.5}ms ease-out`
-                      : undefined,
-                    willChange: moving ? "transform, opacity" : undefined,
-                  }}
-                >
-                  <button
-                    type="button"
-                    // An offered option belongs to the Customizations stream: selecting it goes there.
-                    onClick={() => select(i, !inStream(i))}
-                    title={[
-                      n.title,
-                      offer ? COPY.offerKind[offer] : null,
-                      change?.kind === "gain" ? EDIT.previewGain : change?.kind === "lose" ? EDIT.previewLose : change?.was ? EDIT.previewChange(COPY.offerKind[change.was]) : null,
-                      exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}${noEffect ? ` — ${EDIT.noEffectWhy(exc.mode)}` : ""}` : null,
-                      pending.length ? EDIT.pendingHere(pending.map((e) => describeEdit(e, session.names)).join("; ")) : null,
-                      n.status,
-                    ]
-                      .filter(Boolean)
-                      .join(" — ")}
-                    tabIndex={gone ? -1 : undefined}
-                    aria-hidden={gone ? true : undefined}
-                    className={`flex size-full items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs hover:bg-muted ${
-                      i === selected
-                        ? "border-foreground ring-2 ring-foreground"
-                        : change?.kind === "gain"
-                          ? "border-green-600 ring-1 ring-green-600/50"
-                          : change?.kind === "lose"
-                            ? "border-dashed border-red-500 opacity-70"
-                            : change?.kind === "change"
-                              ? "border-amber-500 ring-1 ring-amber-500/50"
-                              : compatibleShown.has(i)
-                          ? "border-foreground/60 ring-1 ring-foreground/40"
-                          : "border-border"
-                    } ${arriving ? "animate-in fade-in slide-in-from-bottom-6 fill-mode-backwards duration-300 ease-out" : ""}`}
-                    style={
-                      arriving
-                        ? {
-                            // An offered option also arrives when its group opens, long after the move.
-                            animationDelay: `${(offer && !moving ? 0 : MOVE_MS) + Math.min(row, 12) * (offer ? 20 : 30)}ms`,
-                          }
-                        : undefined
-                    }
-                  >
-                    <Icon
-                      className="size-4 shrink-0 text-muted-foreground"
-                      aria-hidden
-                    />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className={`truncate text-xs font-medium text-foreground ${change?.kind === "lose" ? "line-through" : ""}`}>
-                        {n.title}
-                      </span>
-                      <span className="truncate text-[11px] text-muted-foreground">
-                        {preset?.preselected.has(i) ? <span className="font-medium text-blue-700 dark:text-blue-400">{EDIT.preselected} · </span> : null}
-                        {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)}{noEffect ? ` ${EDIT.noEffect}` : ""} · </span> : null}
-                        {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
-                      </span>
-                    </span>
-                    {dot ? (
-                      <span
-                        className={`size-2.5 shrink-0 rounded-full ${dot}`}
-                        aria-label={n.status ?? undefined}
-                      />
-                    ) : null}
-                  </button>
-                  {pending.length && !change && !gone ? (
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white"
+            {(columnsMode ? [] : drawn).map((i) => (onMap(i) ? renderCard(i, posOf(i)!) : null))}
+            {columnsMode
+              ? levels.map((level, li) => {
+                  if (streamOf(level) !== stream || collapsed.has(level)) return null;
+                  const cards = (byLevel.get(level) ?? []).filter((i) => colPos.has(i));
+                  const bottom = cards.length * ROW_H;
+                  return (
+                    <div
+                      key={level}
+                      ref={(el) => {
+                        if (el) colRefs.current.set(level, el);
+                        else colRefs.current.delete(level);
+                      }}
+                      className="absolute overflow-y-auto overflow-x-hidden [scrollbar-width:thin]"
+                      style={{ left: PAD + li * colW, top: HEAD_H, width: Math.min(colW - 4, cardW + 14), height: Math.max(CARD_H, areaH - HEAD_H - 4) }}
                     >
-                      ✎
-                    </span>
-                  ) : null}
-                  {change && !gone ? (
-                    <span
-                      aria-hidden
-                      className={`pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white ${change.kind === "gain" ? "bg-green-600" : change.kind === "lose" ? "bg-red-500" : "bg-amber-500"}`}
-                    >
-                      {change.kind === "gain" ? "+" : change.kind === "lose" ? "−" : "~"}
-                    </span>
-                  ) : null}
-                  {compatCard && !gone ? (
-                    pending.length ? (
-                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => pending.forEach((e) => session.remove(editKey(e)))} />
-                    ) : compatOptions.has(i) ? (
-                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.notCompatible(n.title)}
-                        onClick={() => session.put({ kind: "pair", a: sel!.id, b: n.id, compatible: false })} />
-                    ) : null
-                  ) : null}
-                  {target && !gone ? (
-                    // One meaning per icon (2026-10-14): ↺ only undoes your own pending change; ⊖ stops
-                    // offering; ⊕ offers again. Each makes exactly the edit its label says, or refuses.
-                    target.direct ? (
-                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => session.setOffered(target.p, target.o, true, true)} />
-                    ) : change ? null : sel!.level === "product" ? (
-                      offers.get(i) === "removed" ? (
-                        <CardAction icon={CirclePlus} label={EDIT.offerAgain(n.title)} onClick={() => act(target.p, target.o, "offerAgain", "removed")} />
-                      ) : offers.has(i) ? (
-                        <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => act(target.p, target.o, "stop", offers.get(i)!)} />
-                      ) : null
-                    ) : (
-                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => offerOn(target.p, target.o, false, target.offeredNow)} />
-                    )
-                  ) : null}
-                </div>
-              );
-            })}
+                      <div className="relative" style={{ height: bottom + PAD }}>
+                        {cards.map((i) => renderCard(i, { x: 0, y: colPos.get(i)!.y - HEAD_H }))}
+                      </div>
+                    </div>
+                  );
+                })
+              : null}
           </div>
         </div>
 
