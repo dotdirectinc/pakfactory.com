@@ -295,6 +295,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
   /** For an inspiration product in focus: the product its offers come from, and its pre-selections. */
   const [preset, setPreset] = useState<{ base: { id: string; title: string }; preselected: Set<number> } | null>(null);
+  /** The option edit layout's column filters ("compatible" / "product"), cleared with the selection. */
+  const [colQ, setColQ] = useState<Record<string, string>>({});
+  useEffect(() => setColQ({}), [selected]);
   /** For an option in focus: the options it is compatible with (rules today). */
   const [compatOptions, setCompatOptions] = useState<Set<number>>(new Set());
   /** This record's offers have arrived (edit controls wait for them). */
@@ -581,7 +584,53 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       parentsOf,
       colW,
     );
-    if (!offering) return { ...f, offer: null };
+    if (editLayout && selLevel === "customizationOption") {
+      // An option's two columns, laid out by hand: a filter, then cards under group headings — compatible
+      // options by type, products by line (2026-10-14).
+      const titleOf = (i: number | undefined) => (i === undefined ? "" : nodes[i]!.title);
+      const cols = [
+        {
+          key: "compatible", level: COMPATIBLE,
+          items: [...compatOptionsShown].filter(statusOk),
+          groupOf: (i: number) => titleOf(parentsOf[i]?.[0]),
+          placeholder: EDIT.filterCompatible,
+        },
+        {
+          key: "product", level: "product" as TableKey,
+          items: [...compatibleShown].filter((i) => nodes[i]!.level === "product" && statusOk(i)),
+          groupOf: (i: number) => {
+            const style = parentsOf[i]?.[0];
+            const line = style === undefined ? undefined : parentsOf[style]?.[0];
+            return titleOf(line ?? style);
+          },
+          placeholder: EDIT.filterProducts,
+        },
+      ];
+      let height = f.height;
+      const editCols = cols.map((c) => {
+        const x = PAD + levels.indexOf(c.level) * colW;
+        const needle = (colQ[c.key] ?? "").trim().toLowerCase();
+        const hit = (i: number) => !needle || nodes[i]!.title.toLowerCase().includes(needle)
+          || (nodes[i]!.code ?? "").toLowerCase().includes(needle) || c.groupOf(i).toLowerCase().includes(needle);
+        for (const i of c.items) f.pos.delete(i);
+        const groups = new Map<string, number[]>();
+        for (const i of c.items.filter(hit)) groups.set(c.groupOf(i), [...(groups.get(c.groupOf(i)) ?? []), i]);
+        const labels: { key: string; title: string; y: number }[] = [];
+        let y = HEAD_H + FILTER_H;
+        for (const [g, cards] of [...groups].sort((a, b) => a[0].localeCompare(b[0]))) {
+          labels.push({ key: `${c.key}:${g}`, title: g || EDIT.noGroup, y });
+          y += TYPE_H;
+          for (const i of cards.sort((a, b) => nodes[a]!.title.localeCompare(nodes[b]!.title))) {
+            f.pos.set(i, { x, y });
+            y += ROW_H;
+          }
+        }
+        height = Math.max(height, y);
+        return { key: c.key, x, filterY: HEAD_H, labels, placeholder: c.placeholder, shown: [...groups.values()].flat().length, total: c.items.length };
+      });
+      return { ...f, height, offer: null, editCols };
+    }
+    if (!offering) return { ...f, offer: null, editCols: null };
 
     // The offered-options column, laid out by hand: filter, then per kind a header and its options by type.
     const x = PAD + levels.indexOf("customizationOption") * colW;
@@ -638,7 +687,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       offer.rails.push({ state, y1, ticks });
       y += GROUP_GAP;
     }
-    return { ...f, height: Math.max(f.height, y), offer };
+    return { ...f, height: Math.max(f.height, y), offer, editCols: null };
   }, [
     focusing,
     offering,
@@ -658,6 +707,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     selLevel,
     compatibleShown,
     compatOptionsShown,
+    colQ,
   ]);
 
   const targetOf = (i: number) =>
@@ -1321,6 +1371,33 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     </button>
                   ))}
 
+            {focus?.editCols && !from ? focus.editCols.map((c) => (
+              <div key={c.key} className="animate-in fade-in duration-200">
+                <div className="absolute" style={{ left: c.x, top: c.filterY + 4, width: cardW }}>
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={colQ[c.key] ?? ""}
+                    onChange={(e) => setColQ((q) => ({ ...q, [c.key]: e.target.value }))}
+                    onKeyDown={(e) => e.key === "Escape" && setColQ((q) => ({ ...q, [c.key]: "" }))}
+                    placeholder={c.placeholder}
+                    aria-label={c.placeholder}
+                    className="h-8 bg-card pl-8 text-xs"
+                  />
+                  {(colQ[c.key] ?? "").trim() ? (
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums text-muted-foreground">{COPY.ofTotal(c.shown, c.total)}</span>
+                  ) : null}
+                </div>
+                {c.labels.map((l) => (
+                  <span
+                    key={l.key}
+                    className="absolute truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+                    style={{ left: c.x, top: l.y, width: cardW, lineHeight: `${TYPE_H}px` }}
+                  >
+                    {l.title}
+                  </span>
+                ))}
+              </div>
+            )) : null}
             {offerUi ? (
               <div className="animate-in fade-in duration-200">
                 <div
