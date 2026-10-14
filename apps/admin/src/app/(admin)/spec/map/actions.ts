@@ -37,6 +37,8 @@ export async function loadMapCompatible(
 ): Promise<Loaded<{
   products: string[];
   options: { id: string; state: ProductOptionState | "removed" }[];
+  /** A derived option → the offered options that make it available (the rules' `derivedBecause`). */
+  derivedFrom?: Record<string, string[]>;
   exceptions: ProductException[];
   /** An option: the options it is compatible with (either side records the pair). */
   compatibleOptions?: string[];
@@ -63,7 +65,10 @@ export async function loadMapCompatible(
       // Taken away by one of the product's exceptions: drawn as "Removed by exception", restorable.
       ...types.flatMap((t) => t.removed.filter((r) => r.byException).map((r) => ({ id: r.id, state: "removed" as const }))),
     ];
-    return { ok: true, data: { products: [], options, exceptions: res.data?.configurator.exceptions ?? [], ...(preset ?? {}) } };
+    const derivedFrom = Object.fromEntries(
+      types.flatMap((t) => t.options.filter((o) => o.state === "derived").map((o): [string, string[]] => [o.id, [...new Set(o.because.flatMap((b) => b.partnerIds ?? []))]])),
+    );
+    return { ok: true, data: { products: [], options, derivedFrom, exceptions: res.data?.configurator.exceptions ?? [], ...(preset ?? {}) } };
   }
   if (level === "customizationOption") {
     const res = await getCustomizationView(id);

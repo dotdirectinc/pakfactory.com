@@ -44,7 +44,7 @@ import {
   type TableKey,
 } from "@/lib/spec/catalog-table-model";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
-import { MAP_OPTION_PROPERTY, MAP_PROPERTY, type SpecMapData } from "@/lib/spec/spec-map";
+import { MAP_OPTION_PROPERTY, MAP_PROPERTY, type MapNode, type SpecMapData } from "@/lib/spec/spec-map";
 import type { ProductOptionState } from "@/lib/spec/product-view";
 /** How a focused product gets an option, or "removed": the rules give it, an exception takes it away. */
 type OfferKind = ProductOptionState | "removed";
@@ -178,6 +178,135 @@ const statusDot = (s: string | null) =>
 
 type Pos = { x: number; y: number };
 type Placed = { pos: Map<number, Pos>; height: number };
+
+/** A focused column's group: the cards under one parent from an earlier column (2026-10-14). */
+type FocusGroup = GroupLabel & { level: TableKey; x: number; parent: number | null; cards: number[] };
+type Grouped = { heads: FocusGroup[]; headOf: Map<number, FocusGroup> };
+
+/**
+ * The focused view's columns, grouped (Richard, 2026-10-14). After the first, each column groups its
+ * cards under their parent in the nearest earlier column — products under their style, values under
+ * their property, inspiration products under the solution style whose filter takes them. Groups keep
+ * their parent's order; cards are A→Z inside one; a folded group keeps its heading only. `skip` is a
+ * column with a layout of its own (a focused product's offered options).
+ */
+function regroup(
+  f: Placed,
+  levels: TableKey[],
+  parentsOf: number[][],
+  nodes: MapNode[],
+  colW: number,
+  folded: Set<string>,
+  skip: TableKey | null,
+  other: string,
+): Grouped {
+  const heads: FocusGroup[] = [];
+  const headOf = new Map<number, FocusGroup>();
+  const colOf = new Map<number, number>();
+  for (const [i, p] of f.pos) colOf.set(i, Math.round((p.x - PAD) / colW));
+  const byTitle = (a: number, b: number) => nodes[a]!.title.localeCompare(nodes[b]!.title);
+  let height = HEAD_H + ROW_H;
+  levels.forEach((level, li) => {
+    const cards = [...colOf].filter(([, c]) => c === li).map(([i]) => i);
+    if (!cards.length) return;
+    if (level === skip) {
+      for (const i of cards) height = Math.max(height, f.pos.get(i)!.y + ROW_H);
+      return;
+    }
+    const x = PAD + li * colW;
+    if (li === 0) {
+      cards.sort(byTitle).forEach((i, k) => f.pos.set(i, { x, y: HEAD_H + k * ROW_H }));
+      height = Math.max(height, HEAD_H + cards.length * ROW_H);
+      return;
+    }
+    // A card's group: its parent in the nearest earlier column.
+    const primary = (i: number) => {
+      let best: number | null = null;
+      let bestCol = -1;
+      for (const p of parentsOf[i] ?? []) {
+        const c = colOf.get(p);
+        if (c !== undefined && c < li && c > bestCol) {
+          best = p;
+          bestCol = c;
+        }
+      }
+      return best;
+    };
+    // Group only a column whose cards mostly have ONE parent there: a shared card (a property stated by
+    // twenty products) filed under one of them would misstate the rest — it stays a plain list.
+    const nearest = Math.max(-1, ...cards.flatMap((i) => (parentsOf[i] ?? []).map((p) => colOf.get(p) ?? -1).filter((c) => c < li)));
+    const shared = cards.filter((i) => (parentsOf[i] ?? []).filter((p) => colOf.get(p) === nearest).length > 1).length;
+    if (nearest < 0 || shared * 3 > cards.length) {
+      cards.sort(byTitle).forEach((i, k) => f.pos.set(i, { x, y: HEAD_H + k * ROW_H }));
+      height = Math.max(height, HEAD_H + cards.length * ROW_H);
+      return;
+    }
+    const byParent = new Map<number | null, number[]>();
+    for (const i of cards) {
+      const p = primary(i);
+      byParent.set(p, [...(byParent.get(p) ?? []), i]);
+    }
+    const order = [...byParent.keys()].sort((a, b) =>
+      a === null ? 1 : b === null ? -1 : f.pos.get(a)!.y - f.pos.get(b)!.y || byTitle(a, b),
+    );
+    let y = HEAD_H;
+    for (const parent of order) {
+      const list = byParent.get(parent)!.sort(byTitle);
+      const key = `${level}:${parent ?? "none"}`;
+      const isFolded = folded.has(key);
+      const head: FocusGroup = { key, level, x, parent, cards: list, y, title: parent === null ? other : nodes[parent]!.title, count: list.length, folded: isFolded };
+      heads.push(head);
+      y += TYPE_H;
+      for (const i of list) {
+        headOf.set(i, head);
+        if (isFolded) f.pos.delete(i);
+        else {
+          f.pos.set(i, { x, y });
+          y += ROW_H;
+        }
+      }
+    }
+    height = Math.max(height, y);
+  });
+  f.height = height;
+  return { heads, headOf };
+}
+
+/**
+ * The focused view's arrows under one rule: an arrow ends on a group only when that group is defined
+ * by the arrow's relation (Richard, 2026-10-14).
+ *   · a group's parent → its heading;
+ *   · another card to the left relating to a group: → the heading when it relates to every card in it,
+ *     card-level when to some, nothing when the relation is implied by the chain (it already points
+ *     at the group's parent — a solution → its style → the style's products).
+ * Columns that are not grouped keep card-level arrows.
+ */
+function focusArrows(
+  g: Grouped,
+  pos: Map<number, Pos>,
+  edges: [number, number][],
+  parentsOf: number[][],
+  childrenOf: number[][],
+): { toHead: { from: number; head: FocusGroup }[]; cards: [number, number][] } {
+  const toHead: { from: number; head: FocusGroup }[] = [];
+  const cards: [number, number][] = [];
+  for (const head of g.heads) {
+    if (head.parent !== null && pos.has(head.parent)) toHead.push({ from: head.parent, head });
+    const tally = new Map<number, number[]>();
+    for (const c of head.cards)
+      for (const a of parentsOf[c] ?? []) {
+        if (a === head.parent || !pos.has(a) || pos.get(a)!.x >= head.x) continue;
+        tally.set(a, [...(tally.get(a) ?? []), c]);
+      }
+    for (const [a, rel] of tally) {
+      if (head.parent !== null && (childrenOf[a] ?? []).includes(head.parent)) continue;
+      if (rel.length === head.cards.length) toHead.push({ from: a, head });
+      else for (const c of rel) if (pos.has(c)) cards.push([a, c]);
+    }
+  }
+  for (const [a, b] of edges) if (pos.has(a) && pos.has(b) && !g.headOf.has(b)) cards.push([a, b]);
+  return { toHead, cards };
+}
 
 const LEVEL_INFO = new Map<TableKey, { stream: string; label: string; index: number }>([
   ...TABLE_GROUPS.flatMap((g) =>
@@ -353,7 +482,20 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
   /** For an inspiration product in focus: the product its offers come from, and its pre-selections. */
   const [preset, setPreset] = useState<{ base: { id: string; title: string }; preselected: Set<number> } | null>(null);
-  /** Folded group headings in the edit layouts, cleared with the selection. */
+  /**
+   * A focused product's derived options → the offered options that make them available (the rules'
+   * `derivedBecause`). The product does not decide a derived option, so no arrow runs from it; hovering
+   * a derived card (or its partner) draws the arcs instead (2026-10-14).
+   */
+  const [derivedFrom, setDerivedFrom] = useState<Map<number, number[]>>(new Map());
+  const [hovered, setHovered] = useState<number | null>(null);
+  /** A partner option → the derived options it makes available. */
+  const partnersOf = useMemo(() => {
+    const m = new Map<number, number[]>();
+    for (const [d, ps] of derivedFrom) for (const p of ps) m.set(p, [...(m.get(p) ?? []), d]);
+    return m;
+  }, [derivedFrom]);
+  /** Folded group headings in the edit layouts and the focused view, cleared with the selection. */
   const [folded, setFolded] = useState<Set<string>>(new Set());
   useEffect(() => setFolded(new Set()), [selected]);
   const toggleFold = (key: string) => setFolded((f) => {
@@ -504,10 +646,28 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       }
     };
     walk(selected, parentsOf);
+    const beforeDown = new Set(out);
     walk(selected, childrenOf);
+    const below = [...out].filter((i) => !beforeDown.has(i));
     for (const other of statedOf.get(selected) ?? []) {
       out.add(other);
       walk(other, parentsOf);
+    }
+    // Below the selection, the products in view bring their own values (a line → its products' values).
+    if (!viaProperty) for (const r of below) if (nodes[r]!.level === "product") for (const v of statedOf.get(r) ?? []) out.add(v);
+    // Context one step up from the values in view: their properties (a focused option's properties are
+    // its type's declaration, not an arrow of its own) — and, for a selected property, the records
+    // that list those values (2026-10-14).
+    for (const v of [...out]) {
+      const lv = nodes[v]!.level;
+      if (lv !== "productValue" && lv !== "optionValue") continue;
+      for (const p of parentsOf[v] ?? []) {
+        if (isPropertyLevel(nodes[p]!.level)) out.add(p);
+        else if (viaProperty && !out.has(p)) {
+          out.add(p);
+          walk(p, parentsOf);
+        }
+      }
     }
     for (const other of [...(linksOf.get(selected) ?? []), ...compatibleShown]) {
       out.add(other);
@@ -525,6 +685,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     setCompatLoaded(false);
     setPreset(null);
     setCompatOptions(new Set());
+    setDerivedFrom(new Map());
     setOfferQ("");
     if (isPropertyLevel(n.level)) {
       // No Catalog record or rules for a property: the panel says what the card is.
@@ -552,6 +713,10 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           return want.has(k) ? [[i, want.get(k)!] as const] : [];
         });
         setCompatible(new Set(found.map(([i]) => i)));
+        setDerivedFrom(new Map(Object.entries(compat.data.derivedFrom ?? {}).flatMap(([o, ps]) => {
+          const i = indexOf.get(`customizationOption:${o}`);
+          return i === undefined ? [] : [[i, ps.flatMap((p) => { const j = indexOf.get(`customizationOption:${p}`); return j === undefined ? [] : [j]; })] as const];
+        })));
         setCompatOptions(new Set((compat.data.compatibleOptions ?? []).flatMap((o) => { const i = indexOf.get(`customizationOption:${o}`); return i === undefined ? [] : [i]; })));
         setPreset(compat.data.base ? {
           base: compat.data.base,
@@ -683,6 +848,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       parentsOf,
       colW,
     );
+    const grouped = editLayout ? null : regroup(f, levels, parentsOf, nodes, colW, folded, offering ? "customizationOption" : null, COPY.otherGroup);
     if (editLayout && selLevel === "customizationOption") {
       // An option's two columns, laid out by hand: a filter, then cards under group headings — compatible
       // options by type, products by line (2026-10-14).
@@ -730,9 +896,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         height = Math.max(height, y);
         return { key: c.key, x, filterY: HEAD_H, labels, placeholder: c.placeholder, shown: [...groups.values()].flat().length, total: c.items.length };
       });
-      return { ...f, height, offer: null, editCols };
+      return { ...f, height, offer: null, editCols, grouped };
     }
-    if (!offering) return { ...f, offer: null, editCols: null };
+    if (!offering) return { ...f, offer: null, editCols: null, grouped };
 
     // The offered-options column, laid out by hand: filter, then per kind a header and its options by type.
     const x = PAD + levels.indexOf("customizationOption") * colW;
@@ -795,7 +961,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       offer.rails.push({ state, y1, ticks });
       y += GROUP_GAP;
     }
-    return { ...f, height: Math.max(f.height, y), offer, editCols: null };
+    return { ...f, height: Math.max(f.height, y), offer, editCols: null, grouped };
   }, [
     focusing,
     offering,
@@ -906,6 +1072,63 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     lastSelected.current = selected;
   }, [selected]);
 
+  /**
+   * Focused view (not the edit layout): each column scrolls on its own (Richard, 2026-10-14). The cards
+   * stay on one canvas — so arrows can join them — and a column's scroll is an offset: its cards,
+   * headings and the arrows' ends move by it; arrows to a card scrolled out of view stop, faded, at
+   * the column's edge.
+   */
+  const virtualCols = focus !== null && !editLayout && !columnsMode;
+  const [colScroll, setColScroll] = useState<{ key: string; by: Record<number, number> }>({ key: "", by: {} });
+  const colOfX = (x: number) => Math.round((x - PAD) / colW);
+  const offAt = (x: number) => (virtualCols && colScroll.key === focusKey ? (colScroll.by[colOfX(x)] ?? 0) : 0);
+  const view = (p: Pos): Pos => ({ x: p.x, y: p.y - offAt(p.x) });
+  /** Each focused column's content bottom, for its scroll range and its thumb. */
+  const colBottom = useMemo(() => {
+    const m = new Map<number, number>();
+    if (!focus) return m;
+    const col = (x: number) => Math.round((x - PAD) / colW);
+    const up = (x: number, bottom: number) => m.set(col(x), Math.max(m.get(col(x)) ?? 0, bottom));
+    for (const p of focus.pos.values()) up(p.x, p.y + ROW_H);
+    for (const h of focus.grouped?.heads ?? []) up(h.x, h.y + TYPE_H + ROW_H);
+    if (focus.offer) up(focus.offer.x, focus.height);
+    return m;
+  }, [focus, colW]);
+  const maxScroll = (c: number) => Math.max(0, (colBottom.get(c) ?? 0) + PAD - areaH);
+  const scrollCol = (c: number, to: number) =>
+    setColScroll((s) => {
+      const by = s.key === focusKey ? s.by : {};
+      const v = Math.max(0, Math.min(maxScroll(c), to));
+      return v === (by[c] ?? 0) ? s : { key: focusKey, by: { ...by, [c]: v } };
+    });
+  const wheelRef = useRef<(e: WheelEvent) => void>(() => {});
+  wheelRef.current = (e: WheelEvent) => {
+    if (!virtualCols || !area.current) return;
+    const left = area.current.getBoundingClientRect().left;
+    const c = colOfX(e.clientX - left - colW / 2 + PAD);
+    if (maxScroll(c) <= 0) return;
+    e.preventDefault();
+    scrollCol(c, offAt(PAD + c * colW) + e.deltaY);
+  };
+  // Columns scroll on their own: the box itself stays at the top.
+  useLayoutEffect(() => {
+    if (virtualCols && area.current) area.current.scrollTop = 0;
+  }, [virtualCols, focusKey]);
+  useEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    const h = (e: WheelEvent) => wheelRef.current(e);
+    el.addEventListener("wheel", h, { passive: false });
+    return () => el.removeEventListener("wheel", h);
+  }, []);
+  /** A card's top for an arrow end: in its column's view, held at the edge when scrolled out. */
+  const arrowEnd = (p: Pos) => {
+    const v = view(p);
+    const lo = HEAD_H - CARD_H / 2;
+    const hi = areaH - CARD_H / 2 - 4;
+    return { p: { x: v.x, y: Math.max(lo, Math.min(hi, v.y)) }, out: virtualCols && (v.y < lo || v.y > hi) };
+  };
+
   const posOf = (i: number) => {
     const start = from?.pos.get(i);
     return start ? { x: start.x, y: start.y + from!.dy } : targetOf(i);
@@ -993,7 +1216,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
 
   useLayoutEffect(() => {
     const pos = new Map<number, Pos>();
-    for (const i of drawn) if (onMap(i) && !isGone(i)) pos.set(i, posOf(i)!);
+    for (const i of drawn) if (onMap(i) && !isGone(i)) pos.set(i, virtualCols ? view(posOf(i)!) : posOf(i)!);
     shown.current = { pos };
   });
 
@@ -1033,8 +1256,12 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     if (focus) for (const i of focus.pos.keys()) s.add(i);
     return [...s];
   }, [rest, focus]);
+  const grouped = focus?.grouped ?? null;
+  const fa = grouped && focus ? focusArrows(grouped, focus.pos, edges, parentsOf, childrenOf) : null;
   const arrows = focus
-    ? edges.filter(([a, b]) => focus.pos.has(a) && focus.pos.has(b))
+    ? fa
+      ? fa.cards
+      : edges.filter(([a, b]) => focus.pos.has(a) && focus.pos.has(b))
     : columnsMode
       ? []
       : edges.filter(([a, b]) => rest.pos.has(a) && rest.pos.has(b));
@@ -1165,9 +1392,12 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     type="button"
                     // An offered option belongs to the Customizations stream: selecting it goes there.
                     onClick={() => select(i, !inStream(i))}
+                    onMouseEnter={offer && (derivedFrom.has(i) || partnersOf.has(i)) ? () => setHovered(i) : undefined}
+                    onMouseLeave={offer && (derivedFrom.has(i) || partnersOf.has(i)) ? () => setHovered(null) : undefined}
                     title={[
                       n.title,
                       offer ? COPY.offerKind[offer] : null,
+                      offer === "derived" && derivedFrom.get(i)?.length ? COPY.derivedWhy(derivedFrom.get(i)!.map((j) => nodes[j]!.title)) : null,
                       change?.kind === "gain" ? EDIT.previewGain : change?.kind === "lose" ? EDIT.previewLose : change?.was ? EDIT.previewChange(COPY.offerKind[change.was]) : null,
                       exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}${noEffect ? ` — ${EDIT.noEffectWhy(exc.mode)}` : ""}` : null,
                       pending.length ? EDIT.pendingHere(pending.map((e) => describeEdit(e, session.names)).join("; ")) : null,
@@ -1210,6 +1440,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                       <span className="truncate text-[11px] text-muted-foreground">
                         {preset?.preselected.has(i) ? <span className="font-medium text-blue-700 dark:text-blue-400">{EDIT.preselected} · </span> : null}
                         {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)}{noEffect ? ` ${EDIT.noEffect}` : ""} · </span> : null}
+                        {offer === "derived" && derivedFrom.get(i)?.length ? (
+                          <span className="text-foreground/80">{COPY.via(derivedFrom.get(i)!.map((j) => nodes[j]!.title))} · </span>
+                        ) : null}
                         {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
                       </span>
                     </span>
@@ -1477,10 +1710,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           ref={area}
           className="relative min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-border bg-muted/30 [scrollbar-gutter:stable]"
         >
-          <div className="relative" style={{ width, height: columnsMode ? Math.max(HEAD_H, areaH - 1) : height + PAD }}>
+          {/* Fixed to the box when columns scroll on their own: cards past its edge must not scroll the box. */}
+          <div
+            className={`relative ${columnsMode || virtualCols ? "overflow-clip" : ""}`}
+            style={{ width, height: columnsMode || virtualCols ? Math.max(HEAD_H, areaH - 1) : height + PAD }}
+          >
             <svg
               width={width}
-              height={columnsMode ? Math.max(HEAD_H, areaH - 1) : height}
+              height={columnsMode || virtualCols ? Math.max(HEAD_H, areaH - 1) : height}
               className="pointer-events-none absolute inset-0"
               aria-hidden
             >
@@ -1519,16 +1756,35 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                       : related.has(a) && related.has(b)
                         ? "on"
                         : "dim";
+                  const ea = arrowEnd(posOf(a)!);
+                  const eb = arrowEnd(posOf(b)!);
                   return (
                     <path
                       key={`${a}-${b}`}
-                      d={elbow(posOf(a)!, posOf(b)!, cardW, colW)}
+                      d={elbow(ea.p, eb.p, cardW, colW)}
                       stroke={LINE[k]}
                       strokeWidth={k === "on" ? 1.25 : 1}
+                      strokeOpacity={ea.out || eb.out ? 0.35 : undefined}
                       markerEnd={`url(#spec-map-arrow-${k})`}
                     />
                   );
                 })}
+                {!from
+                  ? fa?.toHead.map(({ from: a, head }) => {
+                      const ea = arrowEnd(posOf(a)!);
+                      const eb = arrowEnd({ x: head.x, y: head.y + TYPE_H / 2 - CARD_H / 2 });
+                      return (
+                        <path
+                          key={`${a}-${head.key}`}
+                          d={elbow(ea.p, eb.p, cardW, colW)}
+                          stroke={LINE.on}
+                          strokeWidth={1.25}
+                          strokeOpacity={ea.out || eb.out ? 0.35 : undefined}
+                          markerEnd="url(#spec-map-arrow-on)"
+                        />
+                      );
+                    })
+                  : null}
               </g>
               {/* Separate from the arrows above: the offers arrive after the move, and fade in on their own. */}
               <g
@@ -1537,13 +1793,13 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                 strokeLinejoin="round"
                 className="animate-in fade-in fill-mode-backwards duration-200 delay-300"
               >
-                {offerUi?.groups.map((g) => (
+                {offerUi?.groups.filter((g) => g.state !== "derived").map((g) => (
                   <path
                     key={g.state}
                     // To the header's middle: elbow() aims at a card's middle, so shift the target to match.
                     d={elbow(
-                      posOf(selected!)!,
-                      { x: offerUi.x, y: g.y + GROUP_H / 2 - CARD_H / 2 },
+                      arrowEnd(posOf(selected!)!).p,
+                      arrowEnd({ x: offerUi.x, y: g.y + GROUP_H / 2 - CARD_H / 2 }).p,
                       cardW,
                       colW,
                     )}
@@ -1554,12 +1810,35 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     markerEnd={`url(#spec-map-arrow-${g.total ? "on" : "rest"})`}
                   />
                 ))}
+                {/* Hovering a derived option (or a partner): arcs from the options that make it available. */}
+                {offerUi && hovered !== null
+                  ? (derivedFrom.has(hovered)
+                      ? derivedFrom.get(hovered)!.map((p) => [p, hovered] as const)
+                      : (partnersOf.get(hovered) ?? []).map((d) => [hovered, d] as const)
+                    )
+                      .filter(([p, d]) => focus?.pos.has(p) && focus.pos.has(d))
+                      .map(([p, d]) => {
+                        const a = arrowEnd(posOf(p)!).p;
+                        const b = arrowEnd(posOf(d)!).p;
+                        const right = a.x + cardW + 6;
+                        const bend = right + 14;
+                        return (
+                          <path
+                            key={`via-${p}-${d}`}
+                            d={`M${right - 6},${a.y + CARD_H / 2} H${bend} V${b.y + CARD_H / 2} H${right - 4}`}
+                            stroke="var(--color-blue-600, #2563eb)"
+                            strokeWidth={1.5}
+                            markerEnd="url(#spec-map-arrow-on)"
+                          />
+                        );
+                      })
+                  : null}
                 {offerUi?.rails.map((r) =>
                   r.ticks.length ? (
                     <path
                       key={`rail-${r.state}`}
-                      d={`M${offerUi.x + RAIL},${r.y1} V${r.ticks.at(-1)}${r.ticks
-                        .map((t) => ` M${offerUi.x + RAIL},${t} H${offerUi.x + INDENT - 1}`)
+                      d={`M${offerUi.x + RAIL},${r.y1 - offAt(offerUi.x)} V${r.ticks.at(-1)! - offAt(offerUi.x)}${r.ticks
+                        .map((t) => ` M${offerUi.x + RAIL},${t - offAt(offerUi.x)} H${offerUi.x + INDENT - 1}`)
                         .join("")}`}
                       stroke={LINE.on}
                       strokeDasharray={OFFER_DASH[r.state]}
@@ -1576,7 +1855,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                 return (
                   <div
                     key={level}
-                    className="absolute flex items-center gap-2"
+                    className="absolute z-20 flex items-center gap-2"
                     style={{
                       left: PAD + li * colW,
                       top: 8,
@@ -1612,7 +1891,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               return (
                 <div
                   key={level}
-                  className="absolute flex items-center gap-2"
+                  className="absolute z-20 flex items-center gap-2"
                   style={{
                     left: PAD + li * colW,
                     top: 8,
@@ -1712,7 +1991,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   className="absolute"
                   style={{
                     left: offerUi.x,
-                    top: offerUi.filterY + 4,
+                    top: offerUi.filterY + 4 - offAt(offerUi.x),
                     width: cardW,
                   }}
                 >
@@ -1743,7 +2022,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     className={`absolute flex items-center gap-2 rounded-md border border-border bg-card px-2.5 text-left text-xs font-semibold shadow-xs enabled:hover:bg-muted disabled:cursor-default ${g.total ? "text-foreground" : "text-muted-foreground"}`}
                     style={{
                       left: offerUi.x,
-                      top: g.y,
+                      top: g.y - offAt(offerUi.x),
                       width: cardW,
                       height: GROUP_H,
                     }}
@@ -1763,12 +2042,56 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   </button>
                 ))}
                 {offerUi.types.map((t) => (
-                  <GroupHeading key={t.key} label={t} left={offerUi.x + INDENT} width={cardW - INDENT} foldable={editLayout} onToggle={() => toggleFold(t.key)} />
+                  <GroupHeading key={t.key} label={{ ...t, y: t.y - offAt(offerUi.x) }} left={offerUi.x + INDENT} width={cardW - INDENT} foldable={editLayout} onToggle={() => toggleFold(t.key)} />
                 ))}
               </div>
             ) : null}
 
-            {(columnsMode ? [] : drawn).map((i) => (onMap(i) ? renderCard(i, posOf(i)!) : null))}
+            {(columnsMode ? [] : drawn).map((i) => (onMap(i) ? renderCard(i, virtualCols ? view(posOf(i)!) : posOf(i)!) : null))}
+            {/* The focused view's group headings (they fold), and the band the scrolled cards pass under. */}
+            {grouped && !from
+              ? grouped.heads.map((h) => (
+                  <GroupHeading key={h.key} label={{ ...h, y: h.y - offAt(h.x) }} left={h.x} width={cardW} foldable onToggle={() => toggleFold(h.key)} />
+                ))
+              : null}
+            {virtualCols ? (
+              <>
+                <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[15] bg-background" style={{ height: HEAD_H - 4 }}>
+                  <div className="size-full bg-muted/30" />
+                </div>
+                {[...colBottom].map(([c, bottom]) => {
+                  const total = bottom + PAD - HEAD_H;
+                  const vis = areaH - HEAD_H;
+                  if (total <= vis) return null;
+                  const h = Math.max(24, (vis / total) * vis);
+                  const top = HEAD_H + (offAt(PAD + c * colW) / (total - vis)) * (vis - h);
+                  return (
+                    <div
+                      key={`thumb-${c}`}
+                      role="scrollbar"
+                      aria-orientation="vertical"
+                      aria-valuenow={Math.round(offAt(PAD + c * colW))}
+                      aria-valuemax={Math.round(total - vis)}
+                      className="absolute z-20 w-1.5 cursor-grab rounded-full bg-foreground/20 hover:bg-foreground/40"
+                      style={{ left: PAD + c * colW + cardW + Math.min(10, (colW - cardW) / 3), top, height: h }}
+                      onPointerDown={(e) => {
+                        e.preventDefault(); // a drag must not select the page's text
+                        const startY = e.clientY;
+                        const start = offAt(PAD + c * colW);
+                        const per = (total - vis) / Math.max(1, vis - h);
+                        const move = (ev: PointerEvent) => scrollCol(c, start + (ev.clientY - startY) * per);
+                        const up = () => {
+                          window.removeEventListener("pointermove", move);
+                          window.removeEventListener("pointerup", up);
+                        };
+                        window.addEventListener("pointermove", move);
+                        window.addEventListener("pointerup", up);
+                      }}
+                    />
+                  );
+                })}
+              </>
+            ) : null}
             {columnsMode
               ? levels.map((level, li) => {
                   if (streamOf(level) !== stream || collapsed.has(level)) return null;

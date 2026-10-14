@@ -25,7 +25,7 @@ export type ProductOptionRow = {
   title: string;
   state: ProductOptionState;
   /** For a derived option: per type it depends on, the partners that keep it available. */
-  because: { typeTitle: string; partners: string[] }[];
+  because: { typeTitle: string; partners: string[]; partnerIds: string[] }[];
   /** Reference options are information, never a customer's pick. */
   reference: boolean;
 };
@@ -139,6 +139,7 @@ export function buildProductView(source: RulesSource, product: SourceProduct): P
         because: (r.derivedBecause.get(id) ?? []).map((reason) => ({
           typeTitle: name(reason.typeId),
           partners: reason.partners.map(name),
+          partnerIds: reason.partners,
         })),
         reference: optionById.get(id)?.configuratorRole === "reference",
       };

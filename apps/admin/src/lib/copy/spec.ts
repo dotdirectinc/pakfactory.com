@@ -381,6 +381,11 @@ export const ADMIN_SPEC_MAP_COPY = {
   relatedIn: (n: number, stream: string) => `${n} related in ${stream}`,
   clear: "Show everything",
   collapsed: (n: number) => `${n} records — click to show`,
+  /** A focused column's group for cards with no parent in an earlier column. */
+  otherGroup: "Not under a card to the left",
+  /** A derived offer: the options that make it available (the product does not list it). */
+  via: (names: string[]) => `via ${names.join(", ")}`,
+  derivedWhy: (names: string[]) => `Offered because it is compatible with ${names.join(", ")} — the product does not list it`,
   propertyCard:
     "A property. Its arrows run from the records that state it (standard products or options) to the values they use. Properties and their values are edited in Studio.",
   openFullPage: "Open full page",
