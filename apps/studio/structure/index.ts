@@ -1065,26 +1065,15 @@ export const newsroomStructure = (
         .title('Newsroom')
         .items([
             ...sitePreviewHint(S),
-            // No `.icon()` on these two: `pressRelease` / `newsCoverage` declare
-            // their own, and `.schemaType()` picks it up — setting it again costs
-            // a type error against the baseline for an icon that already renders.
+            // No `.icon()`: `pressRelease` declares its own and `.schemaType()`
+            // picks it up — setting it again costs a type error against the
+            // baseline for an icon that already renders.
             S.listItem()
                 .title('Press Releases')
                 .schemaType('pressRelease')
                 .child(
                     S.documentTypeList('pressRelease')
                         .title('Press Releases')
-                        .defaultOrdering([{field: 'publishedAt', direction: 'desc'}]),
-                ),
-            // Outside articles ABOUT us — a link, never a copy of the article.
-            // Ships empty if there is no coverage to list yet; the schema is not
-            // the blocker there, a PR push is.
-            S.listItem()
-                .title('News Coverage')
-                .schemaType('newsCoverage')
-                .child(
-                    S.documentTypeList('newsCoverage')
-                        .title('News Coverage')
                         .defaultOrdering([{field: 'publishedAt', direction: 'desc'}]),
                 ),
         ]);
