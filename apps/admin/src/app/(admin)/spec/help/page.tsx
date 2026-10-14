@@ -64,8 +64,8 @@ export default async function SpecHelpPage() {
             (rules that look wrong or incomplete), and <em>Old explorer rules</em> (the old explorer's hand-written rules
             and where each stands). Edit rules in Studio; this page follows on its next load.
           </Term>
-          <Term name="Frames to approve">
-            Proposed changes waiting for a decision, plus the <strong>Sync</strong> panel. A frame is one group of
+          <Term name="Registry">
+            Proposed changes waiting for a decision (the number next to it), plus the <strong>Sync</strong> panel and recent syncs. A frame is one group of
             related changes; open it to see every row as a sentence.
           </Term>
           <Term name="Catalog">
@@ -92,7 +92,7 @@ export default async function SpecHelpPage() {
         </p>
         <dl className="flex flex-col gap-3">
           <Term name="Sync Changes">
-            On Frames to approve. Compares Sanity with the registry and proposes registry changes — frames named{" "}
+            On Registry. Compares Sanity with the registry and proposes registry changes — frames named{" "}
             <em>Spec registry · …</em>. Approvers and admins.
           </Term>
           <Term name="Sync Notion">

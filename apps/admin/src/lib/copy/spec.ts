@@ -287,7 +287,7 @@ export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
   title: "Sync history",
   lead:
     "Every sync, newest first: who started it, the frames it produced and what was decided on each. For an approved frame, the next sync of the same kind re-checks it — whether every field it changed still matches.",
-  back: "Frames to approve",
+  back: "Registry",
   link: "All syncs and results",
   current: "Current sync",
   past: "Past syncs",
@@ -427,7 +427,7 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   submitting: "Submitting…",
   cancel: "Cancel",
   devOnly: "Development dataset. Approved changes are written to the registry, then to Sanity at once.",
-  submitted: "Submitted — waiting for approval in Frames to approve.",
+  submitted: "Submitted — waiting for approval in Registry.",
   applied: (w: { applied: number; stale: number; failed: number } | null) =>
     w ? `Approved and applied — ${w.applied} written to Sanity${w.stale ? `, ${w.stale} not written (changed in Studio since)` : ""}${w.failed ? `, ${w.failed} failed` : ""}.` : "Approved — writing to Sanity shortly.",
   openFrame: "Open the frame",

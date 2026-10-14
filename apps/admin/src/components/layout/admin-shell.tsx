@@ -17,7 +17,7 @@ export function AdminShell({
   devBypassActive: boolean;
   /** Registry grant — Spec System is hidden without one. */
   specAccess: boolean;
-  /** Draft frames in the registry; shown on "Frames to approve". */
+  /** Draft frames in the registry; shown on "Registry". */
   pendingFrames: number;
   account: AdminAccountMenuProps;
 }) {

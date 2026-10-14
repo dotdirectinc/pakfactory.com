@@ -94,7 +94,8 @@ const NAV: readonly NavEntry[] = [
       },
       {
         href: "/spec",
-        label: "Frames to approve",
+        // The registry's change desk: syncs, frames waiting (the count) and decided ones (Richard, 2026-10-14).
+        label: "Registry",
         count: "pendingFrames",
         match: (path) =>
           path === "/spec" ||
