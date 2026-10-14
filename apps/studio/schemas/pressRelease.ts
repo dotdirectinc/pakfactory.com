@@ -3,6 +3,7 @@ import {BellIcon} from '@sanity/icons'
 import {groupsFor, GROUPS} from '../lib/field-groups'
 import {seoFields, socialFields} from '../lib/seo-fields'
 import {MEDIA_TAG} from '../lib/media-tags'
+import {warnOnPublishedSlugChange} from '../lib/slug-rules'
 import {inlineBlocks} from './inline'
 
 /**
@@ -58,7 +59,19 @@ export const pressRelease = defineType({
         'Generates the URL: /newsroom/[slug]. Changing it after publishing creates a redirect ' +
         'automatically — that redirect is the only thing keeping old links alive, so don’t ' +
         'edit it without reason.',
-      validation: (Rule) => Rule.required(),
+      // Error on empty; warn when renaming something already live. The redirect
+      // keeps the old URL working — the warning exists because that safety net
+      // is invisible from the form, not because it is missing.
+      validation: (Rule) => [
+        Rule.required(),
+        Rule.custom(
+          warnOnPublishedSlugChange(
+            'Publishing this will point the old URL at the new one with a permanent redirect. ' +
+              'That redirect is the only thing keeping outside links alive — outlets and wires ' +
+              'may already have quoted the old URL, so rename only with reason.',
+          ),
+        ).warning(),
+      ],
     }),
     defineField({
       name: 'summary',

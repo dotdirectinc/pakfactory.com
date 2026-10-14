@@ -106,3 +106,43 @@ export function uniqueSlugWithinParent(
     )
   }
 }
+
+/**
+ * Warn when the slug being published differs from the one already live.
+ *
+ * Not an error. Renaming a published document is legitimate — a typo caught two
+ * minutes after publishing is the common case, and nothing has linked it yet.
+ * What the editor cannot see from the form is that the document is *already
+ * published at a different URL*, so this rule says so at the moment it matters.
+ *
+ * The publish actions (`publishWithRedirect`, `publishCaseStudy`,
+ * `publishPressRelease`) create the redirect that keeps the old URL alive. This
+ * warning exists because that safety net is invisible, not because it is absent
+ * — so the message should say what will happen, never claim links will break.
+ *
+ * Fires only once a published version exists: a draft's `_id` carries the
+ * `drafts.` prefix, so the lookup finds nothing until the first publish.
+ *
+ * @param consequence Sentence appended after the live path, in the voice of the
+ *                    type's own field description.
+ */
+export function warnOnPublishedSlugChange(consequence: string) {
+  return async (slug: SlugValue | undefined, context: ValidationContext) => {
+    const next = slug?.current
+    if (!next) return true
+
+    const publishedId = (context.document as { _id?: string } | undefined)?._id?.replace(
+      /^drafts\./,
+      '',
+    )
+    if (!publishedId) return true
+
+    const client = context.getClient({ apiVersion: '2024-01-01' })
+    const live = await client.fetch<string | null>(`*[_id == $id][0].slug.current`, {
+      id: publishedId,
+    })
+
+    if (!live || live === next) return true
+    return `Already published as "${live}". ${consequence}`
+  }
+}
