@@ -86,6 +86,17 @@ Decided by Richard on 2026-10-13, after the four trial cases were checked agains
 
 Notion frames are unchanged (stale, never overwritten). The switch (§ 2) follows the first end-to-end pass on development. Implemented by `pakfactory.com-backend` #341 (`sanityOps.ts`, `approve_changeset` check, `changeset_item.overrode`).
 
+## Amendment 2026-10-14 — relations only; inspiration pre-selections are content
+
+Decided by Richard on 2026-10-14. The Spec System edits **relations** and nothing else: (1) the customization rules — availability and compatibility — and (2) parent/child links (ADR-026).
+
+An **inspiration** product has no rules of its own: it offers what its base product ("Based on") offers, so its offers are edited through its base. Its `availableCustomizations` holds its **pre-selections** — the entries flagged `preselected`, which the site's configurator starts from. That is content about one product, not a relation, so:
+
+- pre-selections stay **Studio-owned**; they are not mirrored in the registry (the import already mirrors `availableCustomizations` for standard products only);
+- the read-only switch (PROD-2988) applies to `product.availableCustomizations` on **standard products only**; on inspiration products the field stays editable;
+- the Spec System shows pre-selections (the Spec Map marks them when an inspiration product is in focus) and its impact check **warns** when a rule edit would stop a base product offering an option one of its inspiration products pre-selects;
+- `product.basedOn` — which product an inspiration product is based on — *is* a relation, and moves with structure (ADR-026, PROD-3006–3008).
+
 ## What ADR-022 keeps
 
 | ADR-022 | Status |
