@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
+import type { RecordGroup, RecordItem } from "@/lib/spec/record-sections";
 import { isTableKey, type TableKey } from "@/lib/spec/catalog-table-model";
 import { SpecRegistryId } from "@/components/spec/spec-registry-id";
 import { SpecRuleEditor } from "@/components/spec/spec-rule-editor";
@@ -118,35 +119,82 @@ export function SpecRecordView({
         </section>
       ))}
 
-      <section className="flex flex-col gap-2">
-        <Section className="text-base font-semibold text-foreground">{COPY.fields}</Section>
-        <dl className="overflow-hidden rounded-md border border-border bg-card text-sm">
-          {r.fields.map((f) => (
-            <div key={f.key} className="grid gap-1 border-t border-border px-3 py-2 first:border-t-0 even:bg-muted/50 sm:grid-cols-[14rem_1fr] sm:gap-4">
-              <dt className="text-muted-foreground">{f.label}</dt>
-              <dd className="min-w-0 break-words text-foreground">
-                {f.links.length ? (
-                  <span className="flex flex-wrap gap-x-2 gap-y-1">
-                    {f.links.map((l, i) =>
-                      l.href ? (
-                        <RecordLink key={`${l.title}-${i}`} href={l.href} onSelect={onSelect} className="underline-offset-2 hover:underline">{l.title}</RecordLink>
-                      ) : (
-                        <span key={`${l.title}-${i}`}>{l.title}</span>
-                      ),
-                    )}
-                  </span>
-                ) : f.text === null ? (
-                  <span className="text-muted-foreground/60">—</span>
-                ) : f.key === "_createdAt" || f.key === "_updatedAt" ? (
-                  when(String(f.text))
-                ) : (
-                  String(f.text)
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+      <p className="text-xs text-muted-foreground">{COPY.legend}</p>
+      {r.sections.map((sec) => (
+        <section key={sec.key} className="flex flex-col gap-2">
+          <Section className="text-base font-semibold text-foreground">{sec.title}</Section>
+          <dl className="overflow-hidden rounded-md border border-border bg-card text-sm">
+            {sec.fields.map((f) => (
+              <div key={f.key} className="grid gap-1 border-t border-border px-3 py-2 first:border-t-0 even:bg-muted/50 sm:grid-cols-[14rem_1fr] sm:gap-4">
+                <dt className="text-muted-foreground">{f.label}</dt>
+                <dd className="min-w-0 break-words text-foreground">
+                  {f.groups.length ? (
+                    <FieldGroups groups={f.groups} onSelect={onSelect} />
+                  ) : f.text === null ? (
+                    <span className="text-muted-foreground/60">{COPY.empty}</span>
+                  ) : f.key === "_createdAt" || f.key === "_updatedAt" ? (
+                    when(String(f.text))
+                  ) : (
+                    String(f.text)
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
     </>
+  );
+}
+
+/** A field's references: under group headings when there are groups, else one wrapped line. */
+function FieldGroups({ groups, onSelect }: { groups: RecordGroup[]; onSelect?: OnSelect }) {
+  if (groups.length === 1 && groups[0]!.title === null) return <Items items={groups[0]!.items} onSelect={onSelect} />;
+  return (
+    <div className="flex flex-col gap-3">
+      {groups.map((g, gi) => (
+        <div key={`${g.title}-${gi}`} className="flex flex-col gap-1">
+          {g.title !== null ? (
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {g.title} <span className="tabular-nums">· {g.items.length}</span>
+            </span>
+          ) : null}
+          <Items items={g.items} onSelect={onSelect} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Links, then names with no Spec page, then unpublished references — labelled apart when mixed. */
+function Items({ items, onSelect }: { items: RecordItem[]; onSelect?: OnSelect }) {
+  if (!items.length) return <span className="text-muted-foreground/60">{COPY.empty}</span>;
+  const kind = (i: RecordItem) => (i.href ? 0 : i.published ? 1 : 2);
+  const mixed = new Set(items.map(kind)).size > 1;
+  return (
+    <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      {items.map((it, i) => {
+        const k = kind(it);
+        const label = mixed && k > 0 && (i === 0 || kind(items[i - 1]!) !== k) ? (k === 1 ? COPY.noPageLabel : COPY.unpublishedLabel) : null;
+        return (
+          <span key={`${it.title}-${i}`} className="inline-flex flex-wrap items-baseline gap-1">
+            {label ? <span className="text-xs text-muted-foreground">{label}</span> : null}
+            {it.href ? (
+              <RecordLink href={it.href} onSelect={onSelect} className="underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground">
+                {it.title}
+              </RecordLink>
+            ) : it.published ? (
+              <span className="text-muted-foreground" title={COPY.noPage}>{it.title}</span>
+            ) : (
+              <span className="italic text-muted-foreground/70" title={COPY.unpublished}>{it.title}</span>
+            )}
+            {it.tags.map((t) => (
+              <Badge key={t} variant="outline" className="px-1.5 py-0 text-[10px] font-normal">{t}</Badge>
+            ))}
+            {it.note ? <span className="text-xs text-muted-foreground">— {it.note}</span> : null}
+          </span>
+        );
+      })}
+    </span>
   );
 }

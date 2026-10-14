@@ -288,6 +288,14 @@ export const ADMIN_SPEC_RECORD_COPY = {
     `From Sanity (${dataset}). Edit its offers on the map (Edit rules above); its compatible options, type settings and the rest of its rules on its full page; everything else in Studio.`,
   images: (n: number) => `Images (${n})`,
   fields: "All fields",
+  /** Why some names link and others do not (Richard asked, 2026-10-14). */
+  legend:
+    "Underlined names open their page in the Spec catalog. Grey names are content with no Spec page (properties, glossary terms, case studies…) — edit them in Studio.",
+  noPage: "No Spec page — edit in Studio",
+  noPageLabel: "No Spec page:",
+  unpublishedLabel: "Not published:",
+  unpublished: "This reference points to a document that is not published (draft only or deleted).",
+  empty: "—",
   more: (shown: number, total: number) => `First ${shown} of ${total}.`,
 } as const;
 

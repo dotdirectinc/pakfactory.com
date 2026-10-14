@@ -6,14 +6,13 @@ import {
   HIDDEN,
   SPECS,
   collectRefs,
-  recordFields,
   recordHref,
   tableOfDoc,
   type Doc,
-  type RecordField,
   type RefInfo,
   type TableKey,
 } from "./catalog-table-model";
+import { recordSections, type RecordSection } from "./record-sections";
 
 /**
  * A catalog record's page (2026-10-08, Richard: every record at every level and status has one).
@@ -32,7 +31,8 @@ export type CatalogRecord = {
   registry?: RegistryIdentity;
   images: string[];
   rulesHref: string | null;
-  fields: RecordField[];
+  /** Its fields, in sections (record-sections.ts). */
+  sections: RecordSection[];
   children: ChildGroup[];
   dataset: string;
 };
@@ -101,8 +101,13 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
     const ids = new Set<string>();
     for (const [k, v] of Object.entries(doc)) if (!HIDDEN.has(k)) collectRefs(v, ids);
     const refDocs = ids.size
-      ? await client.fetch<{ _id: string; _type: string; kind?: string; title?: string; label?: string; name?: string; term?: string }[]>(
-          `*[_id in $ids]{ _id, _type, kind, title, label, name, term }`,
+      ? await client.fetch<{ _id: string; _type: string; kind?: string; title?: string; label?: string; name?: string; term?: string; group?: string | null }[]>(
+          // `group`: what a reference lists under — an option's Category › Type, a value's property.
+          `*[_id in $ids && ${PUBLISHED}]{ _id, _type, kind, title, label, name, term,
+            "group": select(
+              _type == "customizationOption" => array::join(array::compact([type->category->title, type->title]), " › "),
+              _type == "propertyValue" => property->title
+            ) }`,
           { ids: [...ids] },
           { cache: "no-store" },
         )
@@ -110,7 +115,7 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
     const refs = new Map<string, RefInfo>(
       refDocs.map((r) => {
         const t = tableOfDoc(r._type, r.kind);
-        return [r._id, { title: r.title ?? r.label ?? r.name ?? r.term ?? r._id, href: t ? recordHref(t, r._id) : null }];
+        return [r._id, { title: r.title ?? r.label ?? r.name ?? r.term ?? r._id, href: t ? recordHref(t, r._id) : null, group: r.group ?? null }];
       }),
     );
 
@@ -142,7 +147,7 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
         ...(entityId && entityCode ? { registry: { entityId, entityCode } } : {}),
         images: (doc._images ?? []).filter((u): u is string => Boolean(u)),
         rulesHref: spec.rules ? spec.rules(doc) : null,
-        fields: recordFields(doc, refs),
+        sections: recordSections(doc, refs),
         children: children.filter((c) => c.total > 0),
         dataset: RULES_DATASET,
       },
@@ -152,4 +157,5 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
   }
 }
 
-export const getCatalogRecord = cachedSpec("catalog-record", fetchRecord);
+// v2: fields in sections, with reference groups (2026-10-14).
+export const getCatalogRecord = cachedSpec("catalog-record-v2", fetchRecord);
