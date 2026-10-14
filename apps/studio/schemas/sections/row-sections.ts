@@ -145,7 +145,7 @@ export const postsRow = rowSection({
 // `{plural type}Row` / "{Singular type} row". "News row" would break §1.2:
 // there is no `news` type, so an editor would see **News row** in the insert
 // menu and **Press Releases** in the sidebar. It also leaves room for a
-// `newsCoverageRow` later. The band still RENDERS as "More announcements" —
+// a second newsroom type later. The band still RENDERS as "More announcements" —
 // that is the `heading` field's default, a different thing from the type name.
 //
 // No `sourceTo`: press-release categories are a string enum rather than

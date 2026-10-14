@@ -599,8 +599,8 @@ export default defineConfig([
     ],
   },
 
-  // ── Newsroom — comms team. Press Release · News Coverage (PROD-2909). The
-  //    catalog/detail LAYOUTS live in Main Website → Newsroom Pages. ─────────
+  // ── Newsroom — comms team. Press Release (PROD-2909). The catalog/detail
+  //    LAYOUTS live in Main Website → Newsroom Pages. ───────────────────────
   {
     name: 'newsroom',
     title: `Newsroom${datasetSuffix}`,

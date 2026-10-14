@@ -34,7 +34,6 @@ import { expertiseService } from './expertiseService'
 import { client } from './client'
 import { caseStudy } from './caseStudy'
 import { pressRelease } from './pressRelease'
-import { newsCoverage } from './newsCoverage'
 import { newsroomCatalogPage } from './newsroomCatalogPage'
 import { newsroomDetailPage } from './newsroomDetailPage'
 import { faq } from './faq'
@@ -116,10 +115,9 @@ export const schemaTypes = [
   client,
   caseStudy,
 
-  // Newsroom (PROD-2909) — the two content types live in the Newsroom
-  // workspace; the two layout types live in Main Website → Newsroom Pages.
+  // Newsroom (PROD-2909) — the content type lives in the Newsroom workspace;
+  // the two layout types live in Main Website → Newsroom Pages.
   pressRelease,
-  newsCoverage,
   newsroomCatalogPage,
   newsroomDetailPage,
 

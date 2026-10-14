@@ -526,15 +526,6 @@ export const siteLocations: DocumentLocationResolvers = {
         'Applies to every press release that selects this template.',
       ),
   }),
-  // Coverage is somebody else's article on somebody else's site. We link to it;
-  // we never host it, so there is nothing of ours to preview.
-  newsCoverage: defineLocations({
-    select: { title: 'headline' },
-    resolve: () =>
-      notOnSite(
-        'Coverage links out to the outlet\u2019s own site — it has no page here.',
-      ),
-  }),
   // Listing pages are pinned singletons addressed by _id, not by slug — the
   // schema has no slug field at all.
   listingPage: defineLocations({
