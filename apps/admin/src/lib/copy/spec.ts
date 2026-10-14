@@ -498,7 +498,6 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   makeCompatible: "Make compatible with…",
   notCompatible: (title: string) => `No longer compatible with ${title}`,
   editingIn: "Editing rules —",
-  propertyValues: (n: number) => `Property values ${n}`,
   showPanel: "Show details",
   hidePanel: "Fold details while editing",
   detailsRail: "Details",

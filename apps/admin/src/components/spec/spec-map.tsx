@@ -109,8 +109,11 @@ const EDIT_PANEL_W = 400;
 const EDIT_MAX_COL_W = 440;
 
 const MOVE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-/** Many-to-many and large: shown on demand. */
-const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
+/**
+ * Every level starts open (Richard, 2026-10-14). Property values used to start folded — many-to-many
+ * and large, when the resting map drew every arrow; resting columns now scroll on their own, unarrowed.
+ */
+const COLLAPSED_AT_START: TableKey[] = [];
 const ALL = "all";
 /**
  * A focused standard product's offered options, by how the product gets them (as Studio's product
@@ -586,9 +589,6 @@ function SpecMapView({ data }: { data: SpecMapData }) {
    * and property values become a breadcrumb; the details panel folds to a rail.
    */
   const editLayout = focusing && session.editing && (selLevel === "product" || selLevel === "customizationOption");
-  /** Property values are not part of any rule: a count while a product is focused, shown on request. */
-  const [showValues, setShowValues] = useState(false);
-  useEffect(() => setShowValues(false), [selected]);
 
 
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
@@ -609,7 +609,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       return selLevel === "product" ? (["product", "customizationOption"] as TableKey[]) : (["customizationOption", COMPATIBLE, "product"] as TableKey[]);
     }
     const own = mapLevelsOf(group.levels.map((l) => l.key))
-      .filter((k) => !(k === "productValue" && focusing && selLevel === "product" && !showValues));
+
     if (!offering) return own;
     const at = Math.max(own.indexOf("product"), own.indexOf("inspiration")) + 1;
     return [
@@ -617,7 +617,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       "customizationOption" as TableKey,
       ...own.slice(at),
     ];
-  }, [group, offering, editLayout, selLevel, focusing, showValues]);
+  }, [group, offering, editLayout, selLevel]);
   /**
    * The panel's width, so the map's columns for the new selection are known in the same render. It
    * gives way (to MIN_PANEL_W) before the cards get narrower than MIN_CARD_W.
@@ -1064,7 +1064,6 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     while (i !== undefined && out.length < 4) { out.unshift(nodes[i]!.title); i = parentsOf[i]?.[0]; }
     return out;
   }, [selected, nodes, parentsOf]);
-  const valueCount = related ? [...related].filter((i) => nodes[i]!.level === "productValue").length : 0;
 
   // ── editing on the diagram: offer or stop offering an option on a product ──
   // Not on stale data: never while the map is re-reading the rules after a submit, or before this
@@ -1379,11 +1378,6 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                 </span>
               </>
             )}
-            {!editLayout && focusing && sel.level === "product" && valueCount > 0 ? (
-              <Button size="xs" variant={showValues ? "secondary" : "ghost"} aria-pressed={showValues} onClick={() => setShowValues((v) => !v)}>
-                {EDIT.propertyValues(valueCount)}
-              </Button>
-            ) : null}
             {offering && shownOffers.size ? (
               <span
                 role="group"
