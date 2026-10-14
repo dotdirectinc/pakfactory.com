@@ -475,6 +475,10 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   preselected: "pre-selected",
   offeredOn: "Offered on products",
   compatibleWith: "Compatible with",
+  unsavedOnSwitch: (n: number, tab: string) =>
+    `${n} unsaved ${n === 1 ? "change" : "changes"} — switching to ${tab} leaves rule editing. Submit them from the panel, or discard them and switch.`,
+  discardAndSwitch: "Discard and switch",
+  keepEditing: "Keep editing",
   filterCompatible: "Filter compatible options",
   filterProducts: "Filter products",
   noGroup: "Other",

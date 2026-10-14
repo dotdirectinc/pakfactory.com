@@ -806,6 +806,25 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     setCompatible(new Set());
   };
 
+  /**
+   * A tab while editing rules (2026-10-14): the edit layout already spans streams, so another tab means
+   * "browse something else" — leave edit mode and show that tab's own map. With unsaved changes the
+   * switch waits for an explicit choice; nothing is discarded silently.
+   */
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const leaveEditTo = (tab: string) => {
+    session.clear();
+    clearSelection();
+    setPendingTab(null);
+    setStream(tab);
+  };
+  const changeTab = (tab: string) => {
+    if (tab === stream) return;
+    if (!session.editing) { setStream(tab); return; }
+    if (session.edits.length) { setPendingTab(tab); return; }
+    leaveEditTo(tab);
+  };
+
   // Scroll a record into view once it is laid out (search, panel links, "related in…").
   useEffect(() => {
     if (scrollTo === null) return;
@@ -958,7 +977,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border">
-        <Tabs value={stream} onValueChange={setStream}>
+        <Tabs value={stream} onValueChange={changeTab}>
           <TabsList variant="line">
             {TABLE_GROUPS.map((g) => (
               <TabsTrigger key={g.key} value={g.key}>
@@ -980,6 +999,16 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           )}
         </div>
       </div>
+
+      {pendingTab ? (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+          <span className="text-amber-900 dark:text-amber-200">
+            {EDIT.unsavedOnSwitch(session.edits.length, TABLE_GROUPS.find((g) => g.key === pendingTab)?.label ?? pendingTab)}
+          </span>
+          <Button size="xs" variant="destructive" onClick={() => leaveEditTo(pendingTab)}>{EDIT.discardAndSwitch}</Button>
+          <Button size="xs" variant="ghost" onClick={() => setPendingTab(null)}>{EDIT.keepEditing}</Button>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-72">
@@ -1095,7 +1124,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                 {EDIT.presetBase(preset.base.title, preset.preselected.size)}
               </Button>
             ) : null}
-            {elsewhere.map((g) => (
+            {/* Not while editing: the edit layout already shows the relations across tabs. */}
+            {(editLayout ? [] : elsewhere).map((g) => (
               <Button
                 key={g.key}
                 size="xs"
