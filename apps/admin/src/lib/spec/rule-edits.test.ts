@@ -97,7 +97,7 @@ describe("rule edits — the diagram's preview and edits", () => {
     const after = focusAfter(catalog(), products(), [{ kind: "exception", productId: "mailer", optionId: "gloss", mode: "add", reason: "OK" }], { level: "product", id: "mailer" });
     assert.ok(after?.level === "product" && after.options.some((o) => o.id === "gloss" && o.state === "added"));
     assert.deepEqual(focusAfter(catalog(), products(), [{ kind: "pair", a: "matte", b: "kraft", compatible: false }], { level: "customizationOption", id: "matte" }),
-      { level: "customizationOption", id: "matte", products: [] });
+      { level: "customizationOption", id: "matte", products: [], compatible: [] });
   });
   it("turns 'offer it / take it away' into an offer for product-decided options and an exception otherwise", async () => {
     const { offerEdit } = await import("./rule-edits");
@@ -143,5 +143,13 @@ describe("rule edits — inspiration products (2026-10-14)", () => {
     assert.ok(w);
     assert.match(w.text, /^1 inspiration product pre-selects an option its base would no longer offer: Gift Mailer \(Matte\)/);
     assert.equal(computeImpact(catalog(), products(), [{ kind: "offer", productId: "mailer", optionId: "white", offered: true }], names, insp).warnings.length, 0);
+  });
+});
+
+describe("rule edits — an option's compatible options after the edits", () => {
+  it("lists them from either side of the pair", async () => {
+    const { focusAfter } = await import("./rule-edits");
+    const f = focusAfter(catalog(), products(), [{ kind: "pair", a: "white", b: "matte", compatible: true }], { level: "customizationOption", id: "matte" });
+    assert.deepEqual(f?.level === "customizationOption" && [...f.compatible].sort(), ["kraft", "white"]);
   });
 });

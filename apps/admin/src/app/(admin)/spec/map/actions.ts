@@ -38,6 +38,8 @@ export async function loadMapCompatible(
   products: string[];
   options: { id: string; state: ProductOptionState | "removed" }[];
   exceptions: ProductException[];
+  /** An option: the options it is compatible with (either side records the pair). */
+  compatibleOptions?: string[];
   /** An inspiration product: the product its offers come from, and what it pre-selects. */
   base?: { id: string; title: string };
   preselected?: string[];
@@ -66,7 +68,16 @@ export async function loadMapCompatible(
   if (level === "customizationOption") {
     const res = await getCustomizationView(id);
     if (!res.ok) return res;
-    return { ok: true, data: { products: (res.data?.offering ?? []).map((p) => p.id), options: [], exceptions: [] } };
+    const src = await loadRulesSource();
+    // Active options only — the rules (and the record's own editor) leave inactive ones out, so a pair
+    // naming one is inert; listing it would read as a loss the moment anything is previewed (2026-10-14).
+    const active = new Set(src.ok ? src.data.catalog.options.map((o) => o._id) : []);
+    const compatibleOptions = src.ok
+      ? [...new Set(src.data.catalog.options.flatMap((o) =>
+          o._id === id ? (o.compatibleCustomizations ?? []) : (o.compatibleCustomizations ?? []).includes(id) ? [o._id] : []))]
+          .filter((x) => x !== id && active.has(x))
+      : [];
+    return { ok: true, data: { products: (res.data?.offering ?? []).map((p) => p.id), options: [], exceptions: [], compatibleOptions } };
   }
   return { ok: true, data: { products: [], options: [], exceptions: [] } };
 }

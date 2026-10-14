@@ -296,7 +296,7 @@ export type ProductException = { optionId: string; mode: "add" | "remove"; reaso
 export type RuleFocus = { level: "product" | "customizationOption"; id: string };
 export type FocusAfter =
   | { level: "product"; id: string; options: { id: string; state: OfferState }[]; exceptions: ProductException[] }
-  | { level: "customizationOption"; id: string; products: string[] };
+  | { level: "customizationOption"; id: string; products: string[]; compatible: string[] };
 
 /** What a product offers and how — the same naming as the product view (`product-view.ts`). */
 export function offerStates(catalog: SummaryCatalog, product: SummaryProduct, graph = buildDependencyGraph(catalog), index = buildCompatibilityIndex(catalog.options)) {
@@ -333,6 +333,7 @@ export function focusAfter(catalog: SummaryCatalog, products: SummaryProduct[], 
     level: "customizationOption",
     id: focus.id,
     products: after.products.filter((p) => (resolveForProduct(after.catalog, p, graph, index).availableByType.get(option.typeId) ?? []).includes(focus.id)).map((p) => p._id),
+    compatible: [...(index.pairs.get(focus.id) ?? [])].filter((x) => x !== focus.id),
   };
 }
 

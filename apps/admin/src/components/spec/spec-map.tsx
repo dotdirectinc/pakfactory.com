@@ -52,7 +52,7 @@ import { SpecRecordView } from "@/components/spec/spec-record-view";
 import { RuleEditBar, RuleEditPanel, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
 import { Picker } from "@/components/spec/spec-rule-editor";
 import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT } from "@/lib/copy/spec";
-import { describeEdit, mapEdit } from "@/lib/spec/rule-edits";
+import { describeEdit, editKey, mapEdit } from "@/lib/spec/rule-edits";
 import {
   loadMapCompatible,
   loadMapRecord,
@@ -93,6 +93,8 @@ const LINE = {
 const PANEL_W = 544;
 /** The gap between the map and the panel (Tailwind gap-3). */
 const PANEL_GAP = 12;
+/** The option ↔ option column of an option's edit layout: not a catalog level, laid out like one. */
+const COMPATIBLE = "compatible" as TableKey;
 /** While editing rules the right side is the edit panel (pending changes, impact, buttons) — 2026-10-14. */
 const EDIT_PANEL_W = 400;
 /** Wide enough for long option names; the edit layout has two columns, which would otherwise be huge. */
@@ -293,6 +295,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
   /** For an inspiration product in focus: the product its offers come from, and its pre-selections. */
   const [preset, setPreset] = useState<{ base: { id: string; title: string }; preselected: Set<number> } | null>(null);
+  /** For an option in focus: the options it is compatible with (rules today). */
+  const [compatOptions, setCompatOptions] = useState<Set<number>>(new Set());
   /** This record's offers have arrived (edit controls wait for them). */
   const [compatLoaded, setCompatLoaded] = useState(false);
   /** The focused product's exceptions, per option card (from the rules view). */
@@ -335,7 +339,11 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         products: null,
       };
     }
-    return { offers: null, exceptions: null, products: new Set(f.products.flatMap((id) => { const i = indexOf.get(`product:${id}`); return i === undefined ? [] : [i]; })) };
+    return {
+      offers: null, exceptions: null,
+      products: new Set(f.products.flatMap((id) => { const i = indexOf.get(`product:${id}`); return i === undefined ? [] : [i]; })),
+      compatOptions: new Set(f.compatible.flatMap((id) => { const i = indexOf.get(`customizationOption:${id}`); return i === undefined ? [] : [i]; })),
+    };
   }, [session.preview, session.edits.length, selected, nodes, indexOf]);
   /** Per card: what the edits do to it — gained, lost, or offered another way. */
   const diff = useMemo(() => {
@@ -351,12 +359,16 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         else if (on(was) && was !== now) d.set(i, { kind: "change", was });
       }
     }
+    if (after && "compatOptions" in after && after.compatOptions) {
+      for (const i of after.compatOptions) if (!compatOptions.has(i)) d.set(i, { kind: "gain" });
+      for (const i of compatOptions) if (!after.compatOptions.has(i)) d.set(i, { kind: "lose" });
+    }
     if (after?.products) {
       for (const i of after.products) if (!compatible.has(i)) d.set(i, { kind: "gain" });
       for (const i of compatible) if (!after.products.has(i) && nodes[i]!.level === "product") d.set(i, { kind: "lose" });
     }
     return d;
-  }, [after, offers, compatible, nodes]);
+  }, [after, offers, compatible, compatOptions, nodes]);
   /** Drawn offers: today's, with the edits' gains added and their kind changes applied; losses stay, marked. */
   const shownOffers = useMemo(() => {
     if (!after?.offers) return offers;
@@ -364,6 +376,11 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     for (const [i, st] of after.offers) m.set(i, st);
     return m;
   }, [offers, after]);
+  /** An option's compatible options as drawn: today's, plus the edits' gains; losses stay, marked. */
+  const compatOptionsShown = useMemo(() => {
+    const extra = after && "compatOptions" in after && after.compatOptions ? [...after.compatOptions] : [];
+    return extra.length ? new Set([...compatOptions, ...extra]) : compatOptions;
+  }, [compatOptions, after]);
   /** Exceptions as drawn: with the pending edits applied while previewing. */
   const shownExceptions = after?.exceptions ?? exceptions;
   /** The pending edits that name a card's product–option pair (shown even when they change no offer). */
@@ -373,6 +390,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     const n = nodes[i]!;
     const pair = sel0.level === "product" && n.level === "customizationOption" ? [sel0.id, n.id]
       : sel0.level === "customizationOption" && n.level === "product" ? [n.id, sel0.id] : null;
+    if (sel0.level === "customizationOption" && n.level === "customizationOption") {
+      return session.edits.filter((e) => e.kind === "pair" && ((e.a === sel0.id && e.b === n.id) || (e.a === n.id && e.b === sel0.id)));
+    }
     if (!pair) return [];
     return session.edits.filter((e) => (e.kind === "offer" || e.kind === "exception") && e.productId === pair[0] && e.optionId === pair[1]);
   }, [selected, nodes, session.edits]);
@@ -413,6 +433,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     setExceptions(new Map());
     setCompatLoaded(false);
     setPreset(null);
+    setCompatOptions(new Set());
     setOfferQ("");
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
@@ -434,6 +455,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           return want.has(k) ? [[i, want.get(k)!] as const] : [];
         });
         setCompatible(new Set(found.map(([i]) => i)));
+        setCompatOptions(new Set((compat.data.compatibleOptions ?? []).flatMap((o) => { const i = indexOf.get(`customizationOption:${o}`); return i === undefined ? [] : [i]; })));
         setPreset(compat.data.base ? {
           base: compat.data.base,
           preselected: new Set((compat.data.preselected ?? []).flatMap((o) => { const i = indexOf.get(`customizationOption:${o}`); return i === undefined ? [] : [i]; })),
@@ -493,7 +515,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     stream === streamOf(nodes[selected!]!.level);
   const levels = useMemo(() => {
     if (editLayout) {
-      return selLevel === "product" ? (["product", "customizationOption"] as TableKey[]) : (["customizationOption", "product"] as TableKey[]);
+      // An option's two relations side by side: compatible options (option ↔ option) and the products offering it.
+      return selLevel === "product" ? (["product", "customizationOption"] as TableKey[]) : (["customizationOption", COMPATIBLE, "product"] as TableKey[]);
     }
     const own = group.levels
       .map((l) => l.key)
@@ -539,7 +562,13 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       levels,
       (level) =>
         editLayout
-          ? level === selLevel
+          ? level === COMPATIBLE
+            ? [...compatOptionsShown].filter(statusOk).sort((a, b) => {
+                const ta = nodes[parentsOf[a]?.[0] ?? a]!.title;
+                const tb = nodes[parentsOf[b]?.[0] ?? b]!.title;
+                return ta.localeCompare(tb) || nodes[a]!.title.localeCompare(nodes[b]!.title);
+              })
+            : level === selLevel
             ? [selected!]
             : selLevel === "customizationOption" && level === "product"
               ? [...compatibleShown].filter((i) => nodes[i]!.level === "product" && statusOk(i))
@@ -628,6 +657,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     editLayout,
     selLevel,
     compatibleShown,
+    compatOptionsShown,
   ]);
 
   const targetOf = (i: number) =>
@@ -777,7 +807,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     from
       ? !from.pos.has(i)
       : focus !== null &&
-        ((related !== null && !related.has(i)) || !focus.pos.has(i));
+        // In the edit layout the placed cards are the picture (an option's compatible options are not in
+        // the structural "related" set).
+        ((!editLayout && related !== null && !related.has(i)) || !focus.pos.has(i));
   /** Cards to draw: the resting ones, plus related cards from collapsed levels while focusing. */
   const drawn = useMemo(() => {
     const s = new Set(rest.pos.keys());
@@ -1060,6 +1092,18 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               else offerOn(c.id, sel!.id, true, i !== undefined && compatible.has(i));
             }}
           />
+          {sel!.level === "customizationOption" ? (
+            <Picker
+              className="max-w-sm"
+              choices={nodes.flatMap((n, i) =>
+                // Active options only: the rules (session.meta) know no others.
+                n.level === "customizationOption" && i !== selected && !compatOptionsShown.has(i) && Boolean(session.meta?.optionType[n.id])
+                  ? [{ id: n.id, title: n.title, group: parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "" }]
+                  : [])}
+              placeholder={EDIT.makeCompatible}
+              onPick={(c) => session.put({ kind: "pair", a: sel!.id, b: c.id, compatible: true })}
+            />
+          ) : null}
           {editNote ? <span className="text-xs text-destructive">{editNote}</span> : null}
         </div>
       ) : null}
@@ -1182,10 +1226,12 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     />
                     <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
                       <ChevronDown className="size-4 shrink-0" />
-                      <span className="truncate">{level === "product" ? EDIT.offeredOn : COPY.offered}</span>
+                      <span className="truncate">{level === "product" ? EDIT.offeredOn : level === COMPATIBLE ? EDIT.compatibleWith : COPY.offered}</span>
                     </span>
                     <span className="text-xs tabular-nums text-muted-foreground">
-                      {level === "product"
+                      {level === COMPATIBLE
+                        ? compatOptionsShown.size
+                        : level === "product"
                         ? [...compatibleShown].filter((i) => nodes[i]!.level === "product").length
                         : shownOffers.size ? [...shownOffers.keys()].filter(statusOk).length : "…"}
                     </span>
@@ -1355,7 +1401,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               const p = posOf(i)!;
               const Icon = iconOf(n.level);
               const dot = statusDot(n.status);
-              const unrelated = related !== null && !related.has(i);
+              const unrelated = !editLayout && related !== null && !related.has(i);
               const gone = isGone(i);
               // A related card from a collapsed level (property values) has no resting place: once the
               // others have moved it rises into its own column from below, row by row (Eric, 2026-10-09).
@@ -1364,6 +1410,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               const arriving = !from && focus !== null && !rest.pos.has(i);
               const change = diff.get(i);
               const pending = pendingOn(i);
+              // A compatible option of the option being edited (the middle column).
+              const compatCard = editingHere && sel?.level === "customizationOption" && n.level === "customizationOption" && i !== selected && compatOptionsShown.has(i);
               const exc = offer ? shownExceptions.get(i) : undefined;
               // An add exception on an option the rules already give (or a remove on one they do not)
               // changes nothing — the engine calls it redundant; the card stays where the rules put it.
@@ -1458,6 +1506,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     >
                       {change.kind === "gain" ? "+" : change.kind === "lose" ? "−" : "~"}
                     </span>
+                  ) : null}
+                  {compatCard && !gone ? (
+                    pending.length ? (
+                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => pending.forEach((e) => session.remove(editKey(e)))} />
+                    ) : compatOptions.has(i) ? (
+                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.notCompatible(n.title)}
+                        onClick={() => session.put({ kind: "pair", a: sel!.id, b: n.id, compatible: false })} />
+                    ) : null
                   ) : null}
                   {target && !gone ? (
                     // One meaning per icon (2026-10-14): ↺ only undoes your own pending change; ⊖ stops
