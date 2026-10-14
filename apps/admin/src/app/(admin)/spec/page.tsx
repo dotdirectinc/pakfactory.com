@@ -2,6 +2,7 @@ import { listAllChangesets, listSyncRuns, listSyncWriteProblems } from "@/lib/sp
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecChangesetTable } from "@/components/spec/spec-changeset-table";
 import { SpecSyncPanel } from "@/components/spec/spec-sync-panel";
+import { SpecEditHistory } from "@/components/spec/spec-edit-history";
 import { ADMIN_SPEC_COPY } from "@/lib/copy/spec";
 
 export const metadata = { title: "Spec registry" };
@@ -38,6 +39,8 @@ export default async function SpecPage() {
           all={res.data}
         />
       )}
+
+      {res.ok ? <SpecEditHistory changesets={res.data} /> : null}
     </div>
   );
 }

@@ -96,7 +96,9 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
     projectId,
     dataset: RULES_DATASET,
     apiVersion: getSanityApiVersion(),
-    useCdn: true,
+    // Not the CDN: it lags a write by seconds, and right after an approved rule edit that stale read was
+    // cached for a minute, so the Map still showed the old rule (2026-10-14). The views are cached anyway.
+    useCdn: false,
     perspective: "published",
   });
 

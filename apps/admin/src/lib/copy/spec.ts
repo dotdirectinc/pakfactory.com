@@ -1,7 +1,12 @@
 export const ADMIN_SPEC_COPY = {
   listTitle: "Spec registry",
   listLead:
-    "Proposed changes to the spec registry, generated from the content team's board and Notion. Nothing here is live until it is approved.",
+    "Changes to the spec registry: rule edits from the Spec System, and changes found by Sync Changes (Sanity) and Sync Notion. Nothing here is live until it is approved.",
+  editsTitle: "Recent Spec System edits",
+  editsLead: "Rule edits made on the Catalog and the Map, newest first — waiting, approved or discarded.",
+  editsMore: (n: number) => (n === 1 ? "and 1 more change" : `and ${n} more changes`),
+  editsOpen: "Open",
+  editsState: { draft: "Waiting", approved: "Approved", discarded: "Discarded", superseded: "Superseded" } as Record<string, string>,
   empty: "No changes are waiting for review.",
   emptyHint:
     "Frames appear here when the generator loads them. An approved frame moves out of this list.",
