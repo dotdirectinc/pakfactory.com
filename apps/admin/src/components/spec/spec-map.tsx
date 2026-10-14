@@ -18,6 +18,8 @@ import {
   CirclePlus,
   Layers2,
   Layers3,
+  PanelRightClose,
+  PanelRightOpen,
   Pencil,
   Search,
   Box,
@@ -93,6 +95,11 @@ const LINE = {
 const PANEL_W = 544;
 /** The gap between the map and the panel (Tailwind gap-3). */
 const PANEL_GAP = 12;
+/** The details panel folded to a rail while editing rules (2026-10-14). */
+const RAIL_W = 40;
+/** Wide enough for long option names; the edit layout has two columns, which would otherwise be huge. */
+const EDIT_MAX_COL_W = 440;
+const PANEL_PREF = "spec-map-details-while-editing";
 const MOVE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 /** Many-to-many and large: shown on demand. */
 const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
@@ -458,10 +465,28 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   }, [related, nodes]);
 
   const focusing = onlyRelated && related !== null;
+  const selLevel = selected !== null ? nodes[selected]!.level : null;
+  /**
+   * Edit layout (2026-10-14): with Edit rules on and a product or an option in focus, the map shows only
+   * what rules connect — the record and its offered options (or the products offering it). Lines, styles
+   * and property values become a breadcrumb; the details panel folds to a rail.
+   */
+  const editLayout = focusing && session.editing && (selLevel === "product" || selLevel === "customizationOption");
+  const [panelOpen, setPanelOpen] = useState(false);
+  useEffect(() => {
+    try { setPanelOpen(window.localStorage.getItem(PANEL_PREF) === "open"); } catch { /* no storage: folded */ }
+  }, []);
+  const togglePanel = () => setPanelOpen((o) => {
+    try { window.localStorage.setItem(PANEL_PREF, o ? "folded" : "open"); } catch { /* not remembered */ }
+    return !o;
+  });
+  /** Property values are not part of any rule: a count while a product is focused, shown on request. */
+  const [showValues, setShowValues] = useState(false);
+  useEffect(() => setShowValues(false), [selected]);
 
   /** The panel's width, so the map's columns for the new selection are known in the same render. */
   const panelW =
-    selected !== null ? Math.min(PANEL_W, Math.floor(rowW * 0.45)) : 0;
+    selected === null ? 0 : editLayout && !panelOpen ? RAIL_W : Math.min(PANEL_W, Math.floor(rowW * 0.45));
   const areaW = rowW - (panelW ? panelW + PANEL_GAP : 0);
 
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
@@ -477,7 +502,12 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     (nodes[selected!]!.level === "product" || nodes[selected!]!.level === "inspiration") &&
     stream === streamOf(nodes[selected!]!.level);
   const levels = useMemo(() => {
-    const own = group.levels.map((l) => l.key);
+    if (editLayout) {
+      return selLevel === "product" ? (["product", "customizationOption"] as TableKey[]) : (["customizationOption", "product"] as TableKey[]);
+    }
+    const own = group.levels
+      .map((l) => l.key)
+      .filter((k) => !(k === "productValue" && focusing && selLevel === "product" && !showValues));
     if (!offering) return own;
     const at = Math.max(own.indexOf("product"), own.indexOf("inspiration")) + 1;
     return [
@@ -485,10 +515,10 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       "customizationOption" as TableKey,
       ...own.slice(at),
     ];
-  }, [group, offering]);
-  const colW = Math.max(
-    MIN_COL_W,
-    Math.floor((areaW - PAD * 2) / levels.length),
+  }, [group, offering, editLayout, selLevel, focusing, showValues]);
+  const colW = Math.min(
+    editLayout ? EDIT_MAX_COL_W : Number.POSITIVE_INFINITY,
+    Math.max(MIN_COL_W, Math.floor((areaW - PAD * 2) / levels.length)),
   );
   const cardW = colW - GUTTER;
   /** Headers run on into the gutter (nothing is drawn there at their height), so names fit narrow columns. */
@@ -518,11 +548,17 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     const f = place(
       levels,
       (level) =>
-        streamOf(level) !== stream
-          ? []
-          : (byLevel.get(level) ?? []).filter(
-              (i) => related!.has(i) && statusOk(i),
-            ),
+        editLayout
+          ? level === selLevel
+            ? [selected!]
+            : selLevel === "customizationOption" && level === "product"
+              ? [...compatibleShown].filter((i) => nodes[i]!.level === "product" && statusOk(i))
+              : []
+          : streamOf(level) !== stream
+            ? []
+            : (byLevel.get(level) ?? []).filter(
+                (i) => related!.has(i) && statusOk(i),
+              ),
       parentsOf,
       colW,
     );
@@ -599,6 +635,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     statusOk,
     parentsOf,
     colW,
+    editLayout,
+    selLevel,
+    compatibleShown,
   ]);
 
   const targetOf = (i: number) =>
@@ -610,7 +649,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
    * layout should be seen (the top when focusing, the record's place when clearing), each card is
    * first drawn where it appeared before the jump, then moves to its new place.
    */
-  const focusKey = focusing ? `${selected}` : "rest";
+  const focusKey = focusing ? `${selected}${editLayout ? ":edit" : ""}` : "rest";
   const lastFocusKey = useRef(focusKey);
   const lastSelected = useRef<number | null>(selected);
   const shown = useRef<{ pos: Map<number, Pos> }>({ pos: new Map() });
@@ -743,7 +782,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   // ── render ──────────────────────────────────────────────────────────────────
   const inStream = (i: number) => streamOf(nodes[i]!.level) === stream;
   /** Drawn in this stream: its own records, and a focused product's offered options. */
-  const onMap = (i: number) => inStream(i) || (offering && shownOffers.has(i));
+  const onMap = (i: number) => inStream(i) || (offering && shownOffers.has(i)) || (editLayout && Boolean(focus?.pos.has(i)));
   const isGone = (i: number) =>
     from
       ? !from.pos.has(i)
@@ -776,6 +815,15 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       return x.size ? x : new Set(OFFER_ORDER);
     });
   const sel = selected !== null ? nodes[selected]! : null;
+  /** The record's ancestors, top first, then the record — the edit layout's breadcrumb. */
+  const crumbs = useMemo(() => {
+    if (selected === null) return [];
+    const out: string[] = [nodes[selected]!.title];
+    let i = parentsOf[selected]?.[0];
+    while (i !== undefined && out.length < 4) { out.unshift(nodes[i]!.title); i = parentsOf[i]?.[0]; }
+    return out;
+  }, [selected, nodes, parentsOf]);
+  const valueCount = related ? [...related].filter((i) => nodes[i]!.level === "productValue").length : 0;
 
   // ── editing on the diagram: offer or stop offering an option on a product ──
   // Not on stale data: never while the map is re-reading the rules after a submit, or before this
@@ -927,10 +975,24 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       <div className="flex h-9 shrink-0 items-center">
         {sel ? (
           <div className="flex h-9 w-full min-w-0 items-center gap-3 overflow-hidden rounded-md border border-border bg-card px-3 text-sm">
-            <span className="text-muted-foreground">{COPY.focusedOn}</span>
-            <span className="truncate font-medium text-foreground">
-              {sel.title}
-            </span>
+            {editLayout ? (
+              <span className="truncate text-muted-foreground" title={crumbs.join(" › ")}>
+                {EDIT.editingIn} {crumbs.slice(0, -1).join(" › ")}{crumbs.length > 1 ? " › " : ""}
+                <span className="font-medium text-foreground">{sel.title}</span>
+              </span>
+            ) : (
+              <>
+                <span className="text-muted-foreground">{COPY.focusedOn}</span>
+                <span className="truncate font-medium text-foreground">
+                  {sel.title}
+                </span>
+              </>
+            )}
+            {!editLayout && focusing && sel.level === "product" && valueCount > 0 ? (
+              <Button size="xs" variant={showValues ? "secondary" : "ghost"} aria-pressed={showValues} onClick={() => setShowValues((v) => !v)}>
+                {EDIT.propertyValues(valueCount)}
+              </Button>
+            ) : null}
             {offering && shownOffers.size ? (
               <span
                 role="group"
@@ -1130,10 +1192,12 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     />
                     <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
                       <ChevronDown className="size-4 shrink-0" />
-                      <span className="truncate">{COPY.offered}</span>
+                      <span className="truncate">{level === "product" ? EDIT.offeredOn : COPY.offered}</span>
                     </span>
                     <span className="text-xs tabular-nums text-muted-foreground">
-                      {shownOffers.size ? [...shownOffers.keys()].filter(statusOk).length : "…"}
+                      {level === "product"
+                        ? [...compatibleShown].filter((i) => nodes[i]!.level === "product").length
+                        : shownOffers.size ? [...shownOffers.keys()].filter(statusOk).length : "…"}
                     </span>
                   </div>
                 );
@@ -1427,7 +1491,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         </div>
 
         {/* The record slides in from the right and takes its place beside the map (Eric, 2026-10-09). */}
-        {sel ? (
+        {sel && editLayout && !panelOpen ? (
+          <aside aria-label={COPY.panelLabel} style={{ width: panelW }} className="flex shrink-0 flex-col items-center rounded-md border border-border bg-card py-2">
+            <Button size="icon-sm" variant="ghost" onClick={togglePanel} aria-label={EDIT.showPanel} title={EDIT.showPanel}>
+              <PanelRightOpen />
+            </Button>
+            <span className="mt-2 text-xs text-muted-foreground [writing-mode:vertical-rl]">{EDIT.detailsRail}</span>
+          </aside>
+        ) : sel ? (
           <aside
             aria-label={COPY.panelLabel}
             style={{ width: panelW }}
@@ -1450,14 +1521,21 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   ) : null}
                 </div>
               </div>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                onClick={clearSelection}
-                aria-label={COPY.close}
-              >
-                <X />
-              </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                {editLayout ? (
+                  <Button size="icon-sm" variant="ghost" onClick={togglePanel} aria-label={EDIT.hidePanel} title={EDIT.hidePanel}>
+                    <PanelRightClose />
+                  </Button>
+                ) : null}
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={clearSelection}
+                  aria-label={COPY.close}
+                >
+                  <X />
+                </Button>
+              </div>
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
               {!record || record.for !== selected ? (
