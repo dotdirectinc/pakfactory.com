@@ -374,7 +374,7 @@ export const ADMIN_SPEC_MAP_COPY = {
   clear: "Show everything",
   collapsed: (n: number) => `${n} records — click to show`,
   propertyCard:
-    "A property. Its arrows run from the standard products that state it to the values products use. Properties and their values are edited in Studio.",
+    "A property. Its arrows run from the records that state it (standard products or options) to the values they use. Properties and their values are edited in Studio.",
   openFullPage: "Open full page",
   panelLabel: "Selected record",
   close: "Close",

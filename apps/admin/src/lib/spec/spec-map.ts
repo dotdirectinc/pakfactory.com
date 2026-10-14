@@ -15,7 +15,8 @@ import type { TableKey } from "./catalog-table-model";
  *   · standard product → the properties it states → their values (a map-only "Properties" column,
  *     2026-10-14). A property is shared by many products, so `stated` keeps each product's own values:
  *     the map's walk stops at a property card and links a product to its values through `stated`;
- *   · category → type → option → the property values it has (Option properties & values);
+ *   · category → type → option → the properties of its values → those values (the same map-only
+ *     Properties column; an option lists values only, so its properties come from the values);
  *   · solution → solution style, and solution → inspiration product. Inspiration products do not
  *     reference a solution style in Sanity, so their arrows come from the solution itself.
  * `links` are cross-stream relations drawn only when selected: an inspiration product's base product.
@@ -23,6 +24,8 @@ import type { TableKey } from "./catalog-table-model";
 
 /** The map-only Properties column of the Products stream (no Catalog table of its own). */
 export const MAP_PROPERTY = "productProperty" as TableKey;
+/** The same column in the Customizations stream. */
+export const MAP_OPTION_PROPERTY = "optionProperty" as TableKey;
 
 export type MapNode = {
   level: TableKey;
@@ -41,7 +44,7 @@ export type SpecMapData = {
   edges: [number, number][];
   /** [inspiration product, base product] indexes into `nodes`. */
   links: [number, number][];
-  /** [standard product, property value] — the values each product states (see the header). */
+  /** [standard product or option, property value] — the values each record states (see the header). */
   stated: [number, number][];
 };
 
@@ -92,10 +95,14 @@ export function buildSpecMap(raw: Raw, dataset: string): SpecMapData {
   const edges: [number, number][] = [];
   const links: [number, number][] = [];
   const stated: [number, number][] = [];
+  const drawnEdges = new Set<string>();
   const edge = (fromLevel: TableKey, from: string | null | undefined, toLevel: TableKey, to: string) => {
     const a = from ? at.get(`${fromLevel}:${from}`) : undefined;
     const b = at.get(`${toLevel}:${to}`);
-    if (a !== undefined && b !== undefined) edges.push([a, b]);
+    // Once per pair: a record can list the same reference twice (and several values share a property).
+    if (a === undefined || b === undefined || drawnEdges.has(`${a}-${b}`)) return;
+    drawnEdges.add(`${a}-${b}`);
+    edges.push([a, b]);
   };
 
   // Value cards per stream: a value appears in a stream when a record of that stream uses it.
@@ -112,7 +119,10 @@ export function buildSpecMap(raw: Raw, dataset: string): SpecMapData {
   for (const c of byTitle(raw.customizationCategory)) add("customizationCategory", c);
   for (const c of byTitle(raw.customizationType)) add("customizationType", c);
   for (const c of byTitle(raw.customizationOption)) add("customizationOption", c);
-  for (const v of byTitle(usedBy(raw.customizationOption.map((o) => o.values)))) add("optionValue", v, v.property);
+  const optionValues = usedBy(raw.customizationOption.map((o) => o.values));
+  const optionProps = new Set(optionValues.map((v) => v.propertyId));
+  for (const c of byTitle(raw.property.filter((p) => optionProps.has(p._id)))) add(MAP_OPTION_PROPERTY, c);
+  for (const v of byTitle(optionValues)) add("optionValue", v, v.property);
   for (const c of byTitle(raw.solution)) add("solution", c);
   for (const c of byTitle(raw.solutionStyle)) add("solutionStyle", c);
   for (const c of byTitle(raw.inspiration)) add("inspiration", c);
@@ -129,11 +139,19 @@ export function buildSpecMap(raw: Raw, dataset: string): SpecMapData {
       if (a !== undefined && b !== undefined) stated.push([a, b]);
     }
   }
-  for (const v of raw.values) edge(MAP_PROPERTY, v.propertyId, "productValue", v._id);
+  for (const v of raw.values) {
+    edge(MAP_PROPERTY, v.propertyId, "productValue", v._id);
+    edge(MAP_OPTION_PROPERTY, v.propertyId, "optionValue", v._id);
+  }
   for (const t of raw.customizationType) for (const up of t.up) edge("customizationCategory", up, "customizationType", t._id);
   for (const o of raw.customizationOption) {
     for (const up of o.up) edge("customizationType", up, "customizationOption", o._id);
-    for (const v of new Set(o.values)) edge("customizationOption", o._id, "optionValue", v);
+    for (const pr of new Set(o.values.map((v) => valueById.get(v)?.propertyId))) edge("customizationOption", o._id, MAP_OPTION_PROPERTY, pr ?? "");
+    for (const v of new Set(o.values)) {
+      const a = at.get(`customizationOption:${o._id}`);
+      const b = at.get(`optionValue:${v}`);
+      if (a !== undefined && b !== undefined) stated.push([a, b]);
+    }
   }
   for (const s of raw.solutionStyle) for (const up of s.up) edge("solution", up, "solutionStyle", s._id);
   for (const i of raw.inspiration) {
@@ -146,7 +164,7 @@ export function buildSpecMap(raw: Raw, dataset: string): SpecMapData {
   return { dataset, nodes, edges, links, stated };
 }
 
-export const getSpecMap = cachedSpec("spec-map-v2" /* v2: Properties column + `stated` (2026-10-14) */, async (): Promise<Loaded<SpecMapData>> => {
+export const getSpecMap = cachedSpec("spec-map-v4" /* v4: Properties columns + `stated` (2026-10-14) */, async (): Promise<Loaded<SpecMapData>> => {
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
   const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });

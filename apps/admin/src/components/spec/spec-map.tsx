@@ -44,7 +44,7 @@ import {
   type TableKey,
 } from "@/lib/spec/catalog-table-model";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
-import { MAP_PROPERTY, type SpecMapData } from "@/lib/spec/spec-map";
+import { MAP_OPTION_PROPERTY, MAP_PROPERTY, type SpecMapData } from "@/lib/spec/spec-map";
 import type { ProductOptionState } from "@/lib/spec/product-view";
 /** How a focused product gets an option, or "removed": the rules give it, an exception takes it away. */
 type OfferKind = ProductOptionState | "removed";
@@ -176,7 +176,10 @@ const LEVEL_INFO = new Map<TableKey, { stream: string; label: string; index: num
   ),
   // The map's own Properties column, between standard products and their values (2026-10-14).
   [MAP_PROPERTY, { stream: "products", label: "Product properties", index: 3 }],
+  [MAP_OPTION_PROPERTY, { stream: "customizations", label: "Option properties", index: 3 }],
 ]);
+/** The map's Properties columns: shared cards the related-cards walk stops at. */
+const isPropertyLevel = (level: TableKey) => level === MAP_PROPERTY || level === MAP_OPTION_PROPERTY;
 /**
  * Shorter column names on the map: inside the Products tab the "Product" prefix only repeats the
  * tab, and in narrow columns it pushed the names into "…" (Richard, 2026-10-09). The full name stays
@@ -187,13 +190,15 @@ const MAP_LABEL: Partial<Record<TableKey, string>> = {
   productStyle: "Styles",
   product: "Standard",
   [MAP_PROPERTY]: "Properties",
+  [MAP_OPTION_PROPERTY]: "Properties",
+  optionValue: "Property values",
   productValue: "Property values",
 };
 /** Column numbers that differ from the Catalog's depth: values sit after the map's Properties column. */
-const MAP_NUMBER: Partial<Record<TableKey, number>> = { productValue: 5 };
+const MAP_NUMBER: Partial<Record<TableKey, number>> = { productValue: 5, optionValue: 5 };
 /** A stream's map columns: the Catalog's levels, plus Properties before a product's values. */
 const mapLevelsOf = (keys: TableKey[]) =>
-  keys.flatMap((k) => (k === "productValue" ? [MAP_PROPERTY, k] : [k]));
+  keys.flatMap((k) => (k === "productValue" ? [MAP_PROPERTY, k] : k === "optionValue" ? [MAP_OPTION_PROPERTY, k] : [k]));
 const mapLabelOf = (level: TableKey) =>
   MAP_LABEL[level] ?? LEVEL_INFO.get(level)?.label;
 const streamOf = (level: TableKey) =>
@@ -454,14 +459,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     // A property is shared by many products: walking through it would relate a product to every value
     // of its properties (and a value to every product with that property). Unless a property is the
     // selection, the walk stops there, and a product reaches its own values through `stated`.
-    const viaProperty = nodes[selected]!.level === MAP_PROPERTY;
+    const viaProperty = isPropertyLevel(nodes[selected]!.level);
     const walk = (from: number, next: number[][]) => {
       const stack = [from];
       while (stack.length) {
         for (const n of next[stack.pop()!] ?? []) {
           if (out.has(n)) continue;
           out.add(n);
-          if (viaProperty || nodes[n]!.level !== MAP_PROPERTY) stack.push(n);
+          if (viaProperty || !isPropertyLevel(nodes[n]!.level)) stack.push(n);
         }
       }
     };
@@ -488,7 +493,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     setPreset(null);
     setCompatOptions(new Set());
     setOfferQ("");
-    if (n.level === MAP_PROPERTY) {
+    if (isPropertyLevel(n.level)) {
       // No Catalog record or rules for a property: the panel says what the card is.
       setRecord({ for: selected, res: { ok: true, data: null } });
       setCompatLoaded(true);
@@ -1717,7 +1722,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   {LEVEL_INFO.get(sel.level)?.label}
                 </span>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  {sel.level === MAP_PROPERTY ? null : (
+                  {isPropertyLevel(sel.level) ? null : (
                     <Link
                       href={recordHref(sel.level, sel.id)}
                       className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
@@ -1742,7 +1747,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               </div>
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
-              {sel.level === MAP_PROPERTY ? (
+              {isPropertyLevel(sel.level) ? (
                 <p className="text-sm text-muted-foreground">{COPY.propertyCard}</p>
               ) : !record || record.for !== selected ? (
                 <p className="text-sm text-muted-foreground">{COPY.loading}</p>
