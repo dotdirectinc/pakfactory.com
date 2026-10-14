@@ -373,6 +373,8 @@ export const ADMIN_SPEC_MAP_COPY = {
   relatedIn: (n: number, stream: string) => `${n} related in ${stream}`,
   clear: "Show everything",
   collapsed: (n: number) => `${n} records — click to show`,
+  propertyCard:
+    "A property. Its arrows run from the standard products that state it to the values products use. Properties and their values are edited in Studio.",
   openFullPage: "Open full page",
   panelLabel: "Selected record",
   close: "Close",

@@ -44,7 +44,7 @@ import {
   type TableKey,
 } from "@/lib/spec/catalog-table-model";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
-import type { SpecMapData } from "@/lib/spec/spec-map";
+import { MAP_PROPERTY, type SpecMapData } from "@/lib/spec/spec-map";
 import type { ProductOptionState } from "@/lib/spec/product-view";
 /** How a focused product gets an option, or "removed": the rules give it, an exception takes it away. */
 type OfferKind = ProductOptionState | "removed";
@@ -168,13 +168,15 @@ const statusDot = (s: string | null) =>
 type Pos = { x: number; y: number };
 type Placed = { pos: Map<number, Pos>; height: number };
 
-const LEVEL_INFO = new Map(
-  TABLE_GROUPS.flatMap((g) =>
+const LEVEL_INFO = new Map<TableKey, { stream: string; label: string; index: number }>([
+  ...TABLE_GROUPS.flatMap((g) =>
     g.levels.map(
       (l, i) => [l.key, { stream: g.key, label: l.label, index: i }] as const,
     ),
   ),
-);
+  // The map's own Properties column, between standard products and their values (2026-10-14).
+  [MAP_PROPERTY, { stream: "products", label: "Product properties", index: 3 }],
+]);
 /**
  * Shorter column names on the map: inside the Products tab the "Product" prefix only repeats the
  * tab, and in narrow columns it pushed the names into "…" (Richard, 2026-10-09). The full name stays
@@ -184,8 +186,14 @@ const MAP_LABEL: Partial<Record<TableKey, string>> = {
   productLine: "Lines",
   productStyle: "Styles",
   product: "Standard",
+  [MAP_PROPERTY]: "Properties",
   productValue: "Property values",
 };
+/** Column numbers that differ from the Catalog's depth: values sit after the map's Properties column. */
+const MAP_NUMBER: Partial<Record<TableKey, number>> = { productValue: 5 };
+/** A stream's map columns: the Catalog's levels, plus Properties before a product's values. */
+const mapLevelsOf = (keys: TableKey[]) =>
+  keys.flatMap((k) => (k === "productValue" ? [MAP_PROPERTY, k] : [k]));
 const mapLabelOf = (level: TableKey) =>
   MAP_LABEL[level] ?? LEVEL_INFO.get(level)?.label;
 const streamOf = (level: TableKey) =>
@@ -240,7 +248,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
 function SpecMapView({ data }: { data: SpecMapData }) {
   const session = useRuleEditSession()!;
-  const { nodes, edges, links } = data;
+  // `stated` is new (2026-10-14): a map cached before it has none.
+  const { nodes, edges, links, stated = [] } = data;
   const [stream, setStream] = useState<string>(TABLE_GROUPS[0]!.key);
   const [collapsed, setCollapsed] = useState<Set<TableKey>>(
     () => new Set(COLLAPSED_AT_START),
@@ -270,6 +279,15 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     () => adjacency(nodes.length, edges, 0, 1),
     [nodes.length, edges],
   );
+  /** Product ↔ the values it states, both ways (the walk stops at the shared property cards). */
+  const statedOf = useMemo(() => {
+    const m = new Map<number, number[]>();
+    for (const [a, b] of stated) {
+      m.set(a, [...(m.get(a) ?? []), b]);
+      m.set(b, [...(m.get(b) ?? []), a]);
+    }
+    return m;
+  }, [stated]);
   const linksOf = useMemo(() => {
     const m = new Map<number, number[]>();
     for (const [a, b] of links) {
@@ -433,24 +451,32 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const related = useMemo(() => {
     if (selected === null) return null;
     const out = new Set<number>([selected]);
+    // A property is shared by many products: walking through it would relate a product to every value
+    // of its properties (and a value to every product with that property). Unless a property is the
+    // selection, the walk stops there, and a product reaches its own values through `stated`.
+    const viaProperty = nodes[selected]!.level === MAP_PROPERTY;
     const walk = (from: number, next: number[][]) => {
       const stack = [from];
       while (stack.length) {
         for (const n of next[stack.pop()!] ?? []) {
           if (out.has(n)) continue;
           out.add(n);
-          stack.push(n);
+          if (viaProperty || nodes[n]!.level !== MAP_PROPERTY) stack.push(n);
         }
       }
     };
     walk(selected, parentsOf);
     walk(selected, childrenOf);
+    for (const other of statedOf.get(selected) ?? []) {
+      out.add(other);
+      walk(other, parentsOf);
+    }
     for (const other of [...(linksOf.get(selected) ?? []), ...compatibleShown]) {
       out.add(other);
       walk(other, parentsOf);
     }
     return out;
-  }, [selected, parentsOf, childrenOf, linksOf, compatibleShown]);
+  }, [selected, parentsOf, childrenOf, linksOf, compatibleShown, statedOf, nodes]);
 
   useEffect(() => {
     if (selected === null) return;
@@ -462,6 +488,12 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     setPreset(null);
     setCompatOptions(new Set());
     setOfferQ("");
+    if (n.level === MAP_PROPERTY) {
+      // No Catalog record or rules for a property: the panel says what the card is.
+      setRecord({ for: selected, res: { ok: true, data: null } });
+      setCompatLoaded(true);
+      return;
+    }
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
         loadMapRecord(n.level, n.id),
@@ -545,8 +577,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       // An option's two relations side by side: compatible options (option ↔ option) and the products offering it.
       return selLevel === "product" ? (["product", "customizationOption"] as TableKey[]) : (["customizationOption", COMPATIBLE, "product"] as TableKey[]);
     }
-    const own = group.levels
-      .map((l) => l.key)
+    const own = mapLevelsOf(group.levels.map((l) => l.key))
       .filter((k) => !(k === "productValue" && focusing && selLevel === "product" && !showValues));
     if (!offering) return own;
     const at = Math.max(own.indexOf("product"), own.indexOf("inspiration")) + 1;
@@ -1372,7 +1403,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   }}
                 >
                   <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border bg-card text-[11px] font-semibold tabular-nums text-muted-foreground">
-                    {(LEVEL_INFO.get(level)?.index ?? li) + 1}
+                    {MAP_NUMBER[level] ?? (LEVEL_INFO.get(level)?.index ?? li) + 1}
                   </span>
                   <Icon
                     className="size-4 shrink-0 text-muted-foreground"
@@ -1686,12 +1717,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   {LEVEL_INFO.get(sel.level)?.label}
                 </span>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <Link
-                    href={recordHref(sel.level, sel.id)}
-                    className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
-                  >
-                    {COPY.openFullPage} <ArrowUpRight className="size-3.5" />
-                  </Link>
+                  {sel.level === MAP_PROPERTY ? null : (
+                    <Link
+                      href={recordHref(sel.level, sel.id)}
+                      className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
+                    >
+                      {COPY.openFullPage} <ArrowUpRight className="size-3.5" />
+                    </Link>
+                  )}
                   {compatible.size ? (
                     <span>{COPY.compatible(compatible.size)}</span>
                   ) : null}
@@ -1709,7 +1742,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               </div>
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
-              {!record || record.for !== selected ? (
+              {sel.level === MAP_PROPERTY ? (
+                <p className="text-sm text-muted-foreground">{COPY.propertyCard}</p>
+              ) : !record || record.for !== selected ? (
                 <p className="text-sm text-muted-foreground">{COPY.loading}</p>
               ) : !record.res.ok ? (
                 <p role="alert" className="text-sm text-destructive">
