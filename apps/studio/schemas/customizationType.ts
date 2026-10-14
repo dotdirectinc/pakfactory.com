@@ -425,7 +425,7 @@ export const customizationType = defineType({
             title: 'Fact or customer choice?',
             type: 'string',
             description:
-              'Stated — the options under this type describe themselves with it, and it never reaches the customer. E.g. a board states it is Recyclable. Selectable — the customer picks one value for it while configuring. E.g. a board offers White, Brown or Black and the customer picks one.',
+              'Stated — the options under this type describe themselves with it, and it never reaches the customer. E.g. a board states it is Recyclable. Selectable — the customer picks a value for it while configuring. E.g. a board offers White, Brown or Black. How they pick, and whether they may pick more than one, are set in the two fields below.',
             options: {
               layout: 'radio',
               list: [
