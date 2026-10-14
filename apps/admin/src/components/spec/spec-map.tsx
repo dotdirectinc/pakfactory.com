@@ -76,7 +76,8 @@ import { ADMIN_SPEC_MAP_COPY as COPY } from "@/lib/copy/spec";
 
 const CARD_H = 48;
 const ROW_H = 56;
-const HEAD_H = 48;
+/** Headers, then a lane under them where an arrow that skips columns crosses (it stays in view). */
+const HEAD_H = 56;
 /**
  * The gap between columns, for the arrows' trunks: 72px when there is room, never under 28px. Columns
  * share the map's width — the map never scrolls sideways (Richard, 2026-10-14: the layout is laid out
@@ -334,8 +335,6 @@ const MAP_LABEL: Partial<Record<TableKey, string>> = {
   optionValue: "Property values",
   productValue: "Property values",
 };
-/** Column numbers that differ from the Catalog's depth: values sit after the map's Properties column. */
-const MAP_NUMBER: Partial<Record<TableKey, number>> = { productValue: 5, optionValue: 5 };
 /** A stream's map columns: the Catalog's levels, plus Properties before a product's values. */
 const mapLevelsOf = (keys: TableKey[]) =>
   keys.flatMap((k) => (k === "productValue" ? [MAP_PROPERTY, k] : k === "optionValue" ? [MAP_OPTION_PROPERTY, k] : [k]));
@@ -759,8 +758,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
   const group = TABLE_GROUPS.find((g) => g.key === stream) ?? TABLE_GROUPS[0]!;
   /**
-   * A focused standard product brings the options it offers into its own stream, as a column right
-   * after it, so the product → option lines run straight across. Known from the selection alone, so
+   * A focused standard product brings the options it offers into its own stream, as a last column;
+   * its arrows cross the columns between in the lane under the headers. Known from the selection alone, so
    * the columns are settled before the cards glide; the options rise in once the rules answer.
    */
   // A standard product — or an inspiration product, which shows its base's offers (2026-10-14).
@@ -775,13 +774,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     }
     const own = mapLevelsOf(group.levels.map((l) => l.key))
 
-    if (!offering) return own;
-    const at = Math.max(own.indexOf("product"), own.indexOf("inspiration")) + 1;
-    return [
-      ...own.slice(0, at),
-      "customizationOption" as TableKey,
-      ...own.slice(at),
-    ];
+    // Last, after the product's own chain (properties → values): offers are a second branch of the
+    // product, not a step between it and its properties (Richard, 2026-10-14).
+    return offering ? [...own, "customizationOption" as TableKey] : own;
   }, [group, offering, editLayout, selLevel]);
   /**
    * The panel's width, so the map's columns for the new selection are known in the same render. It
@@ -1718,7 +1713,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
             <svg
               width={width}
               height={columnsMode || virtualCols ? Math.max(HEAD_H, areaH - 1) : height}
-              className="pointer-events-none absolute inset-0"
+              // Over the band the scrolled cards pass under: a line that skips columns crosses in its lane.
+              className="pointer-events-none absolute inset-0 z-[16]"
               aria-hidden
             >
               <defs>
@@ -1867,11 +1863,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                       className="size-4 shrink-0 text-muted-foreground"
                       aria-hidden
                     />
-                    <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
-                      <ChevronDown className="size-4 shrink-0" />
-                      <span className="truncate">{level === "product" ? EDIT.offeredOn : level === COMPATIBLE ? EDIT.compatibleWith : COPY.offered}</span>
-                    </span>
-                    <span className="text-xs tabular-nums text-muted-foreground">
+                    <ColumnName>{level === "product" ? EDIT.offeredOn : level === COMPATIBLE ? EDIT.compatibleWith : COPY.offered}</ColumnName>
+                    <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
                       {level === COMPATIBLE
                         ? compatOptionsShown.size
                         : level === "product"
@@ -1899,38 +1892,10 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     height: HEAD_H - 16,
                   }}
                 >
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border bg-card text-[11px] font-semibold tabular-nums text-muted-foreground">
-                    {MAP_NUMBER[level] ?? (LEVEL_INFO.get(level)?.index ?? li) + 1}
-                  </span>
-                  <Icon
-                    className="size-4 shrink-0 text-muted-foreground"
-                    aria-hidden
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCollapsed((s) => {
-                        const x = new Set(s);
-                        if (x.has(level)) x.delete(level);
-                        else x.add(level);
-                        return x;
-                      })
-                    }
-                    // While a card is selected every level shows its related cards, collapsed or not: one
-                    // chevron for all, and the toggle waits until the selection is cleared (Eric, 2026-10-09).
-                    disabled={focus !== null}
-                    className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground enabled:hover:underline disabled:cursor-default"
-                    aria-expanded={focus !== null || !isCollapsed}
-                    title={LEVEL_INFO.get(level)?.label}
-                  >
-                    {isCollapsed && focus === null ? (
-                      <ChevronRight className="size-4 shrink-0" />
-                    ) : (
-                      <ChevronDown className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{mapLabelOf(level)}</span>
-                  </button>
-                  <span className="text-xs tabular-nums text-muted-foreground">
+                  {/* Icon, name, count — no level number and no fold: a column never folds (Richard, 2026-10-14). */}
+                  <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <ColumnName title={LEVEL_INFO.get(level)?.label}>{mapLabelOf(level)}</ColumnName>
+                  <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
                     {count === total ? total : `${count}/${total}`}
                   </span>
                 </div>
@@ -2240,13 +2205,24 @@ function elbow(a: Pos, b: Pos, cardW: number, colW: number): string {
   const gap = colW - cardW;
   const mx = x1 + Math.round(gap / 2);
   if (b.x - a.x > colW * 1.5) {
-    const bridge = HEAD_H - 6;
+    const bridge = HEAD_H - 8;
     const mx2 = b.x - Math.round(gap / 2);
-    return `M${x1},${y1} H${mx} V${bridge} H${mx2} V${y2} H${x2}`;
+    // Up nearer the parent than the shared trunk, so it does not run over that column's own arrows.
+    const up = x1 + Math.round(gap / 4);
+    return `M${x1},${y1} H${up} V${bridge} H${mx2} V${y2} H${x2}`;
   }
   return y1 === y2
     ? `M${x1},${y1} H${x2}`
     : `M${x1},${y1} H${mx} V${y2} H${x2}`;
+}
+
+/** A column's name in its header: wraps to a second line rather than cutting off with "…". */
+function ColumnName({ children, title }: { children: React.ReactNode; title?: string }) {
+  return (
+    <span className="line-clamp-2 min-w-0 text-[13px] font-semibold leading-4 text-foreground" title={title ?? (typeof children === "string" ? children : undefined)}>
+      {children}
+    </span>
+  );
 }
 
 /** A small round action on a card's corner. */
