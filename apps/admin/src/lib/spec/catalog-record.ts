@@ -22,7 +22,7 @@ import { recordSections, type RecordSection } from "./record-sections";
  */
 
 export type ChildRow = { id: string; title: string; status: string | null; href: string };
-export type ChildGroup = { label: string; rows: ChildRow[]; total: number };
+export type ChildGroup = { label: string; rows: ChildRow[]; total: number; /** Its records' level (PROD-3007: where "Add to…" goes). */ table: TableKey };
 export type CatalogRecord = {
   key: TableKey;
   id: string;
@@ -129,6 +129,7 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
         );
         return {
           label: c.label,
+          table: c.table,
           total: res.total,
           rows: res.rows.map((r) => ({ id: r._id, title: r.title ?? r._id, status: r.status ?? null, href: recordHref(c.table, r._id) })),
         };
@@ -158,4 +159,4 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
 }
 
 // v2: fields in sections, with reference groups (2026-10-14).
-export const getCatalogRecord = cachedSpec("catalog-record-v2", fetchRecord);
+export const getCatalogRecord = cachedSpec("catalog-record-v3" /* v3: children carry their table (PROD-3007) */, fetchRecord);
