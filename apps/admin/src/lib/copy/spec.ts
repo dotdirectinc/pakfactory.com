@@ -538,6 +538,17 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   notStandard: "Only a standard product's offers can be edited.",
   frameNote: "Note:",
   frameImpact: "Impact when submitted",
+  /** The impact re-checked when the frame is reviewed (PROD-2962 scope 3). */
+  recheckTitle: "Impact now",
+  recheckSame: "Re-checked against the catalog as it is now: the same as when it was submitted.",
+  recheckChanged:
+    "Re-checked against the catalog as it is now: the impact has changed since it was submitted — other changes have been made since. Approving applies it as shown here, not as it was submitted.",
+  recheckErrors: "Approving this now would break the rules:",
+  recheckChangedProducts: "Products whose change is different now",
+  recheckNoLonger: "No longer affected",
+  recheckNewWarnings: "New since it was submitted",
+  recheckUnreachable: "The impact could not be re-checked now",
+  recheckNothing: "This frame changes no rule that can be re-checked.",
 } as const;
 
 /** The frame page, before approving a Spec System edit (ADR-025 § 4, amended 2026-10-13). */
