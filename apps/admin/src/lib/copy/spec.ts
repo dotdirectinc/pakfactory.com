@@ -288,6 +288,14 @@ export const ADMIN_SPEC_RECORD_COPY = {
     `From Sanity (${dataset}). Edit its offers on the map (Edit rules above); its compatible options, type settings and the rest of its rules on its full page; everything else in Studio.`,
   images: (n: number) => `Images (${n})`,
   fields: "All fields",
+  /** Why some names link and others do not (Richard asked, 2026-10-14). */
+  legend:
+    "Underlined names open their page in the Spec catalog. Grey names are content with no Spec page (properties, glossary terms, case studies…) — edit them in Studio.",
+  noPage: "No Spec page — edit in Studio",
+  noPageLabel: "No Spec page:",
+  unpublishedLabel: "Not published:",
+  unpublished: "This reference points to a document that is not published (draft only or deleted).",
+  empty: "—",
   more: (shown: number, total: number) => `First ${shown} of ${total}.`,
 } as const;
 
@@ -362,8 +370,21 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
 export const ADMIN_SPEC_MAP_COPY = {
   title: "Spec Map",
   lead:
-    "One stream at a time, one column per level, arrows from each record to the records below it. Click a card to see only what it is connected to — up, down and, for products and options, what the rules make them compatible with. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
-  hint: "Click a card to see what it is connected to · click a level's name to collapse or expand it.",
+    "One stream at a time, one column per level, each column its own A–Z list; each header names how its column relates to the one before. Click a card to see only what it is connected to — grouped under what it hangs off and, for products and options, what the rules make them compatible with; hover a card (or pin it) to see its own links, outlined or as lines. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
+  hint: "Scroll each column on its own · click a card to see what it is connected to · then hover or pin a card to see its own links.",
+  linkMode: "Links",
+  linkModes: { highlight: "Outline", lines: "Lines" },
+  linkModeTitle: {
+    highlight: "Hover or pin a card: its links are outlined, and each column counts the ones scrolled out of view",
+    lines: "Hover or pin a card: a line runs to each of its links in the next column",
+  },
+  pin: (title: string) => `Pin ${title}: keep its links marked while you scroll (Esc to unpin)`,
+  unpin: (title: string) => `Unpin ${title}`,
+  /** A column's linked cards scrolled out of view, above or below; click to scroll to the next. */
+  linkedOut: (n: number, dir: "up" | "down") => `${dir === "up" ? "▲" : "▼"} ${n} linked`,
+  /** A column header's relation into it, ER-style: "Lines has →" over Styles. */
+  relation: (from: string, verb: string) => `${from} ${verb} →`,
+  verb: { has: "has", states: "states", declares: "declares", lists: "lists", matches: "matches", offers: "offers" },
   search: "Find by name or registry code",
   status: "Status",
   allStatuses: "All statuses",
@@ -373,6 +394,13 @@ export const ADMIN_SPEC_MAP_COPY = {
   relatedIn: (n: number, stream: string) => `${n} related in ${stream}`,
   clear: "Show everything",
   collapsed: (n: number) => `${n} records — click to show`,
+  /** A focused column's group for cards with no parent in an earlier column. */
+  otherGroup: "Not under a card to the left",
+  /** A derived offer: the options that make it available (the product does not list it). */
+  via: (names: string[]) => `via ${names.join(", ")}`,
+  derivedWhy: (names: string[]) => `Offered because it is compatible with ${names.join(", ")} — the product does not list it`,
+  propertyCard:
+    "A property. Standard products state it and options' types declare it; its values sit under it. Properties and their values are edited in Studio.",
   openFullPage: "Open full page",
   panelLabel: "Selected record",
   close: "Close",
@@ -453,6 +481,11 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   historyTitle: "Recent rule edits",
   historyMore: (n: number) => (n === 1 ? "+1 more" : `+${n} more`),
   historyOpen: "Open",
+  /** A rule field (or entry) with a change already waiting for approval (PROD-2962 scope 4). */
+  pendingMark: "Pending",
+  pendingTitle: (n: number) =>
+    `${n === 1 ? "A change to this is" : `${n} changes to this are`} waiting for approval — open the newest. If you change it too, the most recent proposal wins.`,
+  pendingEntry: "A change to this entry is waiting for approval",
   reasonFor: (mode: "add" | "remove") => (mode === "add" ? "Why this product can take it (required)" : "Why this product cannot take it (required)"),
   reasonMissing: "no reason yet",
   barLabel: "Pending rule edits",
@@ -488,7 +521,6 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   makeCompatible: "Make compatible with…",
   notCompatible: (title: string) => `No longer compatible with ${title}`,
   editingIn: "Editing rules —",
-  propertyValues: (n: number) => `Property values ${n}`,
   showPanel: "Show details",
   hidePanel: "Fold details while editing",
   detailsRail: "Details",

@@ -19,6 +19,8 @@ import {
   Layers2,
   Layers3,
   Pencil,
+  Pin,
+  PinOff,
   Search,
   Box,
   Tag,
@@ -44,7 +46,7 @@ import {
   type TableKey,
 } from "@/lib/spec/catalog-table-model";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
-import type { SpecMapData } from "@/lib/spec/spec-map";
+import { MAP_OPTION_PROPERTY, MAP_PROPERTY, type MapNode, type SpecMapData } from "@/lib/spec/spec-map";
 import type { ProductOptionState } from "@/lib/spec/product-view";
 /** How a focused product gets an option, or "removed": the rules give it, an exception takes it away. */
 type OfferKind = ProductOptionState | "removed";
@@ -57,28 +59,40 @@ import {
   loadMapCompatible,
   loadMapRecord,
 } from "@/app/(admin)/spec/map/actions";
+import { loadPendingRules } from "@/app/(admin)/spec/rule-edit-actions";
 import { ADMIN_SPEC_MAP_COPY as COPY } from "@/lib/copy/spec";
 
 /**
- * The Spec Map (PROD-2960): one of the Catalog's three streams at a time, one column per level,
- * cards joined by arrows parent → child. Read-only.
+ * The Spec Map (PROD-2960): one of the Catalog's three streams at a time, one column per level.
+ * Each header names the relation into its column; a selected card's related cards are grouped under
+ * what they hang off, and hovering a card lights up its own links. No arrows between cards
+ * (Richard, 2026-10-14) — they only repeated the grouping.
  *
  * Eric, 2026-10-09:
  *   · colour means status (green active, yellow active internal, red not active); levels are told
- *     apart by a numbered header and an icon;
+ *     apart by an icon on the header;
  *   · no zoom or pan — a plain scrolling area, columns sized to fill its width;
  *   · selecting a card slides it and its related cards into a compact group at the top
  *     and fades everything else out; the record slides in from the right.
  *
  * Laid out here from fixed card heights — no measuring, no layout library: each column is ordered by
- * its parents' positions, so arrows mostly run straight across.
+ * its parents' positions.
  */
 
 const CARD_H = 48;
 const ROW_H = 56;
-const HEAD_H = 48;
-const GUTTER = 72;
-const MIN_COL_W = 240;
+/** Headers: the relation into the column ("Lines has →"), then its name and count. */
+const HEAD_H = 60;
+/**
+ * The gap between columns: narrow, since no arrows run between cards (Richard, 2026-10-14) — the
+ * relations are named once, on the headers; a card's own links light up on hover. Columns share the
+ * map's width — the map never scrolls sideways.
+ */
+const GUTTER = 24;
+const MIN_GUTTER = 16;
+/** A card narrower than this squeezes the side panel first (down to MIN_PANEL_W). */
+const MIN_CARD_W = 150;
+const MIN_PANEL_W = 320;
 const PAD = 16;
 const MOVE_MS = 450;
 /**
@@ -101,8 +115,11 @@ const EDIT_PANEL_W = 400;
 const EDIT_MAX_COL_W = 440;
 
 const MOVE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-/** Many-to-many and large: shown on demand. */
-const COLLAPSED_AT_START: TableKey[] = ["productValue", "optionValue"];
+/**
+ * Every level starts open (Richard, 2026-10-14). Property values used to start folded — many-to-many
+ * and large, when the resting map drew every arrow; resting columns now scroll on their own, unarrowed.
+ */
+const COLLAPSED_AT_START: TableKey[] = [];
 const ALL = "all";
 /**
  * A focused standard product's offered options, by how the product gets them (as Studio's product
@@ -168,13 +185,111 @@ const statusDot = (s: string | null) =>
 type Pos = { x: number; y: number };
 type Placed = { pos: Map<number, Pos>; height: number };
 
-const LEVEL_INFO = new Map(
-  TABLE_GROUPS.flatMap((g) =>
+/** A focused column's group: the cards under one parent from an earlier column (2026-10-14). */
+type FocusGroup = GroupLabel & { level: TableKey; x: number; parent: number | null; cards: number[] };
+type Grouped = { heads: FocusGroup[]; headOf: Map<number, FocusGroup> };
+
+/**
+ * The focused view's columns, grouped (Richard, 2026-10-14). After the first, each column groups its
+ * cards under their parent in the nearest earlier column — products under their style, values under
+ * their property, inspiration products under the solution style whose filter takes them. Groups keep
+ * their parent's order; cards are A→Z inside one; a folded group keeps its heading only. `skip` are
+ * columns with a layout of their own (a focused product's offered options and properties).
+ */
+function regroup(
+  f: Placed,
+  levels: TableKey[],
+  parentsOf: number[][],
+  nodes: MapNode[],
+  colW: number,
+  folded: Set<string>,
+  skip: TableKey[],
+  other: string,
+): Grouped {
+  const heads: FocusGroup[] = [];
+  const headOf = new Map<number, FocusGroup>();
+  const colOf = new Map<number, number>();
+  for (const [i, p] of f.pos) colOf.set(i, Math.round((p.x - PAD) / colW));
+  const byTitle = (a: number, b: number) => nodes[a]!.title.localeCompare(nodes[b]!.title);
+  let height = HEAD_H + ROW_H;
+  levels.forEach((level, li) => {
+    const cards = [...colOf].filter(([, c]) => c === li).map(([i]) => i);
+    if (!cards.length) return;
+    if (skip.includes(level)) {
+      for (const i of cards) height = Math.max(height, f.pos.get(i)!.y + ROW_H);
+      return;
+    }
+    const x = PAD + li * colW;
+    if (li === 0) {
+      cards.sort(byTitle).forEach((i, k) => f.pos.set(i, { x, y: HEAD_H + k * ROW_H }));
+      height = Math.max(height, HEAD_H + cards.length * ROW_H);
+      return;
+    }
+    // A card's group: its parent in the nearest earlier column.
+    const primary = (i: number) => {
+      let best: number | null = null;
+      let bestCol = -1;
+      for (const p of parentsOf[i] ?? []) {
+        const c = colOf.get(p);
+        if (c !== undefined && c < li && c > bestCol) {
+          best = p;
+          bestCol = c;
+        }
+      }
+      return best;
+    };
+    // Group only a column whose cards mostly have ONE parent there: a shared card (a property stated by
+    // twenty products) filed under one of them would misstate the rest — it stays a plain list.
+    const nearest = Math.max(-1, ...cards.flatMap((i) => (parentsOf[i] ?? []).map((p) => colOf.get(p) ?? -1).filter((c) => c < li)));
+    const shared = cards.filter((i) => (parentsOf[i] ?? []).filter((p) => colOf.get(p) === nearest).length > 1).length;
+    if (nearest < 0 || shared * 3 > cards.length) {
+      cards.sort(byTitle).forEach((i, k) => f.pos.set(i, { x, y: HEAD_H + k * ROW_H }));
+      height = Math.max(height, HEAD_H + cards.length * ROW_H);
+      return;
+    }
+    const byParent = new Map<number | null, number[]>();
+    for (const i of cards) {
+      const p = primary(i);
+      byParent.set(p, [...(byParent.get(p) ?? []), i]);
+    }
+    const order = [...byParent.keys()].sort((a, b) =>
+      a === null ? 1 : b === null ? -1 : f.pos.get(a)!.y - f.pos.get(b)!.y || byTitle(a, b),
+    );
+    let y = HEAD_H;
+    for (const parent of order) {
+      const list = byParent.get(parent)!.sort(byTitle);
+      const key = `${level}:${parent ?? "none"}`;
+      const isFolded = folded.has(key);
+      const head: FocusGroup = { key, level, x, parent, cards: list, y, title: parent === null ? other : nodes[parent]!.title, count: list.length, folded: isFolded };
+      heads.push(head);
+      y += TYPE_H;
+      for (const i of list) {
+        headOf.set(i, head);
+        if (isFolded) f.pos.delete(i);
+        else {
+          f.pos.set(i, { x, y });
+          y += ROW_H;
+        }
+      }
+    }
+    height = Math.max(height, y);
+  });
+  f.height = height;
+  return { heads, headOf };
+}
+
+const LEVEL_INFO = new Map<TableKey, { stream: string; label: string; index: number }>([
+  ...TABLE_GROUPS.flatMap((g) =>
     g.levels.map(
       (l, i) => [l.key, { stream: g.key, label: l.label, index: i }] as const,
     ),
   ),
-);
+  // The map's own Properties column, between standard products and their values (2026-10-14).
+  [MAP_PROPERTY, { stream: "products", label: "Product properties", index: 3 }],
+  [MAP_OPTION_PROPERTY, { stream: "customizations", label: "Option properties", index: 3 }],
+]);
+/** The map's Properties columns: shared cards the related-cards walk stops at. */
+const isPropertyLevel = (level: TableKey) => level === MAP_PROPERTY || level === MAP_OPTION_PROPERTY;
 /**
  * Shorter column names on the map: inside the Products tab the "Product" prefix only repeats the
  * tab, and in narrow columns it pushed the names into "…" (Richard, 2026-10-09). The full name stays
@@ -184,10 +299,47 @@ const MAP_LABEL: Partial<Record<TableKey, string>> = {
   productLine: "Lines",
   productStyle: "Styles",
   product: "Standard",
+  [MAP_PROPERTY]: "Properties",
+  [MAP_OPTION_PROPERTY]: "Properties",
+  optionValue: "Property values",
   productValue: "Property values",
+};
+/** A stream's map columns: the Catalog's levels, plus Properties before a product's values. */
+const mapLevelsOf = (keys: TableKey[]) =>
+  keys.flatMap((k) => (k === "productValue" ? [MAP_PROPERTY, k] : k === "optionValue" ? [MAP_OPTION_PROPERTY, k] : [k]));
+/** One record of a level, for the headers' relations ("Line has →"). */
+const MAP_ENTITY: Partial<Record<TableKey, string>> = {
+  productLine: "Line",
+  productStyle: "Style",
+  product: "Product",
+  inspiration: "Inspiration product",
+  [MAP_PROPERTY]: "Property",
+  [MAP_OPTION_PROPERTY]: "Property",
+  customizationCategory: "Category",
+  customizationType: "Type",
+  customizationOption: "Option",
+  solution: "Solution",
+  solutionStyle: "Solution style",
 };
 const mapLabelOf = (level: TableKey) =>
   MAP_LABEL[level] ?? LEVEL_INFO.get(level)?.label;
+/**
+ * Each column's relation into it, named once on its header — the ER diagram's line, "Lines has →"
+ * over Styles (Richard, 2026-10-14). Which card relates to which shows by grouping and on hover; no
+ * arrows run between cards.
+ */
+const HEAD_RELATION: Partial<Record<TableKey, { from: TableKey; verb: keyof typeof COPY.verb }>> = {
+  productStyle: { from: "productLine", verb: "has" },
+  product: { from: "productStyle", verb: "has" },
+  [MAP_PROPERTY]: { from: "product", verb: "states" },
+  productValue: { from: MAP_PROPERTY, verb: "has" },
+  customizationType: { from: "customizationCategory", verb: "has" },
+  customizationOption: { from: "customizationType", verb: "has" },
+  [MAP_OPTION_PROPERTY]: { from: "customizationType", verb: "declares" },
+  optionValue: { from: "customizationOption", verb: "lists" },
+  solutionStyle: { from: "solution", verb: "has" },
+  inspiration: { from: "solutionStyle", verb: "matches" },
+};
 const streamOf = (level: TableKey) =>
   LEVEL_INFO.get(level)?.stream ?? TABLE_GROUPS[0]!.key;
 
@@ -240,7 +392,8 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
 function SpecMapView({ data }: { data: SpecMapData }) {
   const session = useRuleEditSession()!;
-  const { nodes, edges, links } = data;
+  // `stated` is new (2026-10-14): a map cached before it has none.
+  const { nodes, edges, links, stated = [] } = data;
   const [stream, setStream] = useState<string>(TABLE_GROUPS[0]!.key);
   const [collapsed, setCollapsed] = useState<Set<TableKey>>(
     () => new Set(COLLAPSED_AT_START),
@@ -252,14 +405,36 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const area = useRef<HTMLDivElement>(null);
   const row = useRef<HTMLDivElement>(null);
   const [rowW, setRowW] = useState(1200);
+  /** The map box's own border and vertical scrollbar, which its columns must leave room for. */
+  const [areaChrome, setAreaChrome] = useState(0);
+  /** The map box's inner height, and the row's height: the screen below the controls (2026-10-14). */
+  const [areaH, setAreaH] = useState(600);
+  const [boxH, setBoxH] = useState<number | null>(null);
+  /** The resting columns' own scroll lists, by level. */
+  const colRefs = useRef(new Map<TableKey, HTMLDivElement>());
 
   useLayoutEffect(() => {
     const el = row.current;
     if (!el) return;
-    setRowW(el.clientWidth);
-    const ro = new ResizeObserver(() => setRowW(el.clientWidth));
+    const measure = () => {
+      setRowW(el.clientWidth);
+      if (area.current) {
+        setAreaChrome(area.current.offsetWidth - area.current.clientWidth);
+        setAreaH(area.current.clientHeight);
+      }
+    };
+    // The map fills the screen below the controls (measured with the page at the top), at least 28rem.
+    const fit = () => setBoxH(Math.max(448, Math.floor(window.innerHeight - (el.getBoundingClientRect().top + window.scrollY) - 16)));
+    measure();
+    fit();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => ro.disconnect();
+    if (area.current) ro.observe(area.current);
+    window.addEventListener("resize", fit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+    };
   }, []);
 
   const parentsOf = useMemo(
@@ -270,6 +445,15 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     () => adjacency(nodes.length, edges, 0, 1),
     [nodes.length, edges],
   );
+  /** Product ↔ the values it states, both ways (the walk stops at the shared property cards). */
+  const statedOf = useMemo(() => {
+    const m = new Map<number, number[]>();
+    for (const [a, b] of stated) {
+      m.set(a, [...(m.get(a) ?? []), b]);
+      m.set(b, [...(m.get(b) ?? []), a]);
+    }
+    return m;
+  }, [stated]);
   const linksOf = useMemo(() => {
     const m = new Map<number, number[]>();
     for (const [a, b] of links) {
@@ -297,7 +481,57 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const [compatible, setCompatible] = useState<Set<number>>(new Set());
   /** For an inspiration product in focus: the product its offers come from, and its pre-selections. */
   const [preset, setPreset] = useState<{ base: { id: string; title: string }; preselected: Set<number> } | null>(null);
-  /** Folded group headings in the edit layouts, cleared with the selection. */
+  /**
+   * A focused product's derived options → the offered options that make them available (the rules'
+   * `derivedBecause`). The product does not decide a derived option, so no arrow runs from it; hovering
+   * a derived card (or its partner) draws the arcs instead (2026-10-14).
+   */
+  const [derivedFrom, setDerivedFrom] = useState<Map<number, number[]>>(new Map());
+  const [hovered, setHovered] = useState<number | null>(null);
+  /**
+   * A card pinned for tracing: its links stay marked while the columns scroll, until it is unpinned
+   * or Esc (Richard, 2026-10-15) — hover alone breaks as cards slide under the pointer.
+   */
+  const [pinned, setPinned] = useState<number | null>(null);
+  useEffect(() => {
+    setHovered(null);
+    setPinned(null);
+  }, [selected]);
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setPinned(null);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, []);
+  /** The card whose links are shown: the pinned one, else the one under the pointer. */
+  const trace = pinned ?? hovered;
+  /**
+   * How a card's links show (Richard, 2026-10-15, both kept to compare): "highlight" outlines the linked
+   * cards and counts those scrolled out of view; "lines" draws a line to each in the next column.
+   */
+  const [linkMode, setLinkModeState] = useState<"highlight" | "lines">("highlight");
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem("spec-map-link-mode");
+      if (v === "lines" || v === "highlight") setLinkModeState(v);
+    } catch {
+      // Storage blocked: keep the default.
+    }
+  }, []);
+  const setLinkMode = (v: "highlight" | "lines") => {
+    setLinkModeState(v);
+    try {
+      window.localStorage.setItem("spec-map-link-mode", v);
+    } catch {
+      // Storage blocked: the choice lasts this visit.
+    }
+  };
+  /** A partner option → the derived options it makes available. */
+  const partnersOf = useMemo(() => {
+    const m = new Map<number, number[]>();
+    for (const [d, ps] of derivedFrom) for (const p of ps) m.set(p, [...(m.get(p) ?? []), d]);
+    return m;
+  }, [derivedFrom]);
+  /** Folded group headings in the edit layouts and the focused view, cleared with the selection. */
   const [folded, setFolded] = useState<Set<string>>(new Set());
   useEffect(() => setFolded(new Set()), [selected]);
   const toggleFold = (key: string) => setFolded((f) => {
@@ -433,24 +667,50 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const related = useMemo(() => {
     if (selected === null) return null;
     const out = new Set<number>([selected]);
+    // A property is shared by many products: walking through it would relate a product to every value
+    // of its properties (and a value to every product with that property). Unless a property is the
+    // selection, the walk stops there, and a product reaches its own values through `stated`.
+    const viaProperty = isPropertyLevel(nodes[selected]!.level);
     const walk = (from: number, next: number[][]) => {
       const stack = [from];
       while (stack.length) {
         for (const n of next[stack.pop()!] ?? []) {
           if (out.has(n)) continue;
           out.add(n);
-          stack.push(n);
+          if (viaProperty || !isPropertyLevel(nodes[n]!.level)) stack.push(n);
         }
       }
     };
     walk(selected, parentsOf);
+    const beforeDown = new Set(out);
     walk(selected, childrenOf);
+    const below = [...out].filter((i) => !beforeDown.has(i));
+    for (const other of statedOf.get(selected) ?? []) {
+      out.add(other);
+      walk(other, parentsOf);
+    }
+    // Below the selection, the products in view bring their own values (a line → its products' values).
+    if (!viaProperty) for (const r of below) if (nodes[r]!.level === "product") for (const v of statedOf.get(r) ?? []) out.add(v);
+    // Context one step up from the values in view: their properties (a focused option's properties are
+    // its type's declaration, not an arrow of its own) — and, for a selected property, the records
+    // that list those values (2026-10-14).
+    for (const v of [...out]) {
+      const lv = nodes[v]!.level;
+      if (lv !== "productValue" && lv !== "optionValue") continue;
+      for (const p of parentsOf[v] ?? []) {
+        if (isPropertyLevel(nodes[p]!.level)) out.add(p);
+        else if (viaProperty && !out.has(p)) {
+          out.add(p);
+          walk(p, parentsOf);
+        }
+      }
+    }
     for (const other of [...(linksOf.get(selected) ?? []), ...compatibleShown]) {
       out.add(other);
       walk(other, parentsOf);
     }
     return out;
-  }, [selected, parentsOf, childrenOf, linksOf, compatibleShown]);
+  }, [selected, parentsOf, childrenOf, linksOf, compatibleShown, statedOf, nodes]);
 
   useEffect(() => {
     if (selected === null) return;
@@ -461,7 +721,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     setCompatLoaded(false);
     setPreset(null);
     setCompatOptions(new Set());
+    setDerivedFrom(new Map());
     setOfferQ("");
+    if (isPropertyLevel(n.level)) {
+      // No Catalog record or rules for a property: the panel says what the card is.
+      setRecord({ for: selected, res: { ok: true, data: null } });
+      setCompatLoaded(true);
+      return;
+    }
     startLoading(async () => {
       const [rec, compat] = await Promise.all([
         loadMapRecord(n.level, n.id),
@@ -482,6 +749,10 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           return want.has(k) ? [[i, want.get(k)!] as const] : [];
         });
         setCompatible(new Set(found.map(([i]) => i)));
+        setDerivedFrom(new Map(Object.entries(compat.data.derivedFrom ?? {}).flatMap(([o, ps]) => {
+          const i = indexOf.get(`customizationOption:${o}`);
+          return i === undefined ? [] : [[i, ps.flatMap((p) => { const j = indexOf.get(`customizationOption:${p}`); return j === undefined ? [] : [j]; })] as const];
+        })));
         setCompatOptions(new Set((compat.data.compatibleOptions ?? []).flatMap((o) => { const i = indexOf.get(`customizationOption:${o}`); return i === undefined ? [] : [i]; })));
         setPreset(compat.data.base ? {
           base: compat.data.base,
@@ -499,6 +770,25 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       }
     });
   }, [selected, nodes, session.version, indexOf, markFresh]);
+
+  /**
+   * A focused product's offered options with a change already waiting for approval (PROD-2962 scope 4):
+   * from the waiting frames that change its offers or exceptions. A failed read marks nothing.
+   */
+  const [waiting, setWaiting] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    setWaiting(new Set());
+    if (selected === null || nodes[selected]!.level !== "product") return;
+    let live = true;
+    void loadPendingRules(nodes[selected]!.id).then((r) => {
+      if (!live || !r.ok) return;
+      const refs = [...(r.data.availableCustomizations?.refs ?? []), ...(r.data.customizationExceptions?.refs ?? [])];
+      setWaiting(new Set(refs.flatMap((o) => { const i = indexOf.get(`customizationOption:${o}`); return i === undefined ? [] : [i]; })));
+    });
+    return () => {
+      live = false;
+    };
+  }, [selected, nodes, indexOf, session.version]);
 
   const relatedByStream = useMemo(() => {
     const m = new Map<string, number>();
@@ -519,50 +809,58 @@ function SpecMapView({ data }: { data: SpecMapData }) {
    * and property values become a breadcrumb; the details panel folds to a rail.
    */
   const editLayout = focusing && session.editing && (selLevel === "product" || selLevel === "customizationOption");
-  /** Property values are not part of any rule: a count while a product is focused, shown on request. */
-  const [showValues, setShowValues] = useState(false);
-  useEffect(() => setShowValues(false), [selected]);
 
-  /** The panel's width, so the map's columns for the new selection are known in the same render. */
-  const panelW =
-    selected === null ? 0 : editLayout ? Math.min(EDIT_PANEL_W, Math.floor(rowW * 0.4)) : Math.min(PANEL_W, Math.floor(rowW * 0.45));
-  const areaW = rowW - (panelW ? panelW + PANEL_GAP : 0);
 
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
   const group = TABLE_GROUPS.find((g) => g.key === stream) ?? TABLE_GROUPS[0]!;
   /**
    * A focused standard product brings the options it offers into its own stream, as a column right
-   * after it, so the product → option lines run straight across. Known from the selection alone, so
-   * the columns are settled before the cards glide; the options rise in once the rules answer.
+   * after it. Known from the selection alone, so the columns are settled before the cards glide; the
+   * options rise in once the rules answer.
    */
   // A standard product — or an inspiration product, which shows its base's offers (2026-10-14).
   const offering =
     focusing &&
     (nodes[selected!]!.level === "product" || nodes[selected!]!.level === "inspiration") &&
     stream === streamOf(nodes[selected!]!.level);
+  /**
+   * A focused standard product (Richard, 2026-10-14): three wide columns — the product, what it offers,
+   * and what it states, each value under its property — so names fit; its line and style become the
+   * breadcrumb (with one product in focus they are a chain of one card each).
+   */
+  const productFocus = offering && nodes[selected!]!.level === "product";
   const levels = useMemo(() => {
     if (editLayout) {
       // An option's two relations side by side: compatible options (option ↔ option) and the products offering it.
       return selLevel === "product" ? (["product", "customizationOption"] as TableKey[]) : (["customizationOption", COMPATIBLE, "product"] as TableKey[]);
     }
-    const own = group.levels
-      .map((l) => l.key)
-      .filter((k) => !(k === "productValue" && focusing && selLevel === "product" && !showValues));
+    const own = mapLevelsOf(group.levels.map((l) => l.key))
+
     if (!offering) return own;
-    const at = Math.max(own.indexOf("product"), own.indexOf("inspiration")) + 1;
-    return [
-      ...own.slice(0, at),
-      "customizationOption" as TableKey,
-      ...own.slice(at),
-    ];
-  }, [group, offering, editLayout, selLevel, focusing, showValues]);
+    if (productFocus) return ["product", "customizationOption", MAP_PROPERTY] as TableKey[];
+    const at = own.indexOf("inspiration") + 1;
+    return [...own.slice(0, at), "customizationOption" as TableKey, ...own.slice(at)];
+  }, [group, offering, productFocus, editLayout, selLevel]);
+  /**
+   * The panel's width, so the map's columns for the new selection are known in the same render. It
+   * gives way (to MIN_PANEL_W) before the cards get narrower than MIN_CARD_W.
+   */
+  const wantPanelW =
+    selected === null ? 0 : editLayout ? Math.min(EDIT_PANEL_W, Math.floor(rowW * 0.4)) : Math.min(PANEL_W, Math.floor(rowW * 0.45));
+  const mapNeeds = PAD * 2 + levels.length * (MIN_CARD_W + MIN_GUTTER) + areaChrome;
+  const panelW = wantPanelW
+    ? Math.max(Math.min(wantPanelW, MIN_PANEL_W), Math.min(wantPanelW, rowW - PANEL_GAP - mapNeeds))
+    : 0;
+  const areaW = rowW - (panelW ? panelW + PANEL_GAP : 0) - areaChrome;
+  // Every column shares the width: the diagram fits its box and scrolls only down.
   const colW = Math.min(
     editLayout ? EDIT_MAX_COL_W : Number.POSITIVE_INFINITY,
-    Math.max(MIN_COL_W, Math.floor((areaW - PAD * 2) / levels.length)),
+    Math.max(1, Math.floor((areaW - PAD * 2) / levels.length)),
   );
-  const cardW = colW - GUTTER;
+  const gutter = Math.max(MIN_GUTTER, Math.min(GUTTER, Math.round(colW * 0.22)));
+  const cardW = colW - gutter;
   /** Headers run on into the gutter (nothing is drawn there at their height), so names fit narrow columns. */
-  const headW = colW - 16;
+  const headW = colW - 8;
   const statusOk = useCallback(
     (i: number) =>
       status === ALL || !nodes[i]!.status || nodes[i]!.status === status,
@@ -608,6 +906,31 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       parentsOf,
       colW,
     );
+    const grouped = editLayout
+      ? null
+      : regroup(f, levels, parentsOf, nodes, colW, folded, offering ? ["customizationOption" as TableKey, ...(productFocus ? [MAP_PROPERTY] : [])] : [], COPY.otherGroup);
+    // A focused product's properties, A→Z, each with the values the product states under it.
+    const propRails: { y1: number; ticks: number[] }[] = [];
+    let propBottom = 0;
+    if (productFocus) {
+      const x = PAD + levels.indexOf(MAP_PROPERTY) * colW;
+      const byTitle = (a: number, b: number) => nodes[a]!.title.localeCompare(nodes[b]!.title);
+      const props = [...f.pos.keys()].filter((i) => nodes[i]!.level === MAP_PROPERTY).sort(byTitle);
+      let y = HEAD_H;
+      for (const p of props) {
+        f.pos.set(p, { x, y });
+        const y1 = y + CARD_H;
+        y += ROW_H;
+        const ticks: number[] = [];
+        for (const v of (childrenOf[p] ?? []).filter((v) => related!.has(v) && statusOk(v)).sort(byTitle)) {
+          f.pos.set(v, { x: x + INDENT, y });
+          ticks.push(y + CARD_H / 2);
+          y += ROW_H;
+        }
+        if (ticks.length) propRails.push({ y1, ticks });
+      }
+      propBottom = y;
+    }
     if (editLayout && selLevel === "customizationOption") {
       // An option's two columns, laid out by hand: a filter, then cards under group headings — compatible
       // options by type, products by line (2026-10-14).
@@ -655,9 +978,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         height = Math.max(height, y);
         return { key: c.key, x, filterY: HEAD_H, labels, placeholder: c.placeholder, shown: [...groups.values()].flat().length, total: c.items.length };
       });
-      return { ...f, height, offer: null, editCols };
+      return { ...f, height, offer: null, editCols, grouped, propRails };
     }
-    if (!offering) return { ...f, offer: null, editCols: null };
+    if (!offering) return { ...f, offer: null, editCols: null, grouped, propRails };
 
     // The offered-options column, laid out by hand: filter, then per kind a header and its options by type.
     const x = PAD + levels.indexOf("customizationOption") * colW;
@@ -720,10 +1043,12 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       offer.rails.push({ state, y1, ticks });
       y += GROUP_GAP;
     }
-    return { ...f, height: Math.max(f.height, y), offer, editCols: null };
+    return { ...f, height: Math.max(f.height, y, propBottom), offer, editCols: null, grouped, propRails };
   }, [
     focusing,
     offering,
+    productFocus,
+    childrenOf,
     shownOffers,
     offerKinds,
     openGroups,
@@ -748,6 +1073,37 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const targetOf = (i: number) =>
     focus ? (focus.pos.get(i) ?? rest.pos.get(i)) : rest.pos.get(i);
 
+  /**
+   * At rest (nothing selected) each column is its own list, as tall as the screen, scrolled on its own,
+   * A→Z (Richard, 2026-10-14). Selecting a card switches to the focused view.
+   */
+  const columnsMode = selected === null;
+  const colPos = useMemo(() => {
+    const m = new Map<number, Pos>();
+    levels.forEach((level, li) => {
+      if (streamOf(level) !== stream || collapsed.has(level)) return;
+      (byLevel.get(level) ?? [])
+        .filter((i) => rest.pos.has(i))
+        .forEach((i, k) => m.set(i, { x: PAD + li * colW, y: HEAD_H + k * ROW_H }));
+    });
+    return m;
+  }, [levels, stream, collapsed, byLevel, rest, colW]);
+  /** Where a resting column's cards are on screen now (their list's scroll), for the glide into focus. */
+  const lastColumns = useRef<{ on: boolean; pos: Map<number, Pos> }>({ on: true, pos: new Map() });
+  useLayoutEffect(() => {
+    lastColumns.current = { on: columnsMode, pos: colPos };
+  });
+  const columnsOnScreen = () => {
+    const pos = new Map<number, Pos>();
+    for (const [i, p] of lastColumns.current.pos) {
+      const top = colRefs.current.get(nodes[i]!.level)?.scrollTop ?? 0;
+      const y = p.y - top;
+      // Cards scrolled out of their list have no place to glide from: they arrive instead.
+      if (y >= HEAD_H - CARD_H && y <= HEAD_H + areaH) pos.set(i, { x: p.x, y });
+    }
+    return pos;
+  };
+
   /*
    * Cards glide only when the selection changes — never on a resize, a filter or a collapse — and
    * they glide from where they were ON SCREEN (Eric, 2026-10-09): the map jumps to where the new
@@ -769,8 +1125,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     lastFocusKey.current = focusKey;
     const el = area.current;
     if (!el) return;
-    const before = shown.current;
-    const back = clearedFrom !== null ? rest.pos.get(clearedFrom) : undefined;
+    const before = lastColumns.current.on ? { pos: columnsOnScreen() } : shown.current;
+    if (columnsMode && clearedFrom !== null) {
+      // Back to the columns: the record just cleared is put back in view, in its own column.
+      const at = colPos.get(clearedFrom);
+      const list = colRefs.current.get(nodes[clearedFrom]!.level);
+      if (at && list) list.scrollTop = Math.max(0, at.y - HEAD_H - list.clientHeight / 3);
+    }
+    const back = clearedFrom !== null && !columnsMode ? rest.pos.get(clearedFrom) : undefined;
     const was = el.scrollTop; // live: scrolling does not re-render
     const top = focus
       ? 0
@@ -793,6 +1155,54 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     lastSelected.current = selected;
   }, [selected]);
 
+  /**
+   * Focused view (not the edit layout): each column scrolls on its own (Richard, 2026-10-14). The cards
+   * stay on one canvas — so the hover lines can join them — and a column's scroll is an offset: its
+   * cards, headings and rails move by it.
+   */
+  const virtualCols = focus !== null && !editLayout && !columnsMode;
+  const [colScroll, setColScroll] = useState<{ key: string; by: Record<number, number> }>({ key: "", by: {} });
+  const colOfX = (x: number) => Math.round((x - PAD) / colW);
+  const offAt = (x: number) => (virtualCols && colScroll.key === focusKey ? (colScroll.by[colOfX(x)] ?? 0) : 0);
+  const view = (p: Pos): Pos => ({ x: p.x, y: p.y - offAt(p.x) });
+  /** Each focused column's content bottom, for its scroll range and its thumb. */
+  const colBottom = useMemo(() => {
+    const m = new Map<number, number>();
+    if (!focus) return m;
+    const col = (x: number) => Math.round((x - PAD) / colW);
+    const up = (x: number, bottom: number) => m.set(col(x), Math.max(m.get(col(x)) ?? 0, bottom));
+    for (const p of focus.pos.values()) up(p.x, p.y + ROW_H);
+    for (const h of focus.grouped?.heads ?? []) up(h.x, h.y + TYPE_H + ROW_H);
+    if (focus.offer) up(focus.offer.x, focus.height);
+    return m;
+  }, [focus, colW]);
+  const maxScroll = (c: number) => Math.max(0, (colBottom.get(c) ?? 0) + PAD - areaH);
+  const scrollCol = (c: number, to: number) =>
+    setColScroll((s) => {
+      const by = s.key === focusKey ? s.by : {};
+      const v = Math.max(0, Math.min(maxScroll(c), to));
+      return v === (by[c] ?? 0) ? s : { key: focusKey, by: { ...by, [c]: v } };
+    });
+  const wheelRef = useRef<(e: WheelEvent) => void>(() => {});
+  wheelRef.current = (e: WheelEvent) => {
+    if (!virtualCols || !area.current) return;
+    const left = area.current.getBoundingClientRect().left;
+    const c = colOfX(e.clientX - left - colW / 2 + PAD);
+    if (maxScroll(c) <= 0) return;
+    e.preventDefault();
+    scrollCol(c, offAt(PAD + c * colW) + e.deltaY);
+  };
+  // Columns scroll on their own: the box itself stays at the top.
+  useLayoutEffect(() => {
+    if (virtualCols && area.current) area.current.scrollTop = 0;
+  }, [virtualCols, focusKey]);
+  useEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    const h = (e: WheelEvent) => wheelRef.current(e);
+    el.addEventListener("wheel", h, { passive: false });
+    return () => el.removeEventListener("wheel", h);
+  }, []);
   const posOf = (i: number) => {
     const start = from?.pos.get(i);
     return start ? { x: start.x, y: start.y + from!.dy } : targetOf(i);
@@ -880,7 +1290,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
 
   useLayoutEffect(() => {
     const pos = new Map<number, Pos>();
-    for (const i of drawn) if (onMap(i) && !isGone(i)) pos.set(i, posOf(i)!);
+    for (const i of drawn) if (onMap(i) && !isGone(i)) pos.set(i, virtualCols ? view(posOf(i)!) : posOf(i)!);
     shown.current = { pos };
   });
 
@@ -920,14 +1330,64 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     if (focus) for (const i of focus.pos.keys()) s.add(i);
     return [...s];
   }, [rest, focus]);
-  const arrows = focus
-    ? edges.filter(([a, b]) => focus.pos.has(a) && focus.pos.has(b))
-    : edges.filter(([a, b]) => rest.pos.has(a) && rest.pos.has(b));
+  const grouped = focus?.grouped ?? null;
+  /**
+   * A traced card's own links (hovered or pinned, in focus): what it hangs off, what hangs off it, the
+   * values a product states, a derived option's partners, an offer's product. The rest dims. Not for
+   * the selection itself — everything on screen is its link.
+   */
+  const hoverSet = useMemo(() => {
+    if (trace === null || !focus || trace === selected) return null;
+    const s = new Set<number>([
+      trace,
+      ...(parentsOf[trace] ?? []),
+      ...(childrenOf[trace] ?? []),
+      ...(statedOf.get(trace) ?? []),
+      ...(derivedFrom.get(trace) ?? []),
+      ...(partnersOf.get(trace) ?? []),
+    ]);
+    if (offering && selected !== null && shownOffers.has(trace)) s.add(selected);
+    return s;
+  }, [trace, focus, parentsOf, childrenOf, statedOf, derivedFrom, partnersOf, offering, selected, shownOffers]);
   /** Laid out and settled: the offered-options column's own parts (filter, group headers, rails). */
   const offerUi =
     offering && focus?.offer && !from && focus.pos.has(selected!)
       ? focus.offer
       : null;
+  /**
+   * An offer group's heading on screen: in its place, or — open, and scrolled past — stuck under the
+   * filter until the next heading pushes it up.
+   */
+  const offerHeadTop = (o: OfferLayout, k: number) => {
+    const off = offAt(o.x);
+    const g = o.groups[k]!;
+    const natural = g.y - off;
+    const stick = HEAD_H + FILTER_H;
+    if (!virtualCols || !g.open || natural >= stick) return natural;
+    const next = o.groups[k + 1];
+    return Math.min(stick, next ? next.y - off - GROUP_GAP - GROUP_H : stick);
+  };
+  /**
+   * "Outline": per column, the traced card's links scrolled out of view, above and below, so the
+   * column says how many there are — and, once the card is pinned, scrolls to the next on a click.
+   */
+  const linkedOut = (() => {
+    if (linkMode !== "highlight" || !hoverSet || !focus || !virtualCols || from) return [];
+    const out = new Map<number, { top: number; up: number[]; down: number[] }>();
+    for (const j of hoverSet) {
+      const p = focus.pos.get(j);
+      if (!p || isGone(j)) continue;
+      const c = colOfX(p.x);
+      // Under the offered column's pinned filter and heading, a card is out of view too.
+      const top = HEAD_H + (offerUi && c === colOfX(offerUi.x) ? FILTER_H + GROUP_H : 0);
+      const y = p.y - offAt(p.x);
+      const e = out.get(c) ?? { top, up: [], down: [] };
+      if (y < top) e.up.push(p.y);
+      else if (y + CARD_H > areaH) e.down.push(p.y);
+      out.set(c, e);
+    }
+    return [...out].filter(([, e]) => e.up.length || e.down.length);
+  })();
   /** Options per kind (status filter applied), for the focus bar's chips. */
   const offerCount = (state: OfferKind) =>
     [...shownOffers].filter(([i, k]) => k === state && statusOk(i)).length;
@@ -942,14 +1402,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     });
   const sel = selected !== null ? nodes[selected]! : null;
   /** The record's ancestors, top first, then the record — the edit layout's breadcrumb. */
-  const crumbs = useMemo(() => {
+  const crumbIds = useMemo(() => {
     if (selected === null) return [];
-    const out: string[] = [nodes[selected]!.title];
+    const out: number[] = [selected];
     let i = parentsOf[selected]?.[0];
-    while (i !== undefined && out.length < 4) { out.unshift(nodes[i]!.title); i = parentsOf[i]?.[0]; }
+    while (i !== undefined && out.length < 4) { out.unshift(i); i = parentsOf[i]?.[0]; }
     return out;
-  }, [selected, nodes, parentsOf]);
-  const valueCount = related ? [...related].filter((i) => nodes[i]!.level === "productValue").length : 0;
+  }, [selected, parentsOf]);
+  const crumbs = crumbIds.map((i) => nodes[i]!.title);
 
   // ── editing on the diagram: offer or stop offering an option on a product ──
   // Not on stale data: never while the map is re-reading the rules after a submit, or before this
@@ -1008,6 +1468,176 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const elsewhere = TABLE_GROUPS.filter(
     (g) => g.key !== stream && (relatedByStream.get(g.key) ?? 0) > 0,
   );
+
+  /** One card at a position — on the diagram, or inside a resting column's own scroll list. */
+  const renderCard = (i: number, p: Pos) => {
+              if (!onMap(i)) return null;
+              const n = nodes[i]!;
+              const offer = offering ? shownOffers.get(i) : undefined;
+              const Icon = iconOf(n.level);
+              const dot = statusDot(n.status);
+              const unrelated = !editLayout && related !== null && !related.has(i);
+              const faded = hoverSet !== null && !hoverSet.has(i);
+              // "Highlight": the traced card and its links are outlined (outline, not ring: rings already
+              // mean selected, compatible and previewed changes).
+              const traced = linkMode === "highlight" && hoverSet !== null && hoverSet.has(i)
+                ? i === trace ? "outline-2 outline-offset-2 outline-blue-600" : "outline-2 outline-offset-1 outline-blue-500/70"
+                : "";
+              // Hung under a heading in its own column: an offered option, or a value under its property.
+              const indented = Boolean(offer) || (productFocus && n.level === "productValue");
+              const gone = isGone(i);
+              // A related card from a collapsed level (property values) has no resting place: once the
+              // others have moved it rises into its own column from below, row by row (Eric, 2026-10-09).
+              // The rise is on an inner layer — an animation on the positioned element would override
+              // its translate and start it from the map's top-left corner.
+              const arriving = !from && focus !== null && !rest.pos.has(i);
+              const change = diff.get(i);
+              const pending = pendingOn(i);
+              // A compatible option of the option being edited (the middle column).
+              const compatCard = editingHere && sel?.level === "customizationOption" && n.level === "customizationOption" && i !== selected && compatOptionsShown.has(i);
+              const exc = offer ? shownExceptions.get(i) : undefined;
+              // An add exception on an option the rules already give (or a remove on one they do not)
+              // changes nothing — the engine calls it redundant; the card stays where the rules put it.
+              const noEffect = exc ? (exc.mode === "add" ? offer !== "added" : offer !== "removed") : false;
+              const target = editTarget(i);
+              const row = Math.max(0, Math.round((p.y - HEAD_H) / ROW_H));
+              return (
+                <div
+                  key={i}
+                  // On the card's box, not its button: the pin beside the button is part of the card.
+                  onMouseEnter={focus && !from ? () => setHovered(i) : undefined}
+                  onMouseLeave={focus && !from ? () => setHovered((h) => (h === i ? null : h)) : undefined}
+                  className={`absolute left-0 top-0 transition-opacity ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : faded ? "opacity-40" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
+                  style={{
+                    width: indented ? cardW - INDENT : cardW,
+                    height: CARD_H,
+                    transform: `translate(${p.x}px, ${p.y}px)`,
+                    transition: moving
+                      ? `transform ${MOVE_MS}ms ${MOVE_EASE}, opacity ${MOVE_MS / 1.5}ms ease-out`
+                      : undefined,
+                    willChange: moving ? "transform, opacity" : undefined,
+                  }}
+                >
+                  <button
+                    type="button"
+                    // An offered option belongs to the Customizations stream: selecting it goes there.
+                    onClick={() => select(i, !inStream(i))}
+                    title={[
+                      n.title,
+                      offer ? COPY.offerKind[offer] : null,
+                      offer === "derived" && derivedFrom.get(i)?.length ? COPY.derivedWhy(derivedFrom.get(i)!.map((j) => nodes[j]!.title)) : null,
+                      change?.kind === "gain" ? EDIT.previewGain : change?.kind === "lose" ? EDIT.previewLose : change?.was ? EDIT.previewChange(COPY.offerKind[change.was]) : null,
+                      exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}${noEffect ? ` — ${EDIT.noEffectWhy(exc.mode)}` : ""}` : null,
+                      pending.length ? EDIT.pendingHere(pending.map((e) => describeEdit(e, session.names)).join("; ")) : null,
+                      n.status,
+                    ]
+                      .filter(Boolean)
+                      .join(" — ")}
+                    tabIndex={gone ? -1 : undefined}
+                    aria-hidden={gone ? true : undefined}
+                    className={`flex size-full items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs hover:bg-muted ${
+                      i === selected
+                        ? "border-foreground ring-2 ring-foreground"
+                        : change?.kind === "gain"
+                          ? "border-green-600 ring-1 ring-green-600/50"
+                          : change?.kind === "lose"
+                            ? "border-dashed border-red-500 opacity-70"
+                            : change?.kind === "change"
+                              ? "border-amber-500 ring-1 ring-amber-500/50"
+                              : compatibleShown.has(i)
+                          ? "border-foreground/60 ring-1 ring-foreground/40"
+                          : "border-border"
+                    } ${traced} ${arriving ? "animate-in fade-in slide-in-from-bottom-6 fill-mode-backwards duration-300 ease-out" : ""}`}
+                    style={
+                      arriving
+                        ? {
+                            // An offered option also arrives when its group opens, long after the move.
+                            animationDelay: `${(offer && !moving ? 0 : MOVE_MS) + Math.min(row, 12) * (offer ? 20 : 30)}ms`,
+                          }
+                        : undefined
+                    }
+                  >
+                    <Icon
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className={`truncate text-xs font-medium text-foreground ${change?.kind === "lose" ? "line-through" : ""}`}>
+                        {n.title}
+                      </span>
+                      <span className="truncate text-[11px] text-muted-foreground">
+                        {offer && waiting.has(i) ? <span className="font-medium text-amber-700 dark:text-amber-400" title={EDIT.pendingEntry}>{EDIT.pendingMark} · </span> : null}
+                        {preset?.preselected.has(i) ? <span className="font-medium text-blue-700 dark:text-blue-400">{EDIT.preselected} · </span> : null}
+                        {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)}{noEffect ? ` ${EDIT.noEffect}` : ""} · </span> : null}
+                        {offer === "derived" && derivedFrom.get(i)?.length ? (
+                          <span className="text-foreground/80">{COPY.via(derivedFrom.get(i)!.map((j) => nodes[j]!.title))} · </span>
+                        ) : null}
+                        {/* A value under its property heading: the property is not repeated. */}
+                        {[n.code, productFocus && n.level === "productValue" ? null : n.sub].filter(Boolean).join(" · ") || "—"}
+                      </span>
+                    </span>
+                    {dot ? (
+                      <span
+                        className={`size-2.5 shrink-0 rounded-full ${dot}`}
+                        aria-label={n.status ?? undefined}
+                      />
+                    ) : null}
+                  </button>
+                  {/* Pin a card's links so they stay marked while the columns scroll. */}
+                  {focus && !from && !gone && i !== selected && (pinned === i || (hovered === i && pinned === null)) ? (
+                    <button
+                      type="button"
+                      aria-pressed={pinned === i}
+                      aria-label={pinned === i ? COPY.unpin(n.title) : COPY.pin(n.title)}
+                      title={pinned === i ? COPY.unpin(n.title) : COPY.pin(n.title)}
+                      onClick={() => setPinned((p) => (p === i ? null : i))}
+                      className={`absolute -bottom-2 -right-2 z-[1] flex size-5 items-center justify-center rounded-full border shadow-xs ${pinned === i ? "border-blue-600 bg-blue-600 text-white" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {pinned === i ? <PinOff className="size-3" /> : <Pin className="size-3" />}
+                    </button>
+                  ) : null}
+                  {pending.length && !change && !gone ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white"
+                    >
+                      ✎
+                    </span>
+                  ) : null}
+                  {change && !gone ? (
+                    <span
+                      aria-hidden
+                      className={`pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white ${change.kind === "gain" ? "bg-green-600" : change.kind === "lose" ? "bg-red-500" : "bg-amber-500"}`}
+                    >
+                      {change.kind === "gain" ? "+" : change.kind === "lose" ? "−" : "~"}
+                    </span>
+                  ) : null}
+                  {compatCard && !gone ? (
+                    pending.length ? (
+                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => pending.forEach((e) => session.remove(editKey(e)))} />
+                    ) : compatOptions.has(i) ? (
+                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.notCompatible(n.title)}
+                        onClick={() => session.put({ kind: "pair", a: sel!.id, b: n.id, compatible: false })} />
+                    ) : null
+                  ) : null}
+                  {target && !gone ? (
+                    // One meaning per icon (2026-10-14): ↺ only undoes your own pending change; ⊖ stops
+                    // offering; ⊕ offers again. Each makes exactly the edit its label says, or refuses.
+                    target.direct ? (
+                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => session.setOffered(target.p, target.o, true, true)} />
+                    ) : change ? null : sel!.level === "product" ? (
+                      offers.get(i) === "removed" ? (
+                        <CardAction icon={CirclePlus} label={EDIT.offerAgain(n.title)} onClick={() => act(target.p, target.o, "offerAgain", "removed")} />
+                      ) : offers.has(i) ? (
+                        <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => act(target.p, target.o, "stop", offers.get(i)!)} />
+                      ) : null
+                    ) : (
+                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => offerOn(target.p, target.o, false, target.offeredNow)} />
+                    )
+                  ) : null}
+                </div>
+              );
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -1106,6 +1736,21 @@ function SpecMapView({ data }: { data: SpecMapData }) {
             {COPY.onlyRelated}
           </Label>
         </div>
+        <div role="group" aria-label={COPY.linkMode} className="flex items-center gap-1 text-sm text-muted-foreground">
+          <span className="mr-1">{COPY.linkMode}</span>
+          {(["highlight", "lines"] as const).map((m) => (
+            <Button
+              key={m}
+              size="xs"
+              variant={linkMode === m ? "secondary" : "ghost"}
+              aria-pressed={linkMode === m}
+              title={COPY.linkModeTitle[m]}
+              onClick={() => setLinkMode(m)}
+            >
+              {COPY.linkModes[m]}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="flex h-9 shrink-0 items-center">
@@ -1118,17 +1763,23 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               </span>
             ) : (
               <>
-                <span className="text-muted-foreground">{COPY.focusedOn}</span>
+                <span className="shrink-0 text-muted-foreground">{COPY.focusedOn}</span>
+                {/* A focused product's line and style: its breadcrumb, each a click away. */}
+                {productFocus
+                  ? crumbIds.slice(0, -1).map((i) => (
+                      <span key={i} className="flex min-w-0 shrink items-center gap-3">
+                        <button type="button" onClick={() => select(i, false)} className="truncate text-muted-foreground hover:text-foreground hover:underline">
+                          {nodes[i]!.title}
+                        </button>
+                        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                      </span>
+                    ))
+                  : null}
                 <span className="truncate font-medium text-foreground">
                   {sel.title}
                 </span>
               </>
             )}
-            {!editLayout && focusing && sel.level === "product" && valueCount > 0 ? (
-              <Button size="xs" variant={showValues ? "secondary" : "ghost"} aria-pressed={showValues} onClick={() => setShowValues((v) => !v)}>
-                {EDIT.propertyValues(valueCount)}
-              </Button>
-            ) : null}
             {offering && shownOffers.size ? (
               <span
                 role="group"
@@ -1223,189 +1874,154 @@ function SpecMapView({ data }: { data: SpecMapData }) {
         </div>
       ) : null}
 
-      <div ref={row} className="flex min-h-[28rem] flex-1 gap-3">
+      <div ref={row} className="flex min-h-[28rem] flex-1 gap-3" style={boxH ? { height: boxH } : undefined}>
         <div
           ref={area}
-          className="relative min-w-0 flex-1 overflow-auto rounded-md border border-border bg-muted/30"
+          // The box scrolls only in the edit layout and the full diagram; when the columns scroll on their own
+          // it reserves no scrollbar gutter, which showed as a pale strip past the header band (2026-10-15).
+          className={`relative min-w-0 flex-1 overflow-x-hidden rounded-md border border-border bg-muted/30 ${columnsMode || virtualCols ? "overflow-y-hidden" : "overflow-y-auto [scrollbar-gutter:stable]"}`}
         >
-          <div className="relative" style={{ width, height: height + PAD }}>
+          {/* Fixed to the box when columns scroll on their own: cards past its edge must not scroll the box. */}
+          <div
+            className={`relative ${columnsMode || virtualCols ? "overflow-clip" : ""}`}
+            // At least the box's width: the columns round down, and the header band must still reach its edge.
+            style={{ width, minWidth: "100%", height: columnsMode || virtualCols ? Math.max(HEAD_H, areaH - 1) : height + PAD }}
+          >
             <svg
               width={width}
-              height={height}
+              height={columnsMode || virtualCols ? Math.max(HEAD_H, areaH - 1) : height}
               className="pointer-events-none absolute inset-0"
               aria-hidden
             >
               <defs>
-                {(["rest", "on", "dim"] as const).map((k) => (
-                  <marker
-                    key={k}
-                    id={`spec-map-arrow-${k}`}
-                    viewBox="0 0 8 8"
-                    refX="8"
-                    refY="4"
-                    markerWidth="6"
-                    markerHeight="6"
-                    markerUnits="userSpaceOnUse"
-                    orient="auto"
-                  >
-                    <path d="M0,0.5 L8,4 L0,7.5 z" fill={LINE[k]} />
-                  </marker>
-                ))}
+                <marker
+                  id="spec-map-arrow-on"
+                  viewBox="0 0 8 8"
+                  refX="8"
+                  refY="4"
+                  markerWidth="6"
+                  markerHeight="6"
+                  markerUnits="userSpaceOnUse"
+                  orient="auto"
+                >
+                  <path d="M0,0.5 L8,4 L0,7.5 z" fill={LINE.on} />
+                </marker>
               </defs>
-              {/* Focused: only the related arrows, drawn at their new places once the cards have moved. */}
-              <g
-                key={`${focusKey}-${stream}`}
-                fill="none"
-                strokeLinejoin="round"
-                className={
-                  from
-                    ? "hidden"
-                    : "animate-in fade-in fill-mode-backwards duration-200 delay-500"
-                }
-              >
-                {arrows.map(([a, b]) => {
-                  const k =
-                    related === null
-                      ? "rest"
-                      : related.has(a) && related.has(b)
-                        ? "on"
-                        : "dim";
-                  return (
-                    <path
-                      key={`${a}-${b}`}
-                      d={elbow(posOf(a)!, posOf(b)!, cardW, colW)}
-                      stroke={LINE[k]}
-                      strokeWidth={k === "on" ? 1.25 : 1}
-                      markerEnd={`url(#spec-map-arrow-${k})`}
-                    />
-                  );
-                })}
-              </g>
-              {/* Separate from the arrows above: the offers arrive after the move, and fade in on their own. */}
-              <g
-                key={`offers-${selected}-${shownOffers.size}-${offerUi ? 1 : 0}`}
-                fill="none"
-                strokeLinejoin="round"
-                className="animate-in fade-in fill-mode-backwards duration-200 delay-300"
-              >
-                {offerUi?.groups.map((g) => (
-                  <path
-                    key={g.state}
-                    // To the header's middle: elbow() aims at a card's middle, so shift the target to match.
-                    d={elbow(
-                      posOf(selected!)!,
-                      { x: offerUi.x, y: g.y + GROUP_H / 2 - CARD_H / 2 },
-                      cardW,
-                      colW,
-                    )}
-                    stroke={g.total ? LINE.on : LINE.rest}
-                    strokeWidth={1.25}
-                    strokeDasharray={OFFER_DASH[g.state]}
-                    strokeLinecap={g.state === "added" ? "round" : undefined}
-                    markerEnd={`url(#spec-map-arrow-${g.total ? "on" : "rest"})`}
-                  />
-                ))}
-                {offerUi?.rails.map((r) =>
-                  r.ticks.length ? (
-                    <path
-                      key={`rail-${r.state}`}
-                      d={`M${offerUi.x + RAIL},${r.y1} V${r.ticks.at(-1)}${r.ticks
-                        .map((t) => ` M${offerUi.x + RAIL},${t} H${offerUi.x + INDENT - 1}`)
-                        .join("")}`}
-                      stroke={LINE.on}
-                      strokeDasharray={OFFER_DASH[r.state]}
-                      strokeLinecap={r.state === "added" ? "round" : undefined}
-                    />
-                  ) : null,
-                )}
-              </g>
+              {/*
+                No arrows between cards (Richard, 2026-10-14): the relations are named on the headers, and a
+                card's links show by grouping and on hover. Drawn here: the rails that hang cards under a
+                heading in their own column, and the hover lines.
+              */}
+              {focus && !from ? (
+                <g fill="none" className="animate-in fade-in fill-mode-backwards duration-200 delay-300">
+                  {offerUi?.rails.map((r) =>
+                    r.ticks.length ? (
+                      <path
+                        key={`rail-${r.state}`}
+                        d={rail(offerUi.x, r.y1, r.ticks, offAt(offerUi.x))}
+                        stroke={LINE.on}
+                        strokeDasharray={OFFER_DASH[r.state]}
+                        strokeLinecap={r.state === "added" ? "round" : undefined}
+                      />
+                    ) : null,
+                  )}
+                  {productFocus
+                    ? focus.propRails.map((r) => {
+                        const x = PAD + levels.indexOf(MAP_PROPERTY) * colW;
+                        return <path key={`prop-${r.y1}`} d={rail(x, r.y1, r.ticks, offAt(x))} stroke={LINE.rest} />;
+                      })
+                    : null}
+                </g>
+              ) : null}
+              {/* "Lines": from the traced card to its partners (beside their column) and its links next door. */}
+              {linkMode === "lines" && trace !== null && hoverSet && focus && !from ? (
+                <g fill="none" strokeLinejoin="round">
+                  {/* A derived option and its partners: arcs in the gutter beside their column. */}
+                  {offerUi
+                    ? (derivedFrom.has(trace)
+                        ? derivedFrom.get(trace)!.map((p) => [p, trace] as const)
+                        : (partnersOf.get(trace) ?? []).map((d) => [trace, d] as const)
+                      )
+                        .filter(([p, d]) => focus.pos.has(p) && focus.pos.has(d))
+                        .map(([p, d]) => {
+                          const a = view(posOf(p)!);
+                          const b = view(posOf(d)!);
+                          const right = offerUi.x + cardW;
+                          const bend = right + Math.max(6, Math.min(14, colW - cardW - 6));
+                          return (
+                            <path
+                              key={`via-${p}-${d}`}
+                              d={`M${right},${a.y + CARD_H / 2} H${bend} V${b.y + CARD_H / 2} H${right + 2}`}
+                              stroke="var(--color-blue-600, #2563eb)"
+                              strokeWidth={1.5}
+                              markerEnd="url(#spec-map-arrow-on)"
+                            />
+                          );
+                        })
+                    : null}
+                  {/* Neighbouring columns: a thin line from the traced card to each card it links to. */}
+                  {[...hoverSet]
+                    .filter((j) => j !== trace && focus.pos.has(j) && focus.pos.has(trace) && !isGone(j))
+                    .flatMap((j) => {
+                      const ca = colOfX(focus.pos.get(trace)!.x);
+                      const cb = colOfX(focus.pos.get(j)!.x);
+                      if (Math.abs(ca - cb) !== 1) return [];
+                      const [l, r] = ca < cb ? [trace, j] : [j, trace];
+                      const pl = view(posOf(l)!);
+                      const pr = view(posOf(r)!);
+                      const x1 = PAD + Math.min(ca, cb) * colW + cardW;
+                      const x2 = pr.x - 1;
+                      const mx = x1 + Math.round((PAD + Math.max(ca, cb) * colW - x1) / 2);
+                      const y1 = Math.max(HEAD_H, Math.min(areaH, pl.y + CARD_H / 2));
+                      const y2 = Math.max(HEAD_H, Math.min(areaH, pr.y + CARD_H / 2));
+                      return [
+                        <path
+                          key={`hover-${l}-${r}`}
+                          d={`M${x1},${y1} H${mx} V${y2} H${x2}`}
+                          stroke={LINE.on}
+                          strokeWidth={1.25}
+                          markerEnd="url(#spec-map-arrow-on)"
+                        />,
+                      ];
+                    })}
+                </g>
+              ) : null}
             </svg>
 
             {levels.map((level, li) => {
-              const Icon = iconOf(level);
+              const head = { left: PAD + li * colW, width: headW, icon: iconOf(level) };
               if (streamOf(level) !== stream)
                 return (
-                  <div
+                  <ColumnHeader
                     key={level}
-                    className="absolute flex items-center gap-2"
-                    style={{
-                      left: PAD + li * colW,
-                      top: 8,
-                      width: headW,
-                      height: HEAD_H - 16,
-                    }}
-                  >
-                    <Icon
-                      className="size-4 shrink-0 text-muted-foreground"
-                      aria-hidden
-                    />
-                    <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
-                      <ChevronDown className="size-4 shrink-0" />
-                      <span className="truncate">{level === "product" ? EDIT.offeredOn : level === COMPATIBLE ? EDIT.compatibleWith : COPY.offered}</span>
-                    </span>
-                    <span className="text-xs tabular-nums text-muted-foreground">
-                      {level === COMPATIBLE
+                    {...head}
+                    name={level === "product" ? EDIT.offeredOn : level === COMPATIBLE ? EDIT.compatibleWith : COPY.offered}
+                    relation={level === "customizationOption" && sel ? COPY.relation(MAP_ENTITY[sel.level] ?? "", COPY.verb.offers) : null}
+                    count={
+                      level === COMPATIBLE
                         ? compatOptionsShown.size
                         : level === "product"
-                        ? [...compatibleShown].filter((i) => nodes[i]!.level === "product").length
-                        : shownOffers.size ? [...shownOffers.keys()].filter(statusOk).length : "…"}
-                    </span>
-                  </div>
+                          ? [...compatibleShown].filter((i) => nodes[i]!.level === "product").length
+                          : shownOffers.size ? [...shownOffers.keys()].filter(statusOk).length : "…"
+                    }
+                  />
                 );
               const total = (byLevel.get(level) ?? []).length;
-              const isCollapsed = collapsed.has(level);
               const count = focus
                 ? relatedIn(level)
-                : isCollapsed
+                : collapsed.has(level)
                   ? total
-                  : (byLevel.get(level) ?? []).filter((i) => rest.pos.has(i))
-                      .length;
+                  : (byLevel.get(level) ?? []).filter((i) => rest.pos.has(i)).length;
+              const rel = HEAD_RELATION[level];
               return (
-                <div
+                <ColumnHeader
                   key={level}
-                  className="absolute flex items-center gap-2"
-                  style={{
-                    left: PAD + li * colW,
-                    top: 8,
-                    width: headW,
-                    height: HEAD_H - 16,
-                  }}
-                >
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border bg-card text-[11px] font-semibold tabular-nums text-muted-foreground">
-                    {(LEVEL_INFO.get(level)?.index ?? li) + 1}
-                  </span>
-                  <Icon
-                    className="size-4 shrink-0 text-muted-foreground"
-                    aria-hidden
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCollapsed((s) => {
-                        const x = new Set(s);
-                        if (x.has(level)) x.delete(level);
-                        else x.add(level);
-                        return x;
-                      })
-                    }
-                    // While a card is selected every level shows its related cards, collapsed or not: one
-                    // chevron for all, and the toggle waits until the selection is cleared (Eric, 2026-10-09).
-                    disabled={focus !== null}
-                    className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground enabled:hover:underline disabled:cursor-default"
-                    aria-expanded={focus !== null || !isCollapsed}
-                    title={LEVEL_INFO.get(level)?.label}
-                  >
-                    {isCollapsed && focus === null ? (
-                      <ChevronRight className="size-4 shrink-0" />
-                    ) : (
-                      <ChevronDown className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{mapLabelOf(level)}</span>
-                  </button>
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {count === total ? total : `${count}/${total}`}
-                  </span>
-                </div>
+                  {...head}
+                  name={mapLabelOf(level) ?? level}
+                  title={LEVEL_INFO.get(level)?.label}
+                  relation={rel ? COPY.relation(MAP_ENTITY[rel.from] ?? "", COPY.verb[rel.verb]) : null}
+                  count={count === total ? total : `${count}/${total}`}
+                />
               );
             })}
             {focus
@@ -1459,11 +2075,20 @@ function SpecMapView({ data }: { data: SpecMapData }) {
             )) : null}
             {offerUi ? (
               <div className="animate-in fade-in duration-200">
+                {/*
+                  While the column scrolls (Richard, 2026-10-14) the filter stays at its top, and the open
+                  group's heading sticks under it until the next heading pushes it away; cards pass under both.
+                */}
+                {virtualCols ? (
+                  // The colour of the box's own ground (translucent muted over the page's muted panel), not the
+                  // header band's: the filter sits on the column, not in the header (2026-10-15).
+                  <div aria-hidden className="pointer-events-none absolute z-[14] bg-muted" style={{ left: offerUi.x - 4, top: HEAD_H - 4, width: cardW + 8, height: FILTER_H + 4 }} />
+                ) : null}
                 <div
-                  className="absolute"
+                  className="absolute z-[14]"
                   style={{
                     left: offerUi.x,
-                    top: offerUi.filterY + 4,
+                    top: offerUi.filterY + 4 - (virtualCols ? 0 : offAt(offerUi.x)),
                     width: cardW,
                   }}
                 >
@@ -1477,7 +2102,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     className="h-8 bg-card pl-8 text-xs"
                   />
                 </div>
-                {offerUi.groups.map((g) => (
+                {offerUi.groups.map((g, k) => (
                   <button
                     key={g.state}
                     type="button"
@@ -1491,10 +2116,10 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                         return x;
                       })
                     }
-                    className={`absolute flex items-center gap-2 rounded-md border border-border bg-card px-2.5 text-left text-xs font-semibold shadow-xs enabled:hover:bg-muted disabled:cursor-default ${g.total ? "text-foreground" : "text-muted-foreground"}`}
+                    className={`absolute z-[13] flex items-center gap-2 rounded-md border border-border bg-card px-2.5 text-left text-xs font-semibold shadow-xs enabled:hover:bg-muted disabled:cursor-default ${g.total ? "text-foreground" : "text-muted-foreground"}`}
                     style={{
                       left: offerUi.x,
-                      top: g.y,
+                      top: offerHeadTop(offerUi, k),
                       width: cardW,
                       height: GROUP_H,
                     }}
@@ -1514,150 +2139,99 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   </button>
                 ))}
                 {offerUi.types.map((t) => (
-                  <GroupHeading key={t.key} label={t} left={offerUi.x + INDENT} width={cardW - INDENT} foldable={editLayout} onToggle={() => toggleFold(t.key)} />
+                  <GroupHeading key={t.key} label={{ ...t, y: t.y - offAt(offerUi.x) }} left={offerUi.x + INDENT} width={cardW - INDENT} foldable={editLayout} onToggle={() => toggleFold(t.key)} />
                 ))}
               </div>
             ) : null}
 
-            {drawn.map((i) => {
-              if (!onMap(i)) return null;
-              const n = nodes[i]!;
-              const offer = offering ? shownOffers.get(i) : undefined;
-              const p = posOf(i)!;
-              const Icon = iconOf(n.level);
-              const dot = statusDot(n.status);
-              const unrelated = !editLayout && related !== null && !related.has(i);
-              const gone = isGone(i);
-              // A related card from a collapsed level (property values) has no resting place: once the
-              // others have moved it rises into its own column from below, row by row (Eric, 2026-10-09).
-              // The rise is on an inner layer — an animation on the positioned element would override
-              // its translate and start it from the map's top-left corner.
-              const arriving = !from && focus !== null && !rest.pos.has(i);
-              const change = diff.get(i);
-              const pending = pendingOn(i);
-              // A compatible option of the option being edited (the middle column).
-              const compatCard = editingHere && sel?.level === "customizationOption" && n.level === "customizationOption" && i !== selected && compatOptionsShown.has(i);
-              const exc = offer ? shownExceptions.get(i) : undefined;
-              // An add exception on an option the rules already give (or a remove on one they do not)
-              // changes nothing — the engine calls it redundant; the card stays where the rules put it.
-              const noEffect = exc ? (exc.mode === "add" ? offer !== "added" : offer !== "removed") : false;
-              const target = editTarget(i);
-              const row = Math.max(0, Math.round((p.y - HEAD_H) / ROW_H));
-              return (
-                <div
-                  key={i}
-                  className={`absolute left-0 top-0 ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
-                  style={{
-                    width: offer ? cardW - INDENT : cardW,
-                    height: CARD_H,
-                    transform: `translate(${p.x}px, ${p.y}px)`,
-                    transition: moving
-                      ? `transform ${MOVE_MS}ms ${MOVE_EASE}, opacity ${MOVE_MS / 1.5}ms ease-out`
-                      : undefined,
-                    willChange: moving ? "transform, opacity" : undefined,
-                  }}
-                >
-                  <button
-                    type="button"
-                    // An offered option belongs to the Customizations stream: selecting it goes there.
-                    onClick={() => select(i, !inStream(i))}
-                    title={[
-                      n.title,
-                      offer ? COPY.offerKind[offer] : null,
-                      change?.kind === "gain" ? EDIT.previewGain : change?.kind === "lose" ? EDIT.previewLose : change?.was ? EDIT.previewChange(COPY.offerKind[change.was]) : null,
-                      exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}${noEffect ? ` — ${EDIT.noEffectWhy(exc.mode)}` : ""}` : null,
-                      pending.length ? EDIT.pendingHere(pending.map((e) => describeEdit(e, session.names)).join("; ")) : null,
-                      n.status,
-                    ]
-                      .filter(Boolean)
-                      .join(" — ")}
-                    tabIndex={gone ? -1 : undefined}
-                    aria-hidden={gone ? true : undefined}
-                    className={`flex size-full items-center gap-2 rounded-md border bg-card px-2.5 text-left shadow-xs hover:bg-muted ${
-                      i === selected
-                        ? "border-foreground ring-2 ring-foreground"
-                        : change?.kind === "gain"
-                          ? "border-green-600 ring-1 ring-green-600/50"
-                          : change?.kind === "lose"
-                            ? "border-dashed border-red-500 opacity-70"
-                            : change?.kind === "change"
-                              ? "border-amber-500 ring-1 ring-amber-500/50"
-                              : compatibleShown.has(i)
-                          ? "border-foreground/60 ring-1 ring-foreground/40"
-                          : "border-border"
-                    } ${arriving ? "animate-in fade-in slide-in-from-bottom-6 fill-mode-backwards duration-300 ease-out" : ""}`}
-                    style={
-                      arriving
-                        ? {
-                            // An offered option also arrives when its group opens, long after the move.
-                            animationDelay: `${(offer && !moving ? 0 : MOVE_MS) + Math.min(row, 12) * (offer ? 20 : 30)}ms`,
-                          }
-                        : undefined
-                    }
-                  >
-                    <Icon
-                      className="size-4 shrink-0 text-muted-foreground"
-                      aria-hidden
-                    />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className={`truncate text-xs font-medium text-foreground ${change?.kind === "lose" ? "line-through" : ""}`}>
-                        {n.title}
-                      </span>
-                      <span className="truncate text-[11px] text-muted-foreground">
-                        {preset?.preselected.has(i) ? <span className="font-medium text-blue-700 dark:text-blue-400">{EDIT.preselected} · </span> : null}
-                        {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)}{noEffect ? ` ${EDIT.noEffect}` : ""} · </span> : null}
-                        {[n.code, n.sub].filter(Boolean).join(" · ") || "—"}
-                      </span>
-                    </span>
-                    {dot ? (
-                      <span
-                        className={`size-2.5 shrink-0 rounded-full ${dot}`}
-                        aria-label={n.status ?? undefined}
-                      />
-                    ) : null}
-                  </button>
-                  {pending.length && !change && !gone ? (
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white"
-                    >
-                      ✎
-                    </span>
-                  ) : null}
-                  {change && !gone ? (
-                    <span
-                      aria-hidden
-                      className={`pointer-events-none absolute -left-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white ${change.kind === "gain" ? "bg-green-600" : change.kind === "lose" ? "bg-red-500" : "bg-amber-500"}`}
-                    >
-                      {change.kind === "gain" ? "+" : change.kind === "lose" ? "−" : "~"}
-                    </span>
-                  ) : null}
-                  {compatCard && !gone ? (
-                    pending.length ? (
-                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => pending.forEach((e) => session.remove(editKey(e)))} />
-                    ) : compatOptions.has(i) ? (
-                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.notCompatible(n.title)}
-                        onClick={() => session.put({ kind: "pair", a: sel!.id, b: n.id, compatible: false })} />
-                    ) : null
-                  ) : null}
-                  {target && !gone ? (
-                    // One meaning per icon (2026-10-14): ↺ only undoes your own pending change; ⊖ stops
-                    // offering; ⊕ offers again. Each makes exactly the edit its label says, or refuses.
-                    target.direct ? (
-                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => session.setOffered(target.p, target.o, true, true)} />
-                    ) : change ? null : sel!.level === "product" ? (
-                      offers.get(i) === "removed" ? (
-                        <CardAction icon={CirclePlus} label={EDIT.offerAgain(n.title)} onClick={() => act(target.p, target.o, "offerAgain", "removed")} />
-                      ) : offers.has(i) ? (
-                        <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => act(target.p, target.o, "stop", offers.get(i)!)} />
-                      ) : null
-                    ) : (
-                      <CardAction icon={CircleMinus} tone="danger" label={EDIT.stopOffering(n.title)} onClick={() => offerOn(target.p, target.o, false, target.offeredNow)} />
-                    )
-                  ) : null}
+            {(columnsMode ? [] : drawn).map((i) => (onMap(i) ? renderCard(i, virtualCols ? view(posOf(i)!) : posOf(i)!) : null))}
+            {/* The focused view's group headings (they fold), and the band the scrolled cards pass under. */}
+            {grouped && !from
+              ? grouped.heads.map((h) => (
+                  <GroupHeading key={h.key} label={{ ...h, y: h.y - offAt(h.x) }} left={h.x} width={cardW} foldable onToggle={() => toggleFold(h.key)} />
+                ))
+              : null}
+            {virtualCols ? (
+              <>
+                <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[15] bg-background" style={{ height: HEAD_H - 4 }}>
+                  <div className="size-full bg-muted/30" />
                 </div>
-              );
-            })}
+                {[...colBottom].map(([c, bottom]) => {
+                  const total = bottom + PAD - HEAD_H;
+                  const vis = areaH - HEAD_H;
+                  if (total <= vis) return null;
+                  const h = Math.max(24, (vis / total) * vis);
+                  const top = HEAD_H + (offAt(PAD + c * colW) / (total - vis)) * (vis - h);
+                  return (
+                    <div
+                      key={`thumb-${c}`}
+                      role="scrollbar"
+                      aria-orientation="vertical"
+                      aria-valuenow={Math.round(offAt(PAD + c * colW))}
+                      aria-valuemax={Math.round(total - vis)}
+                      className="absolute z-20 w-1.5 cursor-grab rounded-full bg-foreground/20 hover:bg-foreground/40"
+                      style={{ left: PAD + c * colW + cardW + Math.min(10, (colW - cardW) / 3), top, height: h }}
+                      onPointerDown={(e) => {
+                        e.preventDefault(); // a drag must not select the page's text
+                        const startY = e.clientY;
+                        const start = offAt(PAD + c * colW);
+                        const per = (total - vis) / Math.max(1, vis - h);
+                        const move = (ev: PointerEvent) => scrollCol(c, start + (ev.clientY - startY) * per);
+                        const up = () => {
+                          window.removeEventListener("pointermove", move);
+                          window.removeEventListener("pointerup", up);
+                        };
+                        window.addEventListener("pointermove", move);
+                        window.addEventListener("pointerup", up);
+                      }}
+                    />
+                  );
+                })}
+              </>
+            ) : null}
+            {linkedOut.flatMap(([c, e]) =>
+              (["up", "down"] as const).map((dir) => {
+                const ys = dir === "up" ? e.up : e.down;
+                if (!ys.length) return null;
+                // The nearest one: the lowest above, the highest below.
+                const next = dir === "up" ? Math.max(...ys) : Math.min(...ys);
+                return (
+                  <button
+                    key={`out-${c}-${dir}`}
+                    type="button"
+                    disabled={pinned === null}
+                    // Brings the next one a third of the way down the column, clear of both counters.
+                    onClick={() => scrollCol(c, next - e.top - Math.round((areaH - e.top) / 3))}
+                    className="absolute z-[16] -translate-x-1/2 rounded-full border border-blue-500/60 bg-card px-2 py-0.5 text-[11px] font-medium tabular-nums text-blue-700 shadow-xs enabled:hover:bg-blue-50 disabled:cursor-default dark:text-blue-300 dark:enabled:hover:bg-blue-950"
+                    style={{ left: PAD + c * colW + cardW / 2, top: dir === "up" ? e.top + 4 : areaH - 30 }}
+                  >
+                    {COPY.linkedOut(ys.length, dir)}
+                  </button>
+                );
+              }),
+            )}
+            {columnsMode
+              ? levels.map((level, li) => {
+                  if (streamOf(level) !== stream || collapsed.has(level)) return null;
+                  const cards = (byLevel.get(level) ?? []).filter((i) => colPos.has(i));
+                  const bottom = cards.length * ROW_H;
+                  return (
+                    <div
+                      key={level}
+                      ref={(el) => {
+                        if (el) colRefs.current.set(level, el);
+                        else colRefs.current.delete(level);
+                      }}
+                      className="absolute overflow-y-auto overflow-x-hidden [scrollbar-width:thin]"
+                      style={{ left: PAD + li * colW, top: HEAD_H, width: Math.min(colW - 4, cardW + 14), height: Math.max(CARD_H, areaH - HEAD_H - 4) }}
+                    >
+                      <div className="relative" style={{ height: bottom + PAD }}>
+                        {cards.map((i) => renderCard(i, { x: 0, y: colPos.get(i)!.y - HEAD_H }))}
+                      </div>
+                    </div>
+                  );
+                })
+              : null}
           </div>
         </div>
 
@@ -1686,12 +2260,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   {LEVEL_INFO.get(sel.level)?.label}
                 </span>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <Link
-                    href={recordHref(sel.level, sel.id)}
-                    className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
-                  >
-                    {COPY.openFullPage} <ArrowUpRight className="size-3.5" />
-                  </Link>
+                  {isPropertyLevel(sel.level) ? null : (
+                    <Link
+                      href={recordHref(sel.level, sel.id)}
+                      className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
+                    >
+                      {COPY.openFullPage} <ArrowUpRight className="size-3.5" />
+                    </Link>
+                  )}
                   {compatible.size ? (
                     <span>{COPY.compatible(compatible.size)}</span>
                   ) : null}
@@ -1709,7 +2285,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               </div>
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
-              {!record || record.for !== selected ? (
+              {isPropertyLevel(sel.level) ? (
+                <p className="text-sm text-muted-foreground">{COPY.propertyCard}</p>
+              ) : !record || record.for !== selected ? (
                 <p className="text-sm text-muted-foreground">{COPY.loading}</p>
               ) : !record.res.ok ? (
                 <p role="alert" className="text-sm text-destructive">
@@ -1764,28 +2342,43 @@ function adjacency(
   return out;
 }
 
+/** A heading's rail: down the column's left edge from the heading, with a tick into each card. */
+function rail(x: number, y1: number, ticks: number[], off: number): string {
+  return `M${x + RAIL},${y1 - off} V${ticks.at(-1)! - off}${ticks.map((t) => ` M${x + RAIL},${t - off} H${x + INDENT - 1}`).join("")}`;
+}
+
 /**
- * Parent's right edge → child's left edge as an angled line: out, along a shared vertical just past
- * the parent's column, then in. Every line from one column shares that vertical, so they overlap
- * into one trunk instead of fanning out (Eric, 2026-10-09).
- *
- * A line that skips a column (a focused product's property values, past its offered options) bridges
- * over that column's cards, just under the headers, and comes down the child column's own trunk.
+ * A column's header (Richard, 2026-10-14): the relation into it on a small line ("Line has →"), then
+ * icon, name and count — no level number, no fold (a column never folds).
  */
-function elbow(a: Pos, b: Pos, cardW: number, colW: number): string {
-  const x1 = a.x + cardW;
-  const y1 = a.y + CARD_H / 2;
-  const x2 = b.x - 1;
-  const y2 = b.y + CARD_H / 2;
-  const mx = x1 + Math.round(GUTTER / 2);
-  if (b.x - a.x > colW * 1.5) {
-    const bridge = HEAD_H - 6;
-    const mx2 = b.x - Math.round(GUTTER / 2);
-    return `M${x1},${y1} H${mx} V${bridge} H${mx2} V${y2} H${x2}`;
-  }
-  return y1 === y2
-    ? `M${x1},${y1} H${x2}`
-    : `M${x1},${y1} H${mx} V${y2} H${x2}`;
+function ColumnHeader({ left, width, icon: Icon, name, title, relation, count }: {
+  left: number;
+  width: number;
+  icon: LucideIcon;
+  name: string;
+  title?: string;
+  relation: string | null;
+  count: number | string;
+}) {
+  return (
+    <div className="absolute z-20 flex flex-col justify-center gap-0.5" style={{ left, top: 6, width, height: HEAD_H - 14 }}>
+      <span className="truncate text-[11px] leading-[14px] text-muted-foreground">{relation ?? "\u00a0"}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <ColumnName title={title}>{name}</ColumnName>
+        <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
+      </div>
+    </div>
+  );
+}
+
+/** A column's name in its header: wraps to a second line rather than cutting off with "…". */
+function ColumnName({ children, title }: { children: React.ReactNode; title?: string }) {
+  return (
+    <span className="line-clamp-2 min-w-0 text-[13px] font-semibold leading-4 text-foreground" title={title ?? (typeof children === "string" ? children : undefined)}>
+      {children}
+    </span>
+  );
 }
 
 /** A small round action on a card's corner. */

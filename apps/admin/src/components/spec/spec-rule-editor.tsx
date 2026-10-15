@@ -8,7 +8,8 @@ import { Input } from "@pakfactory/ui/components/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@pakfactory/ui/components/select";
 import type { TableKey } from "@/lib/spec/catalog-table-model";
 import type { Choice, RuleEditorData } from "@/lib/spec/rule-editor-data";
-import { loadRecordEdits, loadRuleEditor, type RecordEdit } from "@/app/(admin)/spec/rule-edit-actions";
+import { loadPendingRules, loadRecordEdits, loadRuleEditor, type RecordEdit } from "@/app/(admin)/spec/rule-edit-actions";
+import type { PendingField, PendingRules } from "@/lib/spec/pending-rules";
 import Link from "next/link";
 import { RuleEditFooter, SubmitResultNote, useRuleEditSession, WithRuleEditSession } from "@/components/spec/rule-edit-session";
 import { ADMIN_SPEC_RULE_EDIT_COPY as COPY } from "@/lib/copy/spec";
@@ -36,12 +37,15 @@ function RuleSection({ level, id, title }: { level: TableKey; id: string; title:
   const s = useRuleEditSession()!;
   const [data, setData] = useState<Data | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /** Fields with a change already waiting for approval; none when the read fails. */
+  const [pending, setPending] = useState<PendingRules>({});
   const [, start] = useTransition();
   useEffect(() => {
     start(async () => {
       const r = await loadRuleEditor(level, id);
       if (r.ok) { setData(r.data); setLoadError(null); } else setLoadError(r.error);
     });
+    void loadPendingRules(id).then((r) => setPending(r.ok ? r.data : {}));
   }, [level, id, s.version]);
 
   // Every name this record knows, for the session's sentences.
@@ -66,7 +70,7 @@ function RuleSection({ level, id, title }: { level: TableKey; id: string; title:
         ) : null}
       </div>
       <SubmitResultNote />
-      {data.kind === "none" ? <p className="text-sm text-muted-foreground">{data.reason}</p> : <Fields data={data} editing={editing} />}
+      {data.kind === "none" ? <p className="text-sm text-muted-foreground">{data.reason}</p> : <Fields data={data} editing={editing} pending={pending} />}
       {editing ? <RuleEditFooter /> : null}
       {data.kind !== "none" ? <RecordHistory id={id} title={title} /> : null}
     </section>
@@ -121,7 +125,7 @@ function useWorkingCopy(data: EditableData) {
   }, [data, edits, names]);
 }
 
-function Fields({ data, editing }: { data: EditableData; editing: boolean }) {
+function Fields({ data, editing, pending }: { data: EditableData; editing: boolean; pending: PendingRules }) {
   const s = useRuleEditSession()!;
   const w = useWorkingCopy(data);
   const [newExc, setNewExc] = useState<{ mode: "add" | "remove"; option: Choice | null; reason: string }>({ mode: "remove", option: null, reason: "" });
@@ -135,12 +139,12 @@ function Fields({ data, editing }: { data: EditableData; editing: boolean }) {
       s.put({ kind: "exception", productId: data.productId, optionId: id, mode, reason }, reason === null ? !origExc(id, mode) : origExc(id, mode)?.reason === reason);
     return (
       <div className="flex flex-col gap-3 text-sm">
-        <Field label={COPY.offers}>
-          <Chips items={w.offers} empty={COPY.noOffers} onRemove={editing ? (oid) => setOffer(oid, false) : undefined} />
+        <Field label={COPY.offers} pending={pending.availableCustomizations}>
+          <Chips items={w.offers} empty={COPY.noOffers} pendingRefs={pending.availableCustomizations?.refs} onRemove={editing ? (oid) => setOffer(oid, false) : undefined} />
           {editing ? <Picker choices={[...data.offerChoices, ...data.offers].filter((c) => !w.offers.some((o) => o.id === c.id))} placeholder={COPY.addOffer} onPick={(c) => setOffer(c.id, true)} /> : null}
         </Field>
-        <Field label={COPY.exceptions}>
-          {w.exceptions.length ? <ExceptionList items={w.exceptions} onRemove={editing ? (e) => setException(e.id, e.mode, null) : undefined} /> : <p className="text-muted-foreground">{COPY.noExceptions}</p>}
+        <Field label={COPY.exceptions} pending={pending.customizationExceptions}>
+          {w.exceptions.length ? <ExceptionList items={w.exceptions} pendingRefs={pending.customizationExceptions?.refs} onRemove={editing ? (e) => setException(e.id, e.mode, null) : undefined} /> : <p className="text-muted-foreground">{COPY.noExceptions}</p>}
           {editing ? (
             <div className="flex flex-wrap items-center gap-2">
               <Select value={newExc.mode} onValueChange={(v) => setNewExc((x) => ({ ...x, mode: v as "add" | "remove" }))}>
@@ -171,8 +175,8 @@ function Fields({ data, editing }: { data: EditableData; editing: boolean }) {
     const was = new Set(data.compatible.map((c) => c.id));
     const setPair = (b: string, compatible: boolean) => s.put({ kind: "pair", a: data.optionId, b, compatible }, compatible === was.has(b));
     return (
-      <Field label={COPY.compatible}>
-        <Chips items={w.compatible} empty={COPY.noCompatible} onRemove={editing ? (cid) => setPair(cid, false) : undefined} />
+      <Field label={COPY.compatible} pending={pending.compatibleCustomizations}>
+        <Chips items={w.compatible} empty={COPY.noCompatible} pendingRefs={pending.compatibleCustomizations?.refs} onRemove={editing ? (cid) => setPair(cid, false) : undefined} />
         {editing ? <Picker choices={[...data.choices, ...data.compatible].filter((c) => !w.compatible.some((x) => x.id === c.id))} placeholder={COPY.addCompatible} onPick={(c) => setPair(c.id, true)} /> : null}
       </Field>
     );
@@ -190,14 +194,18 @@ function Fields({ data, editing }: { data: EditableData; editing: boolean }) {
   if (!editing) {
     return (
       <div className="flex flex-col gap-2 text-sm">
-        <p>{COPY.decidedBy[w.decidedBy]} · {COPY.selects[w.selects]}</p>
-        <Field label={COPY.requirements}>{w.groups.length ? <Groups groups={w.groups} /> : <p className="text-muted-foreground">{COPY.noRequirements}</p>}</Field>
+        <p className="flex flex-wrap items-center gap-2">
+          {COPY.decidedBy[w.decidedBy]} · {COPY.selects[w.selects]}
+          <PendingMark pending={mergePending(pending.availabilityDecidedBy, pending.customerSelects)} />
+        </p>
+        <Field label={COPY.requirements} pending={pending.dependsOn}>{w.groups.length ? <Groups groups={w.groups} /> : <p className="text-muted-foreground">{COPY.noRequirements}</p>}</Field>
       </div>
     );
   }
   return (
     <div className="flex flex-col gap-3 text-sm">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <PendingMark pending={mergePending(pending.availabilityDecidedBy, pending.customerSelects)} />
         <Select value={w.decidedBy} onValueChange={(v) => setSettings(v as "product" | "customization", w.selects)}>
           <SelectTrigger size="sm" className="w-auto" aria-label={COPY.decidedByLabel}><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -213,7 +221,7 @@ function Fields({ data, editing }: { data: EditableData; editing: boolean }) {
           </SelectContent>
         </Select>
       </div>
-      <Field label={COPY.requirements}>
+      <Field label={COPY.requirements} pending={pending.dependsOn}>
         {w.groups.length ? (
           <Groups groups={w.groups}
             onRemove={(gi, cid) => setGroups(w.groups.map((g, i) => (i === gi ? g.filter((c) => c.id !== cid) : g)))}
@@ -229,20 +237,53 @@ function Fields({ data, editing }: { data: EditableData; editing: boolean }) {
 
 // ── small pieces ──────────────────────────────────────────────────────────────────────────────
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+const Field = ({ label, pending, children }: { label: string; pending?: PendingField; children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
-    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+    <span className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <PendingMark pending={pending} />
+    </span>
     {children}
   </div>
 );
 
-function Chips({ items, empty, onRemove }: { items: Choice[]; empty: string; onRemove?: (id: string) => void }) {
+/** Two fields changed together (a type's settings), as one mark. */
+function mergePending(a?: PendingField, b?: PendingField): PendingField | undefined {
+  if (!a || !b) return a ?? b;
+  const frames = [...a.frames, ...b.frames.filter((f) => !a.frames.some((x) => x.id === f.id))].sort((x, y) => y.at.localeCompare(x.at));
+  return { frames, refs: [...new Set([...a.refs, ...b.refs])] };
+}
+
+/**
+ * "Pending" on a rule field with a change already waiting for approval (PROD-2962 scope 4): a link to
+ * the newest such frame — the newest proposal wins (ADR-025), so it is the one that matters.
+ */
+function PendingMark({ pending }: { pending?: PendingField }) {
+  if (!pending?.frames.length) return null;
+  return (
+    <Link
+      href={`/spec/${pending.frames[0]!.id}`}
+      title={COPY.pendingTitle(pending.frames.length)}
+      className="inline-flex items-center gap-1 rounded-full border border-amber-500/50 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-500/20 dark:text-amber-300"
+    >
+      <span aria-hidden className="size-1.5 rounded-full bg-amber-500" />
+      {COPY.pendingMark}{pending.frames.length > 1 ? ` · ${pending.frames.length}` : ""}
+    </Link>
+  );
+}
+
+/** The amber dot on one entry of a list (an offered option, an exception) that a waiting frame changes. */
+const EntryDot = ({ on }: { on: boolean }) =>
+  on ? <span aria-label={COPY.pendingEntry} title={COPY.pendingEntry} className="size-1.5 shrink-0 rounded-full bg-amber-500" /> : null;
+
+function Chips({ items, empty, onRemove, pendingRefs }: { items: Choice[]; empty: string; onRemove?: (id: string) => void; pendingRefs?: string[] }) {
   if (!items.length) return <p className="text-sm text-muted-foreground">{empty}</p>;
   return (
     <ul className="flex flex-wrap gap-1.5">
       {items.map((c) => (
         <li key={c.id}>
           <Badge variant="secondary" className="gap-1 font-normal">
+            <EntryDot on={Boolean(pendingRefs?.includes(c.id))} />
             {c.group ? <span className="text-muted-foreground">{c.group} ·</span> : null} {c.title}
             {onRemove ? (
               <button type="button" aria-label={COPY.remove(c.title)} onClick={() => onRemove(c.id)} className="ml-0.5 rounded hover:text-destructive">
@@ -256,12 +297,13 @@ function Chips({ items, empty, onRemove }: { items: Choice[]; empty: string; onR
   );
 }
 
-function ExceptionList({ items, onRemove }: { items: Exc[]; onRemove?: (e: Exc) => void }) {
+function ExceptionList({ items, onRemove, pendingRefs }: { items: Exc[]; onRemove?: (e: Exc) => void; pendingRefs?: string[] }) {
   return (
     <ul className="flex flex-col gap-1">
       {items.map((e) => (
         <li key={`${e.id}|${e.mode}`} className="flex items-start gap-2 text-sm">
           <Badge variant={e.mode === "add" ? "secondary" : "outline"}>{e.mode}</Badge>
+          <span className="mt-1.5"><EntryDot on={Boolean(pendingRefs?.includes(e.id))} /></span>
           <span className="min-w-0 flex-1"><span className="font-medium">{e.title}</span> <span className="text-muted-foreground">— {e.reason || COPY.reasonMissing}</span></span>
           {onRemove ? <Button size="icon-xs" variant="ghost" aria-label={COPY.deleteException(e.title)} title={COPY.deleteException(e.title)} onClick={() => onRemove(e)}><Trash2 /></Button> : null}
         </li>

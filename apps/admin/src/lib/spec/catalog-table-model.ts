@@ -277,23 +277,5 @@ export function tableOfDoc(type: string | undefined, kind?: string | null): Tabl
   }
 }
 
-export type RefInfo = { title: string; href: string | null };
-export type RecordField = { key: string; label: string; text: string | number | null; links: { title: string; href: string | null }[] };
-
-/** Every field of a record for its page: display text, and the records it references as links. */
-export function recordFields(doc: Doc, refs: Map<string, RefInfo>): RecordField[] {
-  const names = new Map([...refs].map(([id, r]) => [id, r.title]));
-  const keys = ["title", ...Object.keys(doc).filter((k) => k !== "title" && !HIDDEN.has(k) && !k.startsWith("_")).sort(), "_createdAt", "_updatedAt"];
-  return keys
-    .filter((k, i, a) => a.indexOf(k) === i && k in doc)
-    .map((k) => {
-      const ids = new Set<string>();
-      collectRefs(doc[k], ids);
-      return {
-        key: k,
-        label: columnLabel(k),
-        text: cellOf(doc[k], names),
-        links: [...ids].map((id) => refs.get(id) ?? { title: UNPUBLISHED, href: null }),
-      };
-    });
-}
+/** A referenced document on a record page: its name, its Spec page, and the group it lists under. */
+export type RefInfo = { title: string; href: string | null; group?: string | null };
