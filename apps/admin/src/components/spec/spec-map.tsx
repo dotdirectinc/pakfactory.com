@@ -1969,9 +1969,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   group's heading sticks under it until the next heading pushes it away; cards pass under both.
                 */}
                 {virtualCols ? (
-                  <div aria-hidden className="pointer-events-none absolute z-[14] bg-background" style={{ left: offerUi.x - 4, top: HEAD_H - 4, width: cardW + 8, height: FILTER_H + 4 }}>
-                    <div className="size-full bg-muted/30" />
-                  </div>
+                  // The colour of the box's own ground (translucent muted over the page's muted panel), not the
+                  // header band's: the filter sits on the column, not in the header (2026-10-15).
+                  <div aria-hidden className="pointer-events-none absolute z-[14] bg-muted" style={{ left: offerUi.x - 4, top: HEAD_H - 4, width: cardW + 8, height: FILTER_H + 4 }} />
                 ) : null}
                 <div
                   className="absolute z-[14]"
