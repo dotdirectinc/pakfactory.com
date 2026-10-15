@@ -27,7 +27,7 @@ Breadcrumb is `Home / Newsroom` (`/ title` on detail). A "Company" parent was dr
 ## Business rules
 
 - **Only published-by-date releases show.** Every query gates `publishedAt <= now()`; scheduled drafts are off (PROD-2228).
-- **Press boilerplate** ("About PakFactory" + "Media contact"): the `###` end mark, both cards and their headings are code; the copy comes from **Global Settings → Company**: the About text from *Company description*, the email from *Contact info → Media enquiries email* (falling back to the general contact email). Edited once, it changes every release, including past ones. No description → the About card is hidden; no email → "contact us" links to `/contact`.
+- **Press boilerplate** ("About PakFactory" + "Media contact"): the `###` end mark, both cards and their headings are code; the copy comes from **Global Settings → Company**: the About text from *Company description*, the email from *Contact info → Media enquiries email* Edited once, it changes every release, including past ones. **No fallbacks:** an empty description hides the About card, an empty media email hides the Media contact card, and a missing company name leaves the publisher out of the JSON-LD — nothing is hardcoded.
 - **"See all announcements"** in a press release row shows only when more live releases exist than the row lists (`hasMore`, from a count query where the row is filled).
 - **Cache keys are versioned** (`CACHE_VERSION` in `newsroom.ts`): the data cache stores mapped results and survives deploys, so bump it whenever the cached shape changes.
 - **No Media Assets tab** — there is no content model for it yet.

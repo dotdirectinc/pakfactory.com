@@ -139,7 +139,7 @@ export const PRESS_RELEASE_SITEMAP_QUERY = /* groq */ `*[
 export const NEWSROOM_PRESS_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "companyName": organization.legalName,
   "companyDescription": organization.description,
-  "pressEmail": coalesce(organization.contact.pressEmail, organization.contact.email),
+  "pressEmail": organization.contact.pressEmail,
   "logoUrl": organization.logo.asset->url
 }`
 
