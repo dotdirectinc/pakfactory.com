@@ -396,6 +396,11 @@ export const ADMIN_SPEC_MAP_COPY = {
     "Drag a card onto its new parent in the column to its left: a style onto a line, a product onto a style (it becomes the primary one), an option onto a type, a type onto a category, an inspiration product onto a solution. Moves go in the pending set below, reviewed like rule edits.",
   moveDoneBlocked: "Submit or cancel the pending changes below first.",
   moving: "Moving",
+  /** A drop onto where the card already is (Richard, 2026-10-15): greyed, named, nothing made. */
+  noChange: "no change",
+  makePrimary: "make primary",
+  alreadyThere: (child: string, target: string) => `${child} is already under ${target} — nothing to change.`,
+  current: "Current",
   dropNotParent: (child: string, target: string) => `${target} is not something ${child} can hang under — drop it on a card in the column to its left.`,
   dropping: "Reading its current parents…",
   lead:

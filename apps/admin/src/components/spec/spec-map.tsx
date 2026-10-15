@@ -753,6 +753,12 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     nodes.forEach((n, i) => { if (want.has(n.level) && !related.has(i)) out.add(i); });
     return out;
   }, [structure, selected, related, nodes]);
+  /** The levels a selected card moves between (where the Current tag applies). */
+  const moveLevels = useMemo(() => {
+    if (selected === null) return new Set<TableKey>();
+    const lv = nodes[selected]!.level;
+    return new Set<TableKey>([...(MOVE_PARENT[lv] ?? []), ...(MOVE_CHILD[lv] ?? [])]);
+  }, [selected, nodes]);
 
   useEffect(() => {
     if (selected === null) return;
@@ -1478,9 +1484,25 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
 
   // ── moving records by dragging (PROD-3007) ──
   const DRAGGABLE = new Set<TableKey>(["productStyle", "product", "customizationOption", "customizationType", "inspiration"]);
-  const [drag, setDrag] = useState<{ i: number; x: number; y: number; over: number | null; ok: boolean; targets: Set<number> } | null>(null);
+  const [drag, setDrag] = useState<{
+    i: number; x: number; y: number; over: number | null; ok: boolean; targets: Set<number>; same: Set<number>; primary: Set<number>;
+    /** Where the card was grabbed, and its size: the card follows the pointer as it was held (2026-10-15). */
+    grab: { dx: number; dy: number; w: number; h: number };
+  } | null>(null);
   const [dropNote, setDropNote] = useState<string | null>(null);
-  const dragStart = useRef<{ i: number; x: number; y: number; moved: boolean; targets?: Set<number> } | null>(null);
+  const dragStart = useRef<{ i: number; x: number; y: number; moved: boolean; grab: { dx: number; dy: number; w: number; h: number }; targets?: Set<number>; same?: Set<number>; primary?: Set<number> } | null>(null);
+  /**
+   * Where the dragged card already is (2026-10-15): its current parents in the drop direction. Dropping
+   * there changes nothing — unless the card lists several (a product's styles, an inspiration product's
+   * solutions), where dropping on one that is not first makes it the primary.
+   */
+  const whereItIs = (i: number) => {
+    const lv = nodes[i]!.level;
+    const up = new Set(MOVE_PARENT[lv] ?? []);
+    const current = (parentsOf[i] ?? []).filter((p) => up.has(nodes[p]!.level));
+    const several = current.length > 1 && (lv === "product" || lv === "inspiration");
+    return { same: several ? new Set<number>() : new Set(current), primary: several ? new Set(current) : new Set<number>() };
+  };
   /** Set between a drag's pointerup and the click the browser sends after it, so a drop never selects. */
   const swallowClick = useRef(false);
   /** A style's line as the map draws it now (pending moves included). */
@@ -1516,28 +1538,37 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
   };
   const onCardPointerDown = (i: number) => (e: React.PointerEvent) => {
     if (e.button !== 0) return;
-    dragStart.current = { i, x: e.clientX, y: e.clientY, moved: false };
+    const box = e.currentTarget.getBoundingClientRect();
+    dragStart.current = { i, x: e.clientX, y: e.clientY, moved: false, grab: { dx: e.clientX - box.left, dy: e.clientY - box.top, w: box.width, h: box.height } };
     const move = (ev: PointerEvent) => {
       const st = dragStart.current;
       if (!st) return;
       if (!st.moved && Math.hypot(ev.clientX - st.x, ev.clientY - st.y) < 5) return;
       st.moved = true;
       // Every card it can be dropped on, outlined while dragging (2026-10-15).
-      st.targets ??= new Set(nodes.flatMap((n, j) => (j !== st.i && dropMove(nodes[st.i]!, n, { lineOf: lineOfStyle }) ? [j] : [])));
+      if (!st.targets) {
+        const w = whereItIs(st.i);
+        st.same = w.same;
+        st.primary = w.primary;
+        st.targets = new Set(nodes.flatMap((n, j) => (j !== st.i && !w.same.has(j) && dropMove(nodes[st.i]!, n, { lineOf: lineOfStyle }) ? [j] : [])));
+      }
       const over = cardAt(ev.clientX, ev.clientY);
       const ok = over !== null && st.targets.has(over);
-      setDrag({ i: st.i, x: ev.clientX, y: ev.clientY, over, ok, targets: st.targets });
+      document.body.style.cursor = "grabbing";
+      setDrag({ i: st.i, x: ev.clientX, y: ev.clientY, over, ok, targets: st.targets, same: st.same!, primary: st.primary!, grab: st.grab });
     };
     const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
       const st = dragStart.current;
       dragStart.current = null;
+      document.body.style.cursor = "";
       setDrag(null);
       if (!st?.moved) return;
       swallowClick.current = true;
       window.setTimeout(() => { swallowClick.current = false; }, 0);
       const over = cardAt(ev.clientX, ev.clientY);
+      if (over !== null && st.same?.has(over)) { setDropNote(COPY.alreadyThere(nodes[st.i]!.title, nodes[over]!.title)); return; }
       if (over !== null && over !== st.i) void dropOnto(st.i, over);
     };
     window.addEventListener("pointermove", move);
@@ -1636,7 +1667,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                   // On the card's box, not its button: the pin beside the button is part of the card.
                   onMouseEnter={focus && !from ? () => setHovered(i) : undefined}
                   onMouseLeave={focus && !from ? () => setHovered((h) => (h === i ? null : h)) : undefined}
-                  className={`absolute left-0 top-0 transition-opacity ${gone ? "pointer-events-none opacity-0" : drag?.i === i ? "opacity-40" : unrelated ? "opacity-25" : faded ? "opacity-40" : "opacity-100"} ${i === selected ? "z-10" : ""} ${structure && DRAGGABLE.has(n.level) ? "cursor-grab touch-none select-none" : ""} ${drag && drag.over === i && drag.i !== i ? `rounded-md outline-2 outline-offset-2 ${drag.ok ? "outline-green-600" : "outline-red-500 outline-dashed"}` : movedCards.has(i) ? "rounded-md outline-2 outline-offset-2 outline-dashed outline-amber-500" : drag?.targets.has(i) ? "rounded-md outline-1 outline-offset-2 outline-dashed outline-green-600/70" : ""}`}
+                  className={`absolute left-0 top-0 transition-opacity ${gone ? "pointer-events-none opacity-0" : drag?.i === i ? "rounded-md border border-dashed border-muted-foreground/40 bg-muted [&>*]:invisible" : unrelated ? "opacity-25" : faded ? "opacity-40" : "opacity-100"} ${i === selected ? "z-10" : ""} ${structure && DRAGGABLE.has(n.level) ? "cursor-grab touch-none select-none" : ""} ${drag?.same.has(i) ? "rounded-md opacity-50 grayscale outline-2 outline-offset-2 outline-dashed outline-muted-foreground" : drag && drag.over === i && drag.i !== i ? `rounded-md outline-2 outline-offset-2 ${drag.ok ? "outline-green-600" : "outline-red-500 outline-dashed"}` : movedCards.has(i) ? "rounded-md outline-2 outline-offset-2 outline-dashed outline-amber-500" : drag?.targets.has(i) ? "rounded-md outline-1 outline-offset-2 outline-dashed outline-green-600/70" : ""}`}
                   style={{
                     width: indented ? cardW - INDENT : cardW,
                     height: CARD_H,
@@ -1727,6 +1758,12 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                     >
                       {pinned === i ? <PinOff className="size-3" /> : <Pin className="size-3" />}
                     </button>
+                  ) : null}
+                  {/* Moving records: the selected card's current parents and children, so the dashed ones read as "elsewhere". */}
+                  {potential && i !== selected && !potential.has(i) && moveLevels.has(n.level) && !gone ? (
+                    <span className="pointer-events-none absolute -right-1 -top-2 rounded-full border border-border bg-card px-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {COPY.current}
+                    </span>
                   ) : null}
                   {pending.length && !change && !gone ? (
                     <span
@@ -2482,8 +2519,25 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
         ) : null}
       </div>
       {drag ? (
-        <div aria-hidden className="pointer-events-none fixed z-50 rounded-md border border-foreground/30 bg-card px-2.5 py-1 text-sm shadow-md" style={{ left: drag.x + 12, top: drag.y + 12 }}>
-          {nodes[drag.i]!.title}{drag.over !== null && drag.over !== drag.i ? ` → ${nodes[drag.over]!.title}` : ""}
+        <div aria-hidden className="pointer-events-none fixed z-50 flex flex-col gap-1" style={{ left: drag.x - drag.grab.dx, top: drag.y - drag.grab.dy, width: drag.grab.w }}>
+          {(() => {
+            const n = nodes[drag.i]!;
+            const Icon = iconOf(n.level);
+            return (
+              <div style={{ height: drag.grab.h }} className="flex rotate-1 items-center gap-2 rounded-md border border-foreground/40 bg-card px-2.5 text-left shadow-xl ring-2 ring-primary/60">
+                <Icon className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-sm font-medium text-foreground">{n.title}</span>
+                  {n.code ? <span className="truncate font-mono text-[11px] text-muted-foreground">{n.code}</span> : null}
+                </span>
+              </div>
+            );
+          })()}
+          {drag.over !== null && drag.over !== drag.i ? (
+            <span className={`w-fit max-w-full truncate rounded border px-1.5 py-0.5 text-xs shadow-sm ${drag.same.has(drag.over) ? "border-border bg-muted text-muted-foreground" : drag.ok ? "border-green-600/50 bg-card text-foreground" : "border-red-500/50 bg-card text-red-700 dark:text-red-400"}`}>
+              {drag.same.has(drag.over) ? `⊘ ${COPY.noChange}` : `→ ${nodes[drag.over]!.title}${drag.primary.has(drag.over) && drag.ok ? ` (${COPY.makePrimary})` : ""}`}
+            </span>
+          ) : null}
         </div>
       ) : null}
       {/* While editing, the panel on the right is the editor's companion; the bar is for after a submit. */}
