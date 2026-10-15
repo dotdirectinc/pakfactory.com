@@ -69,7 +69,8 @@ async function NewsBodyImage({
     );
 }
 
-const LINK_MARKS: PortableTextComponents['marks'] = {
+/** Link mark shared by the release body and the press boilerplate. */
+export const NEWS_LINK_MARKS: PortableTextComponents['marks'] = {
     link: ({value, children}) => {
         const href: string = value?.href ?? '';
         if (!href) return <>{children}</>;
@@ -89,7 +90,7 @@ const CALLOUT_COMPONENTS: PortableTextComponents = {
     block: {
         normal: ({children}) => <p className="leading-7">{children}</p>,
     },
-    marks: LINK_MARKS,
+    marks: NEWS_LINK_MARKS,
 };
 
 function firstParagraphKey(blocks: PortableTextBlock[]): string | undefined {
@@ -156,7 +157,7 @@ function makeComponents({
             ),
         },
         marks: {
-            ...LINK_MARKS,
+            ...NEWS_LINK_MARKS,
             strong: ({children}) => (
                 <strong className="font-semibold text-foreground">
                     {children}

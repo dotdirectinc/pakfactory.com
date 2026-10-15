@@ -10,8 +10,10 @@ export const PRESS_RELEASES_ROW_DEFAULT_CTA = 'See all announcements';
 
 /**
  * Sanity `pressReleasesRow` → `PressReleasesRow` props. Heading and the
- * "See all" link fall back to the design copy; the link always goes somewhere
- * (the listing) unless an editor sets their own.
+ * "See all" link fall back to the design copy (the link goes to the listing
+ * unless an editor sets their own). The link shows only when more releases
+ * exist than the row lists (`hasMore`, set where the row is filled) — with
+ * everything already on screen it would lead nowhere new.
  */
 export function mapPressReleasesRow(
     section: PageSectionPressReleasesRowDoc,
@@ -22,10 +24,12 @@ export function mapPressReleasesRow(
         heading: section.heading?.trim() || PRESS_RELEASES_ROW_DEFAULT_HEADING,
         ...(intro ? {intro} : {}),
         items: mapNewsCards(section.items),
-        cta: chrome.cta ?? {
-            label: PRESS_RELEASES_ROW_DEFAULT_CTA,
-            href: WWW_ROUTES.newsroom,
-        },
+        cta: section.hasMore
+            ? (chrome.cta ?? {
+                  label: PRESS_RELEASES_ROW_DEFAULT_CTA,
+                  href: WWW_ROUTES.newsroom,
+              })
+            : undefined,
         paddingBlock: chrome.paddingBlock,
         borderTop: section.showTopBorder ?? true,
         borderBottom: section.showBottomBorder ?? false,

@@ -3,6 +3,7 @@ import 'server-only';
 import {cache} from 'react';
 import {
     LATEST_PRESS_RELEASES_QUERY,
+    PRESS_RELEASE_OTHERS_COUNT_QUERY,
     NEWSROOM_CATALOG_PAGE_QUERY,
     NEWSROOM_PRESS_SETTINGS_QUERY,
     PRESS_RELEASE_BY_SLUG_QUERY,
@@ -23,7 +24,7 @@ import {mapNewsCards, mapNewsItem} from '@/lib/newsroom/map-sanity';
 import type {
     NewsItem,
     NewsroomCatalog,
-    PressBoilerplate,
+    NewsPublisher,
 } from '@/lib/newsroom/types';
 import {getPublishedSanityClient} from '@/lib/sanity/client';
 import {draftAwareClient, readThrough} from '@/lib/sanity/draft-aware';
@@ -47,6 +48,14 @@ const CACHE_OPTIONS = {
     revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
     tags: [WWW_NEWSROOM_CACHE_TAG],
 };
+
+/**
+ * Bump when the SHAPE of a cached result changes. The data cache stores mapped
+ * results and survives deploys, so without a new key a deploy reads the old
+ * shape until it revalidates (v2: `pressContact` on releases, `hasMore` on
+ * press release rows — the old entries crashed the release page).
+ */
+const CACHE_VERSION = 'v2';
 
 /** Studio default for a new row (`rowSectionFields`). */
 const DEFAULT_ROW_COUNT = 3;
@@ -76,7 +85,8 @@ function isPressReleasesRow(
  * `pressReleasesRow` has no derive source (PROD-2909 handoff, "the derive
  * contract"): empty `curatedItems` means the latest `count` releases,
  * excluding the one being read. Pins win; the current release is never listed
- * as related to itself, even when pinned.
+ * as related to itself, even when pinned. `hasMore` (more releases exist than
+ * the row lists) gates the "See all announcements" link.
  */
 async function fillPressReleaseRows(
     sections: PageSectionDoc[],
@@ -94,6 +104,15 @@ async function fillPressReleaseRows(
         );
         return latest ?? [];
     };
+    let others: number | null = null;
+    const countOthers = async () => {
+        others ??= await fetchDraftAware<number>(
+            'release count',
+            PRESS_RELEASE_OTHERS_COUNT_QUERY,
+            {excludeId},
+        );
+        return others ?? 0;
+    };
 
     return Promise.all(
         sections.map(async (section) => {
@@ -109,7 +128,8 @@ async function fillPressReleaseRows(
                 pinned.length > 0
                     ? pinned
                     : (await loadLatest()).slice(0, count);
-            return {...section, items};
+            const hasMore = (await countOthers()) > items.length;
+            return {...section, items, hasMore};
         }),
     );
 }
@@ -147,7 +167,7 @@ export const getNewsroomCatalog = cache(
             fetchNewsroomCatalog,
             sanityCache(
                 fetchNewsroomCatalog,
-                [WWW_NEWSROOM_CACHE_TAG, 'catalog'],
+                [WWW_NEWSROOM_CACHE_TAG, 'catalog', CACHE_VERSION],
                 CACHE_OPTIONS,
             ),
         ),
@@ -179,7 +199,7 @@ export const getNewsItemBySlug = cache(
             () =>
                 sanityCache(
                     fetchNewsItem,
-                    [WWW_NEWSROOM_CACHE_TAG, 'item'],
+                    [WWW_NEWSROOM_CACHE_TAG, 'item', CACHE_VERSION],
                     CACHE_OPTIONS,
                 )(normalized),
         );
@@ -209,11 +229,9 @@ export async function listNewsSlugs(): Promise<string[]> {
 
 // ─── Boilerplate ──────────────────────────────────────────────────────────────
 
-async function fetchPressBoilerplate(): Promise<PressBoilerplate> {
-    const fallback: PressBoilerplate = {
+async function fetchNewsPublisher(): Promise<NewsPublisher> {
+    const fallback: NewsPublisher = {
         companyName: DEFAULT_COMPANY_NAME,
-        description: null,
-        pressEmail: null,
         logoUrl: null,
     };
     if (!isSanityConfigured()) return fallback;
@@ -223,20 +241,18 @@ async function fetchPressBoilerplate(): Promise<PressBoilerplate> {
     );
     return {
         companyName: doc?.companyName?.trim() || DEFAULT_COMPANY_NAME,
-        description: doc?.companyDescription?.trim() || null,
-        pressEmail: doc?.pressEmail?.trim() || null,
         logoUrl: doc?.logoUrl?.trim() || null,
     };
 }
 
-/** "About PakFactory" + media contact, from Global Settings → Company. */
-export const getPressBoilerplate = cache(
-    async (): Promise<PressBoilerplate> =>
+/** NewsArticle publisher (name + logo), from Global Settings → Company. */
+export const getNewsPublisher = cache(
+    async (): Promise<NewsPublisher> =>
         readThrough(
-            fetchPressBoilerplate,
+            fetchNewsPublisher,
             sanityCache(
-                fetchPressBoilerplate,
-                [WWW_NEWSROOM_CACHE_TAG, 'boilerplate'],
+                fetchNewsPublisher,
+                [WWW_NEWSROOM_CACHE_TAG, 'publisher', CACHE_VERSION],
                 CACHE_OPTIONS,
             ),
         ),

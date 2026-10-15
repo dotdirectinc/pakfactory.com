@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import Link from 'next/link';
-import {ArrowRight, ChevronRight} from 'lucide-react';
+import {ChevronRight} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {Icon} from '@/components/ui/icon';
@@ -10,23 +10,20 @@ type ArrowLinkProps = {
     children: ReactNode;
     /** `base` = section CTA (SectionHeading); `sm` = row / card action. */
     size?: 'sm' | 'base';
-    /** `chevron` (default) = section CTA; `arrow` = list-row "Read more →". */
-    icon?: 'chevron' | 'arrow';
     /** Screen-reader suffix so repeated "Read more" links stay distinct. */
     srSuffix?: string;
     className?: string;
 };
 
 /**
- * Text link with a trailing chevron or arrow — ink colour, underline on hover,
- * icon nudges right. Props-only (ADR-013); the SectionHeading CTA and list-row
+ * Text link with a trailing chevron — ink colour, underline on hover, chevron
+ * nudges right. Props-only (ADR-013); the SectionHeading CTA and list-row
  * "Read more" links share it.
  */
 export function ArrowLink({
     href,
     children,
     size = 'base',
-    icon = 'chevron',
     srSuffix,
     className,
 }: ArrowLinkProps) {
@@ -34,8 +31,7 @@ export function ArrowLink({
         <Link
             href={href}
             className={cn(
-                'group inline-flex w-fit shrink-0 items-center text-foreground',
-                icon === 'arrow' ? 'gap-1 font-semibold' : 'gap-2 font-medium',
+                'group inline-flex w-fit shrink-0 items-center gap-2 font-medium text-foreground',
                 size === 'sm' ? 'text-sm' : 'text-base',
                 className,
             )}
@@ -44,7 +40,7 @@ export function ArrowLink({
                 {children}
             </span>
             <Icon
-                icon={icon === 'arrow' ? ArrowRight : ChevronRight}
+                icon={ChevronRight}
                 size="sm"
                 className="transition-transform duration-300 ease-out group-hover:translate-x-0.5"
             />

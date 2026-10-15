@@ -18,6 +18,7 @@
     "./algolia/content-indexes": "./src/algolia/content-indexes.ts",
     "./stamp-published-at": "./src/stamp-published-at.ts",
     "./fact-labels": "./src/fact-labels.ts",
+    "./newsroom-press-copy": "./src/newsroom-press-copy.ts",
     "./dimension-inputs": "./src/dimension-inputs.ts",
     "./resolve-product-dims": "./src/resolve-product-dims.ts",
     "./catalog-visibility": "./src/catalog-visibility.ts",

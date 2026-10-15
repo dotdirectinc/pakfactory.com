@@ -79,7 +79,7 @@ export function NewsDetailHeader({
                 <div className="flex flex-col gap-4">
                     {item.category && item.categoryLabel ? (
                         <Link
-                            href={`${WWW_ROUTES.newsroom}?category=${item.category}`}
+                            href={WWW_ROUTES.newsroom}
                             className="w-fit text-xs font-semibold uppercase tracking-[0.08em] text-primary hover:text-primary/80"
                         >
                             {item.categoryLabel}

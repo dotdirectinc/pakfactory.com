@@ -39,6 +39,9 @@ const PRESS_RELEASE_BODY = /* groq */ `[]{
 const NEWSROOM_LAYOUT_PROJECTION = /* groq */ `{
   _id,
   title,
+  aboutText,
+  mediaContactText,
+  mediaContactEmail,
   "sections": sections[]${PAGE_SECTIONS_PROJECTION}
 }`
 
@@ -109,6 +112,15 @@ export const LATEST_PRESS_RELEASES_QUERY = /* groq */ `*[
   ${PRESS_RELEASE_LIVE} && _id != $excludeId
 ] | order(publishedAt desc)[0...${LATEST_PRESS_RELEASES_MAX}] ${PRESS_RELEASE_CARD_FIELDS}`
 
+/**
+ * How many live releases exist besides the one being read (`$excludeId`) — a
+ * `pressReleasesRow` shows "See all announcements" only when this is more than
+ * it lists.
+ */
+export const PRESS_RELEASE_OTHERS_COUNT_QUERY = /* groq */ `count(*[
+  ${PRESS_RELEASE_LIVE} && _id != $excludeId
+])`
+
 /** Slugs for `generateStaticParams`. */
 export const PRESS_RELEASE_SLUGS_QUERY = /* groq */ `*[
   ${PRESS_RELEASE_LIVE}
@@ -123,14 +135,13 @@ export const PRESS_RELEASE_SITEMAP_QUERY = /* groq */ `*[
 }`
 
 /**
- * Press boilerplate — Global Settings → Company → Organization. Kept apart
- * from the global-settings query so the newsroom does not widen the payload
- * every www page loads.
+ * Release publisher (NewsArticle JSON-LD) — Global Settings → Company →
+ * Organization. The About / Media contact copy is on the Newsroom Detail Page
+ * template instead (PROD-2918 review). Kept apart from the global-settings
+ * query so the newsroom does not widen the payload every www page loads.
  */
 export const NEWSROOM_PRESS_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "companyName": organization.legalName,
-  "companyDescription": organization.description,
-  "pressEmail": coalesce(organization.contact.pressEmail, organization.contact.email),
   "logoUrl": organization.logo.asset->url
 }`
 
@@ -151,6 +162,10 @@ export type NewsroomCatalogPageDoc = {
 export type NewsroomLayoutDoc = {
   _id: string
   title?: string | null
+  /** "About PakFactory" copy (Portable Text); empty → the standard copy. */
+  aboutText?: unknown[] | null
+  mediaContactText?: string | null
+  mediaContactEmail?: string | null
   sections?: PageSectionDoc[] | null
 }
 
@@ -196,7 +211,5 @@ export type PressReleaseSitemapEntry = {
 
 export type NewsroomPressSettingsDoc = {
   companyName?: string | null
-  companyDescription?: string | null
-  pressEmail?: string | null
   logoUrl?: string | null
 }

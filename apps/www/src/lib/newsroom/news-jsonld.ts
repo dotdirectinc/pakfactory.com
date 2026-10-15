@@ -10,7 +10,7 @@ import {
 import type {
     NewsCard,
     NewsItem,
-    PressBoilerplate,
+    NewsPublisher,
 } from '@/lib/newsroom/types';
 import {absoluteUrl, getSiteUrl} from '@/lib/site';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -23,7 +23,7 @@ function toIso(value: string | null | undefined): string | undefined {
     return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
-function publisherNode(boilerplate: PressBoilerplate): {
+function publisherNode(publisher: NewsPublisher): {
     org: Record<string, unknown>;
     orgId: string;
 } {
@@ -32,10 +32,10 @@ function publisherNode(boilerplate: PressBoilerplate): {
     return {
         orgId,
         org: organization({
-            name: boilerplate.companyName,
+            name: publisher.companyName,
             url: origin,
             id: orgId,
-            ...(boilerplate.logoUrl ? {logo: boilerplate.logoUrl} : {}),
+            ...(publisher.logoUrl ? {logo: publisher.logoUrl} : {}),
         }),
     };
 }
@@ -47,11 +47,11 @@ function publisherNode(boilerplate: PressBoilerplate): {
  */
 export function buildNewsArticleJsonLd(
     item: NewsItem,
-    boilerplate: PressBoilerplate,
+    publisher: NewsPublisher,
     image: string | undefined,
 ): string {
     const pageUrl = item.seo.canonicalUrl || absoluteUrl(item.href);
-    const {org, orgId} = publisherNode(boilerplate);
+    const {org, orgId} = publisherNode(publisher);
 
     return serializeJsonLd(
         jsonLdGraph([

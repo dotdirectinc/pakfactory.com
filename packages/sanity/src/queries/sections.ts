@@ -1105,6 +1105,11 @@ export type PageSectionPressReleasesRowDoc = PageSectionChromeFields & {
     _key: string;
     count?: number | null;
     items?: PressReleaseCardDoc[] | null;
+    /**
+     * Set by the host, not GROQ: true when more releases exist than `items`
+     * lists — the only time the row shows its "See all" link.
+     */
+    hasMore?: boolean;
 };
 
 export type PageSectionStubDoc = PageSectionChromeFields & {

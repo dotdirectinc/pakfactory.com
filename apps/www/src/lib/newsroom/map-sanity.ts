@@ -1,4 +1,9 @@
 import type {PortableTextBlock} from '@portabletext/types';
+import {
+    NEWSROOM_ABOUT_TEXT,
+    NEWSROOM_MEDIA_CONTACT_EMAIL,
+    NEWSROOM_MEDIA_CONTACT_TEXT,
+} from '@pakfactory/sanity/newsroom-press-copy';
 import type {
     PressReleaseCardDoc,
     PressReleaseCardImageDoc,
@@ -15,6 +20,7 @@ import {
     type NewsHeroMedia,
     type NewsImage,
     type NewsItem,
+    type NewsPressContact,
 } from '@/lib/newsroom/types';
 
 /** Studio list titles for `pressRelease.category`. */
@@ -133,6 +139,26 @@ export function mapNewsCards(
         .filter((card): card is NewsCard => card != null);
 }
 
+/**
+ * Template copy for the end-of-release cards. Each field falls back to the
+ * standard copy on its own, so a template saved before these fields existed —
+ * or one an editor cleared — still renders both cards.
+ */
+function mapPressContact(
+    layout: PressReleaseDetailDoc['layout'],
+): NewsPressContact {
+    const about = Array.isArray(layout?.aboutText) ? layout.aboutText : [];
+    return {
+        about: (about.length > 0
+            ? about
+            : NEWSROOM_ABOUT_TEXT) as PortableTextBlock[],
+        mediaText:
+            layout?.mediaContactText?.trim() || NEWSROOM_MEDIA_CONTACT_TEXT,
+        mediaEmail:
+            layout?.mediaContactEmail?.trim() || NEWSROOM_MEDIA_CONTACT_EMAIL,
+    };
+}
+
 function mapHero(
     hero: PressReleaseDetailDoc['heroMedia'],
     title: string,
@@ -202,6 +228,7 @@ export function mapNewsItem(doc: PressReleaseDetailDoc): NewsItem | null {
             ogDescription: doc.ogDescription?.trim() || null,
             ogImageUrl: doc.ogImageUrl?.trim() || null,
         },
+        pressContact: mapPressContact(doc.layout),
         sections: doc.layout?.sections ?? [],
     };
 }
