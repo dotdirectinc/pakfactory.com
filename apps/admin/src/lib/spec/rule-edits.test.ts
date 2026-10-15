@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { SummaryCatalog, SummaryProduct } from "@pakfactory/sanity/customization-rules/summary";
-import { applyEdits, blockingErrors, computeImpact, describeEdit, editKey, type RuleEditDraft } from "./rule-edits";
+import { applyEdits, blockingErrors, computeImpact, describeEdit, editKey, isMove, type RuleEditDraft } from "./rule-edits";
 import { typeidToUuid } from "./typeid";
 
 // Matte/Gloss are Finish (decided by other customizations, pick one); Kraft/White are Material
@@ -151,5 +151,42 @@ describe("rule edits — an option's compatible options after the edits", () => 
     const { focusAfter } = await import("./rule-edits");
     const f = focusAfter(catalog(), products(), [{ kind: "pair", a: "white", b: "matte", compatible: true }], { level: "customizationOption", id: "matte" });
     assert.deepEqual(f?.level === "customizationOption" && [...f.compatible].sort(), ["kraft", "white"]);
+  });
+});
+
+describe("structure moves in the pending set (PROD-3007)", () => {
+  it("one tray entry per moved record: a later move of the same record replaces the earlier", () => {
+    const a: RuleEditDraft = { kind: "placement", productId: "mailer", lineId: "boxes", styleIds: ["tuck"] };
+    const b: RuleEditDraft = { kind: "placement", productId: "mailer", lineId: "bags", styleIds: ["pouch", "flat"] };
+    assert.equal(editKey(a), editKey(b));
+    assert.notEqual(editKey(a), editKey({ kind: "solutions", productId: "mailer", solutionIds: [] }));
+    assert.equal(describeEdit(b, names), "Mailer → bags · pouch, flat (primary pouch)");
+    assert.equal(isMove(b), true);
+    assert.equal(isMove({ kind: "offer", productId: "mailer", optionId: "kraft", offered: true }), false);
+  });
+
+  it("a product's line, styles and solutions do not enter the rules: no offer changes, a sentence each", () => {
+    const r = impact([
+      { kind: "placement", productId: "mailer", lineId: "bags", styleIds: ["pouch"] },
+      { kind: "styleLine", styleId: "tuck", lineId: "bags" },
+      { kind: "solutions", productId: "mailer", solutionIds: ["coffee"] },
+    ]);
+    assert.deepEqual(r.totals, { products: 0, gained: 0, lost: 0 });
+    assert.equal(r.sentences.length, 3);
+    assert.deepEqual(r.errors, []);
+  });
+
+  it("an option moving type changes how it is offered: Matte under Material must be listed by the product", () => {
+    const r = impact([{ kind: "optionType", optionId: "matte", typeId: "material" }]);
+    assert.deepEqual(r.products, [{ id: "mailer", title: "Mailer", gained: [], lost: ["matte"] }]);
+    assert.equal(applyEdits(catalog(), products(), [{ kind: "typeCategory", typeId: "finish", categoryId: "addons" }]).catalog.types[0]!.categoryId, "addons");
+  });
+
+  it("a new base must offer what the inspiration product pre-selects", () => {
+    const prods = [...products(), { _id: "box", title: "Box", availableCustomizations: [], customizationExceptions: [] }];
+    const insp = [{ _id: "gift", title: "Gift Mailer", basedOn: "mailer", preselected: ["kraft"] }];
+    const r = computeImpact(catalog(), prods, [{ kind: "basedOn", productId: "gift", baseId: "box" }], names, insp);
+    assert.deepEqual(r.warnings.map((w) => w.text), ["Gift Mailer pre-selects Kraft, which box does not offer. Change its pre-selections in Studio."]);
+    assert.equal(computeImpact(catalog(), prods, [{ kind: "basedOn", productId: "gift", baseId: "mailer" }], names, insp).warnings.length, 0);
   });
 });

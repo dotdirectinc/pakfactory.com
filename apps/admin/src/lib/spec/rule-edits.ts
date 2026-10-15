@@ -17,7 +17,36 @@ export type RuleEditDraft =
   | { kind: "requirements"; typeId: string; groups: string[][] }
   | { kind: "pair"; a: string; b: string; compatible: boolean }
   | { kind: "offer"; productId: string; optionId: string; offered: boolean }
-  | { kind: "exception"; productId: string; optionId: string; mode: "add" | "remove"; reason: string | null };
+  | { kind: "exception"; productId: string; optionId: string; mode: "add" | "remove"; reason: string | null }
+  | MoveDraft;
+
+/**
+ * Structure moves (PROD-3007, ADR-026): a record to another parent. They share the pending set with the
+ * rule edits and go in the same frame; the server (PROD-3006) checks them, moves what hangs under them
+ * and reissues codes. Lists are ordered: the first style or solution is the primary.
+ */
+export type MoveDraft =
+  | { kind: "placement"; productId: string; lineId: string; styleIds: string[] }
+  | { kind: "styleLine"; styleId: string; lineId: string }
+  | { kind: "basedOn"; productId: string; baseId: string }
+  | { kind: "solutions"; productId: string; solutionIds: string[] }
+  | { kind: "optionType"; optionId: string; typeId: string }
+  | { kind: "typeCategory"; typeId: string; categoryId: string };
+
+const MOVE_KINDS = new Set(["placement", "styleLine", "basedOn", "solutions", "optionType", "typeCategory"]);
+export const isMove = (e: RuleEditDraft): e is MoveDraft => MOVE_KINDS.has(e.kind);
+
+/** The record a move moves. */
+export function moveSubject(e: MoveDraft): string {
+  switch (e.kind) {
+    case "placement":
+    case "basedOn":
+    case "solutions": return e.productId;
+    case "styleLine": return e.styleId;
+    case "optionType": return e.optionId;
+    case "typeCategory": return e.typeId;
+  }
+}
 
 export type Names = (id: string) => string;
 
@@ -40,6 +69,18 @@ export function describeEdit(e: RuleEditDraft, name: Names): string {
       return e.reason === null
         ? `${name(e.productId)}: drop the "${e.mode}" exception for ${name(e.optionId)}`
         : `${name(e.productId)}: ${e.mode} ${name(e.optionId)} as an exception — ${e.reason.trim() ? `"${e.reason}"` : "reason needed"}`;
+    case "placement":
+      return `${name(e.productId)} → ${name(e.lineId)} · ${e.styleIds.map(name).join(", ")}${e.styleIds.length > 1 ? ` (primary ${name(e.styleIds[0]!)})` : ""}`;
+    case "styleLine":
+      return `Style ${name(e.styleId)} → line ${name(e.lineId)}`;
+    case "basedOn":
+      return `${name(e.productId)} is based on ${name(e.baseId)}`;
+    case "solutions":
+      return e.solutionIds.length ? `${name(e.productId)}: solutions ${e.solutionIds.map(name).join(", ")} (primary ${name(e.solutionIds[0]!)})` : `${name(e.productId)}: no solutions`;
+    case "optionType":
+      return `${name(e.optionId)} → type ${name(e.typeId)}`;
+    case "typeCategory":
+      return `Type ${name(e.typeId)} → category ${name(e.categoryId)}`;
   }
 }
 
@@ -51,6 +92,12 @@ export function editKey(e: RuleEditDraft): string {
     case "pair": return `pair:${[e.a, e.b].sort().join("|")}`;
     case "offer": return `offer:${e.productId}:${e.optionId}`;
     case "exception": return `exc:${e.productId}:${e.optionId}`;
+    case "placement":
+    case "styleLine":
+    case "basedOn":
+    case "solutions":
+    case "optionType":
+    case "typeCategory": return `move:${e.kind}:${moveSubject(e)}`;
   }
 }
 
@@ -95,7 +142,16 @@ export function applyEdits(catalog: SummaryCatalog, products: SummaryProduct[], 
       if (!p) continue;
       p.customizationExceptions = p.customizationExceptions.filter((x) => !(x.optionId === e.optionId && x.mode === e.mode));
       if (e.reason !== null) p.customizationExceptions.push({ optionId: e.optionId, mode: e.mode, reason: e.reason });
+    } else if (e.kind === "optionType") {
+      // The two moves the rules see: an option's type decides how it is offered and what it pairs
+      // with; a type's category is what a requirement on a category expands to.
+      const o = option.get(e.optionId);
+      if (o) o.typeId = e.typeId;
+    } else if (e.kind === "typeCategory") {
+      const t = type.get(e.typeId);
+      if (t) t.categoryId = e.categoryId;
     }
+    // A product's line, styles and solutions, and an inspiration product's base, are not in the rules.
   }
   return { catalog: { ...catalog, types, options }, products: prods };
 }
@@ -156,7 +212,9 @@ export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[
   // An inspiration product offers what its base offers and pre-selects some of it: an option its base
   // stops offering leaves it pre-selecting something that is not sold (PROD-2962 scope, 2026-10-14).
   const lostBy = new Map(changed.filter((c) => c.lost.length).map((c) => [c.id, new Set(c.lost)]));
+  const rebased = new Map(edits.flatMap((e) => (e.kind === "basedOn" ? [[e.productId, e.baseId] as const] : [])));
   const broken = inspirations.flatMap((i) => {
+    if (rebased.has(i._id)) return []; // checked against its new base below
     const lost = lostBy.get(i.basedOn);
     const hit = lost ? i.preselected.filter((o) => lost.has(o)) : [];
     return hit.length ? [`${i.title ?? i._id} (${hit.map(name).join(", ")})`] : [];
@@ -166,6 +224,17 @@ export function computeImpact(catalog: SummaryCatalog, products: SummaryProduct[
       code: "preselection-lost",
       text: `${broken.length} inspiration ${broken.length === 1 ? "product pre-selects" : "products pre-select"} an option its base would no longer offer: ${broken.slice(0, 8).join("; ")}${broken.length > 8 ? `; and ${broken.length - 8} more` : ""}. Change their pre-selections in Studio.`,
     });
+  }
+  // A new base: the inspiration product's pre-selections must be offered by it (PROD-3007).
+  for (const [id, baseId] of rebased) {
+    const i = inspirations.find((x) => x._id === id);
+    const offered = later.get(baseId);
+    if (!i || !offered) continue;
+    const has = offeredBy(offered);
+    const missing = i.preselected.filter((o) => !has.has(o));
+    if (missing.length) {
+      warnings.push({ code: "preselection-lost", text: `${i.title ?? i._id} pre-selects ${missing.map(name).join(", ")}, which ${name(baseId)} does not offer. Change its pre-selections in Studio.` });
+    }
   }
   // An option left with no compatible partner is never derived anywhere (empty fails closed).
   const partnersAfter = buildCompatibilityIndex(after.catalog.options).pairs;

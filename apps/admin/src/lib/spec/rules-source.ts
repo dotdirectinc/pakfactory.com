@@ -11,6 +11,7 @@ import {
 import { buildDependencyGraph } from "@pakfactory/sanity/customization-rules/dependencies";
 import { buildCompatibilityIndex } from "@pakfactory/sanity/customization-rules";
 import { getSanityApiVersion, getSanityProjectId } from "@/lib/sanity/env";
+import { typeidToUuid } from "@/lib/spec/typeid";
 
 /**
  * The one Sanity read behind every Spec System page (PROD-2560, PROD-2614).
@@ -38,6 +39,9 @@ const QUERY = /* groq */ `{
     "slug": slug.current,
     "lineTitle": productLine->title,
     "styleTitles": coalesce(productStyle[]->title, []),
+    "lineId": productLine._ref,
+    "styleIds": coalesce(productStyle[]._ref, []),
+    "solutionIds": coalesce(solutions[]._ref, []),
     dimensionInput,
     dimensionRange,
     "availableCustomizations": coalesce(availableCustomizations[]{ "optionId": customization._ref }, []),
@@ -50,10 +54,14 @@ const QUERY = /* groq */ `{
     _id,
     title,
     "basedOn": basedOn._ref,
-    "preselected": coalesce(availableCustomizations[preselected == true].customization._ref, [])
+    "preselected": coalesce(availableCustomizations[preselected == true].customization._ref, []),
+    "solutionIds": coalesce(solutions[]._ref, [])
   },
+  "lines": *[_type == "productLine" && !(_id in path("drafts.**"))] | order(title asc) { _id, title },
+  "styles": *[_type == "productStyle" && !(_id in path("drafts.**"))] | order(title asc) { _id, title, "lineId": productLine._ref },
+  "solutions": *[_type == "solution" && !(_id in path("drafts.**"))] | order(title asc) { _id, title },
   "identity": *[
-    _type in ["product", "customizationOption", "customizationType", "customizationCategory"] &&
+    _type in ["product", "customizationOption", "customizationType", "customizationCategory", "productLine", "productStyle", "solution"] &&
     !(_id in path("drafts.**")) &&
     defined(entityCode)
   ]{ _id, entityId, entityCode }
@@ -64,6 +72,10 @@ export type SourceProduct = SummaryProduct & {
   slug?: string;
   lineTitle?: string;
   styleTitles: string[];
+  /** Its parents (PROD-3007): line, styles (first = primary), solutions (first = primary). */
+  lineId?: string;
+  styleIds: string[];
+  solutionIds: string[];
   dimensionInput?: string;
   dimensionRange?: ProductDimensionRangeMm;
 };
@@ -71,7 +83,9 @@ export type SourceProduct = SummaryProduct & {
 /** The registry's identity of a document, as the catalog fill copies it into Sanity (PROD-2628). */
 export type RegistryIdentity = { entityId: string; entityCode: string };
 
-export type Inspiration = { _id: string; title?: string; basedOn: string; preselected: string[] };
+export type Inspiration = { _id: string; title?: string; basedOn: string; preselected: string[]; solutionIds?: string[] };
+/** A line, style or solution: what a move points at (PROD-3007). */
+export type StructureRecord = { _id: string; title?: string; lineId?: string };
 
 export type RulesSource = {
   dataset: string;
@@ -83,13 +97,18 @@ export type RulesSource = {
    * they pre-select some of it (what the site's configurator starts from: `preselected == true`).
    */
   inspirations: Inspiration[];
+  lines: StructureRecord[];
+  styles: StructureRecord[];
+  solutions: StructureRecord[];
   /** Built once per request; every resolution below reuses them. */
   graph: ReturnType<typeof buildDependencyGraph>;
   index: ReturnType<typeof buildCompatibilityIndex>;
-  /** id → display name, for types, options, categories and standard products. */
+  /** id → display name, for types, options, categories, products, lines, styles and solutions. */
   name: (id: string) => string;
   /** id → registry id and code; undefined for a document the registry has not registered. */
   identity: (id: string) => RegistryIdentity | undefined;
+  /** Registry uuid → the Sanity id of its document (the server answers in registry ids). */
+  fromRegistry: (uuid: string) => string | undefined;
 };
 
 export type Loaded<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -100,6 +119,9 @@ type QueryResult = {
   products: SourceProduct[];
   identity: ({ _id: string } & RegistryIdentity)[];
   inspirations?: Inspiration[];
+  lines?: StructureRecord[];
+  styles?: StructureRecord[];
+  solutions?: StructureRecord[];
 };
 
 export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
@@ -133,7 +155,13 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
   for (const o of catalog.options) names.set(o._id, o.title ?? o._id);
   // Products too: the rule-edit checks and the impact name them (PROD-2962).
   for (const p of result.products) names.set(p._id, p.title ?? p._id);
+  for (const x of [...(result.inspirations ?? []), ...(result.lines ?? []), ...(result.styles ?? []), ...(result.solutions ?? [])]) names.set(x._id, x.title ?? x._id);
   const identities = new Map((result.identity ?? []).map(({ _id, entityId, entityCode }) => [_id, { entityId, entityCode }]));
+  const bySanity = new Map<string, string>();
+  for (const [id, x] of identities) {
+    const u = typeidToUuid(x.entityId)?.uuid;
+    if (u) bySanity.set(u, id);
+  }
 
   return {
     ok: true,
@@ -141,12 +169,16 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
       dataset: RULES_DATASET,
       catalog,
       categories: result.categories,
-      products: result.products.map((p) => ({ ...p, styleTitles: p.styleTitles ?? [] })),
+      products: result.products.map((p) => ({ ...p, styleTitles: p.styleTitles ?? [], styleIds: p.styleIds ?? [], solutionIds: p.solutionIds ?? [] })),
       inspirations: result.inspirations ?? [],
+      lines: result.lines ?? [],
+      styles: result.styles ?? [],
+      solutions: result.solutions ?? [],
       graph: buildDependencyGraph(catalog),
       index: buildCompatibilityIndex(catalog.options),
       name: (id) => names.get(id) ?? id,
       identity: (id) => identities.get(id),
+      fromRegistry: (uuid) => bySanity.get(uuid),
     },
   };
 });
