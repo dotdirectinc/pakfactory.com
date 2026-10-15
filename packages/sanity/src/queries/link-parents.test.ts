@@ -85,3 +85,47 @@ test("case-study chips stay as labels but only link when the target has a page",
   assert.deepEqual(doc.customizations.map((c: any) => c.linkable), [false]);
   assert.equal(doc.client.industry.linkable, false);
 });
+
+test("case-study industry chip links when the solution is Active and prefers shortName (PROD-2460)", async () => {
+  const cs = {
+    _id: "cs-on", _type: "caseStudy", title: "CS on", slug: { current: "cs-on" }, publishedAt: "2026-01-01T00:00:00Z",
+    client: { _ref: "client-on" },
+  };
+  const client = { _id: "client-on", _type: "client", name: "Client", industry: { _ref: "sol-short" } };
+  const solShort = {
+    _id: "sol-short", _type: "solution", title: "Apparel & Fashion",
+    h1: "Custom Apparel & Fashion Packaging", shortName: "Apparel",
+    slug: { current: "apparel-fashion" }, status: "active",
+  };
+  const doc = await run(CASE_STUDY_BY_SLUG_QUERY, { slug: "cs-on" }, [cs, client, solShort]);
+  assert.equal(doc.client.industry.linkable, true);
+  assert.equal(doc.client.industry.slug, "apparel-fashion");
+  assert.equal(doc.client.industry.title, "Apparel");
+
+  const clientTitleOnly = {
+    _id: "client-title", _type: "client", name: "Client", industry: { _ref: "sol" },
+  };
+  const csTitle = {
+    _id: "cs-title", _type: "caseStudy", title: "CS title", slug: { current: "cs-title" },
+    publishedAt: "2026-01-01T00:00:00Z", client: { _ref: "client-title" },
+  };
+  const fallback = await run(CASE_STUDY_BY_SLUG_QUERY, { slug: "cs-title" }, [csTitle, clientTitleOnly]);
+  assert.equal(fallback.client.industry.linkable, true);
+  assert.equal(fallback.client.industry.slug, "sol");
+  assert.equal(fallback.client.industry.title, "Sol");
+
+  const solBlank = {
+    _id: "sol-blank", _type: "solution", title: "Sustainable",
+    h1: "Custom Sustainable Packaging", shortName: "",
+    slug: { current: "sustainable" }, status: "active",
+  };
+  const clientBlank = {
+    _id: "client-blank", _type: "client", name: "Client", industry: { _ref: "sol-blank" },
+  };
+  const csBlank = {
+    _id: "cs-blank", _type: "caseStudy", title: "CS blank", slug: { current: "cs-blank" },
+    publishedAt: "2026-01-01T00:00:00Z", client: { _ref: "client-blank" },
+  };
+  const blank = await run(CASE_STUDY_BY_SLUG_QUERY, { slug: "cs-blank" }, [csBlank, clientBlank, solBlank]);
+  assert.equal(blank.client.industry.title, "Sustainable");
+});
