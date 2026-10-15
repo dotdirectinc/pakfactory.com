@@ -388,7 +388,8 @@ export const ADMIN_SPEC_MAP_COPY = {
   editingRulesTitle: "Editing rules",
   editingRulesHow: "Use ⊖ and ⊕ on the cards, or Offer another…. Changes collect below and are reviewed before they apply.",
   movingTitle: "Moving records",
-  movingHow: "Drag a card onto its new parent in the column to its left, or use Change parents in the panel. Changes collect below and are reviewed before they apply.",
+  movingBarHint: "Moving records — drag a card onto its new parent; the moves collect here.",
+  movingHow: "Select a card to see where it is now and everywhere it can move — dashed cards are possible parents or children. Drag a card onto its new parent (valid ones outline green), or use Change parents in the panel. Changes collect below and are reviewed before they apply.",
   doneEditing: "Done",
   moveDone: "Done moving",
   moveRecordsTitle:

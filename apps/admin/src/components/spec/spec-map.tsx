@@ -206,12 +206,15 @@ function regroup(
   folded: Set<string>,
   skip: TableKey[],
   other: string,
+  /** Cards to put first in their column or group (moving records: the current relations). */
+  first?: Set<number>,
 ): Grouped {
   const heads: FocusGroup[] = [];
   const headOf = new Map<number, FocusGroup>();
   const colOf = new Map<number, number>();
   for (const [i, p] of f.pos) colOf.set(i, Math.round((p.x - PAD) / colW));
-  const byTitle = (a: number, b: number) => nodes[a]!.title.localeCompare(nodes[b]!.title);
+  const byTitle = (a: number, b: number) =>
+    (first ? Number(!first.has(a)) - Number(!first.has(b)) : 0) || nodes[a]!.title.localeCompare(nodes[b]!.title);
   let height = HEAD_H + ROW_H;
   levels.forEach((level, li) => {
     const cards = [...colOf].filter(([, c]) => c === li).map(([i]) => i);
@@ -383,6 +386,16 @@ function place(
  * previewed on the diagram, and the diagram's own edits (× on an offered card, "Offer another…")
  * appear in the panel, before anything is saved.
  */
+/** Moving records: the level a card can move under, and the level that can move under it (PROD-3007). */
+const MOVE_PARENT: Partial<Record<TableKey, TableKey[]>> = {
+  productStyle: ["productLine"], product: ["productStyle"], customizationOption: ["customizationType"],
+  customizationType: ["customizationCategory"], inspiration: ["solution"],
+};
+const MOVE_CHILD: Partial<Record<TableKey, TableKey[]>> = {
+  productLine: ["productStyle"], productStyle: ["product"], customizationType: ["customizationOption"],
+  customizationCategory: ["customizationType"], solution: ["inspiration"],
+};
+
 export function SpecMap({ data, focus = null }: { data: SpecMapData; focus?: { level: string; id: string } | null }) {
   return (
     <RuleEditSessionProvider>
@@ -727,6 +740,20 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     return out;
   }, [selected, parentsOf, childrenOf, linksOf, compatibleShown, statedOf, nodes]);
 
+  /**
+   * Moving records (Richard, 2026-10-15): a selected card's POSSIBLE parents and children, not only its
+   * current ones — every card of the level it can hang under, and of the level that can hang under it.
+   * They are drawn dashed; the current ones as usual.
+   */
+  const potential = useMemo(() => {
+    if (!structure || selected === null || !related) return null;
+    const lv = nodes[selected]!.level;
+    const want = new Set([...(MOVE_PARENT[lv] ?? []), ...(MOVE_CHILD[lv] ?? [])]);
+    const out = new Set<number>();
+    nodes.forEach((n, i) => { if (want.has(n.level) && !related.has(i)) out.add(i); });
+    return out;
+  }, [structure, selected, related, nodes]);
+
   useEffect(() => {
     if (selected === null) return;
     const n = nodes[selected]!;
@@ -836,6 +863,8 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
   // A standard product — or an inspiration product, which shows its base's offers (2026-10-14).
   const offering =
     focusing &&
+    // Moving records keeps the stream's own columns: a product's style and line are what it moves between.
+    !structure &&
     (nodes[selected!]!.level === "product" || nodes[selected!]!.level === "inspiration") &&
     stream === streamOf(nodes[selected!]!.level);
   /**
@@ -915,15 +944,16 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
               : []
           : streamOf(level) !== stream
             ? []
-            : (byLevel.get(level) ?? []).filter(
-                (i) => related!.has(i) && statusOk(i),
-              ),
+            : (byLevel.get(level) ?? [])
+                .filter((i) => (related!.has(i) || Boolean(potential?.has(i))) && statusOk(i))
+                // Moving records: the current parents and children first, then where it could move.
+                .sort((a, b) => (potential ? Number(potential.has(a)) - Number(potential.has(b)) : 0)),
       parentsOf,
       colW,
     );
     const grouped = editLayout
       ? null
-      : regroup(f, levels, parentsOf, nodes, colW, folded, offering ? ["customizationOption" as TableKey, ...(productFocus ? [MAP_PROPERTY] : [])] : [], COPY.otherGroup);
+      : regroup(f, levels, parentsOf, nodes, colW, folded, offering ? ["customizationOption" as TableKey, ...(productFocus ? [MAP_PROPERTY] : [])] : [], COPY.otherGroup, potential ? related! : undefined);
     // A focused product's properties, A→Z, each with the values the product states under it.
     const propRails: { y1: number; ticks: number[] }[] = [];
     let propBottom = 0;
@@ -1073,6 +1103,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     levels,
     byLevel,
     related,
+    potential,
     statusOk,
     parentsOf,
     colW,
@@ -1125,7 +1156,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
    * layout should be seen (the top when focusing, the record's place when clearing), each card is
    * first drawn where it appeared before the jump, then moves to its new place.
    */
-  const focusKey = focusing ? `${selected}${editLayout ? ":edit" : ""}` : "rest";
+  const focusKey = focusing ? `${selected}${editLayout ? ":edit" : ""}${structure ? ":move" : ""}` : "rest";
   const lastFocusKey = useRef(focusKey);
   const lastSelected = useRef<number | null>(selected);
   const shown = useRef<{ pos: Map<number, Pos> }>({ pos: new Map() });
@@ -1349,7 +1380,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
       : focus !== null &&
         // In the edit layout the placed cards are the picture (an option's compatible options are not in
         // the structural "related" set).
-        ((!editLayout && related !== null && !related.has(i)) || !focus.pos.has(i));
+        ((!editLayout && related !== null && !related.has(i) && !potential?.has(i)) || !focus.pos.has(i));
   /** Cards to draw: the resting ones, plus related cards from collapsed levels while focusing. */
   const drawn = useMemo(() => {
     const s = new Set(rest.pos.keys());
@@ -1447,9 +1478,9 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
 
   // ── moving records by dragging (PROD-3007) ──
   const DRAGGABLE = new Set<TableKey>(["productStyle", "product", "customizationOption", "customizationType", "inspiration"]);
-  const [drag, setDrag] = useState<{ i: number; x: number; y: number; over: number | null; ok: boolean } | null>(null);
+  const [drag, setDrag] = useState<{ i: number; x: number; y: number; over: number | null; ok: boolean; targets: Set<number> } | null>(null);
   const [dropNote, setDropNote] = useState<string | null>(null);
-  const dragStart = useRef<{ i: number; x: number; y: number; moved: boolean } | null>(null);
+  const dragStart = useRef<{ i: number; x: number; y: number; moved: boolean; targets?: Set<number> } | null>(null);
   /** Set between a drag's pointerup and the click the browser sends after it, so a drop never selects. */
   const swallowClick = useRef(false);
   /** A style's line as the map draws it now (pending moves included). */
@@ -1491,9 +1522,11 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
       if (!st) return;
       if (!st.moved && Math.hypot(ev.clientX - st.x, ev.clientY - st.y) < 5) return;
       st.moved = true;
+      // Every card it can be dropped on, outlined while dragging (2026-10-15).
+      st.targets ??= new Set(nodes.flatMap((n, j) => (j !== st.i && dropMove(nodes[st.i]!, n, { lineOf: lineOfStyle }) ? [j] : [])));
       const over = cardAt(ev.clientX, ev.clientY);
-      const ok = over !== null && over !== st.i && dropMove(nodes[st.i]!, nodes[over]!, { lineOf: lineOfStyle }) !== null;
-      setDrag({ i: st.i, x: ev.clientX, y: ev.clientY, over, ok });
+      const ok = over !== null && st.targets.has(over);
+      setDrag({ i: st.i, x: ev.clientX, y: ev.clientY, over, ok, targets: st.targets });
     };
     const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", move);
@@ -1570,7 +1603,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
               const offer = offering ? shownOffers.get(i) : undefined;
               const Icon = iconOf(n.level);
               const dot = statusDot(n.status);
-              const unrelated = !editLayout && related !== null && !related.has(i);
+              const unrelated = !editLayout && related !== null && !related.has(i) && !potential?.has(i);
               const faded = hoverSet !== null && !hoverSet.has(i);
               // "Highlight": the traced card and its links are outlined (outline, not ring: rings already
               // mean selected, compatible and previewed changes).
@@ -1603,7 +1636,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                   // On the card's box, not its button: the pin beside the button is part of the card.
                   onMouseEnter={focus && !from ? () => setHovered(i) : undefined}
                   onMouseLeave={focus && !from ? () => setHovered((h) => (h === i ? null : h)) : undefined}
-                  className={`absolute left-0 top-0 transition-opacity ${gone ? "pointer-events-none opacity-0" : drag?.i === i ? "opacity-40" : unrelated ? "opacity-25" : faded ? "opacity-40" : "opacity-100"} ${i === selected ? "z-10" : ""} ${structure && DRAGGABLE.has(n.level) ? "cursor-grab touch-none select-none" : ""} ${drag && drag.over === i && drag.i !== i ? `rounded-md outline-2 outline-offset-2 ${drag.ok ? "outline-green-600" : "outline-red-500 outline-dashed"}` : movedCards.has(i) ? "rounded-md outline-2 outline-offset-2 outline-dashed outline-amber-500" : ""}`}
+                  className={`absolute left-0 top-0 transition-opacity ${gone ? "pointer-events-none opacity-0" : drag?.i === i ? "opacity-40" : unrelated ? "opacity-25" : faded ? "opacity-40" : "opacity-100"} ${i === selected ? "z-10" : ""} ${structure && DRAGGABLE.has(n.level) ? "cursor-grab touch-none select-none" : ""} ${drag && drag.over === i && drag.i !== i ? `rounded-md outline-2 outline-offset-2 ${drag.ok ? "outline-green-600" : "outline-red-500 outline-dashed"}` : movedCards.has(i) ? "rounded-md outline-2 outline-offset-2 outline-dashed outline-amber-500" : drag?.targets.has(i) ? "rounded-md outline-1 outline-offset-2 outline-dashed outline-green-600/70" : ""}`}
                   style={{
                     width: indented ? cardW - INDENT : cardW,
                     height: CARD_H,
@@ -1643,7 +1676,9 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                               ? "border-amber-500 ring-1 ring-amber-500/50"
                               : compatibleShown.has(i)
                           ? "border-foreground/60 ring-1 ring-foreground/40"
-                          : "border-border"
+                          : potential?.has(i)
+                            ? "border-dashed border-foreground/35"
+                            : "border-border"
                     } ${traced} ${arriving ? "animate-in fade-in slide-in-from-bottom-6 fill-mode-backwards duration-300 ease-out" : ""}`}
                     style={
                       arriving
@@ -1854,8 +1889,8 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
             <span className="px-1.5 text-xs font-semibold uppercase tracking-wide text-primary">{COPY.editGroup}</span>
             <Button
               size="sm"
-              variant={rulesOn ? "secondary" : "default"}
               aria-pressed={rulesOn}
+              className={rulesOn ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : undefined}
               disabled={session.refreshing || structure || (!rulesOn && !rulesTarget)}
               title={session.refreshing ? EDIT.refreshingMap : !rulesTarget && !rulesOn ? COPY.editRulesNeedsSelection : undefined}
               onClick={() => session.setEditing(true)}
@@ -1864,8 +1899,8 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
             </Button>
             <Button
               size="sm"
-              variant={structure ? "secondary" : "default"}
               aria-pressed={structure}
+              className={structure ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : undefined}
               disabled={session.refreshing || rulesOn}
               title={COPY.moveRecordsTitle}
               onClick={startStructure}
@@ -2452,7 +2487,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
         </div>
       ) : null}
       {/* While editing, the panel on the right is the editor's companion; the bar is for after a submit. */}
-      {editLayout ? null : <RuleEditBar />}
+      {editLayout ? null : <RuleEditBar hint={structure ? COPY.movingBarHint : undefined} />}
     </div>
   );
 }

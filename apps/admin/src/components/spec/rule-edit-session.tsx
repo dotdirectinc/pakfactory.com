@@ -333,14 +333,15 @@ export function RuleEditFooter() {
 }
 
 /** The Spec Map's bar under the diagram: the same set, short — count, impact line, acknowledgement, buttons. */
-export function RuleEditBar() {
+export function RuleEditBar({ hint }: { hint?: string } = {}) {
   const s = useRuleEditSession();
   if (!s || (!s.editing && !s.edits.length && !s.result?.ok)) return null;
   if (!s.editing && !s.edits.length) return <SubmitResultNote />;
-  return <EditBar />;
+  return <EditBar hint={hint} />;
 }
 
-function EditBar() {
+/** `hint`: what to do while nothing is pending (the Map's mode says which edits it takes). */
+function EditBar({ hint }: { hint?: string }) {
   const s = useRuleEditSession()!;
   const [open, setOpen] = useState(false);
   // An exception needs its reason typed in the pending list: show it rather than only naming the problem.
@@ -360,7 +361,7 @@ function EditBar() {
         </div>
       ) : null}
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
-      <span className="font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : COPY.editingHint}</span>
+      <span className="font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : hint ?? COPY.editingHint}</span>
       {s.edits.length ? (
         <span className="text-muted-foreground">
           {s.previewError ? <span className="text-destructive">{s.previewError}</span>
