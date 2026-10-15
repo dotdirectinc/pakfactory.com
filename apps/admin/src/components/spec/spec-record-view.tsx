@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Network } from "lucide-react";
+import { Button } from "@pakfactory/ui/components/button";
+import { mapHref } from "@/lib/spec/map-href";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
 import type { RecordGroup, RecordItem } from "@/lib/spec/record-sections";
 import { isTableKey, type TableKey } from "@/lib/spec/catalog-table-model";
 import { SpecRegistryId } from "@/components/spec/spec-registry-id";
 import { SpecRuleEditor } from "@/components/spec/spec-rule-editor";
+import { ChildAdd, ChildPendingRows, MoveButton, MoveFieldRows, MoveFooter, PARENT_FIELDS, RecordMoveProvider, childAddLevel, useRecordMove } from "@/components/spec/spec-parents-editor";
+import type { ChildGroup } from "@/lib/spec/catalog-record";
+import type { RecordSection } from "@/lib/spec/record-sections";
+import { WithRuleEditSession } from "@/components/spec/rule-edit-session";
 import { ADMIN_SPEC_RECORD_COPY as COPY } from "@/lib/copy/spec";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
@@ -19,6 +25,9 @@ function recordTarget(href: string): { key: TableKey; id: string } | null {
 }
 
 type OnSelect = (key: TableKey, id: string) => void;
+
+/** Records with a Parents section (PROD-3007) besides the three with rules. */
+const MOVABLE = new Set<TableKey>(["inspiration", "productStyle", "productLine", "customizationCategory", "solution"]);
 
 /** A link to another record: a selection when the host handles one (the map), else navigation. */
 function RecordLink({ href, className, onSelect, children }: { href: string; className: string; onSelect?: OnSelect; children: React.ReactNode }) {
@@ -45,6 +54,7 @@ export function SpecRecordView({
   heading = "h1",
   onSelect,
   rulesEditor = true,
+  onEditParents,
 }: {
   record: CatalogRecord;
   heading?: "h1" | "h2";
@@ -55,13 +65,17 @@ export function SpecRecordView({
    * record's full page keeps it — the other way in.
    */
   rulesEditor?: boolean;
+  /** The Spec Map's way into moving records (its structure mode); the page's own session otherwise. */
+  onEditParents?: () => void;
 }) {
   const Title = heading;
   const Section = heading === "h1" ? "h2" : "h3";
 
 
+  // One pending set for the whole record (PROD-3007): its rule edits and its moves share a tray and a frame.
   return (
-    <>
+    <WithRuleEditSession>
+    <RecordMoveProvider level={r.key} id={r.id} page={rulesEditor} onEdit={onEditParents}>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start">
         {r.images[0] ? (
           <img src={`${r.images[0]}?w=240&h=240&fit=crop&auto=format`} alt="" className="size-28 shrink-0 rounded-md border border-border object-cover" />
@@ -72,12 +86,18 @@ export function SpecRecordView({
             {r.status ? <Badge variant={r.status === "active" ? "secondary" : "outline"}>{r.status}</Badge> : null}
           </div>
           <SpecRegistryId registry={r.registry} />
+          {/* The way to the Map (2026-10-15): the Catalog reads and compares, the Map edits and relates. Not on the Map itself. */}
+          {onSelect ? null : (
+            <Button asChild size="sm" className="w-fit" title={COPY.showOnMapTitle}>
+              <Link href={mapHref(r.key, r.id)}><Network /> {COPY.showOnMap}</Link>
+            </Button>
+          )}
           {r.rulesHref ? (
             <Link href={r.rulesHref} className="inline-flex w-fit items-center gap-1 text-sm font-medium text-foreground hover:underline">
               {COPY.rules} <ArrowUpRight className="size-4" />
             </Link>
           ) : null}
-          <p className="text-xs text-muted-foreground">{r.key === "product" || r.key === "customizationOption" || r.key === "customizationType" ? (rulesEditor ? COPY.rulesEditable(r.dataset) : COPY.rulesOnMap(r.dataset)) : COPY.readOnly(r.dataset)}</p>
+          <p className="text-xs text-muted-foreground">{r.key === "product" || r.key === "customizationOption" || r.key === "customizationType" ? (rulesEditor ? COPY.rulesEditable(r.dataset) : COPY.rulesOnMap(r.dataset)) : MOVABLE.has(r.key) ? COPY.movable(r.dataset) : COPY.readOnly(r.dataset)}</p>
         </div>
       </header>
 
@@ -96,54 +116,12 @@ export function SpecRecordView({
         </section>
       ) : null}
 
-      {r.children.map((c) => (
-        <section key={c.label} className="flex flex-col gap-2">
-          <Section className="text-base font-semibold text-foreground">
-            {c.label} <span className="font-normal text-muted-foreground">({c.total})</span>
-          </Section>
-          <div className="overflow-hidden rounded-md border border-border bg-card">
-            <table className="w-full text-sm">
-              <tbody>
-                {c.rows.map((row) => (
-                  <tr key={row.id} className="border-t border-border first:border-t-0 even:bg-muted/50 hover:bg-muted">
-                    <td className="px-3 py-2">
-                      <RecordLink href={row.href} onSelect={onSelect} className="font-medium text-foreground hover:underline">{row.title}</RecordLink>
-                    </td>
-                    <td className="w-40 px-3 py-2 text-muted-foreground">{row.status ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {c.total > c.rows.length ? <p className="text-xs text-muted-foreground">{COPY.more(c.rows.length, c.total)}</p> : null}
-        </section>
-      ))}
+      <ChildTables groups={r.children} Section={Section} onSelect={onSelect} hasStructure={r.sections.some((x) => x.key === "structure")} />
 
       <p className="text-xs text-muted-foreground">{COPY.legend}</p>
-      {r.sections.map((sec) => (
-        <section key={sec.key} className="flex flex-col gap-2">
-          <Section className="text-base font-semibold text-foreground">{sec.title}</Section>
-          <dl className="overflow-hidden rounded-md border border-border bg-card text-sm">
-            {sec.fields.map((f) => (
-              <div key={f.key} className="grid gap-1 border-t border-border px-3 py-2 first:border-t-0 even:bg-muted/50 sm:grid-cols-[14rem_1fr] sm:gap-4">
-                <dt className="text-muted-foreground">{f.label}</dt>
-                <dd className="min-w-0 break-words text-foreground">
-                  {f.groups.length ? (
-                    <FieldGroups groups={f.groups} onSelect={onSelect} />
-                  ) : f.text === null ? (
-                    <span className="text-muted-foreground/60">{COPY.empty}</span>
-                  ) : f.key === "_createdAt" || f.key === "_updatedAt" ? (
-                    when(String(f.text))
-                  ) : (
-                    String(f.text)
-                  )}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ))}
-    </>
+      {r.sections.map((sec) => <RecordSectionView key={sec.key} sec={sec} Section={Section} onSelect={onSelect} />)}
+    </RecordMoveProvider>
+    </WithRuleEditSession>
   );
 }
 
@@ -196,5 +174,97 @@ function Items({ items, onSelect }: { items: RecordItem[]; onSelect?: OnSelect }
         );
       })}
     </span>
+  );
+}
+
+type SectionTag = "h2" | "h3";
+
+/**
+ * One section of fields. Catalog structure carries Move (PROD-3007): while moving, its parent rows are
+ * dropdowns (MoveFieldRows) and the rest stay as they are; the pending moves and buttons follow it.
+ */
+function RecordSectionView({ sec, Section, onSelect }: { sec: RecordSection; Section: SectionTag; onSelect?: OnSelect }) {
+  const m = useRecordMove();
+  const structure = sec.key === "structure";
+  const moving = structure && Boolean(m?.editing);
+  const fields = moving ? sec.fields.filter((f) => !PARENT_FIELDS.has(f.key)) : sec.fields;
+  return (
+    <section className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Section className="text-base font-semibold text-foreground">{sec.title}</Section>
+        {structure ? <MoveButton /> : null}
+      </div>
+      <dl className={`overflow-hidden rounded-md border bg-card text-sm ${moving ? "border-primary/50 ring-1 ring-primary/30" : "border-border"}`}>
+        {structure ? <MoveFieldRows /> : null}
+        {fields.map((f) => (
+          <div key={f.key} className="grid gap-1 border-t border-border px-3 py-2 first:border-t-0 even:bg-muted/50 sm:grid-cols-[14rem_1fr] sm:gap-4">
+            <dt className="text-muted-foreground">{f.label}</dt>
+            <dd className="min-w-0 break-words text-foreground">
+              {f.groups.length ? (
+                <FieldGroups groups={f.groups} onSelect={onSelect} />
+              ) : f.text === null ? (
+                <span className="text-muted-foreground/60">{COPY.empty}</span>
+              ) : f.key === "_createdAt" || f.key === "_updatedAt" ? (
+                when(String(f.text))
+              ) : (
+                String(f.text)
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {structure ? <MoveFooter /> : null}
+    </section>
+  );
+}
+
+/**
+ * The records below this one, a table per kind. The table of the kind that can move under this record
+ * takes "Add to …" while moving (and shows the records added, pending); with no Catalog structure section
+ * (a line, a category, a solution) it also carries Move and the buttons. While moving, a record with no
+ * such children yet shows the empty table, so there is somewhere to add them.
+ */
+function ChildTables({ groups, Section, onSelect, hasStructure }: { groups: ChildGroup[]; Section: SectionTag; onSelect?: OnSelect; hasStructure: boolean }) {
+  const m = useRecordMove();
+  const addLevel = childAddLevel(m);
+  const label = m?.data.children?.label ?? "";
+  const shown: ChildGroup[] = addLevel && !groups.some((g) => g.table === addLevel) && (m?.editing || (!hasStructure && m?.data.canEdit))
+    ? [...groups, { label, table: addLevel as ChildGroup["table"], rows: [], total: 0 }]
+    : groups;
+  return (
+    <>
+      {shown.map((c) => {
+        const takesAdd = c.table === addLevel;
+        return (
+          <section key={c.label} className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Section className="text-base font-semibold text-foreground">
+                {c.label} <span className="font-normal text-muted-foreground">({c.total})</span>
+              </Section>
+              {takesAdd && !hasStructure ? <MoveButton /> : null}
+            </div>
+            {takesAdd ? <ChildAdd label={c.label} /> : null}
+            <div className={`overflow-hidden rounded-md border bg-card ${takesAdd && m?.editing ? "border-primary/50" : "border-border"}`}>
+              <table className="w-full text-sm">
+                <tbody>
+                  {takesAdd ? <ChildPendingRows /> : null}
+                  {c.rows.map((row) => (
+                    <tr key={row.id} className="border-t border-border first:border-t-0 even:bg-muted/50 hover:bg-muted">
+                      <td className="px-3 py-2">
+                        <RecordLink href={row.href} onSelect={onSelect} className="font-medium text-foreground hover:underline">{row.title}</RecordLink>
+                      </td>
+                      <td className="w-40 px-3 py-2 text-muted-foreground">{row.status ?? "—"}</td>
+                    </tr>
+                  ))}
+                  {!c.rows.length ? <tr><td className="px-3 py-2 text-muted-foreground" colSpan={2}>—</td></tr> : null}
+                </tbody>
+              </table>
+            </div>
+            {c.total > c.rows.length ? <p className="text-xs text-muted-foreground">{COPY.more(c.rows.length, c.total)}</p> : null}
+            {takesAdd && !hasStructure ? <MoveFooter /> : null}
+          </section>
+        );
+      })}
+    </>
   );
 }

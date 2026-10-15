@@ -8,7 +8,7 @@ import { Button } from "@pakfactory/ui/components/button";
 import { Checkbox } from "@pakfactory/ui/components/checkbox";
 import { dismissSyncAction, requestSyncAction } from "@/app/(admin)/spec/actions";
 import type { SyncRun, SyncWriteProblem } from "@/lib/spec/registry-api";
-import { RulesDriftLine } from "@/components/spec/spec-sync-history";
+import { RulesDriftLine, StructureDriftLine } from "@/components/spec/spec-sync-history";
 import { ADMIN_SPEC_SYNC_COPY as COPY, ADMIN_SPEC_SYNC_HISTORY_COPY as HISTORY } from "@/lib/copy/spec";
 
 type Props = {
@@ -174,6 +174,7 @@ export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
                 ) : null}
                 {r.state === "done" && r.result?.skipped ? <p className="text-muted-foreground">{COPY.skipped}</p> : null}
                 <RulesDriftLine drift={r.state === "done" ? r.result?.report?.rulesDrift : null} />
+                <StructureDriftLine drift={r.state === "done" ? r.result?.report?.structureDrift : null} />
                 {r.state === "done" && !r.result?.skipped && r.result?.loaded?.length === 0 ? (
                   <p className="text-muted-foreground">{COPY.nothingFound}</p>
                 ) : null}

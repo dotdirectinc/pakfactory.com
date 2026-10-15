@@ -27,6 +27,9 @@ type Session = {
   clear: () => void;
   editing: boolean;
   setEditing: (b: boolean) => void;
+  /** A record page's Move mode (PROD-3007): open at most one of it and Edit rules at a time. */
+  moving: boolean;
+  setMoving: (b: boolean) => void;
   canEdit: boolean;
   meta: RuleMeta | null;
   names: (id: string) => string;
@@ -66,6 +69,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   const [byKey, setByKey] = useState<Map<string, RuleEditDraft>>(new Map());
   const edits = useMemo(() => [...byKey.values()], [byKey]);
   const [editing, setEditing] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [meta, setMeta] = useState<RuleMeta | null>(null);
   const nameMap = useRef(new Map<string, string>());
@@ -107,7 +111,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
     });
   }, []);
   const remove = useCallback((key: string) => setByKey((m) => { const x = new Map(m); x.delete(key); return x; }), []);
-  const clear = useCallback(() => { setByKey(new Map()); setAck(false); setNote(""); setSubmitError(null); setEditing(false); }, []);
+  const clear = useCallback(() => { setByKey(new Map()); setAck(false); setNote(""); setSubmitError(null); setEditing(false); setMoving(false); }, []);
   const setOffered = useCallback((productId: string, optionId: string, want: boolean, offeredNow: boolean) => {
     setResult(null);
     // Back to what the rules say today: drop whatever edit changed it.
@@ -156,6 +160,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
       setByKey(new Map());
       setNote("");
       setEditing(false);
+      setMoving(false);
       setPreview(null);
       setRefreshing(true);
       setVersion((v) => v + 1);
@@ -163,7 +168,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   }), [edits, note]);
 
   const value: Session = {
-    edits, put, remove, setOffered, clear, editing, setEditing, canEdit, meta, names, addNames, focus, setFocus,
+    edits, put, remove, setOffered, clear, editing, setEditing, moving, setMoving, canEdit, meta, names, addNames, focus, setFocus,
     preview, checking, previewError, ack, setAck, note, setNote, submit, submitting, submitError, result, version, ready,
     keepNoEffect, setKeepNoEffect, refreshing, markFresh, refresh,
   };
@@ -226,6 +231,7 @@ export function ImpactBox() {
         <>
           {p.errors.map((e) => <p key={e} role="alert" className="text-destructive">✕ {e}</p>)}
           <NoEffectBox />
+          <MovesBox />
           <p>{p.totals.products ? COPY.totals(p.totals) : COPY.noProductChange}</p>
           {p.products.length ? (
             <ul className="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-md border border-border p-2 text-xs">
@@ -247,6 +253,30 @@ export function ImpactBox() {
           ) : null}
         </>
       )}
+    </div>
+  );
+}
+
+/** What the moves do, as the server plans them (PROD-3007): what moves with each, and the codes it reissues. */
+function MovesBox() {
+  const s = useRuleEditSession()!;
+  const st = s.preview?.structure;
+  if (!st) return null;
+  const onlyStructure = s.edits.every((e) => e.kind === "placement" || e.kind === "styleLine" || e.kind === "solutions");
+  return (
+    <div className="flex flex-col gap-1.5 rounded-md border border-border p-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{COPY.moves}</span>
+      <ul className="flex flex-col gap-0.5">{st.sentences.map((x) => <li key={x}>{x}</li>)}</ul>
+      {st.codes.length ? (
+        <>
+          <p className="text-xs text-muted-foreground">{COPY.codes(st.codes.length)}</p>
+          <ul className="flex max-h-32 flex-col gap-0.5 overflow-y-auto text-xs">
+            {st.codes.map((c) => <li key={c.id}><span className="font-medium">{c.name}</span> <span className="font-mono">{c.code}</span></li>)}
+          </ul>
+        </>
+      ) : null}
+      <p className="text-xs text-muted-foreground">{COPY.documents(st.documents)}</p>
+      {onlyStructure ? <p className="text-xs text-muted-foreground">{COPY.movesNoOffer}</p> : null}
     </div>
   );
 }
@@ -308,14 +338,15 @@ export function RuleEditFooter() {
 }
 
 /** The Spec Map's bar under the diagram: the same set, short — count, impact line, acknowledgement, buttons. */
-export function RuleEditBar() {
+export function RuleEditBar({ hint }: { hint?: string } = {}) {
   const s = useRuleEditSession();
   if (!s || (!s.editing && !s.edits.length && !s.result?.ok)) return null;
   if (!s.editing && !s.edits.length) return <SubmitResultNote />;
-  return <EditBar />;
+  return <EditBar hint={hint} />;
 }
 
-function EditBar() {
+/** `hint`: what to do while nothing is pending (the Map's mode says which edits it takes). */
+function EditBar({ hint }: { hint?: string }) {
   const s = useRuleEditSession()!;
   const [open, setOpen] = useState(false);
   // An exception needs its reason typed in the pending list: show it rather than only naming the problem.
@@ -335,7 +366,7 @@ function EditBar() {
         </div>
       ) : null}
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
-      <span className="font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : COPY.editingHint}</span>
+      <span className="font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : hint ?? COPY.editingHint}</span>
       {s.edits.length ? (
         <span className="text-muted-foreground">
           {s.previewError ? <span className="text-destructive">{s.previewError}</span>

@@ -4,6 +4,7 @@ import { cachedSpec } from "./cache";
 import { RULES_DATASET, type Loaded } from "./rules-source";
 import { filterParams, productMatchesSolutionStyleFilter, type SolutionStyleFilter } from "@pakfactory/sanity/solution-style-filter";
 import type { TableKey } from "./catalog-table-model";
+import type { MoveDraft } from "./rule-edits";
 
 /**
  * The Spec Map's data (PROD-2960): every published record of the Catalog's levels as a card, and
@@ -184,7 +185,7 @@ export function buildSpecMap(raw: Raw, dataset: string): SpecMapData {
 export const getSpecMap = cachedSpec("spec-map-v5" /* v5: defined-level arrows; Properties columns + `stated` (2026-10-14) */, async (): Promise<Loaded<SpecMapData>> => {
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
-  const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });
+  const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: false, perspective: "published" }); // not the CDN: it lags a write, and the refill after an approved move would cache the old record (2026-10-15)
   try {
     const raw = await client.fetch<Raw>(MAP_QUERY, {}, { cache: "no-store" });
     return { ok: true, data: buildSpecMap(raw, RULES_DATASET) };
@@ -192,3 +193,69 @@ export const getSpecMap = cachedSpec("spec-map-v5" /* v5: defined-level arrows; 
     return { ok: false, error: err instanceof Error ? err.message : "Sanity query failed" };
   }
 });
+
+/**
+ * The map with pending moves applied (PROD-3007): each moved record hangs under its new parents, and
+ * what hangs under it follows by itself (its own edges are untouched). `moved` are the moved cards.
+ */
+export function applyMovesToMap(data: SpecMapData, moves: MoveDraft[]): { data: SpecMapData; moved: Set<number> } {
+  if (!moves.length) return { data, moved: new Set() };
+  const at = new Map(data.nodes.map((n, i) => [`${n.level}:${n.id}`, i]));
+  let edges = data.edges;
+  let links = data.links;
+  const moved = new Set<number>();
+  const reparent = (level: TableKey, id: string, from: TableKey[], to: [TableKey, string][]) => {
+    const b = at.get(`${level}:${id}`);
+    if (b === undefined) return;
+    const parents = to.map(([l, x]) => at.get(`${l}:${x}`)).filter((x): x is number => x !== undefined);
+    edges = [...edges.filter(([a, c]) => !(c === b && from.includes(data.nodes[a]!.level))), ...parents.map((a) => [a, b] as [number, number])];
+    moved.add(b);
+  };
+  for (const m of moves) {
+    switch (m.kind) {
+      case "styleLine": reparent("productStyle", m.styleId, ["productLine"], [["productLine", m.lineId]]); break;
+      case "placement":
+        reparent("product", m.productId, ["productStyle", "productLine"],
+          m.styleIds.length ? m.styleIds.map((s) => ["productStyle", s] as [TableKey, string]) : [["productLine", m.lineId]]);
+        break;
+      case "solutions": reparent("inspiration", m.productId, ["solution"], m.solutionIds.map((s) => ["solution", s] as [TableKey, string])); break;
+      case "optionType": reparent("customizationOption", m.optionId, ["customizationType"], [["customizationType", m.typeId]]); break;
+      case "typeCategory": reparent("customizationType", m.typeId, ["customizationCategory"], [["customizationCategory", m.categoryId]]); break;
+      case "basedOn": {
+        const a = at.get(`inspiration:${m.productId}`);
+        const b = at.get(`product:${m.baseId}`);
+        if (a === undefined) break;
+        links = [...links.filter(([x]) => x !== a), ...(b !== undefined ? [[a, b] as [number, number]] : [])];
+        moved.add(a);
+        break;
+      }
+    }
+  }
+  return { data: { ...data, edges, links }, moved };
+}
+
+/**
+ * The move a card dropped onto another card makes (PROD-3007), or null when that is not a parent of it.
+ * Dropping onto a style or a solution makes it the PRIMARY one (Richard, 2026-10-15): a product's other
+ * styles stay if they are in the new line, a product's other solutions stay; the line follows the style.
+ */
+export function dropMove(
+  child: MapNode,
+  target: MapNode,
+  current: { lineOf: (styleId: string) => string | undefined; styleIds?: string[]; solutionIds?: string[] },
+): MoveDraft | null {
+  if (child.level === "productStyle" && target.level === "productLine") return { kind: "styleLine", styleId: child.id, lineId: target.id };
+  if (child.level === "product" && target.level === "productStyle") {
+    const lineId = current.lineOf(target.id);
+    if (!lineId) return null;
+    const others = (current.styleIds ?? []).filter((s) => s !== target.id && current.lineOf(s) === lineId);
+    return { kind: "placement", productId: child.id, lineId, styleIds: [target.id, ...others] };
+  }
+  if (child.level === "customizationOption" && target.level === "customizationType") return { kind: "optionType", optionId: child.id, typeId: target.id };
+  if (child.level === "customizationType" && target.level === "customizationCategory") return { kind: "typeCategory", typeId: child.id, categoryId: target.id };
+  if (child.level === "inspiration" && target.level === "solution") {
+    return { kind: "solutions", productId: child.id, solutionIds: [target.id, ...(current.solutionIds ?? []).filter((s) => s !== target.id)] };
+  }
+  if (child.level === "inspiration" && target.level === "product") return { kind: "basedOn", productId: child.id, baseId: target.id };
+  return null;
+}

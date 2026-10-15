@@ -267,6 +267,7 @@ export const ADMIN_SPEC_TABLES_COPY = {
   count: (shown: number, total: number) => (shown === total ? `${total} records` : `${shown} of ${total} records`),
   image: "Image",
   noImage: "No image",
+  showOnMap: (title: string) => `Show ${title} on the Spec Map`,
   headerHint: "Drag to move · click for sort and hide",
   sortAsc: "Sort ascending",
   sortDesc: "Sort descending",
@@ -282,7 +283,11 @@ export const ADMIN_SPEC_TABLES_COPY = {
 export const ADMIN_SPEC_RECORD_COPY = {
   unreachable: "The record could not be loaded.",
   rules: "Rules view",
+  showOnMap: "Show on Map",
+  showOnMapTitle: "Open the Spec Map on this record: its relations, and where its rules and parents are edited.",
   readOnly: (dataset: string) => `Read-only, from Sanity (${dataset}) — edit in Studio.`,
+  /** A record that can be moved (PROD-3007): its parents here, the rest in Studio. */
+  movable: (dataset: string) => `From Sanity (${dataset}). Its parents and children change here with Move; everything else in Studio.`,
   rulesEditable: (dataset: string) => `From Sanity (${dataset}). Customization rules are edited below; everything else in Studio.`,
   rulesOnMap: (dataset: string) =>
     `From Sanity (${dataset}). Edit its offers on the map (Edit rules above); its compatible options, type settings and the rest of its rules on its full page; everything else in Studio.`,
@@ -346,6 +351,14 @@ export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
   },
   rulesDriftHint:
     "Every rule where the registry and Sanity disagree, including changes waiting for review or discarded. 0 means the registry holds exactly what Sanity holds.",
+  /** Structure (PROD-3006/3007): records' parents. */
+  structureMatch: "Catalog structure: the registry matches Sanity",
+  structureDrift: (total: number, byKind: Record<string, number>) => {
+    const parts = Object.entries(byKind).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${k}`);
+    return `Catalog structure: ${total} ${total === 1 ? "parent differs" : "parents differ"} between the registry and Sanity${parts.length ? ` (${parts.join(" · ")})` : ""}`;
+  },
+  structureDriftHint:
+    "Every record whose parents (line, styles, base, solutions, type, category) differ between the registry and Sanity, proposed or not. 0 means they match.",
 } as const;
 
 /** Sanity-bound items in a frame (PROD-2751): before → Notion, and how the approved write went. */
@@ -369,6 +382,29 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
 /** Spec Map (PROD-2960): the catalog as a read-only diagram. */
 export const ADMIN_SPEC_MAP_COPY = {
   title: "Spec Map",
+  /** Moving records (PROD-3007). */
+  moveRecords: "Move records",
+  /** The edit modes, together and visible (Richard, 2026-10-15: "Move records" was too hidden). */
+  editGroup: "Edit",
+  editRulesNeedsSelection: "Select a product or an option on the map to edit its rules.",
+  editingRulesTitle: "Editing rules",
+  editingRulesHow: "Use ⊖ and ⊕ on the cards, or Offer another…. Changes collect below and are reviewed before they apply.",
+  movingTitle: "Moving records",
+  movingBarHint: "Moving records — drag a card onto its new parent; the moves collect here.",
+  movingHow: "Select a card to see where it is now and everywhere it can move — dashed cards are possible parents or children. Drag a card onto its new parent (valid ones outline green), or use Change parents in the panel. Changes collect below and are reviewed before they apply.",
+  doneEditing: "Done",
+  moveDone: "Done moving",
+  moveRecordsTitle:
+    "Drag a card onto its new parent in the column to its left: a style onto a line, a product onto a style (it becomes the primary one), an option onto a type, a type onto a category, an inspiration product onto a solution. Moves go in the pending set below, reviewed like rule edits.",
+  moveDoneBlocked: "Submit or cancel the pending changes below first.",
+  moving: "Moving",
+  /** A drop onto where the card already is (Richard, 2026-10-15): greyed, named, nothing made. */
+  noChange: "no change",
+  makePrimary: "make primary",
+  alreadyThere: (child: string, target: string) => `${child} is already under ${target} — nothing to change.`,
+  current: "Current",
+  dropNotParent: (child: string, target: string) => `${target} is not something ${child} can hang under — drop it on a card in the column to its left.`,
+  dropping: "Reading its current parents…",
   lead:
     "One stream at a time, one column per level, each column its own A–Z list; each header names how its column relates to the one before. Click a card to see only what it is connected to — grouped under what it hangs off and, for products and options, what the rules make them compatible with; hover a card (or pin it) to see its own links, outlined or as lines. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
   hint: "Scroll each column on its own · click a card to see what it is connected to · then hover or pin a card to see its own links.",
@@ -421,6 +457,7 @@ export const ADMIN_SPEC_MAP_COPY = {
 export const ADMIN_SPEC_RULE_EDIT_COPY = {
   title: "Customization rules",
   edit: "Edit rules",
+  closeMoveFirst: "Finish or cancel the move first.",
   loading: "Loading rules…",
   unreachable: "The rules could not be loaded.",
   offers: "Offered options (listed by the product)",
@@ -454,6 +491,11 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   impact: "Impact (the storefront's own rules, before and after)",
   checking: "Checking…",
   noProductChange: "No standard product's offer changes.",
+  /** Moves (PROD-3007): what the server says each does, and the codes it reissues. */
+  moves: "Moves",
+  movesNoOffer: "A product's line, styles and solutions are not part of the customization rules: these moves change no product's offer.",
+  codes: (n: number) => `${n} ${n === 1 ? "code is" : "codes are"} reissued under the new parent (the registry id never changes; the old code still finds the record):`,
+  documents: (n: number) => `${n} Sanity ${n === 1 ? "document is" : "documents are"} written on approval.`,
   totals: (t: { products: number; gained: number; lost: number }) =>
     `${t.products} ${t.products === 1 ? "product changes" : "products change"}: +${t.gained} offered, −${t.lost} no longer offered.`,
   more: (n: number) => `… and ${n} more`,
@@ -559,4 +601,48 @@ export const ADMIN_SPEC_OVERRIDE_COPY = {
   now: "In Studio now",
   proposedOver: "When proposed",
   unreachable: "Could not check Studio for changes since this was proposed.",
+} as const;
+
+/** A record's parents, and moving it (PROD-3007, ADR-026). */
+export const ADMIN_SPEC_PARENTS_COPY = {
+  title: "Parents",
+  change: "Change parents",
+  /** The record page's way in (Richard, 2026-10-15): like Edit rules, then dropdowns. */
+  move: "Move",
+  closeRulesFirst: "Finish or cancel editing the rules first.",
+  titleChildren: (label: string) => label,
+  movingHint: "Pick new parents from the dropdowns, or add a record under this one. The moves collect below; nothing changes until they are submitted and approved.",
+  pickLine2: "Choose a line",
+  pickStyle: "Choose a style",
+  pickBase2: "Choose a standard product",
+  pickSolution: "Choose a solution",
+  pickType2: "Choose a type",
+  pickCategory2: "Choose a category",
+  addChild: (label: string) => `Add to ${label.toLowerCase()}…`,
+  noChildren: "None yet.",
+  pendingChild: "pending",
+  andMore: (n: number) => `and ${n} more`,
+  done: "Done",
+  loading: "Loading parents…",
+  unreachable: "The parents could not be loaded.",
+  hint: "Moves are reviewed like rule edits: they go in the same pending set and frame. Moving a record moves what is under it.",
+  readOnly: "Created in Studio with its parents; afterwards they change here, reviewed.",
+  line: "Line",
+  styles: "Styles",
+  base: "Based on",
+  solutions: "Solutions",
+  type: "Type",
+  category: "Category",
+  primary: "primary",
+  makePrimary: "Make primary",
+  remove: "Remove",
+  addStyle: "Add a style of this line…",
+  addSolution: "Add a solution…",
+  pickLine: "Move to another line…",
+  pickBase: "Base it on another standard product…",
+  pickType: "Move to another type…",
+  pickCategory: "Move to another category…",
+  pending: "Pending",
+  noStyle: "No style in this line yet — add one.",
+  none: "—",
 } as const;

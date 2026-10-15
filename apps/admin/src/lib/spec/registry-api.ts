@@ -204,7 +204,7 @@ export type SyncRun = {
     documents?: number;
     proposed?: { frame: string; items: number }[];
     loaded?: SyncRunLoaded[];
-    report?: { unresolved?: unknown[]; unknownStatus?: unknown[]; reportOnly?: Record<string, number>; rulesDrift?: RulesDrift };
+    report?: { unresolved?: unknown[]; unknownStatus?: unknown[]; reportOnly?: Record<string, number>; rulesDrift?: RulesDrift; structureDrift?: RulesDrift };
     /** An automatic run left the frames alone because one was waiting for review. */
     skipped?: string;
   } | null;
@@ -301,6 +301,8 @@ export type SyncHistoryRun = {
   skipped?: string | null;
   /** Sync Changes only (PROD-2986): customization rules where the registry and Sanity disagree. */
   rules_drift?: RulesDrift | null;
+  /** Sync Changes only (PROD-3006): records' parents where the registry and Sanity disagree. */
+  structure_drift?: RulesDrift | null;
   frames: SyncHistoryFrame[];
 };
 
@@ -322,6 +324,15 @@ export type RegistryRuleEdit =
   | { kind: "offer"; productId: string; optionId: string; offered: boolean }
   | { kind: "exception"; productId: string; optionId: string; mode: "add" | "remove"; reason: string | null };
 
+/** A structure move as the backend takes it (PROD-3006): registry ids. */
+export type RegistryMove =
+  | { kind: "productPlacement"; productId: string; lineId: string; styleIds: string[] }
+  | { kind: "styleLine"; styleId: string; lineId: string }
+  | { kind: "basedOn"; productId: string; baseId: string }
+  | { kind: "solutions"; productId: string; solutionIds: string[] }
+  | { kind: "optionType"; optionId: string; typeId: string }
+  | { kind: "typeCategory"; typeId: string; categoryId: string };
+
 export type RuleEditResult = {
   changeset_id: string;
   frame: string;
@@ -331,9 +342,15 @@ export type RuleEditResult = {
   written: { applied: number; stale: number; failed: number } | null;
 };
 
-/** One frame from a set of rule edits; `approve` = Submit & approve. */
-export async function submitRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; approve: boolean; note?: string; impact?: unknown }) {
+/** One frame from a set of rule edits and moves; `approve` = Submit & approve. */
+export async function submitRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; moves?: RegistryMove[]; approve: boolean; note?: string; impact?: unknown }) {
   return call<RuleEditResult>("/api/v1/rule-edits", { method: "POST", body });
+}
+
+/** The server's check of a set (PROD-3007): what it would refuse, its sentences and the codes it would reissue. Creates nothing. */
+export type RuleEditCheck = { dry_run: true; sentences: string[]; items: number; codes: { id: string; code: string }[]; documents: number };
+export async function checkRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; moves: RegistryMove[] }) {
+  return call<RuleEditCheck>("/api/v1/rule-edits/check", { method: "POST", body });
 }
 
 /** What approving a pending frame would override in Studio (ADR-025 § 4, amended 2026-10-13). */

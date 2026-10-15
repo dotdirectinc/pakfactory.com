@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { fetchSpecMe, getChangesetDetail, listAllChangesets, listDraftChangesets, submitRuleEdits, type RegistryRuleEdit, type RuleEditResult } from "@/lib/spec/registry-api";
-import { loadRulesSource, type Loaded } from "@/lib/spec/rules-source";
+import { checkRuleEdits, fetchSpecMe, getChangesetDetail, listAllChangesets, listDraftChangesets, submitRuleEdits, type RegistryMove, type RegistryRuleEdit, type RuleEditResult } from "@/lib/spec/registry-api";
+import { loadRulesSource, type Loaded, type RulesSource } from "@/lib/spec/rules-source";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
-import { computeImpact, focusAfter, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
-import { getRuleEditorData, type RuleEditorData } from "@/lib/spec/rule-editor-data";
+import { computeImpact, focusAfter, isMove, type MoveDraft, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
+import { getRuleEditorData, type Choice, type RuleEditorData } from "@/lib/spec/rule-editor-data";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import { typeidToUuid } from "@/lib/spec/typeid";
 import { pendingRulesOf, type PendingRules } from "@/lib/spec/pending-rules";
@@ -32,7 +32,41 @@ export type Preview = Impact & {
   sentences: string[];
   /** The focused record after the edits — what the Spec Map draws as the preview. */
   focus: FocusAfter | null;
+  /**
+   * When the set moves records (PROD-3007): the server's own check — what moves with each move, and the
+   * codes it would reissue. Its refusals are in `errors`.
+   */
+  structure: { sentences: string[]; codes: { id: string; name: string; code: string }[]; documents: number } | null;
 };
+
+/** Sanity ids → registry ids (each document's entityId TypeID), for the backend. */
+function toRegistry(edits: RuleEditDraft[], src: RulesSource) {
+  const missing: string[] = [];
+  const reg = (id: string) => {
+    const u = typeidToUuid(src.identity(id)?.entityId)?.uuid;
+    if (!u) missing.push(src.name(id));
+    return u ?? "";
+  };
+  const cats = new Set((src.catalog.categories ?? []).map((c) => c._id));
+  const rules: RegistryRuleEdit[] = [];
+  const moves: RegistryMove[] = [];
+  for (const e of edits) {
+    switch (e.kind) {
+      case "typeSettings": rules.push({ kind: e.kind, typeId: reg(e.typeId), ...(e.decidedBy ? { decidedBy: e.decidedBy } : {}), ...(e.customerSelects ? { customerSelects: e.customerSelects } : {}) }); break;
+      case "requirements": rules.push({ kind: e.kind, typeId: reg(e.typeId), groups: e.groups.map((g) => g.map((x) => (cats.has(x) ? { categoryId: reg(x) } : { typeId: reg(x) }))) }); break;
+      case "pair": rules.push({ kind: e.kind, a: reg(e.a), b: reg(e.b), compatible: e.compatible }); break;
+      case "offer": rules.push({ kind: e.kind, productId: reg(e.productId), optionId: reg(e.optionId), offered: e.offered }); break;
+      case "exception": rules.push({ kind: e.kind, productId: reg(e.productId), optionId: reg(e.optionId), mode: e.mode, reason: e.reason }); break;
+      case "placement": moves.push({ kind: "productPlacement", productId: reg(e.productId), lineId: reg(e.lineId), styleIds: e.styleIds.map(reg) }); break;
+      case "styleLine": moves.push({ kind: e.kind, styleId: reg(e.styleId), lineId: reg(e.lineId) }); break;
+      case "basedOn": moves.push({ kind: e.kind, productId: reg(e.productId), baseId: reg(e.baseId) }); break;
+      case "solutions": moves.push({ kind: e.kind, productId: reg(e.productId), solutionIds: e.solutionIds.map(reg) }); break;
+      case "optionType": moves.push({ kind: e.kind, optionId: reg(e.optionId), typeId: reg(e.typeId) }); break;
+      case "typeCategory": moves.push({ kind: e.kind, typeId: reg(e.typeId), categoryId: reg(e.categoryId) }); break;
+    }
+  }
+  return { rules, moves, missing: [...new Set(missing)] };
+}
 
 /**
  * The impact check: the storefront's own engine before and after, per standard product; and, for
@@ -42,13 +76,34 @@ export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus
   if (!(await canEdit())) return { ok: false, error: "Editing rules needs an approver or admin grant." };
   const res = await loadRulesSource();
   if (!res.ok) return res;
-  const { catalog, products, name, inspirations } = res.data;
+  const { catalog, products, name, inspirations, dataset } = res.data;
   const impact = computeImpact(catalog, products, edits, name, inspirations);
   const ids = new Set([...impact.products.flatMap((p) => [...p.gained, ...p.lost])]);
+  // Moves: the server checks them (PROD-3006 has the rules and knows what hangs under each record).
+  let structure: Preview["structure"] = null;
+  if (edits.some(isMove)) {
+    const body = toRegistry(edits, res.data);
+    if (body.missing.length) impact.errors.push(`Not registered yet: ${body.missing.join(", ")}.`);
+    else {
+      const r = await checkRuleEdits({ dataset, edits: body.rules, moves: body.moves });
+      if (r.ok) {
+        const codes = r.data.codes.map((c) => {
+          const id = res.data.fromRegistry(c.id);
+          return { id: id ?? c.id, name: id ? name(id) : c.id, code: c.code };
+        });
+        structure = { sentences: r.data.sentences, codes, documents: r.data.documents };
+      } else if (r.status === 404) {
+        impact.errors.push("This server cannot check moves yet (it needs the rule-edits check route). Nothing can be submitted.");
+      } else {
+        for (const e of r.errors ?? [r.error]) if (!impact.errors.includes(e)) impact.errors.push(e);
+      }
+    }
+  }
   return {
     ok: true,
     data: {
       ...impact,
+      structure,
       names: Object.fromEntries([...ids].map((id) => [id, name(id)])),
       // Effect-first ("offers Flocking again — drops the remove exception"); see computeImpact.
       focus: focus ? focusAfter(catalog, products, edits, focus) : null,
@@ -86,31 +141,15 @@ export async function submitRuleEditsAction(edits: RuleEditDraft[], opts: { appr
   if (!(await canEdit())) return { ok: false, error: "Editing rules needs an approver or admin grant." };
   const res = await loadRulesSource();
   if (!res.ok) return res;
-  const { catalog, products, name, identity, dataset, inspirations } = res.data;
+  const { catalog, products, name, dataset, inspirations } = res.data;
   const impact = computeImpact(catalog, products, edits, name, inspirations);
   if (impact.errors.length) return { ok: false, error: impact.errors[0]!, errors: impact.errors };
 
-  // Sanity id → registry id (the document's entityId TypeID).
-  const missing: string[] = [];
-  const reg = (id: string) => {
-    const u = typeidToUuid(identity(id)?.entityId)?.uuid;
-    if (!u) missing.push(name(id));
-    return u ?? "";
-  };
-  const cats = new Set((catalog.categories ?? []).map((c) => c._id));
-  const body: RegistryRuleEdit[] = edits.map((e) => {
-    switch (e.kind) {
-      case "typeSettings": return { kind: e.kind, typeId: reg(e.typeId), ...(e.decidedBy ? { decidedBy: e.decidedBy } : {}), ...(e.customerSelects ? { customerSelects: e.customerSelects } : {}) };
-      case "requirements": return { kind: e.kind, typeId: reg(e.typeId), groups: e.groups.map((g) => g.map((x) => (cats.has(x) ? { categoryId: reg(x) } : { typeId: reg(x) }))) };
-      case "pair": return { kind: e.kind, a: reg(e.a), b: reg(e.b), compatible: e.compatible };
-      case "offer": return { kind: e.kind, productId: reg(e.productId), optionId: reg(e.optionId), offered: e.offered };
-      case "exception": return { kind: e.kind, productId: reg(e.productId), optionId: reg(e.optionId), mode: e.mode, reason: e.reason };
-    }
-  });
-  if (missing.length) return { ok: false, error: `Not registered yet: ${[...new Set(missing)].join(", ")}.` };
+  const body = toRegistry(edits, res.data);
+  if (body.missing.length) return { ok: false, error: `Not registered yet: ${body.missing.join(", ")}.` };
 
   const r = await submitRuleEdits({
-    dataset, edits: body, approve: opts.approve, note: opts.note,
+    dataset, edits: body.rules, ...(body.moves.length ? { moves: body.moves } : {}), approve: opts.approve, note: opts.note,
     impact: {
       totals: impact.totals,
       warnings: impact.warnings.map((w) => w.text),
@@ -135,6 +174,13 @@ function recordsOf(e: RuleEditDraft): string[] {
     case "pair": return [e.a, e.b];
     case "offer":
     case "exception": return [e.productId, e.optionId];
+    // A move is about the record and the parents it leaves and joins (the new ones are named here).
+    case "placement": return [e.productId, e.lineId, ...e.styleIds];
+    case "styleLine": return [e.styleId, e.lineId];
+    case "basedOn": return [e.productId, e.baseId];
+    case "solutions": return [e.productId, ...e.solutionIds];
+    case "optionType": return [e.optionId, e.typeId];
+    case "typeCategory": return [e.typeId, e.categoryId];
   }
 }
 
@@ -181,4 +227,105 @@ export async function loadPendingRules(id: string): Promise<Loaded<PendingRules>
     ok: true,
     data: pendingRulesOf(id, details.flatMap((d) => (d.ok ? [{ id: d.data.id, created_at: d.data.created_at, items: d.data.items }] : []))),
   };
+}
+
+/** A record's parents and what they can become (PROD-3007), from the same read as the rules. */
+export type ParentsData = {
+  canEdit: boolean;
+  kind: "standard" | "inspiration" | "style" | "option" | "type" | "line" | "category" | "solution" | "none";
+  current: { lineId?: string; styleIds?: string[]; baseId?: string; solutionIds?: string[]; typeId?: string; categoryId?: string };
+  choices: {
+    lines: Choice[];
+    styles: (Choice & { lineId?: string })[];
+    solutions: Choice[];
+    types: (Choice & { categoryId?: string })[];
+    categories: Choice[];
+    /** Standard products: what an inspiration product can be based on. */
+    bases: Choice[];
+  };
+  /**
+   * The records under this one, and the ones that could be moved under it — each with the move that
+   * would do it (the same move as dropping it on this card on the Map). None for a product or an option.
+   */
+  children: { level: string; label: string; items: Choice[]; add: (Choice & { move: MoveDraft })[] } | null;
+};
+
+export async function loadParents(level: string, id: string): Promise<Loaded<ParentsData>> {
+  const [res, allowed] = await Promise.all([loadRulesSource(), canEdit()]);
+  if (!res.ok) return res;
+  const src = res.data;
+  const choice = (group: string) => (x: { _id: string; title?: string }): Choice => ({ id: x._id, title: x.title ?? x._id, group });
+  const catName = new Map(src.categories.map((c) => [c._id, c.title ?? c._id]));
+  const lineName = new Map(src.lines.map((l) => [l._id, l.title ?? l._id]));
+  const choices: ParentsData["choices"] = {
+    lines: src.lines.map(choice("Line")),
+    styles: src.styles.map((s) => ({ ...choice(lineName.get(s.lineId ?? "") ?? "Style")(s), lineId: s.lineId })),
+    solutions: src.solutions.map(choice("Solution")),
+    types: src.catalog.types.map((t) => ({ ...choice(catName.get(t.categoryId ?? "") ?? "Type")(t), categoryId: t.categoryId })),
+    categories: src.categories.map(choice("Category")),
+    bases: src.products.map(choice("Standard product")),
+  };
+  const out = (kind: ParentsData["kind"], current: ParentsData["current"] = {}, children: ParentsData["children"] = null): Loaded<ParentsData> =>
+    ({ ok: true, data: { canEdit: allowed, kind, current, choices, children } });
+  const lineOf = new Map(src.styles.map((x) => [x._id, x.lineId]));
+  if (level === "product" || level === "inspiration") {
+    const p = src.products.find((x) => x._id === id);
+    if (p) return out("standard", { lineId: p.lineId, styleIds: p.styleIds, solutionIds: p.solutionIds });
+    const i = src.inspirations.find((x) => x._id === id);
+    if (i) return out("inspiration", { baseId: i.basedOn, solutionIds: i.solutionIds ?? [] });
+    return out("none");
+  }
+  if (level === "productStyle") {
+    const s = src.styles.find((x) => x._id === id);
+    if (!s) return out("none");
+    // A product moved under this style takes it as its primary style (as a drop on the Map does).
+    const products = src.products.filter((p) => p.styleIds.includes(id));
+    return out("style", { lineId: s.lineId }, {
+      level: "product", label: "Products",
+      items: products.map(choice("Standard product")),
+      add: src.products.filter((p) => !p.styleIds.includes(id)).map((p) => ({
+        ...choice(lineName.get(p.lineId ?? "") ?? "Standard product")(p),
+        move: { kind: "placement", productId: p._id, lineId: s.lineId ?? "", styleIds: [id, ...p.styleIds.filter((x) => x !== id && lineOf.get(x) === s.lineId)] },
+      })),
+    });
+  }
+  if (level === "productLine") {
+    const styles = src.styles.filter((x) => x.lineId === id);
+    return out("line", {}, {
+      level: "productStyle", label: "Styles",
+      items: styles.map(choice("Style")),
+      add: src.styles.filter((x) => x.lineId !== id).map((x) => ({ ...choice(lineName.get(x.lineId ?? "") ?? "Style")(x), move: { kind: "styleLine", styleId: x._id, lineId: id } })),
+    });
+  }
+  if (level === "customizationCategory") {
+    return out("category", {}, {
+      level: "customizationType", label: "Types",
+      items: src.catalog.types.filter((t) => t.categoryId === id).map(choice("Type")),
+      add: src.catalog.types.filter((t) => t.categoryId !== id).map((t) => ({ ...choice(catName.get(t.categoryId ?? "") ?? "Type")(t), move: { kind: "typeCategory", typeId: t._id, categoryId: id } })),
+    });
+  }
+  if (level === "solution") {
+    const has = (i: { solutionIds?: string[] }) => (i.solutionIds ?? []).includes(id);
+    return out("solution", {}, {
+      level: "inspiration", label: "Inspiration products",
+      items: src.inspirations.filter(has).map(choice("Inspiration product")),
+      // Added as the primary solution, as a drop on the Map does; its other solutions stay.
+      add: src.inspirations.filter((i) => !has(i)).map((i) => ({ ...choice("Inspiration product")(i), move: { kind: "solutions", productId: i._id, solutionIds: [id, ...(i.solutionIds ?? [])] } })),
+    });
+  }
+  if (level === "customizationOption") {
+    const o = src.catalog.options.find((x) => x._id === id);
+    return o ? out("option", { typeId: o.typeId }) : out("none");
+  }
+  if (level === "customizationType") {
+    const t = src.catalog.types.find((x) => x._id === id);
+    if (!t) return out("none");
+    const typeName = new Map(src.catalog.types.map((x) => [x._id, x.title ?? x._id]));
+    return out("type", { categoryId: t.categoryId }, {
+      level: "customizationOption", label: "Options",
+      items: src.catalog.options.filter((o) => o.typeId === id).map(choice("Option")),
+      add: src.catalog.options.filter((o) => o.typeId !== id).map((o) => ({ ...choice(typeName.get(o.typeId) ?? "Option")(o), move: { kind: "optionType", optionId: o._id, typeId: id } })),
+    });
+  }
+  return out("none");
 }
