@@ -50,6 +50,7 @@ export function SpecSyncHistoryRun({ run }: { run: SyncHistoryRun }) {
       {run.recheck_error ? <p className="text-xs text-muted-foreground">{COPY.recheckError(run.recheck_error)}</p> : null}
       {run.state === "done" && run.skipped ? <p className="text-sm text-muted-foreground">{SYNC.skipped}</p> : null}
       <RulesDriftLine drift={run.state === "done" ? run.rules_drift : null} />
+      <StructureDriftLine drift={run.state === "done" ? run.structure_drift : null} />
       {run.state === "done" && !run.skipped && run.frames.length === 0 ? <p className="text-sm text-muted-foreground">{COPY.noFrames}</p> : null}
       {run.frames.length ? (
         <ul className="flex flex-col gap-2 border-l border-border pl-3">
@@ -74,6 +75,16 @@ export function SpecSyncHistoryRun({ run }: { run: SyncHistoryRun }) {
         </ul>
       ) : null}
     </li>
+  );
+}
+
+/** Sync Changes: whether records' parents match between the registry and Sanity (PROD-3006). */
+export function StructureDriftLine({ drift }: { drift: RulesDrift | null | undefined }) {
+  if (!drift) return null;
+  return (
+    <p className={`text-sm ${drift.total ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`} title={COPY.structureDriftHint}>
+      {drift.total ? COPY.structureDrift(drift.total, drift.byKind) : COPY.structureMatch}
+    </p>
   );
 }
 

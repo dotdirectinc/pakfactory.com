@@ -18,6 +18,7 @@ import {
   CirclePlus,
   Layers2,
   Layers3,
+  Move,
   Pencil,
   Pin,
   PinOff,
@@ -46,7 +47,7 @@ import {
   type TableKey,
 } from "@/lib/spec/catalog-table-model";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
-import { MAP_OPTION_PROPERTY, MAP_PROPERTY, type MapNode, type SpecMapData } from "@/lib/spec/spec-map";
+import { MAP_OPTION_PROPERTY, MAP_PROPERTY, applyMovesToMap, dropMove, type MapNode, type SpecMapData } from "@/lib/spec/spec-map";
 import type { ProductOptionState } from "@/lib/spec/product-view";
 /** How a focused product gets an option, or "removed": the rules give it, an exception takes it away. */
 type OfferKind = ProductOptionState | "removed";
@@ -54,12 +55,12 @@ import { SpecRecordView } from "@/components/spec/spec-record-view";
 import { RuleEditBar, RuleEditPanel, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
 import { Picker } from "@/components/spec/spec-rule-editor";
 import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT, ADMIN_SPEC_RULE_EDIT_COPY as EDIT_FOLD } from "@/lib/copy/spec";
-import { describeEdit, editKey, mapEdit } from "@/lib/spec/rule-edits";
+import { describeEdit, editKey, isMove, mapEdit } from "@/lib/spec/rule-edits";
 import {
   loadMapCompatible,
   loadMapRecord,
 } from "@/app/(admin)/spec/map/actions";
-import { loadPendingRules } from "@/app/(admin)/spec/rule-edit-actions";
+import { loadParents, loadPendingRules } from "@/app/(admin)/spec/rule-edit-actions";
 import { ADMIN_SPEC_MAP_COPY as COPY } from "@/lib/copy/spec";
 
 /**
@@ -392,8 +393,20 @@ export function SpecMap({ data }: { data: SpecMapData }) {
 
 function SpecMapView({ data }: { data: SpecMapData }) {
   const session = useRuleEditSession()!;
+  // Pending moves (PROD-3007) are drawn before anything is saved: the record and what is under it at
+  // their new place, the moved cards outlined.
+  const moves = useMemo(() => session.edits.filter(isMove), [session.edits]);
+  const shownMap = useMemo(() => applyMovesToMap(data, moves), [data, moves]);
   // `stated` is new (2026-10-14): a map cached before it has none.
-  const { nodes, edges, links, stated = [] } = data;
+  const { nodes, edges, links, stated = [] } = shownMap.data;
+  const movedCards = shownMap.moved;
+  /** "Move records" (PROD-3007): drag a card onto a parent; the panel's Parents section moves it too. */
+  const [structure, setStructure] = useState(false);
+  const { editing: sessionEditing, setEditing: setSessionEditing, addNames: addSessionNames } = session;
+  useEffect(() => { if (!sessionEditing) setStructure(false); }, [sessionEditing]);
+  const startStructure = useCallback(() => { setSessionEditing(true); setStructure(true); }, [setSessionEditing]);
+  // Every card's name, for the pending sentences of a move made by dragging.
+  useEffect(() => { addSessionNames(Object.fromEntries(data.nodes.map((n) => [n.id, n.title]))); }, [data.nodes, addSessionNames]);
   const [stream, setStream] = useState<string>(TABLE_GROUPS[0]!.key);
   const [collapsed, setCollapsed] = useState<Set<TableKey>>(
     () => new Set(COLLAPSED_AT_START),
@@ -808,7 +821,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
    * what rules connect — the record and its offered options (or the products offering it). Lines, styles
    * and property values become a breadcrumb; the details panel folds to a rail.
    */
-  const editLayout = focusing && session.editing && (selLevel === "product" || selLevel === "customizationOption");
+  const editLayout = focusing && session.editing && !structure && (selLevel === "product" || selLevel === "customizationOption");
 
 
   // ── layout: the current stream; the resting layout, and the focused one when a card is selected ──
@@ -1265,7 +1278,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   };
   const changeTab = (tab: string) => {
     if (tab === stream) return;
-    if (!session.editing) { setStream(tab); return; }
+    // Moving records spans streams (an option's type, a style's line): a tab is just another view.
+    if (!session.editing || structure) { setStream(tab); return; }
     if (session.edits.length) { setPendingTab(tab); return; }
     leaveEditTo(tab);
   };
@@ -1414,8 +1428,74 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   // ── editing on the diagram: offer or stop offering an option on a product ──
   // Not on stale data: never while the map is re-reading the rules after a submit, or before this
   // record's offers have loaded (2026-10-14).
-  const editingHere = session.editing && session.canEdit && !session.refreshing && compatLoaded && sel !== null && (sel.level === "product" || sel.level === "customizationOption");
+  const editingHere = session.editing && !structure && session.canEdit && !session.refreshing && compatLoaded && sel !== null && (sel.level === "product" || sel.level === "customizationOption");
   const [editNote, setEditNote] = useState<string | null>(null);
+
+  // ── moving records by dragging (PROD-3007) ──
+  const DRAGGABLE = new Set<TableKey>(["productStyle", "product", "customizationOption", "customizationType", "inspiration"]);
+  const [drag, setDrag] = useState<{ i: number; x: number; y: number; over: number | null; ok: boolean } | null>(null);
+  const [dropNote, setDropNote] = useState<string | null>(null);
+  const dragStart = useRef<{ i: number; x: number; y: number; moved: boolean } | null>(null);
+  /** Set between a drag's pointerup and the click the browser sends after it, so a drop never selects. */
+  const swallowClick = useRef(false);
+  /** A style's line as the map draws it now (pending moves included). */
+  const lineOfStyle = useCallback((styleId: string) => {
+    const s = nodes.findIndex((n) => n.level === "productStyle" && n.id === styleId);
+    const up = s < 0 ? undefined : parentsOf[s]?.find((j) => nodes[j]!.level === "productLine");
+    return up === undefined ? undefined : nodes[up]!.id;
+  }, [nodes, parentsOf]);
+  const cardAt = (x: number, y: number) => {
+    const el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-map-card]");
+    return el ? Number(el.dataset.mapCard) : null;
+  };
+  const dropOnto = async (i: number, t: number) => {
+    const child = nodes[i]!;
+    const target = nodes[t]!;
+    let styleIds: string[] | undefined;
+    let solutionIds: string[] | undefined;
+    if (child.level === "product" || child.level === "inspiration") {
+      // The ordered lists the drop keeps the rest of: a pending move's, else Sanity's.
+      setDropNote(COPY.dropping);
+      const r = await loadParents(child.level, child.id);
+      setDropNote(null);
+      if (r.ok) { styleIds = r.data.current.styleIds; solutionIds = r.data.current.solutionIds; }
+      for (const e of session.edits) {
+        if (e.kind === "placement" && e.productId === child.id) styleIds = e.styleIds;
+        if (e.kind === "solutions" && e.productId === child.id) solutionIds = e.solutionIds;
+      }
+    }
+    const m = dropMove(child, target, { lineOf: lineOfStyle, styleIds, solutionIds });
+    if (!m) { setDropNote(COPY.dropNotParent(child.title, target.title)); return; }
+    setDropNote(null);
+    session.put(m);
+  };
+  const onCardPointerDown = (i: number) => (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    dragStart.current = { i, x: e.clientX, y: e.clientY, moved: false };
+    const move = (ev: PointerEvent) => {
+      const st = dragStart.current;
+      if (!st) return;
+      if (!st.moved && Math.hypot(ev.clientX - st.x, ev.clientY - st.y) < 5) return;
+      st.moved = true;
+      const over = cardAt(ev.clientX, ev.clientY);
+      const ok = over !== null && over !== st.i && dropMove(nodes[st.i]!, nodes[over]!, { lineOf: lineOfStyle }) !== null;
+      setDrag({ i: st.i, x: ev.clientX, y: ev.clientY, over, ok });
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      const st = dragStart.current;
+      dragStart.current = null;
+      setDrag(null);
+      if (!st?.moved) return;
+      swallowClick.current = true;
+      window.setTimeout(() => { swallowClick.current = false; }, 0);
+      const over = cardAt(ev.clientX, ev.clientY);
+      if (over !== null && over !== st.i) void dropOnto(st.i, over);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
   /** A Map button: the explicit edit for what the card shows, or a refusal when the card is stale. */
   const act = (p: string, o: string, action: "stop" | "offerAgain", shown: OfferKind) => {
     if (!session.meta) return;
@@ -1504,10 +1584,12 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               return (
                 <div
                   key={i}
+                  data-map-card={i}
+                  onPointerDown={structure && DRAGGABLE.has(n.level) ? onCardPointerDown(i) : undefined}
                   // On the card's box, not its button: the pin beside the button is part of the card.
                   onMouseEnter={focus && !from ? () => setHovered(i) : undefined}
                   onMouseLeave={focus && !from ? () => setHovered((h) => (h === i ? null : h)) : undefined}
-                  className={`absolute left-0 top-0 transition-opacity ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : faded ? "opacity-40" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
+                  className={`absolute left-0 top-0 transition-opacity ${gone ? "pointer-events-none opacity-0" : drag?.i === i ? "opacity-40" : unrelated ? "opacity-25" : faded ? "opacity-40" : "opacity-100"} ${i === selected ? "z-10" : ""} ${structure && DRAGGABLE.has(n.level) ? "cursor-grab touch-none select-none" : ""} ${drag && drag.over === i && drag.i !== i ? `rounded-md outline-2 outline-offset-2 ${drag.ok ? "outline-green-600" : "outline-red-500 outline-dashed"}` : movedCards.has(i) ? "rounded-md outline-2 outline-offset-2 outline-dashed outline-amber-500" : ""}`}
                   style={{
                     width: indented ? cardW - INDENT : cardW,
                     height: CARD_H,
@@ -1521,7 +1603,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   <button
                     type="button"
                     // An offered option belongs to the Customizations stream: selecting it goes there.
-                    onClick={() => select(i, !inStream(i))}
+                    onClick={() => { if (!swallowClick.current) select(i, !inStream(i)); }}
                     title={[
                       n.title,
                       offer ? COPY.offerKind[offer] : null,
@@ -1529,6 +1611,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                       change?.kind === "gain" ? EDIT.previewGain : change?.kind === "lose" ? EDIT.previewLose : change?.was ? EDIT.previewChange(COPY.offerKind[change.was]) : null,
                       exc ? `${EDIT.exceptionChip(exc.mode)}${exc.reason ? `: ${exc.reason}` : ""}${noEffect ? ` — ${EDIT.noEffectWhy(exc.mode)}` : ""}` : null,
                       pending.length ? EDIT.pendingHere(pending.map((e) => describeEdit(e, session.names)).join("; ")) : null,
+                      movedCards.has(i) ? COPY.moving : null,
                       n.status,
                     ]
                       .filter(Boolean)
@@ -1751,6 +1834,21 @@ function SpecMapView({ data }: { data: SpecMapData }) {
             </Button>
           ))}
         </div>
+        {session.canEdit ? (
+          <div className="flex items-center gap-2">
+            <Button
+              size="xs"
+              variant={structure ? "secondary" : "outline"}
+              aria-pressed={structure}
+              disabled={session.refreshing || (session.editing && !structure) || (structure && session.edits.length > 0)}
+              title={structure && session.edits.length ? COPY.moveDoneBlocked : COPY.moveRecordsTitle}
+              onClick={() => (structure ? setSessionEditing(false) : startStructure())}
+            >
+              <Move /> {structure ? COPY.moveDone : COPY.moveRecords}
+            </Button>
+            {dropNote ? <span className="text-xs text-destructive">{dropNote}</span> : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="flex h-9 shrink-0 items-center">
@@ -2243,7 +2341,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               onClose={session.edits.length ? undefined : () => session.setEditing(false)}
               details={
                 record?.for === selected && record.res.ok && record.res.data
-                  ? <SpecRecordView record={record.res.data as CatalogRecord} heading="h2" onSelect={selectBy} rulesEditor={false} />
+                  ? <SpecRecordView record={record.res.data as CatalogRecord} heading="h2" onSelect={selectBy} rulesEditor={false} onEditParents={startStructure} />
                   : <p className="text-sm text-muted-foreground">{COPY.loading}</p>
               }
             />
@@ -2301,12 +2399,18 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                   heading="h2"
                   onSelect={selectBy}
                   rulesEditor={false}
+                  onEditParents={startStructure}
                 />
               )}
             </div>
           </aside>
         ) : null}
       </div>
+      {drag ? (
+        <div aria-hidden className="pointer-events-none fixed z-50 rounded-md border border-foreground/30 bg-card px-2.5 py-1 text-sm shadow-md" style={{ left: drag.x + 12, top: drag.y + 12 }}>
+          {nodes[drag.i]!.title}{drag.over !== null && drag.over !== drag.i ? ` → ${nodes[drag.over]!.title}` : ""}
+        </div>
+      ) : null}
       {/* While editing, the panel on the right is the editor's companion; the bar is for after a submit. */}
       {editLayout ? null : <RuleEditBar />}
     </div>

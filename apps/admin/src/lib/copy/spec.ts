@@ -346,6 +346,14 @@ export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
   },
   rulesDriftHint:
     "Every rule where the registry and Sanity disagree, including changes waiting for review or discarded. 0 means the registry holds exactly what Sanity holds.",
+  /** Structure (PROD-3006/3007): records' parents. */
+  structureMatch: "Catalog structure: the registry matches Sanity",
+  structureDrift: (total: number, byKind: Record<string, number>) => {
+    const parts = Object.entries(byKind).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${k}`);
+    return `Catalog structure: ${total} ${total === 1 ? "parent differs" : "parents differ"} between the registry and Sanity${parts.length ? ` (${parts.join(" · ")})` : ""}`;
+  },
+  structureDriftHint:
+    "Every record whose parents (line, styles, base, solutions, type, category) differ between the registry and Sanity, proposed or not. 0 means they match.",
 } as const;
 
 /** Sanity-bound items in a frame (PROD-2751): before → Notion, and how the approved write went. */
@@ -369,6 +377,15 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
 /** Spec Map (PROD-2960): the catalog as a read-only diagram. */
 export const ADMIN_SPEC_MAP_COPY = {
   title: "Spec Map",
+  /** Moving records (PROD-3007). */
+  moveRecords: "Move records",
+  moveDone: "Done moving",
+  moveRecordsTitle:
+    "Drag a card onto its new parent in the column to its left: a style onto a line, a product onto a style (it becomes the primary one), an option onto a type, a type onto a category, an inspiration product onto a solution. Moves go in the pending set below, reviewed like rule edits.",
+  moveDoneBlocked: "Submit or cancel the pending changes below first.",
+  moving: "Moving",
+  dropNotParent: (child: string, target: string) => `${target} is not something ${child} can hang under — drop it on a card in the column to its left.`,
+  dropping: "Reading its current parents…",
   lead:
     "One stream at a time, one column per level, each column its own A–Z list; each header names how its column relates to the one before. Click a card to see only what it is connected to — grouped under what it hangs off and, for products and options, what the rules make them compatible with; hover a card (or pin it) to see its own links, outlined or as lines. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
   hint: "Scroll each column on its own · click a card to see what it is connected to · then hover or pin a card to see its own links.",

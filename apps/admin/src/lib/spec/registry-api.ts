@@ -204,7 +204,7 @@ export type SyncRun = {
     documents?: number;
     proposed?: { frame: string; items: number }[];
     loaded?: SyncRunLoaded[];
-    report?: { unresolved?: unknown[]; unknownStatus?: unknown[]; reportOnly?: Record<string, number>; rulesDrift?: RulesDrift };
+    report?: { unresolved?: unknown[]; unknownStatus?: unknown[]; reportOnly?: Record<string, number>; rulesDrift?: RulesDrift; structureDrift?: RulesDrift };
     /** An automatic run left the frames alone because one was waiting for review. */
     skipped?: string;
   } | null;
@@ -301,6 +301,8 @@ export type SyncHistoryRun = {
   skipped?: string | null;
   /** Sync Changes only (PROD-2986): customization rules where the registry and Sanity disagree. */
   rules_drift?: RulesDrift | null;
+  /** Sync Changes only (PROD-3006): records' parents where the registry and Sanity disagree. */
+  structure_drift?: RulesDrift | null;
   frames: SyncHistoryFrame[];
 };
 
