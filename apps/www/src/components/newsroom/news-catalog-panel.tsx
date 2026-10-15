@@ -90,7 +90,7 @@ export function NewsCatalogPanel({items}: NewsCatalogPanelProps) {
                     value={year}
                     onValueChange={(next) => setExtra('year', next)}
                 >
-                    <SelectTrigger id={YEAR_ID} className="w-32">
+                    <SelectTrigger id={YEAR_ID} className="w-32 font-medium">
                         {/* Explicit label so the server HTML is not blank before hydration. */}
                         <SelectValue>
                             {year === ALL ? 'All years' : year}

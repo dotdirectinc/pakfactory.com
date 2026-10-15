@@ -1,8 +1,13 @@
 import Link from 'next/link';
 
+import {cn} from '@pakfactory/ui/lib/utils';
+
 import {NewsThumbnail} from '@/components/newsroom/news-thumbnail';
 import {ArrowLink} from '@/components/ui/arrow-link';
 import type {NewsCard} from '@/lib/newsroom/types';
+
+/** Design's "Read more": semibold, tight chevron, primary (as the grid tile). */
+export const NEWS_LINK_WEIGHT = 'gap-1 font-semibold text-primary';
 
 /**
  * `/newsroom` list row (PROD-2913), per `2026-10-13_newsroom-design_2.html`:
@@ -16,7 +21,7 @@ export function NewsListItem({item}: {item: NewsCard}) {
             href={item.href}
             size="sm"
             srSuffix={item.title}
-            className={className}
+            className={cn(NEWS_LINK_WEIGHT, className)}
         >
             Read more
         </ArrowLink>

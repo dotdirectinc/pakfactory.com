@@ -5,6 +5,7 @@ import {
 } from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {NEWS_LINK_WEIGHT} from '@/components/newsroom/news-list-item';
 import {NewsThumbnail} from '@/components/newsroom/news-thumbnail';
 import {ArrowLink} from '@/components/ui/arrow-link';
 import {SectionHeading} from '@/components/ui/section-heading';
@@ -53,7 +54,12 @@ function RelatedNewsItem({item}: {item: NewsCard}) {
                         {item.title}
                     </Link>
                 </h3>
-                <ArrowLink href={item.href} size="sm" srSuffix={item.title}>
+                <ArrowLink
+                    href={item.href}
+                    size="sm"
+                    srSuffix={item.title}
+                    className={NEWS_LINK_WEIGHT}
+                >
                     Read more
                 </ArrowLink>
             </div>
@@ -108,7 +114,10 @@ export function PressReleasesRow({
                     ))}
                 </ul>
                 {cta ? (
-                    <ArrowLink href={cta.href} className="mt-8 self-center">
+                    <ArrowLink
+                        href={cta.href}
+                        className={cn('mt-8 self-center', NEWS_LINK_WEIGHT)}
+                    >
                         {cta.label}
                     </ArrowLink>
                 ) : null}
