@@ -1,5 +1,6 @@
 import { SpecFrameOverrides } from "@/components/spec/spec-frame-overrides";
 import { SpecEditSummary } from "@/components/spec/spec-edit-summary";
+import { SpecFrameImpactNow } from "@/components/spec/spec-frame-impact-now";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
@@ -91,6 +92,7 @@ export default async function SpecChangesetPage({
 
       {cs.state === "draft" ? (
         <>
+          {cs.source === "spec-edit" ? <SpecFrameImpactNow items={items} summary={cs.summary ?? {}} /> : null}
           {cs.source === "spec-edit" ? <SpecFrameOverrides changesetId={cs.id} /> : null}
           {resyncKind ? <SpecResyncButton kind={resyncKind} dataset={resyncDataset} /> : null}
           <SpecDecisionBar
