@@ -454,6 +454,11 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   impact: "Impact (the storefront's own rules, before and after)",
   checking: "Checking…",
   noProductChange: "No standard product's offer changes.",
+  /** Moves (PROD-3007): what the server says each does, and the codes it reissues. */
+  moves: "Moves",
+  movesNoOffer: "A product's line, styles and solutions are not part of the customization rules: these moves change no product's offer.",
+  codes: (n: number) => `${n} ${n === 1 ? "code is" : "codes are"} reissued under the new parent (the registry id never changes; the old code still finds the record):`,
+  documents: (n: number) => `${n} Sanity ${n === 1 ? "document is" : "documents are"} written on approval.`,
   totals: (t: { products: number; gained: number; lost: number }) =>
     `${t.products} ${t.products === 1 ? "product changes" : "products change"}: +${t.gained} offered, −${t.lost} no longer offered.`,
   more: (n: number) => `… and ${n} more`,
@@ -548,4 +553,33 @@ export const ADMIN_SPEC_OVERRIDE_COPY = {
   now: "In Studio now",
   proposedOver: "When proposed",
   unreachable: "Could not check Studio for changes since this was proposed.",
+} as const;
+
+/** A record's parents, and moving it (PROD-3007, ADR-026). */
+export const ADMIN_SPEC_PARENTS_COPY = {
+  title: "Parents",
+  change: "Change parents",
+  done: "Done",
+  loading: "Loading parents…",
+  unreachable: "The parents could not be loaded.",
+  hint: "Moves are reviewed like rule edits: they go in the same pending set and frame. Moving a record moves what is under it.",
+  readOnly: "Created in Studio with its parents; afterwards they change here, reviewed.",
+  line: "Line",
+  styles: "Styles",
+  base: "Based on",
+  solutions: "Solutions",
+  type: "Type",
+  category: "Category",
+  primary: "primary",
+  makePrimary: "Make primary",
+  remove: "Remove",
+  addStyle: "Add a style of this line…",
+  addSolution: "Add a solution…",
+  pickLine: "Move to another line…",
+  pickBase: "Base it on another standard product…",
+  pickType: "Move to another type…",
+  pickCategory: "Move to another category…",
+  pending: "Pending",
+  noStyle: "No style in this line yet — add one.",
+  none: "—",
 } as const;

@@ -226,6 +226,7 @@ export function ImpactBox() {
         <>
           {p.errors.map((e) => <p key={e} role="alert" className="text-destructive">✕ {e}</p>)}
           <NoEffectBox />
+          <MovesBox />
           <p>{p.totals.products ? COPY.totals(p.totals) : COPY.noProductChange}</p>
           {p.products.length ? (
             <ul className="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-md border border-border p-2 text-xs">
@@ -247,6 +248,30 @@ export function ImpactBox() {
           ) : null}
         </>
       )}
+    </div>
+  );
+}
+
+/** What the moves do, as the server plans them (PROD-3007): what moves with each, and the codes it reissues. */
+function MovesBox() {
+  const s = useRuleEditSession()!;
+  const st = s.preview?.structure;
+  if (!st) return null;
+  const onlyStructure = s.edits.every((e) => e.kind === "placement" || e.kind === "styleLine" || e.kind === "solutions");
+  return (
+    <div className="flex flex-col gap-1.5 rounded-md border border-border p-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{COPY.moves}</span>
+      <ul className="flex flex-col gap-0.5">{st.sentences.map((x) => <li key={x}>{x}</li>)}</ul>
+      {st.codes.length ? (
+        <>
+          <p className="text-xs text-muted-foreground">{COPY.codes(st.codes.length)}</p>
+          <ul className="flex max-h-32 flex-col gap-0.5 overflow-y-auto text-xs">
+            {st.codes.map((c) => <li key={c.id}><span className="font-medium">{c.name}</span> <span className="font-mono">{c.code}</span></li>)}
+          </ul>
+        </>
+      ) : null}
+      <p className="text-xs text-muted-foreground">{COPY.documents(st.documents)}</p>
+      {onlyStructure ? <p className="text-xs text-muted-foreground">{COPY.movesNoOffer}</p> : null}
     </div>
   );
 }

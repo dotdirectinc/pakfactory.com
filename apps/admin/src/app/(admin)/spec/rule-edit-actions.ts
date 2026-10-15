@@ -5,7 +5,7 @@ import { checkRuleEdits, fetchSpecMe, getChangesetDetail, listAllChangesets, lis
 import { loadRulesSource, type Loaded, type RulesSource } from "@/lib/spec/rules-source";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
 import { computeImpact, focusAfter, isMove, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
-import { getRuleEditorData, type RuleEditorData } from "@/lib/spec/rule-editor-data";
+import { getRuleEditorData, type Choice, type RuleEditorData } from "@/lib/spec/rule-editor-data";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import { typeidToUuid } from "@/lib/spec/typeid";
 import { pendingRulesOf, type PendingRules } from "@/lib/spec/pending-rules";
@@ -227,4 +227,58 @@ export async function loadPendingRules(id: string): Promise<Loaded<PendingRules>
     ok: true,
     data: pendingRulesOf(id, details.flatMap((d) => (d.ok ? [{ id: d.data.id, created_at: d.data.created_at, items: d.data.items }] : []))),
   };
+}
+
+/** A record's parents and what they can become (PROD-3007), from the same read as the rules. */
+export type ParentsData = {
+  canEdit: boolean;
+  kind: "standard" | "inspiration" | "style" | "option" | "type" | "none";
+  current: { lineId?: string; styleIds?: string[]; baseId?: string; solutionIds?: string[]; typeId?: string; categoryId?: string };
+  choices: {
+    lines: Choice[];
+    styles: (Choice & { lineId?: string })[];
+    solutions: Choice[];
+    types: (Choice & { categoryId?: string })[];
+    categories: Choice[];
+    /** Standard products: what an inspiration product can be based on. */
+    bases: Choice[];
+  };
+};
+
+export async function loadParents(level: string, id: string): Promise<Loaded<ParentsData>> {
+  const [res, allowed] = await Promise.all([loadRulesSource(), canEdit()]);
+  if (!res.ok) return res;
+  const src = res.data;
+  const choice = (group: string) => (x: { _id: string; title?: string }): Choice => ({ id: x._id, title: x.title ?? x._id, group });
+  const catName = new Map(src.categories.map((c) => [c._id, c.title ?? c._id]));
+  const lineName = new Map(src.lines.map((l) => [l._id, l.title ?? l._id]));
+  const choices: ParentsData["choices"] = {
+    lines: src.lines.map(choice("Line")),
+    styles: src.styles.map((s) => ({ ...choice(lineName.get(s.lineId ?? "") ?? "Style")(s), lineId: s.lineId })),
+    solutions: src.solutions.map(choice("Solution")),
+    types: src.catalog.types.map((t) => ({ ...choice(catName.get(t.categoryId ?? "") ?? "Type")(t), categoryId: t.categoryId })),
+    categories: src.categories.map(choice("Category")),
+    bases: src.products.map(choice("Standard product")),
+  };
+  const out = (kind: ParentsData["kind"], current: ParentsData["current"] = {}): Loaded<ParentsData> => ({ ok: true, data: { canEdit: allowed, kind, current, choices } });
+  if (level === "product" || level === "inspiration") {
+    const p = src.products.find((x) => x._id === id);
+    if (p) return out("standard", { lineId: p.lineId, styleIds: p.styleIds, solutionIds: p.solutionIds });
+    const i = src.inspirations.find((x) => x._id === id);
+    if (i) return out("inspiration", { baseId: i.basedOn, solutionIds: i.solutionIds ?? [] });
+    return out("none");
+  }
+  if (level === "productStyle") {
+    const s = src.styles.find((x) => x._id === id);
+    return s ? out("style", { lineId: s.lineId }) : out("none");
+  }
+  if (level === "customizationOption") {
+    const o = src.catalog.options.find((x) => x._id === id);
+    return o ? out("option", { typeId: o.typeId }) : out("none");
+  }
+  if (level === "customizationType") {
+    const t = src.catalog.types.find((x) => x._id === id);
+    return t ? out("type", { categoryId: t.categoryId }) : out("none");
+  }
+  return out("none");
 }

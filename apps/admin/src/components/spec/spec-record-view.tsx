@@ -8,6 +8,8 @@ import type { RecordGroup, RecordItem } from "@/lib/spec/record-sections";
 import { isTableKey, type TableKey } from "@/lib/spec/catalog-table-model";
 import { SpecRegistryId } from "@/components/spec/spec-registry-id";
 import { SpecRuleEditor } from "@/components/spec/spec-rule-editor";
+import { SpecParentsEditor } from "@/components/spec/spec-parents-editor";
+import { WithRuleEditSession } from "@/components/spec/rule-edit-session";
 import { ADMIN_SPEC_RECORD_COPY as COPY } from "@/lib/copy/spec";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
@@ -45,6 +47,7 @@ export function SpecRecordView({
   heading = "h1",
   onSelect,
   rulesEditor = true,
+  onEditParents,
 }: {
   record: CatalogRecord;
   heading?: "h1" | "h2";
@@ -55,13 +58,16 @@ export function SpecRecordView({
    * record's full page keeps it — the other way in.
    */
   rulesEditor?: boolean;
+  /** The Spec Map's way into moving records (its structure mode); the page's own session otherwise. */
+  onEditParents?: () => void;
 }) {
   const Title = heading;
   const Section = heading === "h1" ? "h2" : "h3";
 
 
+  // One pending set for the whole record (PROD-3007): its rule edits and its moves share a tray and a frame.
   return (
-    <>
+    <WithRuleEditSession>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start">
         {r.images[0] ? (
           <img src={`${r.images[0]}?w=240&h=240&fit=crop&auto=format`} alt="" className="size-28 shrink-0 rounded-md border border-border object-cover" />
@@ -82,6 +88,7 @@ export function SpecRecordView({
       </header>
 
       {rulesEditor ? <SpecRuleEditor level={r.key} id={r.id} title={r.title} /> : null}
+      <SpecParentsEditor level={r.key} id={r.id} footer={rulesEditor} onEdit={onEditParents} />
 
       {r.images.length > 1 ? (
         <section className="flex flex-col gap-2">
@@ -143,7 +150,7 @@ export function SpecRecordView({
           </dl>
         </section>
       ))}
-    </>
+    </WithRuleEditSession>
   );
 }
 
