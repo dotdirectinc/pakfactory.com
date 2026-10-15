@@ -90,3 +90,15 @@ test("a line whose styleOrder names only deleted styles still renders its grid",
 test("a line with no styles at all returns an empty grid, not null", async () => {
   assert.deepEqual(await gridFor([line({ styleOrder: [ref("DELETED", "k1")] })]), []);
 });
+
+// PROD-3098. A style moved to another line (Studio or an approved Spec System
+// move) but still pinned here must not stay on this grid: its card would link to
+// /products/line/<style>, which 404s once the style lives under the other line.
+test("a pinned style that has moved to another line is dropped from this grid", async () => {
+  const dataset = [
+    line({ styleOrder: [ref("m", "k1"), ref("a", "k2")] }),
+    ...STYLES,
+    style("m", "Moved", { productLine: { _ref: "OTHER" } }),
+  ];
+  assert.deepEqual(await gridFor(dataset), ["Alpha", "Beta", "Gamma"]);
+});

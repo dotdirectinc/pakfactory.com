@@ -192,7 +192,7 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   // Curated order first, then the rest alphabetically — see SOLUTION_STYLES note.
   "relatedSolutionStyles": (
     coalesce(
-      (styleOrder[]->)[defined(_id) && ${SOLUTION_STYLE_ACTIVE} && !(_id in path("drafts.**"))]${SOLUTION_STYLE_INSPIRATION_CARD},
+      (styleOrder[]->)[defined(_id) && solution._ref == ^._id && ${SOLUTION_STYLE_ACTIVE} && !(_id in path("drafts.**"))]${SOLUTION_STYLE_INSPIRATION_CARD},
       []
     )
     + *[
@@ -468,7 +468,7 @@ export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
 ][0]{
   "styles": (
     coalesce(
-      (styleOrder[]->)[defined(_id) && ${SOLUTION_STYLE_ACTIVE} && defined(slug.current)]${SOLUTION_STYLE_CARD},
+      (styleOrder[]->)[defined(_id) && solution._ref == ^._id && ${SOLUTION_STYLE_ACTIVE} && defined(slug.current)]${SOLUTION_STYLE_CARD},
       []
     )
     + *[
@@ -502,7 +502,7 @@ export const SOLUTION_STYLES_FOR_BREADCRUMB_QUERY = /* groq */ `*[
   _id,
   "styles": (
     coalesce(
-      (styleOrder[]->)[defined(_id) && ${SOLUTION_STYLE_ACTIVE} && defined(slug.current)]${SOLUTION_STYLE_BREADCRUMB_PROJ},
+      (styleOrder[]->)[defined(_id) && solution._ref == ^._id && ${SOLUTION_STYLE_ACTIVE} && defined(slug.current)]${SOLUTION_STYLE_BREADCRUMB_PROJ},
       []
     )
     + *[

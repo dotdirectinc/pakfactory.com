@@ -642,11 +642,13 @@ const LINE_STYLE_CARD_PROJ = /* groq */ `{
  * References in `styleOrder` are WEAK, so a deleted style dereferences to null
  * rather than blocking the delete; `defined(_id)` drops it before projection.
  * A pinned style that is no longer listed (discontinued, not active) is filtered by the
- * same LINE_STYLE_LISTED the tail uses, so the two tiers agree.
+ * same LINE_STYLE_LISTED the tail uses, so the two tiers agree. So is one that has moved
+ * to another line (PROD-3098): `styleOrder` is never a gate, and a stale entry would list
+ * the style under both lines, its card here linking to a 404.
  */
 const LINE_STYLES = /* groq */ `(
     coalesce(
-      (styleOrder[]->)[defined(_id) && ${LINE_STYLE_LISTED}]${LINE_STYLE_CARD_PROJ},
+      (styleOrder[]->)[defined(_id) && productLine._ref == ^._id && ${LINE_STYLE_LISTED}]${LINE_STYLE_CARD_PROJ},
       []
     )
     + *[
