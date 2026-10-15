@@ -3,6 +3,7 @@ import 'server-only';
 import {cache} from 'react';
 import {
     LATEST_PRESS_RELEASES_QUERY,
+    PRESS_RELEASE_OTHERS_COUNT_QUERY,
     NEWSROOM_CATALOG_PAGE_QUERY,
     NEWSROOM_PRESS_SETTINGS_QUERY,
     PRESS_RELEASE_BY_SLUG_QUERY,
@@ -48,6 +49,13 @@ const CACHE_OPTIONS = {
     tags: [WWW_NEWSROOM_CACHE_TAG],
 };
 
+/**
+ * Bump when the SHAPE of a cached result changes. The data cache stores mapped
+ * results and survives deploys, so without a new key a deploy reads the old
+ * shape until it revalidates (v2: `hasMore` on press release rows).
+ */
+const CACHE_VERSION = 'v2';
+
 /** Studio default for a new row (`rowSectionFields`). */
 const DEFAULT_ROW_COUNT = 3;
 
@@ -76,7 +84,8 @@ function isPressReleasesRow(
  * `pressReleasesRow` has no derive source (PROD-2909 handoff, "the derive
  * contract"): empty `curatedItems` means the latest `count` releases,
  * excluding the one being read. Pins win; the current release is never listed
- * as related to itself, even when pinned.
+ * as related to itself, even when pinned. `hasMore` (more releases exist than
+ * the row lists) gates the "See all announcements" link.
  */
 async function fillPressReleaseRows(
     sections: PageSectionDoc[],
@@ -94,6 +103,15 @@ async function fillPressReleaseRows(
         );
         return latest ?? [];
     };
+    let others: number | null = null;
+    const countOthers = async () => {
+        others ??= await fetchDraftAware<number>(
+            'release count',
+            PRESS_RELEASE_OTHERS_COUNT_QUERY,
+            {excludeId},
+        );
+        return others ?? 0;
+    };
 
     return Promise.all(
         sections.map(async (section) => {
@@ -109,7 +127,8 @@ async function fillPressReleaseRows(
                 pinned.length > 0
                     ? pinned
                     : (await loadLatest()).slice(0, count);
-            return {...section, items};
+            const hasMore = (await countOthers()) > items.length;
+            return {...section, items, hasMore};
         }),
     );
 }
@@ -147,7 +166,7 @@ export const getNewsroomCatalog = cache(
             fetchNewsroomCatalog,
             sanityCache(
                 fetchNewsroomCatalog,
-                [WWW_NEWSROOM_CACHE_TAG, 'catalog'],
+                [WWW_NEWSROOM_CACHE_TAG, 'catalog', CACHE_VERSION],
                 CACHE_OPTIONS,
             ),
         ),
@@ -179,7 +198,7 @@ export const getNewsItemBySlug = cache(
             () =>
                 sanityCache(
                     fetchNewsItem,
-                    [WWW_NEWSROOM_CACHE_TAG, 'item'],
+                    [WWW_NEWSROOM_CACHE_TAG, 'item', CACHE_VERSION],
                     CACHE_OPTIONS,
                 )(normalized),
         );
@@ -236,7 +255,7 @@ export const getPressBoilerplate = cache(
             fetchPressBoilerplate,
             sanityCache(
                 fetchPressBoilerplate,
-                [WWW_NEWSROOM_CACHE_TAG, 'boilerplate'],
+                [WWW_NEWSROOM_CACHE_TAG, 'boilerplate', CACHE_VERSION],
                 CACHE_OPTIONS,
             ),
         ),

@@ -27,7 +27,6 @@ export function NewsroomCatalogPageChrome() {
             <PageHeadingSection
                 title={NEWSROOM_HEADING}
                 description={NEWSROOM_INTRO}
-                align="center"
                 settle
             />
         </>
@@ -36,30 +35,45 @@ export function NewsroomCatalogPageChrome() {
 
 function NewsListRowSkeleton() {
     return (
-        <div className="grid grid-cols-1 gap-2 border-b border-border py-6.5 md:grid-cols-[9.5rem_minmax(0,1fr)_auto] md:gap-7">
-            <Skeleton className="h-4 w-28" />
-            <div className="flex flex-col gap-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
+        <div className="grid gap-2 border-b border-dashed border-border py-8 md:grid-cols-[10rem_minmax(0,1fr)_auto] md:gap-8">
+            <Skeleton className="hidden h-4 w-28 md:block" />
+            <div className="flex items-start gap-4 sm:gap-6">
+                <Skeleton className="aspect-[4/3] w-24 shrink-0 rounded-xl sm:w-32" />
+                <div className="flex flex-1 flex-col gap-2">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                </div>
             </div>
-            <Skeleton className="h-4 w-20" />
+            <Skeleton className="hidden h-4 w-20 md:block" />
         </div>
     );
 }
 
-/** List skeleton under live chrome. */
+/** Tab strip + tab heading + list skeleton under live chrome (same layout as the panel). */
 export function NewsroomCatalogPanelLoading({count = 4}: {count?: number} = {}) {
     return (
-        <PageDielineSection innerClassName="pb-16 pt-8 md:pb-24 md:pt-12">
-            <div aria-busy="true" aria-live="polite" className="mx-auto w-full max-w-5xl">
+        <PageDielineSection
+            paddingBlock="none"
+            innerClassName="pb-16 sm:pb-20 lg:pb-24"
+        >
+            <div aria-busy="true" aria-live="polite">
                 <span className="sr-only">Loading announcements</span>
-                <div className="flex items-end justify-between gap-6 border-b border-border pb-2">
-                    <Skeleton className="h-8 w-32" />
+                <div className="-mx-layout-gutter-inner flex items-center justify-between border-b border-dashed border-border px-layout-gutter-inner py-4">
+                    <Skeleton className="h-5 w-36" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+                <div className="mb-8 mt-12 flex flex-wrap items-end justify-between gap-4">
+                    <div className="flex flex-col gap-3">
+                        <Skeleton className="h-10 w-64" />
+                        <Skeleton className="h-5 w-80 max-w-full" />
+                    </div>
                     <Skeleton className="h-9 w-40" />
                 </div>
-                {Array.from({length: count}, (_, index) => (
-                    <NewsListRowSkeleton key={index} />
-                ))}
+                <div className="border-t border-dashed border-border">
+                    {Array.from({length: count}, (_, index) => (
+                        <NewsListRowSkeleton key={index} />
+                    ))}
+                </div>
             </div>
         </PageDielineSection>
     );

@@ -12,6 +12,33 @@ import {
     type SectionTheme,
 } from '@/lib/ui/section-theme';
 
+/** Plain email address in body copy, e.g. press@pakfactory.com (not a trailing period). */
+const EMAIL_PATTERN = /([\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,})/gi;
+
+/**
+ * Body copy with each email address as an underlined `mailto:` link — the
+ * media-inquiries band reads "…, email press@pakfactory.com" (newsroom design).
+ * `body` stays a plain string in Studio; no rich text needed for one link.
+ */
+function bodyWithEmailLinks(body: string, inverse: boolean) {
+    return body.split(EMAIL_PATTERN).map((part, index) =>
+        index % 2 === 1 ? (
+            <a
+                key={index}
+                href={`mailto:${part}`}
+                className={cn(
+                    'font-medium underline underline-offset-4',
+                    inverse ? 'text-background' : 'text-foreground',
+                )}
+            >
+                {part}
+            </a>
+        ) : (
+            part
+        ),
+    );
+}
+
 /**
  * Former footer collaborate band as a page section. Studio CTAs → General
  * controls theme (colors only), align, paddingBlock, dieline borders, and
@@ -91,7 +118,7 @@ export function GeneralCta({
                                     : 'text-muted-foreground',
                             )}
                         >
-                            {body}
+                            {bodyWithEmailLinks(body, inverse)}
                         </p>
                     ) : null}
                     <Button

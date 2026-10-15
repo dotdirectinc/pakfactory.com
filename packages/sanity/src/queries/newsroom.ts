@@ -109,6 +109,15 @@ export const LATEST_PRESS_RELEASES_QUERY = /* groq */ `*[
   ${PRESS_RELEASE_LIVE} && _id != $excludeId
 ] | order(publishedAt desc)[0...${LATEST_PRESS_RELEASES_MAX}] ${PRESS_RELEASE_CARD_FIELDS}`
 
+/**
+ * How many live releases exist besides the one being read (`$excludeId`) — a
+ * `pressReleasesRow` shows "See all announcements" only when this is more than
+ * it lists.
+ */
+export const PRESS_RELEASE_OTHERS_COUNT_QUERY = /* groq */ `count(*[
+  ${PRESS_RELEASE_LIVE} && _id != $excludeId
+])`
+
 /** Slugs for `generateStaticParams`. */
 export const PRESS_RELEASE_SLUGS_QUERY = /* groq */ `*[
   ${PRESS_RELEASE_LIVE}

@@ -86,7 +86,7 @@ describe('mapNewsItem (PROD-2918)', () => {
         assert.equal(item.lastModifiedLabel, null);
     });
 
-    it('maps a video hero to a link-out with a thumbnail', () => {
+    it('maps a video hero to an inline player with a poster', () => {
         const item = mapNewsItem({
             ...card(),
             heroMedia: {

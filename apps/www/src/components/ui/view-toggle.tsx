@@ -32,7 +32,7 @@ export function ViewToggle({
         <div
             role="group"
             aria-label={ariaLabel}
-            className={cn('inline-flex items-center gap-1', className)}
+            className={cn('inline-flex items-center sm:gap-1', className)}
         >
             {OPTIONS.map((option) => {
                 const active = option.value === value;
@@ -47,9 +47,10 @@ export function ViewToggle({
                         title={option.label}
                         onClick={() => onValueChange(option.value)}
                         className={cn(
+                            'size-8 sm:size-9 hover:bg-transparent',
                             active
-                                ? 'bg-muted text-foreground'
-                                : 'text-muted-foreground',
+                                ? 'text-foreground'
+                                : 'text-muted-foreground/60 hover:text-foreground',
                         )}
                     >
                         <Icon icon={option.icon} size="md" />
