@@ -113,7 +113,7 @@ async function fetchTable(key: TableKey): Promise<Loaded<CatalogTable>> {
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
   const spec = SPECS[key];
-  const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });
+  const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: false, perspective: "published" }); // not the CDN: it lags a write, and the refill after an approved move would cache the old record (2026-10-15)
   const image = spec.image ? `, "_image": ${spec.image}` : "";
   try {
     const read =

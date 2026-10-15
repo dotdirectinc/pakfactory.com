@@ -185,7 +185,7 @@ export function buildSpecMap(raw: Raw, dataset: string): SpecMapData {
 export const getSpecMap = cachedSpec("spec-map-v5" /* v5: defined-level arrows; Properties columns + `stated` (2026-10-14) */, async (): Promise<Loaded<SpecMapData>> => {
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
-  const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });
+  const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: false, perspective: "published" }); // not the CDN: it lags a write, and the refill after an approved move would cache the old record (2026-10-15)
   try {
     const raw = await client.fetch<Raw>(MAP_QUERY, {}, { cache: "no-store" });
     return { ok: true, data: buildSpecMap(raw, RULES_DATASET) };

@@ -78,7 +78,7 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
   const spec = SPECS[key];
-  const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });
+  const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: false, perspective: "published" }); // not the CDN: it lags a write, and the refill after an approved move would cache the old record (2026-10-15)
   try {
     const doc = await client.fetch<(Doc & { _images?: (string | null)[] }) | null>(
       `*[_id == $id && _type == $type && ${PUBLISHED}][0]{
