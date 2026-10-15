@@ -43,7 +43,8 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "product", "productStyle", "customizationCategory", "customizationType",
  *     "productCatalogPage", "productStylePage", "productDetailPage", "customizationCatalogPage", "customizationCompatibilityPage", "customizationDetailPage",
  *     "pressRelease", "newsroomCatalogPage", "newsroomDetailPage",
- *     "faq", "websiteNavigation", "settings"
+ *     "faq", "websiteNavigation", "settings",
+ *     "property", "propertyValue"
  *   ]
  *
  * Case studies: the listing always revalidates. A slugged `caseStudy` edit
@@ -90,6 +91,13 @@ const CATALOG_CUSTOMIZATION_TYPES = new Set([
   "customizationCategory",
   "customizationType",
 ]);
+
+/**
+ * Properties and their values (PROD-3098): product and option queries dereference
+ * `property->` for the facts shown on product, line and customization pages, so an
+ * edit reaches both catalogs. Without this they waited for the 300 s cache.
+ */
+const CATALOG_PROPERTY_TYPES = new Set(["property", "propertyValue"]);
 
 /** Newsroom content + its two layout documents (PROD-2909). */
 const NEWSROOM_TYPES = new Set([
@@ -179,10 +187,14 @@ export async function POST(request: Request) {
   // productLinePage / productDetailPage edits reorder every LP/PDP that references the template.
   // A solution's status decides whether an inspiration product is visible at all
   // (rule 1) and whether its breadcrumb links, so solution edits reach products too.
+  // So do solution style edits: an inspiration product's breadcrumb names its
+  // solution style and is cached with the product (PROD-3098).
   const touchesProducts =
     !type ||
     CATALOG_PRODUCT_TYPES.has(type) ||
+    CATALOG_PROPERTY_TYPES.has(type) ||
     type === "solution" ||
+    type === "solutionStyle" ||
     type === "customizationOption" ||
     type === FAQ_TYPE ||
     type === "productCatalogPage" ||
@@ -208,6 +220,7 @@ export async function POST(request: Request) {
   const touchesCustomizations =
     !type ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    CATALOG_PROPERTY_TYPES.has(type) ||
     type === FAQ_TYPE ||
     type === "customizationCatalogPage" ||
     type === "customizationCompatibilityPage" ||
@@ -387,6 +400,7 @@ export async function POST(request: Request) {
     CASE_STUDY_TYPES.has(type) ||
     CATALOG_PRODUCT_TYPES.has(type) ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    CATALOG_PROPERTY_TYPES.has(type) ||
     type === "solution" ||
     type === "solutionIndustryPage" ||
     type === "productLinePage" ||

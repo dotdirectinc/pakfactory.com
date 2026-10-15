@@ -7,16 +7,18 @@ import {
   type RedirectRuleset,
   type RedirectRow,
 } from "@pakfactory/redirects";
+import { isWwwRedirect } from "@/lib/redirect-surfaces";
 
 /**
  * CMS-redirect proxy for the www app (Next 16's renamed middleware — PROD-2157
- * Phase 3). Resolves Sanity `redirect` docs for **case-study** paths before any
- * route matches, so a renamed case study's old `/case-studies/{slug}` keeps
- * resolving (the `caseStudy` publish action auto-creates the rule on slug change).
+ * Phase 3). Resolves Sanity `redirect` docs for **case-study** and **catalog**
+ * paths before any route matches, so a renamed case study's old
+ * `/case-studies/{slug}` keeps resolving (the `caseStudy` publish action
+ * auto-creates the rule on slug change), and so does a style or option whose URL
+ * a structure move changed (PROD-3098).
  *
- * Scope: only the `/case-studies` surface reaches this app via CloudFront, and the
- * matcher + `surfacePrefix` below keep resolution to redirects whose `from` starts
- * with `/case-studies`. That's the correct per-surface filter — a redirect's owning
+ * Scope: `isWwwRedirect` below keeps resolution to redirects whose `from` is on a
+ * surface this app serves. That's the correct per-surface filter — a redirect's owning
  * app is its `from` path prefix, NOT its `channel` (which is target-oriented: a
  * blog→case-studies redirect is `channel: "website"` but has a `/blog/...` from and
  * belongs to the blog proxy). Cross-app targets (`to` on another surface) are
@@ -59,9 +61,6 @@ const CUSTOM_ORIGIN_HOST = "origin.case-studies.pakfactory.com";
  */
 const ORIGIN_PROXY_SECRET = process.env.WWW_ORIGIN_PROXY_SECRET || "";
 
-// The case-study surface owned by this app. Only redirects whose `from` starts
-// with this prefix are compiled (see `surfacePrefix` in @pakfactory/redirects).
-const SURFACE_PREFIX = "/case-studies";
 
 const REDIRECTS_QUERY =
   `*[_type == "redirect" && isActive == true && defined(from) && (defined(to) || behaviour == "gone")]` +
@@ -83,8 +82,8 @@ async function getRuleset(): Promise<RedirectRuleset> {
       READ_TOKEN ? { headers: { Authorization: `Bearer ${READ_TOKEN}` } } : {},
     );
     const rows = ((await res.json())?.result ?? []) as RedirectRow[];
-    // No basePath on www; scope to the case-study surface via surfacePrefix.
-    const ruleset = buildRuleset(rows, "", SURFACE_PREFIX);
+    // No basePath on www; scope to this app's surfaces (isWwwRedirect) first.
+    const ruleset = buildRuleset(rows.filter((r) => isWwwRedirect(String(r?.from ?? ""))), "");
     cache = { ruleset, at: Date.now() };
     return ruleset;
   } catch {
