@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { checkRuleEdits, fetchSpecMe, getChangesetDetail, listAllChangesets, listDraftChangesets, submitRuleEdits, type RegistryMove, type RegistryRuleEdit, type RuleEditResult } from "@/lib/spec/registry-api";
 import { loadRulesSource, type Loaded, type RulesSource } from "@/lib/spec/rules-source";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
-import { computeImpact, focusAfter, isMove, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
+import { computeImpact, focusAfter, isMove, type MoveDraft, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
 import { getRuleEditorData, type Choice, type RuleEditorData } from "@/lib/spec/rule-editor-data";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import { typeidToUuid } from "@/lib/spec/typeid";
@@ -232,7 +232,7 @@ export async function loadPendingRules(id: string): Promise<Loaded<PendingRules>
 /** A record's parents and what they can become (PROD-3007), from the same read as the rules. */
 export type ParentsData = {
   canEdit: boolean;
-  kind: "standard" | "inspiration" | "style" | "option" | "type" | "none";
+  kind: "standard" | "inspiration" | "style" | "option" | "type" | "line" | "category" | "solution" | "none";
   current: { lineId?: string; styleIds?: string[]; baseId?: string; solutionIds?: string[]; typeId?: string; categoryId?: string };
   choices: {
     lines: Choice[];
@@ -243,6 +243,11 @@ export type ParentsData = {
     /** Standard products: what an inspiration product can be based on. */
     bases: Choice[];
   };
+  /**
+   * The records under this one, and the ones that could be moved under it — each with the move that
+   * would do it (the same move as dropping it on this card on the Map). None for a product or an option.
+   */
+  children: { level: string; label: string; items: Choice[]; add: (Choice & { move: MoveDraft })[] } | null;
 };
 
 export async function loadParents(level: string, id: string): Promise<Loaded<ParentsData>> {
@@ -260,7 +265,9 @@ export async function loadParents(level: string, id: string): Promise<Loaded<Par
     categories: src.categories.map(choice("Category")),
     bases: src.products.map(choice("Standard product")),
   };
-  const out = (kind: ParentsData["kind"], current: ParentsData["current"] = {}): Loaded<ParentsData> => ({ ok: true, data: { canEdit: allowed, kind, current, choices } });
+  const out = (kind: ParentsData["kind"], current: ParentsData["current"] = {}, children: ParentsData["children"] = null): Loaded<ParentsData> =>
+    ({ ok: true, data: { canEdit: allowed, kind, current, choices, children } });
+  const lineOf = new Map(src.styles.map((x) => [x._id, x.lineId]));
   if (level === "product" || level === "inspiration") {
     const p = src.products.find((x) => x._id === id);
     if (p) return out("standard", { lineId: p.lineId, styleIds: p.styleIds, solutionIds: p.solutionIds });
@@ -270,7 +277,41 @@ export async function loadParents(level: string, id: string): Promise<Loaded<Par
   }
   if (level === "productStyle") {
     const s = src.styles.find((x) => x._id === id);
-    return s ? out("style", { lineId: s.lineId }) : out("none");
+    if (!s) return out("none");
+    // A product moved under this style takes it as its primary style (as a drop on the Map does).
+    const products = src.products.filter((p) => p.styleIds.includes(id));
+    return out("style", { lineId: s.lineId }, {
+      level: "product", label: "Products",
+      items: products.map(choice("Standard product")),
+      add: src.products.filter((p) => !p.styleIds.includes(id)).map((p) => ({
+        ...choice(lineName.get(p.lineId ?? "") ?? "Standard product")(p),
+        move: { kind: "placement", productId: p._id, lineId: s.lineId ?? "", styleIds: [id, ...p.styleIds.filter((x) => x !== id && lineOf.get(x) === s.lineId)] },
+      })),
+    });
+  }
+  if (level === "productLine") {
+    const styles = src.styles.filter((x) => x.lineId === id);
+    return out("line", {}, {
+      level: "productStyle", label: "Styles",
+      items: styles.map(choice("Style")),
+      add: src.styles.filter((x) => x.lineId !== id).map((x) => ({ ...choice(lineName.get(x.lineId ?? "") ?? "Style")(x), move: { kind: "styleLine", styleId: x._id, lineId: id } })),
+    });
+  }
+  if (level === "customizationCategory") {
+    return out("category", {}, {
+      level: "customizationType", label: "Types",
+      items: src.catalog.types.filter((t) => t.categoryId === id).map(choice("Type")),
+      add: src.catalog.types.filter((t) => t.categoryId !== id).map((t) => ({ ...choice(catName.get(t.categoryId ?? "") ?? "Type")(t), move: { kind: "typeCategory", typeId: t._id, categoryId: id } })),
+    });
+  }
+  if (level === "solution") {
+    const has = (i: { solutionIds?: string[] }) => (i.solutionIds ?? []).includes(id);
+    return out("solution", {}, {
+      level: "inspiration", label: "Inspiration products",
+      items: src.inspirations.filter(has).map(choice("Inspiration product")),
+      // Added as the primary solution, as a drop on the Map does; its other solutions stay.
+      add: src.inspirations.filter((i) => !has(i)).map((i) => ({ ...choice("Inspiration product")(i), move: { kind: "solutions", productId: i._id, solutionIds: [id, ...(i.solutionIds ?? [])] } })),
+    });
   }
   if (level === "customizationOption") {
     const o = src.catalog.options.find((x) => x._id === id);
@@ -278,7 +319,13 @@ export async function loadParents(level: string, id: string): Promise<Loaded<Par
   }
   if (level === "customizationType") {
     const t = src.catalog.types.find((x) => x._id === id);
-    return t ? out("type", { categoryId: t.categoryId }) : out("none");
+    if (!t) return out("none");
+    const typeName = new Map(src.catalog.types.map((x) => [x._id, x.title ?? x._id]));
+    return out("type", { categoryId: t.categoryId }, {
+      level: "customizationOption", label: "Options",
+      items: src.catalog.options.filter((o) => o.typeId === id).map(choice("Option")),
+      add: src.catalog.options.filter((o) => o.typeId !== id).map((o) => ({ ...choice(typeName.get(o.typeId) ?? "Option")(o), move: { kind: "optionType", optionId: o._id, typeId: id } })),
+    });
   }
   return out("none");
 }

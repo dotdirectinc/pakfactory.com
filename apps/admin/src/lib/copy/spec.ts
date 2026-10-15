@@ -286,6 +286,8 @@ export const ADMIN_SPEC_RECORD_COPY = {
   showOnMap: "Show on Map",
   showOnMapTitle: "Open the Spec Map on this record: its relations, and where its rules and parents are edited.",
   readOnly: (dataset: string) => `Read-only, from Sanity (${dataset}) — edit in Studio.`,
+  /** A record that can be moved (PROD-3007): its parents here, the rest in Studio. */
+  movable: (dataset: string) => `From Sanity (${dataset}). Its parents and children change here with Move; everything else in Studio.`,
   rulesEditable: (dataset: string) => `From Sanity (${dataset}). Customization rules are edited below; everything else in Studio.`,
   rulesOnMap: (dataset: string) =>
     `From Sanity (${dataset}). Edit its offers on the map (Edit rules above); its compatible options, type settings and the rest of its rules on its full page; everything else in Studio.`,
@@ -593,6 +595,20 @@ export const ADMIN_SPEC_OVERRIDE_COPY = {
 export const ADMIN_SPEC_PARENTS_COPY = {
   title: "Parents",
   change: "Change parents",
+  /** The record page's way in (Richard, 2026-10-15): like Edit rules, then dropdowns. */
+  move: "Move",
+  titleChildren: (label: string) => label,
+  movingHint: "Pick new parents from the dropdowns, or add a record under this one. The moves collect below; nothing changes until they are submitted and approved.",
+  pickLine2: "Choose a line",
+  pickStyle: "Choose a style",
+  pickBase2: "Choose a standard product",
+  pickSolution: "Choose a solution",
+  pickType2: "Choose a type",
+  pickCategory2: "Choose a category",
+  addChild: (label: string) => `Add to ${label.toLowerCase()}…`,
+  noChildren: "None yet.",
+  pendingChild: "pending",
+  andMore: (n: number) => `and ${n} more`,
   done: "Done",
   loading: "Loading parents…",
   unreachable: "The parents could not be loaded.",

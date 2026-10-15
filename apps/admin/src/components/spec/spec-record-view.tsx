@@ -24,6 +24,9 @@ function recordTarget(href: string): { key: TableKey; id: string } | null {
 
 type OnSelect = (key: TableKey, id: string) => void;
 
+/** Records with a Parents section (PROD-3007) besides the three with rules. */
+const MOVABLE = new Set<TableKey>(["inspiration", "productStyle", "productLine", "customizationCategory", "solution"]);
+
 /** A link to another record: a selection when the host handles one (the map), else navigation. */
 function RecordLink({ href, className, onSelect, children }: { href: string; className: string; onSelect?: OnSelect; children: React.ReactNode }) {
   const target = onSelect ? recordTarget(href) : null;
@@ -91,7 +94,7 @@ export function SpecRecordView({
               {COPY.rules} <ArrowUpRight className="size-4" />
             </Link>
           ) : null}
-          <p className="text-xs text-muted-foreground">{r.key === "product" || r.key === "customizationOption" || r.key === "customizationType" ? (rulesEditor ? COPY.rulesEditable(r.dataset) : COPY.rulesOnMap(r.dataset)) : COPY.readOnly(r.dataset)}</p>
+          <p className="text-xs text-muted-foreground">{r.key === "product" || r.key === "customizationOption" || r.key === "customizationType" ? (rulesEditor ? COPY.rulesEditable(r.dataset) : COPY.rulesOnMap(r.dataset)) : MOVABLE.has(r.key) ? COPY.movable(r.dataset) : COPY.readOnly(r.dataset)}</p>
         </div>
       </header>
 
