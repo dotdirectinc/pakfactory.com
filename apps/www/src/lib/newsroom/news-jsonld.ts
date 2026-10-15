@@ -23,10 +23,12 @@ function toIso(value: string | null | undefined): string | undefined {
     return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
+/** Null without a company name in Global Settings — no invented publisher. */
 function publisherNode(boilerplate: PressBoilerplate): {
     org: Record<string, unknown>;
     orgId: string;
-} {
+} | null {
+    if (!boilerplate.companyName) return null;
     const origin = getSiteUrl().replace(/\/+$/, '');
     const orgId = `${origin}#organization`;
     return {
@@ -44,6 +46,9 @@ function publisherNode(boilerplate: PressBoilerplate): {
  * `/newsroom/[slug]` graph: Organization + NewsArticle + BreadcrumbList.
  * NewsArticle, not BlogPosting — Google treats them differently (PROD-2909).
  * A release has no byline, so the Organization is author and publisher.
+ * Without a company name in Global Settings there is no publisher, and a
+ * NewsArticle requires one — so only the breadcrumb is emitted (no invented
+ * name).
  */
 export function buildNewsArticleJsonLd(
     item: NewsItem,
@@ -51,11 +56,17 @@ export function buildNewsArticleJsonLd(
     image: string | undefined,
 ): string {
     const pageUrl = item.seo.canonicalUrl || absoluteUrl(item.href);
-    const {org, orgId} = publisherNode(boilerplate);
+    const publisher = publisherNode(boilerplate);
+    const breadcrumbs = breadcrumbList([
+        {name: 'Home', url: absoluteUrl(WWW_ROUTES.home)},
+        {name: NEWSROOM_NAME, url: absoluteUrl(WWW_ROUTES.newsroom)},
+        {name: item.title, url: pageUrl},
+    ]);
+    if (!publisher) return serializeJsonLd(jsonLdGraph([breadcrumbs]));
 
     return serializeJsonLd(
         jsonLdGraph([
-            org,
+            publisher.org,
             newsArticle({
                 id: `${pageUrl}#article`,
                 url: pageUrl,
@@ -64,17 +75,13 @@ export function buildNewsArticleJsonLd(
                 datePublished: toIso(item.publishedAt),
                 dateModified: toIso(item.lastModified ?? item.publishedAt),
                 ...(image ? {image} : {}),
-                author: {'@id': orgId},
-                publisher: {'@id': orgId},
+                author: {'@id': publisher.orgId},
+                publisher: {'@id': publisher.orgId},
                 ...(item.categoryLabel
                     ? {articleSection: item.categoryLabel}
                     : {}),
             }),
-            breadcrumbList([
-                {name: 'Home', url: absoluteUrl(WWW_ROUTES.home)},
-                {name: NEWSROOM_NAME, url: absoluteUrl(WWW_ROUTES.newsroom)},
-                {name: item.title, url: pageUrl},
-            ]),
+            breadcrumbs,
         ]),
     );
 }

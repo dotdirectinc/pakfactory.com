@@ -154,7 +154,7 @@ export const settings = defineType({
             'The standard "About PakFactory" paragraph, around 60 words. Shown at the foot ' +
             'of every press release for journalists to quote, and used as the company ' +
             'description in structured data. Changing it changes it everywhere, including ' +
-            'on past releases.',
+            'on past releases. Leave blank to hide the "About" card on releases.',
         }),
         defineField({
           name: 'contact',
@@ -168,9 +168,9 @@ export const settings = defineType({
               title: 'Media enquiries email',
               type: 'string',
               description:
-                'The address for media enquiries, e.g. press@pakfactory.com. Shown on the ' +
-                'newsroom and at the foot of every release. Leave blank to fall back to the ' +
-                'general contact email.',
+                'The address for media enquiries, e.g. press@pakfactory.com. Shown in the ' +
+                '"Media contact" card at the foot of every release. Leave blank to hide that ' +
+                'card — there is no fallback to the general contact email.',
             }),
             defineField({ name: 'phone', title: 'Phone', type: 'string' }),
             defineField({ name: 'address', title: 'Address', type: 'text', rows: 2 }),

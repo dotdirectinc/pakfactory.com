@@ -91,7 +91,8 @@ export type NewsroomCatalog = {
 
 /** "About PakFactory" + media contact — Global Settings, never per release. */
 export type PressBoilerplate = {
-    companyName: string;
+    /** Null when Global Settings has no company name — nothing is invented. */
+    companyName: string | null;
     description: string | null;
     pressEmail: string | null;
     logoUrl: string | null;

@@ -52,15 +52,13 @@ const CACHE_OPTIONS = {
 /**
  * Bump when the SHAPE of a cached result changes. The data cache stores mapped
  * results and survives deploys, so without a new key a deploy reads the old
- * shape until it revalidates (v2: `hasMore` on press release rows).
+ * shape until it revalidates (v2: `hasMore` on press release rows; v3: press
+ * boilerplate without fallbacks).
  */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 
 /** Studio default for a new row (`rowSectionFields`). */
 const DEFAULT_ROW_COUNT = 3;
-
-/** Company name when Global Settings has no legal name. */
-const DEFAULT_COMPANY_NAME = 'PakFactory';
 
 async function fetchDraftAware<T>(
     label: string,
@@ -229,19 +227,20 @@ export async function listNewsSlugs(): Promise<string[]> {
 // ─── Boilerplate ──────────────────────────────────────────────────────────────
 
 async function fetchPressBoilerplate(): Promise<PressBoilerplate> {
-    const fallback: PressBoilerplate = {
-        companyName: DEFAULT_COMPANY_NAME,
+    // No hardcoded copy: whatever Global Settings leaves empty renders nothing.
+    const empty: PressBoilerplate = {
+        companyName: null,
         description: null,
         pressEmail: null,
         logoUrl: null,
     };
-    if (!isSanityConfigured()) return fallback;
+    if (!isSanityConfigured()) return empty;
     const doc = await fetchDraftAware<NewsroomPressSettingsDoc | null>(
         'press settings',
         NEWSROOM_PRESS_SETTINGS_QUERY,
     );
     return {
-        companyName: doc?.companyName?.trim() || DEFAULT_COMPANY_NAME,
+        companyName: doc?.companyName?.trim() || null,
         description: doc?.companyDescription?.trim() || null,
         pressEmail: doc?.pressEmail?.trim() || null,
         logoUrl: doc?.logoUrl?.trim() || null,
