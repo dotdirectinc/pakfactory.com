@@ -64,6 +64,7 @@
     "migrate:catalog-media-groups": "node scripts/migrate-catalog-media-groups.mjs",
     "migrate:inspiration-first-image-to-lifestyle": "node scripts/migrate-inspiration-first-image-to-lifestyle.mjs",
     "migrate:unset-values-per-item": "node scripts/migrate-unset-values-per-item.mjs",
+    "migrate:publish-draft-solution-styles": "node scripts/publish-draft-solution-styles-not-active.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
     "check:structure-types": "node scripts/check-structure-types.mjs",
     "unset:redirect-type": "node scripts/unset-redirect-type.mjs"
