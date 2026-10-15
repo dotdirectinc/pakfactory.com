@@ -7,6 +7,10 @@ import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {SelectionSummaryDisplay} from '@/components/customization-builder/ui/selection-summary-display';
+import {
+    CompatibilityPreselectDroppedNote,
+    type CompatibilityPreselectNotice,
+} from '@/components/product/compatibility-preselect';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {
     CustomizationOption,
@@ -26,6 +30,24 @@ import {
     type PropertySummariesByOption,
     type StepAnswer,
 } from '@/lib/customization-builder';
+
+/** Step keys for options listed in the compatibility preselect notice. */
+function preselectedStepKeys(
+    availableCustomizations: CustomizationOption[],
+    appliedLabels: string[] | undefined,
+): Set<BuilderStepKey> {
+    const keys = new Set<BuilderStepKey>();
+    if (!appliedLabels?.length) return keys;
+    const byLabel = new Map(
+        availableCustomizations.map((opt) => [opt.label.trim().toLowerCase(), opt]),
+    );
+    for (const label of appliedLabels) {
+        const opt = byLabel.get(label.trim().toLowerCase());
+        const category = opt?.category?.trim();
+        if (category) keys.add(category);
+    }
+    return keys;
+}
 
 const CustomizationBuilder = dynamic(
     () =>
@@ -51,6 +73,9 @@ type CustomizationEntryProps = {
      * "Change" row actions, and hides the specialist revert link.
      */
     preset?: boolean;
+    /** Compatibility engine → PDP preselect notice under the heading. */
+    compatibilityPreselect?: CompatibilityPreselectNotice | null;
+    onClearCompatibilityPreselect?: () => void;
 };
 
 type SummaryRowProps = {
@@ -59,6 +84,7 @@ type SummaryRowProps = {
     propertySummaries?: PropertySummariesByOption;
     onCustomize: () => void;
     rowActionLabel: string;
+    preselected?: boolean;
 };
 
 function SummaryRow({
@@ -67,6 +93,7 @@ function SummaryRow({
     propertySummaries,
     onCustomize,
     rowActionLabel,
+    preselected = false,
 }: SummaryRowProps) {
     const summaryText = summarizeAnswer(
         answer,
@@ -82,7 +109,14 @@ function SummaryRow({
             className="flex w-full cursor-pointer items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/50"
         >
             <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground">{label}</p>
+                <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm font-semibold text-foreground">
+                    <span>{label}</span>
+                    {preselected ? (
+                        <span className="text-xs font-medium text-muted-foreground">
+                            {REQUEST_COPY.preselectedLabel}
+                        </span>
+                    ) : null}
+                </p>
                 <div className="mt-0.5 text-xs text-muted-foreground">
                     {isUnset ? (
                         REQUEST_COPY.notSet
@@ -111,6 +145,7 @@ type SummaryGroupProps = {
     builderState: CustomizationBuilderState;
     onCustomize: (key: BuilderStepKey) => void;
     rowActionLabel: string;
+    preselectedKeys?: Set<BuilderStepKey>;
 };
 
 function SummaryGroup({
@@ -119,6 +154,7 @@ function SummaryGroup({
     builderState,
     onCustomize,
     rowActionLabel,
+    preselectedKeys,
 }: SummaryGroupProps) {
     if (rows.length === 0) return null;
     return (
@@ -139,6 +175,7 @@ function SummaryGroup({
                             }
                             onCustomize={() => onCustomize(row.key)}
                             rowActionLabel={rowActionLabel}
+                            preselected={preselectedKeys?.has(row.key)}
                         />
                     );
                 })}
@@ -157,6 +194,8 @@ export function CustomizationEntry({
     dimensionRange,
     printableSides,
     preset = false,
+    compatibilityPreselect = null,
+    onClearCompatibilityPreselect,
 }: CustomizationEntryProps) {
     const [open, setOpen] = useState(false);
     const [initialStepKey, setInitialStepKey] = useState<
@@ -178,6 +217,22 @@ export function CustomizationEntry({
         .filter((step) => step.kind === 'selection')
         .map((step) => ({key: step.key, label: step.label}));
 
+    const preselectedKeys = useMemo(
+        () =>
+            preselectedStepKeys(
+                availableCustomizations,
+                compatibilityPreselect?.applied,
+            ),
+        [availableCustomizations, compatibilityPreselect?.applied],
+    );
+    const showClearSelection =
+        Boolean(onClearCompatibilityPreselect) &&
+        Boolean(
+            compatibilityPreselect &&
+                (compatibilityPreselect.applied.length > 0 ||
+                    compatibilityPreselect.dropped.length > 0),
+        );
+
     function openBuilder(stepKey?: BuilderStepKey) {
         setInitialStepKey(stepKey);
         setOpen(true);
@@ -190,14 +245,29 @@ export function CustomizationEntry({
 
     return (
         <div>
-            <h2 className="text-base font-semibold text-brand-blue">
-                {REQUEST_COPY.customizationHeading}
-            </h2>
+            <div className="flex items-baseline justify-between gap-4">
+                <h2 className="text-base font-semibold text-brand-blue">
+                    {REQUEST_COPY.customizationHeading}
+                </h2>
+                {showClearSelection ? (
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="h-auto shrink-0 px-0 text-sm"
+                        onClick={onClearCompatibilityPreselect}
+                    >
+                        {REQUEST_COPY.clearSelection}
+                    </Button>
+                ) : null}
+            </div>
             {preset ? (
                 <p className="mt-1 text-sm text-muted-foreground">
                     {REQUEST_COPY.customizationPresetDescription}
                 </p>
             ) : null}
+            <CompatibilityPreselectDroppedNote
+                notice={compatibilityPreselect}
+            />
 
             {configured ? (
                 <div className="mt-4 space-y-4">
@@ -207,6 +277,7 @@ export function CustomizationEntry({
                         builderState={builderState}
                         onCustomize={openBuilder}
                         rowActionLabel={rowActionLabel}
+                        preselectedKeys={preselectedKeys}
                     />
                     <SummaryGroup
                         title={REQUEST_COPY.materialFinishGroup}
@@ -214,6 +285,7 @@ export function CustomizationEntry({
                         builderState={builderState}
                         onCustomize={openBuilder}
                         rowActionLabel={rowActionLabel}
+                        preselectedKeys={preselectedKeys}
                     />
                     {!preset ? (
                         <button

@@ -297,7 +297,7 @@ function ProductLineHeroStack({
                 'relative overflow-clip bg-gradient-to-b from-muted from-0% via-background via-[65%] to-background',
             )}
         >
-            <div className={pageDielineInnerClass('flex flex-col gap-1')}>
+            <div className={pageDielineInnerClass('flex flex-col gap-8')}>
                 <div className="relative z-10 flex flex-col items-center gap-7 pt-8 pb-0 sm:pt-10 lg:pt-12">
                     <div
                         className={cn(

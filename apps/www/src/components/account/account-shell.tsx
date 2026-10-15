@@ -2,6 +2,8 @@
 
 import type {ReactNode} from 'react';
 import Link from 'next/link';
+import {usePathname} from 'next/navigation';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {AccountMenu} from '@/components/account/account-menu';
 import {TypewriterText} from '@/components/account/typewriter-text';
 import Logo from '@/components/layout/logo';
@@ -21,6 +23,9 @@ export function AccountShell({
     /** The login provider's photo, when the session came with one. */
     avatarUrl?: string;
 }) {
+    const pathname = usePathname();
+    const flushSheet = pathname.startsWith(`${WWW_ROUTES.accountRequests}/`);
+
     return (
         <div className="flex h-dvh flex-col bg-muted">
             <header className="z-20 flex h-16 shrink-0 items-center gap-2 bg-muted px-4 sm:gap-4 sm:px-6 lg:px-8">
@@ -51,8 +56,22 @@ export function AccountShell({
                 </div>
             </header>
 
-            <main className="min-h-0 flex-1 overflow-auto rounded-t-xl bg-background px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-                <div className="mx-auto w-full max-w-7xl">{children}</div>
+            <main
+                className={cn(
+                    'min-h-0 flex-1 overflow-auto rounded-t-xl bg-background',
+                    flushSheet
+                        ? 'p-0'
+                        : 'px-4 py-8 sm:px-6 sm:py-10 lg:px-8',
+                )}
+            >
+                <div
+                    className={cn(
+                        'mx-auto w-full',
+                        !flushSheet && 'max-w-7xl',
+                    )}
+                >
+                    {children}
+                </div>
             </main>
         </div>
     );

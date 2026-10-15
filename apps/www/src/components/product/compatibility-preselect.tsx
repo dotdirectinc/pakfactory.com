@@ -1,7 +1,5 @@
 'use client';
 
-import {Button} from '@pakfactory/ui/components/button';
-
 import {parseCompatibilityQuery} from '@/lib/catalog/compatibility-query';
 import {
     patchPropertySelections,
@@ -157,49 +155,24 @@ export function applyCompatibilityQuery(
     };
 }
 
-export function CompatibilityPreselectBanner({
+/**
+ * Dropped-options note only. Clear lives beside the Customization heading;
+ * applied options show a Preselected label on their summary rows.
+ */
+export function CompatibilityPreselectDroppedNote({
     notice,
-    onClear,
 }: {
     notice: CompatibilityPreselectNotice | null;
-    onClear: () => void;
 }) {
-    if (!notice) return null;
-    if (notice.applied.length === 0 && notice.dropped.length === 0) {
-        return null;
-    }
+    if (!notice || notice.dropped.length === 0) return null;
 
     return (
-        <div
-            role="status"
-            className="mb-4 rounded-lg border border-border bg-muted/40 p-4"
-        >
-            {notice.applied.length > 0 ? (
-                <p className="text-sm text-foreground">
-                    Preselected from your selection:{' '}
-                    <span className="font-medium">
-                        {notice.applied.join(', ')}
-                    </span>
-                    .
-                </p>
-            ) : null}
-            {notice.dropped.length > 0 ? (
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Not available on this product:{' '}
-                    <span className="font-medium">
-                        {notice.dropped.join(', ')}
-                    </span>
-                    .
-                </p>
-            ) : null}
-            <Button
-                type="button"
-                variant="link"
-                className="mt-2 h-auto px-0 text-sm"
-                onClick={onClear}
-            >
-                Clear preselection
-            </Button>
-        </div>
+        <p role="status" className="mt-1 text-sm text-muted-foreground">
+            Not available on this product:{' '}
+            <span className="font-medium text-foreground">
+                {notice.dropped.join(', ')}
+            </span>
+            .
+        </p>
     );
 }

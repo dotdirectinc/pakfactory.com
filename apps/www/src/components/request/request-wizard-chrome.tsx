@@ -1,7 +1,10 @@
 import type {ReactNode} from 'react';
 import {pageDielineOuterClass} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {BriefBuilderRail} from '@/components/request/brief-builder-rail';
+import {
+    BriefBuilderRail,
+    type RequestWizardFrame,
+} from '@/components/request/brief-builder-rail';
 import type {WizardRailRowData} from '@/components/request/wizard-rail-row';
 
 type RequestWizardChromeProps = {
@@ -12,6 +15,11 @@ type RequestWizardChromeProps = {
     servicesEnabled?: boolean;
     heading?: ReactNode;
     help?: ReactNode;
+    /**
+     * `page` — Brief Builder, window scroll under a 68px header.
+     * `panel` — account shell scrolls the page; the rail sticks to the panel top.
+     */
+    frame?: RequestWizardFrame;
     /** Content inside the dashed main column (steps, review, read-only sections). */
     children: ReactNode;
     className?: string;
@@ -29,6 +37,7 @@ export function RequestWizardChrome({
     servicesEnabled = true,
     heading,
     help,
+    frame = 'page',
     children,
     className,
 }: RequestWizardChromeProps) {
@@ -48,10 +57,18 @@ export function RequestWizardChrome({
                 servicesEnabled={servicesEnabled}
                 heading={heading}
                 help={help}
+                frame={frame}
             />
 
             <div className="flex min-w-0 flex-1 flex-col">
-                <main className="flex min-h-[calc(100dvh-68px)] flex-1 flex-col lg:border-l lg:border-r lg:border-dashed lg:border-border">
+                <main
+                    className={cn(
+                        'flex flex-1 flex-col lg:border-l lg:border-r lg:border-dashed lg:border-border',
+                        frame === 'panel'
+                            ? 'min-h-[calc(100dvh-4rem)]'
+                            : 'min-h-[calc(100dvh-68px)]',
+                    )}
+                >
                     {children}
                 </main>
             </div>

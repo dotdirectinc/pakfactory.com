@@ -5,11 +5,15 @@ import {
     Collapsible,
     CollapsibleContent,
 } from '@pakfactory/ui/components/collapsible';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {
     WizardRailRow,
     type WizardRailRowData,
 } from '@/components/request/wizard-rail-row';
+
+/** `page` sticks under the Brief Builder header. `panel` sticks to the account scroller. */
+export type RequestWizardFrame = 'page' | 'panel';
 
 type BriefBuilderRailProps = {
     rows: WizardRailRowData[];
@@ -22,6 +26,7 @@ type BriefBuilderRailProps = {
     heading?: ReactNode;
     /** Replaces the default “Need help? Start chat” block when provided. */
     help?: ReactNode;
+    frame?: RequestWizardFrame;
 };
 
 export function BriefBuilderRail({
@@ -32,11 +37,19 @@ export function BriefBuilderRail({
     servicesEnabled = true,
     heading,
     help,
+    frame = 'page',
 }: BriefBuilderRailProps) {
     const displayRef = refNumber || REQUEST_COPY.refPlaceholder;
 
     return (
-        <aside className="hidden shrink-0 bg-background lg:sticky lg:top-[68px] lg:flex lg:h-[calc(100dvh-68px)] lg:w-[300px] lg:flex-col lg:border-l lg:border-dashed lg:border-border">
+        <aside
+            className={cn(
+                'hidden shrink-0 bg-background lg:flex lg:w-[300px] lg:flex-col lg:border-l lg:border-dashed lg:border-border',
+                frame === 'panel'
+                    ? 'lg:sticky lg:top-0 lg:z-10 lg:h-[calc(100dvh-4rem)] lg:self-start'
+                    : 'lg:sticky lg:top-[68px] lg:h-[calc(100dvh-68px)]',
+            )}
+        >
             <div className="flex flex-1 flex-col px-7 pb-9 pt-6 lg:pr-8">
                 <div className="mb-6 text-[15px] font-medium leading-snug tracking-tight">
                     {heading ?? (

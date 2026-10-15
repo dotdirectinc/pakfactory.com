@@ -3,6 +3,7 @@ import {ChevronDown} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {Icon} from '@/components/ui/icon';
+import {SectionHeading} from '@/components/ui/section-heading';
 import {
     buildReferenceSpecRows,
     CUSTOMIZATION_COMPARISON_ID,
@@ -19,16 +20,21 @@ type CustomizationReferenceSpecsContentProps = {
     detail: CustomizationDetail;
     compareLabel: string;
     className?: string;
+    /**
+     * `section` is the page title when this table is the only block.
+     * `label` matches the benefits “why” title — Specs still belongs to Benefits.
+     */
+    heading?: 'section' | 'label';
 };
 
 /**
- * Specs & performance content block (PROD-1299) — used inside the shared
- * Benefits/Specs band. Keeps the scroll anchor for AnchorNav.
+ * Spec rows. Always labeled so the table has an anchor.
  */
 export function CustomizationReferenceSpecsContent({
     detail,
     compareLabel,
     className,
+    heading = 'label',
 }: CustomizationReferenceSpecsContentProps) {
     const rows = buildReferenceSpecRows(detail);
     if (rows.length === 0) return null;
@@ -40,11 +46,23 @@ export function CustomizationReferenceSpecsContent({
             id={CUSTOMIZATION_REFERENCE_SPECS_ID}
             className={cn('scroll-mt-32', className)}
         >
-            <h3 className="text-base font-semibold text-foreground sm:text-lg">
-                Specs &amp; performance
-            </h3>
+            {heading === 'section' ? (
+                <SectionHeading
+                    title="Specs & performance"
+                    className="[&>div]:md:max-w-none"
+                />
+            ) : (
+                <h3 className="text-base font-semibold text-foreground sm:text-lg">
+                    Specs &amp; performance
+                </h3>
+            )}
 
-            <dl className="mt-8 border-t border-border">
+            <dl
+                className={cn(
+                    'border-t border-border',
+                    heading === 'section' ? 'mt-12' : 'mt-8',
+                )}
+            >
                 {rows.map((row) => (
                     <div
                         key={row.label}

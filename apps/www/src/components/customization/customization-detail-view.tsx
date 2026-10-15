@@ -152,15 +152,14 @@ export function CustomizationDetailView({
                       label: 'Benefits',
                   },
               ]
-            : []),
-        ...(showSpecs
-            ? [
-                  {
-                      id: CUSTOMIZATION_REFERENCE_SPECS_ID,
-                      label: 'Specs & performance',
-                  },
-              ]
-            : []),
+            : showSpecs
+              ? [
+                    {
+                        id: CUSTOMIZATION_REFERENCE_SPECS_ID,
+                        label: 'Specs & performance',
+                    },
+                ]
+              : []),
         ...(showWorksWith
             ? [
                   {
