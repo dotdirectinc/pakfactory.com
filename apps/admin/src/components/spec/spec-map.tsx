@@ -383,15 +383,15 @@ function place(
  * previewed on the diagram, and the diagram's own edits (× on an offered card, "Offer another…")
  * appear in the panel, before anything is saved.
  */
-export function SpecMap({ data }: { data: SpecMapData }) {
+export function SpecMap({ data, focus = null }: { data: SpecMapData; focus?: { level: string; id: string } | null }) {
   return (
     <RuleEditSessionProvider>
-      <SpecMapView data={data} />
+      <SpecMapView data={data} focus={focus} />
     </RuleEditSessionProvider>
   );
 }
 
-function SpecMapView({ data }: { data: SpecMapData }) {
+function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { level: string; id: string } | null }) {
   const session = useRuleEditSession()!;
   // Pending moves (PROD-3007) are drawn before anything is saved: the record and what is under it at
   // their new place, the moved cards outlined.
@@ -1249,6 +1249,16 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     },
     [nodes, collapsed, status],
   );
+  // Opened on a record from the Catalog (`?focus=level:id`): select it once. By id when the Catalog's level
+  // is not the Map's (an inspiration product is a "product" in the Catalog).
+  const openedOn = useRef(false);
+  useEffect(() => {
+    if (openedOn.current || !openOn) return;
+    openedOn.current = true;
+    const i = nodes.findIndex((n) => n.level === openOn.level && n.id === openOn.id);
+    const j = i >= 0 ? i : nodes.findIndex((n) => n.id === openOn.id);
+    if (j >= 0) select(j, true);
+  }, [openOn, nodes, select]);
   const selectBy = useCallback(
     (level: TableKey, id: string) => {
       const i = nodes.findIndex((n) => n.level === level && n.id === id);

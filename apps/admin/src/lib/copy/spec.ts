@@ -267,6 +267,7 @@ export const ADMIN_SPEC_TABLES_COPY = {
   count: (shown: number, total: number) => (shown === total ? `${total} records` : `${shown} of ${total} records`),
   image: "Image",
   noImage: "No image",
+  showOnMap: (title: string) => `Show ${title} on the Spec Map`,
   headerHint: "Drag to move · click for sort and hide",
   sortAsc: "Sort ascending",
   sortDesc: "Sort descending",
@@ -282,6 +283,8 @@ export const ADMIN_SPEC_TABLES_COPY = {
 export const ADMIN_SPEC_RECORD_COPY = {
   unreachable: "The record could not be loaded.",
   rules: "Rules view",
+  showOnMap: "Show on Map",
+  showOnMapTitle: "Open the Spec Map on this record: its relations, and where its rules and parents are edited.",
   readOnly: (dataset: string) => `Read-only, from Sanity (${dataset}) — edit in Studio.`,
   rulesEditable: (dataset: string) => `From Sanity (${dataset}). Customization rules are edited below; everything else in Studio.`,
   rulesOnMap: (dataset: string) =>

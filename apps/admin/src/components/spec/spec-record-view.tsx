@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Network } from "lucide-react";
+import { Button } from "@pakfactory/ui/components/button";
+import { mapHref } from "@/lib/spec/map-href";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { CatalogRecord } from "@/lib/spec/catalog-record";
 import type { RecordGroup, RecordItem } from "@/lib/spec/record-sections";
@@ -78,6 +80,12 @@ export function SpecRecordView({
             {r.status ? <Badge variant={r.status === "active" ? "secondary" : "outline"}>{r.status}</Badge> : null}
           </div>
           <SpecRegistryId registry={r.registry} />
+          {/* The way to the Map (2026-10-15): the Catalog reads and compares, the Map edits and relates. Not on the Map itself. */}
+          {onSelect ? null : (
+            <Button asChild size="sm" className="w-fit" title={COPY.showOnMapTitle}>
+              <Link href={mapHref(r.key, r.id)}><Network /> {COPY.showOnMap}</Link>
+            </Button>
+          )}
           {r.rulesHref ? (
             <Link href={r.rulesHref} className="inline-flex w-fit items-center gap-1 text-sm font-medium text-foreground hover:underline">
               {COPY.rules} <ArrowUpRight className="size-4" />

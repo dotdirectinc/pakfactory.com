@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ArrowUpDown, Columns3, EyeOff, GripVertical, ImageOff, ListFilter, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Columns3, EyeOff, GripVertical, ImageOff, ListFilter, Network, Search, X } from "lucide-react";
+import { mapHref } from "@/lib/spec/map-href";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
 import { Input } from "@pakfactory/ui/components/input";
@@ -324,7 +325,7 @@ export function SpecCatalogTable({ table }: { table: CatalogTable }) {
               </tr>
             ) : (
               shown.map((r) => (
-                <tr key={r.id} className="border-t border-border align-middle even:bg-muted/50 hover:bg-muted">
+                <tr key={r.id} className="group border-t border-border align-middle even:bg-muted/50 hover:bg-muted">
                   {table.hasImages ? (
                     <td className="px-3 py-2">
                       {r.image ? (
@@ -354,9 +355,19 @@ export function SpecCatalogTable({ table }: { table: CatalogTable }) {
                         className={`max-w-80 px-3 py-2 ${numeric ? "text-right tabular-nums" : ""} ${mono ? "whitespace-nowrap font-mono text-xs text-muted-foreground" : k === "title" ? "" : "text-muted-foreground"}`}
                       >
                         {k === "title" && r.href ? (
-                          <Link href={r.href} className="font-medium text-foreground hover:underline">
-                            {text || COPY.untitled}
-                          </Link>
+                          <span className="flex items-center gap-2">
+                            <Link href={r.href} className="font-medium text-foreground hover:underline">
+                              {text || COPY.untitled}
+                            </Link>
+                            <Link
+                              href={mapHref(table.key, r.id)}
+                              aria-label={COPY.showOnMap(text || COPY.untitled)}
+                              title={COPY.showOnMap(text || COPY.untitled)}
+                              className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                            >
+                              <Network className="size-3.5" />
+                            </Link>
+                          </span>
                         ) : text ? (
                           <span className={`line-clamp-2 break-words ${k === "title" ? "font-medium text-foreground" : ""}`} title={text.length > 80 ? text : undefined}>
                             {text}
