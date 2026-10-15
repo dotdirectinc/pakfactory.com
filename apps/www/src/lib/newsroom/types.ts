@@ -78,7 +78,6 @@ export type NewsItem = NewsCard & {
     imageCaption: string | null;
     body: PortableTextBlock[];
     seo: NewsSeo;
-    pressContact: NewsPressContact;
     /** Layout bands from the release's template (or the Default layout). */
     sections: PageSectionDoc[];
 };
@@ -90,18 +89,10 @@ export type NewsroomCatalog = {
     sections: PageSectionDoc[];
 };
 
-/** NewsArticle publisher — Global Settings → Company, never per release. */
-export type NewsPublisher = {
+/** "About PakFactory" + media contact — Global Settings, never per release. */
+export type PressBoilerplate = {
     companyName: string;
+    description: string | null;
+    pressEmail: string | null;
     logoUrl: string | null;
-};
-
-/**
- * "About PakFactory" + "Media contact" copy, from the release's layout
- * template (PROD-2918 review); empty fields fall back to the standard copy.
- */
-export type NewsPressContact = {
-    about: PortableTextBlock[];
-    mediaText: string;
-    mediaEmail: string;
 };

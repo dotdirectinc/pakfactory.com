@@ -14,7 +14,7 @@ import {
 import type {
     NewsItem,
     NewsroomCatalog,
-    NewsPublisher,
+    PressBoilerplate as PressBoilerplateData,
 } from '@/lib/newsroom/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -43,17 +43,17 @@ export function NewsroomCatalogView({catalog}: {catalog: NewsroomCatalog}) {
 }
 
 /**
- * `/newsroom/[slug]` (PROD-2918): breadcrumb, release, press boilerplate, then the
+ * `/newsroom/[slug]` (PROD-2918): breadcrumb, release, boilerplate, then the
  * layout's sections ("More announcements", media-inquiries band).
  */
 export function NewsroomDetailView({
     item,
-    publisher,
+    boilerplate,
     canonicalUrl,
     imageUrl,
 }: {
     item: NewsItem;
-    publisher: NewsPublisher;
+    boilerplate: PressBoilerplateData;
     canonicalUrl: string;
     /** Absolute image for NewsArticle (same chain as the OG image). */
     imageUrl?: string;
@@ -62,7 +62,7 @@ export function NewsroomDetailView({
 
     return (
         <>
-            <JsonLd json={buildNewsArticleJsonLd(item, publisher, imageUrl)} />
+            <JsonLd json={buildNewsArticleJsonLd(item, boilerplate, imageUrl)} />
             <PageBreadcrumbSection
                 showHome
                 items={[
@@ -83,7 +83,7 @@ export function NewsroomDetailView({
                             dateline={dateline}
                             titleFallback={item.title}
                         />
-                        <PressBoilerplate contact={item.pressContact} />
+                        <PressBoilerplate boilerplate={boilerplate} />
                     </div>
                 </PageDielineSection>
             </article>

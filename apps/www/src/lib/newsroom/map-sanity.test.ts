@@ -3,12 +3,6 @@ import {describe, it} from 'node:test';
 
 import type {PressReleaseCardDoc} from '@pakfactory/sanity/queries';
 
-import {
-    NEWSROOM_ABOUT_TEXT,
-    NEWSROOM_MEDIA_CONTACT_EMAIL,
-    NEWSROOM_MEDIA_CONTACT_TEXT,
-} from '@pakfactory/sanity/newsroom-press-copy';
-
 import {mapNewsCard, mapNewsCards, mapNewsItem} from './map-sanity';
 
 const card = (over: Partial<PressReleaseCardDoc> = {}): PressReleaseCardDoc => ({
@@ -104,36 +98,6 @@ describe('mapNewsItem (PROD-2918)', () => {
             kind: 'video',
             videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
             thumbnailSrc: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-        });
-    });
-
-    it('falls back to the standard press copy when the template is empty', () => {
-        const contact = mapNewsItem({
-            ...card(),
-            layout: {_id: 'newsroomDetailPage', sections: []},
-        })?.pressContact;
-        assert.deepEqual(contact, {
-            about: NEWSROOM_ABOUT_TEXT,
-            mediaText: NEWSROOM_MEDIA_CONTACT_TEXT,
-            mediaEmail: NEWSROOM_MEDIA_CONTACT_EMAIL,
-        });
-    });
-
-    it('uses the template copy field by field', () => {
-        const about = [{_type: 'block', _key: 'a', children: []}];
-        const contact = mapNewsItem({
-            ...card(),
-            layout: {
-                _id: 'newsroomDetailPage',
-                aboutText: about,
-                mediaContactText: '  ',
-                mediaContactEmail: 'media@example.com',
-            },
-        })?.pressContact;
-        assert.deepEqual(contact, {
-            about,
-            mediaText: NEWSROOM_MEDIA_CONTACT_TEXT,
-            mediaEmail: 'media@example.com',
         });
     });
 });

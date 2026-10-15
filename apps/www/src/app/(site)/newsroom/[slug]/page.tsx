@@ -9,7 +9,7 @@ import {
 } from '@/lib/case-study-metadata';
 import {
     getNewsItemBySlug,
-    getNewsPublisher,
+    getPressBoilerplate,
     listNewsSlugs,
 } from '@/lib/newsroom/newsroom';
 import type {NewsItem} from '@/lib/newsroom/types';
@@ -85,9 +85,9 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
 
 export default async function NewsroomDetailPage({params}: PageProps) {
     const {slug} = await params;
-    const [item, publisher, defaultOgImageUrl] = await Promise.all([
+    const [item, boilerplate, defaultOgImageUrl] = await Promise.all([
         getNewsItemBySlug(slug),
-        getNewsPublisher(),
+        getPressBoilerplate(),
         fetchDefaultOgImageUrl(),
     ]);
     if (!item) notFound();
@@ -95,7 +95,7 @@ export default async function NewsroomDetailPage({params}: PageProps) {
     return (
         <NewsroomDetailView
             item={item}
-            publisher={publisher}
+            boilerplate={boilerplate}
             canonicalUrl={canonicalFor(item)}
             imageUrl={imageFor(item, defaultOgImageUrl)}
         />

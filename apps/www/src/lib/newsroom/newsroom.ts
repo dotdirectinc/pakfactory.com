@@ -24,7 +24,7 @@ import {mapNewsCards, mapNewsItem} from '@/lib/newsroom/map-sanity';
 import type {
     NewsItem,
     NewsroomCatalog,
-    NewsPublisher,
+    PressBoilerplate,
 } from '@/lib/newsroom/types';
 import {getPublishedSanityClient} from '@/lib/sanity/client';
 import {draftAwareClient, readThrough} from '@/lib/sanity/draft-aware';
@@ -52,8 +52,7 @@ const CACHE_OPTIONS = {
 /**
  * Bump when the SHAPE of a cached result changes. The data cache stores mapped
  * results and survives deploys, so without a new key a deploy reads the old
- * shape until it revalidates (v2: `pressContact` on releases, `hasMore` on
- * press release rows — the old entries crashed the release page).
+ * shape until it revalidates (v2: `hasMore` on press release rows).
  */
 const CACHE_VERSION = 'v2';
 
@@ -229,9 +228,11 @@ export async function listNewsSlugs(): Promise<string[]> {
 
 // ─── Boilerplate ──────────────────────────────────────────────────────────────
 
-async function fetchNewsPublisher(): Promise<NewsPublisher> {
-    const fallback: NewsPublisher = {
+async function fetchPressBoilerplate(): Promise<PressBoilerplate> {
+    const fallback: PressBoilerplate = {
         companyName: DEFAULT_COMPANY_NAME,
+        description: null,
+        pressEmail: null,
         logoUrl: null,
     };
     if (!isSanityConfigured()) return fallback;
@@ -241,18 +242,20 @@ async function fetchNewsPublisher(): Promise<NewsPublisher> {
     );
     return {
         companyName: doc?.companyName?.trim() || DEFAULT_COMPANY_NAME,
+        description: doc?.companyDescription?.trim() || null,
+        pressEmail: doc?.pressEmail?.trim() || null,
         logoUrl: doc?.logoUrl?.trim() || null,
     };
 }
 
-/** NewsArticle publisher (name + logo), from Global Settings → Company. */
-export const getNewsPublisher = cache(
-    async (): Promise<NewsPublisher> =>
+/** "About PakFactory" + media contact, from Global Settings → Company. */
+export const getPressBoilerplate = cache(
+    async (): Promise<PressBoilerplate> =>
         readThrough(
-            fetchNewsPublisher,
+            fetchPressBoilerplate,
             sanityCache(
-                fetchNewsPublisher,
-                [WWW_NEWSROOM_CACHE_TAG, 'publisher', CACHE_VERSION],
+                fetchPressBoilerplate,
+                [WWW_NEWSROOM_CACHE_TAG, 'boilerplate', CACHE_VERSION],
                 CACHE_OPTIONS,
             ),
         ),
