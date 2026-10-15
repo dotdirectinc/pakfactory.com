@@ -33,7 +33,6 @@ export function SpecParentsEditor({ level, id, footer, onEdit }: {
   const s = useRuleEditSession();
   const [data, setData] = useState<ParentsData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [moving, setMoving] = useState(false);
   const [, start] = useTransition();
   const version = s?.version ?? 0;
   useEffect(() => {
@@ -43,8 +42,6 @@ export function SpecParentsEditor({ level, id, footer, onEdit }: {
       if (r.ok) { setData(r.data); setError(null); } else setError(r.error);
     });
   }, [level, id, version]);
-  // A submit ends the page's Move mode (the session bumps its version and empties).
-  useEffect(() => { if (version) setMoving(false); }, [version]);
 
   const names = useMemo(() => {
     if (!data) return {};
@@ -60,11 +57,11 @@ export function SpecParentsEditor({ level, id, footer, onEdit }: {
   if (data.kind === "none") return null;
 
   // On the Map, its Move records mode (the session's editing); on a page, this section's own Move mode.
-  const editing = data.canEdit && (onEdit ? s.editing : moving);
+  const editing = data.canEdit && (onEdit ? s.editing : s.moving);
   const pending = s.edits.some((e) => isMove(e) && (moveSubject(e) === id || Object.values(e).includes(id)));
   const cancel = () => {
     for (const e of s.edits) if (isMove(e)) s.remove(editKey(e));
-    setMoving(false);
+    s.setMoving(false);
   };
 
   return (
@@ -75,7 +72,7 @@ export function SpecParentsEditor({ level, id, footer, onEdit }: {
           {pending ? <Badge variant="outline" className="border-amber-500/60 text-amber-800 dark:text-amber-300">{COPY.pending}</Badge> : null}
         </h3>
         {data.canEdit && !editing ? (
-          <Button size="sm" variant="outline" disabled={s.refreshing || (!onEdit && s.editing)} onClick={onEdit ?? (() => setMoving(true))}>
+          <Button size="sm" variant="outline" disabled={s.refreshing || (!onEdit && s.editing)} title={!onEdit && s.editing ? COPY.closeRulesFirst : undefined} onClick={onEdit ?? (() => s.setMoving(true))}>
             {s.refreshing ? EDIT.refreshing : COPY.move}
           </Button>
         ) : null}

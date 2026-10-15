@@ -457,6 +457,7 @@ export const ADMIN_SPEC_MAP_COPY = {
 export const ADMIN_SPEC_RULE_EDIT_COPY = {
   title: "Customization rules",
   edit: "Edit rules",
+  closeMoveFirst: "Finish or cancel the move first.",
   loading: "Loading rules…",
   unreachable: "The rules could not be loaded.",
   offers: "Offered options (listed by the product)",
@@ -597,6 +598,7 @@ export const ADMIN_SPEC_PARENTS_COPY = {
   change: "Change parents",
   /** The record page's way in (Richard, 2026-10-15): like Edit rules, then dropdowns. */
   move: "Move",
+  closeRulesFirst: "Finish or cancel editing the rules first.",
   titleChildren: (label: string) => label,
   movingHint: "Pick new parents from the dropdowns, or add a record under this one. The moves collect below; nothing changes until they are submitted and approved.",
   pickLine2: "Choose a line",

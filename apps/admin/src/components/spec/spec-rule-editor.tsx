@@ -66,7 +66,7 @@ function RuleSection({ level, id, title }: { level: TableKey; id: string; title:
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-semibold text-foreground">{COPY.title}</h3>
         {data.kind !== "none" && data.canEdit && !s.editing ? (
-          <Button size="sm" variant="outline" disabled={s.refreshing} onClick={() => s.setEditing(true)}>{s.refreshing ? COPY.refreshing : COPY.edit}</Button>
+          <Button size="sm" variant="outline" disabled={s.refreshing || s.moving} title={s.moving ? COPY.closeMoveFirst : undefined} onClick={() => s.setEditing(true)}>{s.refreshing ? COPY.refreshing : COPY.edit}</Button>
         ) : null}
       </div>
       <SubmitResultNote />

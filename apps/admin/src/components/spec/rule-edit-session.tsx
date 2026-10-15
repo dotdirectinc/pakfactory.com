@@ -27,6 +27,9 @@ type Session = {
   clear: () => void;
   editing: boolean;
   setEditing: (b: boolean) => void;
+  /** A record page's Move mode (PROD-3007): open at most one of it and Edit rules at a time. */
+  moving: boolean;
+  setMoving: (b: boolean) => void;
   canEdit: boolean;
   meta: RuleMeta | null;
   names: (id: string) => string;
@@ -66,6 +69,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   const [byKey, setByKey] = useState<Map<string, RuleEditDraft>>(new Map());
   const edits = useMemo(() => [...byKey.values()], [byKey]);
   const [editing, setEditing] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [meta, setMeta] = useState<RuleMeta | null>(null);
   const nameMap = useRef(new Map<string, string>());
@@ -107,7 +111,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
     });
   }, []);
   const remove = useCallback((key: string) => setByKey((m) => { const x = new Map(m); x.delete(key); return x; }), []);
-  const clear = useCallback(() => { setByKey(new Map()); setAck(false); setNote(""); setSubmitError(null); setEditing(false); }, []);
+  const clear = useCallback(() => { setByKey(new Map()); setAck(false); setNote(""); setSubmitError(null); setEditing(false); setMoving(false); }, []);
   const setOffered = useCallback((productId: string, optionId: string, want: boolean, offeredNow: boolean) => {
     setResult(null);
     // Back to what the rules say today: drop whatever edit changed it.
@@ -156,6 +160,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
       setByKey(new Map());
       setNote("");
       setEditing(false);
+      setMoving(false);
       setPreview(null);
       setRefreshing(true);
       setVersion((v) => v + 1);
@@ -163,7 +168,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   }), [edits, note]);
 
   const value: Session = {
-    edits, put, remove, setOffered, clear, editing, setEditing, canEdit, meta, names, addNames, focus, setFocus,
+    edits, put, remove, setOffered, clear, editing, setEditing, moving, setMoving, canEdit, meta, names, addNames, focus, setFocus,
     preview, checking, previewError, ack, setAck, note, setNote, submit, submitting, submitError, result, version, ready,
     keepNoEffect, setKeepNoEffect, refreshing, markFresh, refresh,
   };
