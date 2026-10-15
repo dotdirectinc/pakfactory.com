@@ -1766,12 +1766,15 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       <div ref={row} className="flex min-h-[28rem] flex-1 gap-3" style={boxH ? { height: boxH } : undefined}>
         <div
           ref={area}
-          className="relative min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-border bg-muted/30 [scrollbar-gutter:stable]"
+          // The box scrolls only in the edit layout and the full diagram; when the columns scroll on their own
+          // it reserves no scrollbar gutter, which showed as a pale strip past the header band (2026-10-15).
+          className={`relative min-w-0 flex-1 overflow-x-hidden rounded-md border border-border bg-muted/30 ${columnsMode || virtualCols ? "overflow-y-hidden" : "overflow-y-auto [scrollbar-gutter:stable]"}`}
         >
           {/* Fixed to the box when columns scroll on their own: cards past its edge must not scroll the box. */}
           <div
             className={`relative ${columnsMode || virtualCols ? "overflow-clip" : ""}`}
-            style={{ width, height: columnsMode || virtualCols ? Math.max(HEAD_H, areaH - 1) : height + PAD }}
+            // At least the box's width: the columns round down, and the header band must still reach its edge.
+            style={{ width, minWidth: "100%", height: columnsMode || virtualCols ? Math.max(HEAD_H, areaH - 1) : height + PAD }}
           >
             <svg
               width={width}
