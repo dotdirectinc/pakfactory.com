@@ -1,13 +1,14 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { fetchSpecMe, listAllChangesets, submitRuleEdits, type RegistryRuleEdit, type RuleEditResult } from "@/lib/spec/registry-api";
+import { fetchSpecMe, getChangesetDetail, listAllChangesets, listDraftChangesets, submitRuleEdits, type RegistryRuleEdit, type RuleEditResult } from "@/lib/spec/registry-api";
 import { loadRulesSource, type Loaded } from "@/lib/spec/rules-source";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
 import { computeImpact, focusAfter, type FocusAfter, type Impact, type RuleEditDraft, type RuleFocus, type RuleMeta } from "@/lib/spec/rule-edits";
 import { getRuleEditorData, type RuleEditorData } from "@/lib/spec/rule-editor-data";
 import { isTableKey } from "@/lib/spec/catalog-table-model";
 import { typeidToUuid } from "@/lib/spec/typeid";
+import { pendingRulesOf, type PendingRules } from "@/lib/spec/pending-rules";
 
 /**
  * Rule editing in the Spec System (PROD-2962, ADR-025). Server actions so the access token stays on
@@ -164,4 +165,20 @@ export async function loadRecordEdits(id: string, title: string): Promise<Loaded
       return { id: c.id, state: c.state, at: c.approved_at ?? c.created_at, sentence: sentences[0] ?? c.frame, more: Math.max(0, sentences.length - 1) };
     });
   return { ok: true, data: out };
+}
+
+/**
+ * The record's rule fields with a change waiting for approval (PROD-2962 scope 4), from the waiting
+ * Spec System frames' own items. Anyone who can see the rules sees what is waiting; a failed read
+ * marks nothing rather than blocking the rules.
+ */
+export async function loadPendingRules(id: string): Promise<Loaded<PendingRules>> {
+  const res = await listDraftChangesets();
+  if (!res.ok) return { ok: false, error: res.error };
+  const frames = res.data.filter((c) => c.source === "spec-edit");
+  const details = await Promise.all(frames.map((c) => getChangesetDetail(c.id)));
+  return {
+    ok: true,
+    data: pendingRulesOf(id, details.flatMap((d) => (d.ok ? [{ id: d.data.id, created_at: d.data.created_at, items: d.data.items }] : []))),
+  };
 }

@@ -481,6 +481,11 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   historyTitle: "Recent rule edits",
   historyMore: (n: number) => (n === 1 ? "+1 more" : `+${n} more`),
   historyOpen: "Open",
+  /** A rule field (or entry) with a change already waiting for approval (PROD-2962 scope 4). */
+  pendingMark: "Pending",
+  pendingTitle: (n: number) =>
+    `${n === 1 ? "A change to this is" : `${n} changes to this are`} waiting for approval — open the newest. If you change it too, the most recent proposal wins.`,
+  pendingEntry: "A change to this entry is waiting for approval",
   reasonFor: (mode: "add" | "remove") => (mode === "add" ? "Why this product can take it (required)" : "Why this product cannot take it (required)"),
   reasonMissing: "no reason yet",
   barLabel: "Pending rule edits",

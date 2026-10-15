@@ -59,6 +59,7 @@ import {
   loadMapCompatible,
   loadMapRecord,
 } from "@/app/(admin)/spec/map/actions";
+import { loadPendingRules } from "@/app/(admin)/spec/rule-edit-actions";
 import { ADMIN_SPEC_MAP_COPY as COPY } from "@/lib/copy/spec";
 
 /**
@@ -769,6 +770,25 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       }
     });
   }, [selected, nodes, session.version, indexOf, markFresh]);
+
+  /**
+   * A focused product's offered options with a change already waiting for approval (PROD-2962 scope 4):
+   * from the waiting frames that change its offers or exceptions. A failed read marks nothing.
+   */
+  const [waiting, setWaiting] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    setWaiting(new Set());
+    if (selected === null || nodes[selected]!.level !== "product") return;
+    let live = true;
+    void loadPendingRules(nodes[selected]!.id).then((r) => {
+      if (!live || !r.ok) return;
+      const refs = [...(r.data.availableCustomizations?.refs ?? []), ...(r.data.customizationExceptions?.refs ?? [])];
+      setWaiting(new Set(refs.flatMap((o) => { const i = indexOf.get(`customizationOption:${o}`); return i === undefined ? [] : [i]; })));
+    });
+    return () => {
+      live = false;
+    };
+  }, [selected, nodes, indexOf, session.version]);
 
   const relatedByStream = useMemo(() => {
     const m = new Map<string, number>();
@@ -1546,6 +1566,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                         {n.title}
                       </span>
                       <span className="truncate text-[11px] text-muted-foreground">
+                        {offer && waiting.has(i) ? <span className="font-medium text-amber-700 dark:text-amber-400" title={EDIT.pendingEntry}>{EDIT.pendingMark} · </span> : null}
                         {preset?.preselected.has(i) ? <span className="font-medium text-blue-700 dark:text-blue-400">{EDIT.preselected} · </span> : null}
                         {exc ? <span className={exc.mode === "add" ? "font-medium text-foreground" : "font-medium text-red-700 dark:text-red-400"}>{EDIT.exceptionChip(exc.mode)}{noEffect ? ` ${EDIT.noEffect}` : ""} · </span> : null}
                         {offer === "derived" && derivedFrom.get(i)?.length ? (
