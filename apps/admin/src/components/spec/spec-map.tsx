@@ -19,6 +19,8 @@ import {
   Layers2,
   Layers3,
   Pencil,
+  Pin,
+  PinOff,
   Search,
   Box,
   Tag,
@@ -485,7 +487,43 @@ function SpecMapView({ data }: { data: SpecMapData }) {
    */
   const [derivedFrom, setDerivedFrom] = useState<Map<number, number[]>>(new Map());
   const [hovered, setHovered] = useState<number | null>(null);
-  useEffect(() => setHovered(null), [selected]);
+  /**
+   * A card pinned for tracing: its links stay marked while the columns scroll, until it is unpinned
+   * or Esc (Richard, 2026-10-15) — hover alone breaks as cards slide under the pointer.
+   */
+  const [pinned, setPinned] = useState<number | null>(null);
+  useEffect(() => {
+    setHovered(null);
+    setPinned(null);
+  }, [selected]);
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setPinned(null);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, []);
+  /** The card whose links are shown: the pinned one, else the one under the pointer. */
+  const trace = pinned ?? hovered;
+  /**
+   * How a card's links show (Richard, 2026-10-15, both kept to compare): "highlight" outlines the linked
+   * cards and counts those scrolled out of view; "lines" draws a line to each in the next column.
+   */
+  const [linkMode, setLinkModeState] = useState<"highlight" | "lines">("highlight");
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem("spec-map-link-mode");
+      if (v === "lines" || v === "highlight") setLinkModeState(v);
+    } catch {
+      // Storage blocked: keep the default.
+    }
+  }, []);
+  const setLinkMode = (v: "highlight" | "lines") => {
+    setLinkModeState(v);
+    try {
+      window.localStorage.setItem("spec-map-link-mode", v);
+    } catch {
+      // Storage blocked: the choice lasts this visit.
+    }
+  };
   /** A partner option → the derived options it makes available. */
   const partnersOf = useMemo(() => {
     const m = new Map<number, number[]>();
@@ -1274,26 +1312,23 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   }, [rest, focus]);
   const grouped = focus?.grouped ?? null;
   /**
-   * Hovering a card in focus (Richard, 2026-10-14): its own links light up — what it hangs off, what
-   * hangs off it, the values a product states, a derived option's partners, an offer's product — and
-   * the rest dims. Between neighbouring columns a thin line joins them while the pointer stays.
+   * A traced card's own links (hovered or pinned, in focus): what it hangs off, what hangs off it, the
+   * values a product states, a derived option's partners, an offer's product. The rest dims. Not for
+   * the selection itself — everything on screen is its link.
    */
   const hoverSet = useMemo(() => {
-    if (hovered === null || !focus) return null;
+    if (trace === null || !focus || trace === selected) return null;
     const s = new Set<number>([
-      hovered,
-      ...(parentsOf[hovered] ?? []),
-      ...(childrenOf[hovered] ?? []),
-      ...(statedOf.get(hovered) ?? []),
-      ...(derivedFrom.get(hovered) ?? []),
-      ...(partnersOf.get(hovered) ?? []),
+      trace,
+      ...(parentsOf[trace] ?? []),
+      ...(childrenOf[trace] ?? []),
+      ...(statedOf.get(trace) ?? []),
+      ...(derivedFrom.get(trace) ?? []),
+      ...(partnersOf.get(trace) ?? []),
     ]);
-    if (offering && selected !== null) {
-      if (shownOffers.has(hovered)) s.add(selected);
-      if (hovered === selected) for (const i of shownOffers.keys()) s.add(i);
-    }
+    if (offering && selected !== null && shownOffers.has(trace)) s.add(selected);
     return s;
-  }, [hovered, focus, parentsOf, childrenOf, statedOf, derivedFrom, partnersOf, offering, selected, shownOffers]);
+  }, [trace, focus, parentsOf, childrenOf, statedOf, derivedFrom, partnersOf, offering, selected, shownOffers]);
   /** Laid out and settled: the offered-options column's own parts (filter, group headers, rails). */
   const offerUi =
     offering && focus?.offer && !from && focus.pos.has(selected!)
@@ -1312,6 +1347,27 @@ function SpecMapView({ data }: { data: SpecMapData }) {
     const next = o.groups[k + 1];
     return Math.min(stick, next ? next.y - off - GROUP_GAP - GROUP_H : stick);
   };
+  /**
+   * "Outline": per column, the traced card's links scrolled out of view, above and below, so the
+   * column says how many there are — and, once the card is pinned, scrolls to the next on a click.
+   */
+  const linkedOut = (() => {
+    if (linkMode !== "highlight" || !hoverSet || !focus || !virtualCols || from) return [];
+    const out = new Map<number, { top: number; up: number[]; down: number[] }>();
+    for (const j of hoverSet) {
+      const p = focus.pos.get(j);
+      if (!p || isGone(j)) continue;
+      const c = colOfX(p.x);
+      // Under the offered column's pinned filter and heading, a card is out of view too.
+      const top = HEAD_H + (offerUi && c === colOfX(offerUi.x) ? FILTER_H + GROUP_H : 0);
+      const y = p.y - offAt(p.x);
+      const e = out.get(c) ?? { top, up: [], down: [] };
+      if (y < top) e.up.push(p.y);
+      else if (y + CARD_H > areaH) e.down.push(p.y);
+      out.set(c, e);
+    }
+    return [...out].filter(([, e]) => e.up.length || e.down.length);
+  })();
   /** Options per kind (status filter applied), for the focus bar's chips. */
   const offerCount = (state: OfferKind) =>
     [...shownOffers].filter(([i, k]) => k === state && statusOk(i)).length;
@@ -1402,6 +1458,11 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               const dot = statusDot(n.status);
               const unrelated = !editLayout && related !== null && !related.has(i);
               const faded = hoverSet !== null && !hoverSet.has(i);
+              // "Highlight": the traced card and its links are outlined (outline, not ring: rings already
+              // mean selected, compatible and previewed changes).
+              const traced = linkMode === "highlight" && hoverSet !== null && hoverSet.has(i)
+                ? i === trace ? "outline-2 outline-offset-2 outline-blue-600" : "outline-2 outline-offset-1 outline-blue-500/70"
+                : "";
               // Hung under a heading in its own column: an offered option, or a value under its property.
               const indented = Boolean(offer) || (productFocus && n.level === "productValue");
               const gone = isGone(i);
@@ -1423,6 +1484,9 @@ function SpecMapView({ data }: { data: SpecMapData }) {
               return (
                 <div
                   key={i}
+                  // On the card's box, not its button: the pin beside the button is part of the card.
+                  onMouseEnter={focus && !from ? () => setHovered(i) : undefined}
+                  onMouseLeave={focus && !from ? () => setHovered((h) => (h === i ? null : h)) : undefined}
                   className={`absolute left-0 top-0 transition-opacity ${gone ? "pointer-events-none opacity-0" : unrelated ? "opacity-25" : faded ? "opacity-40" : "opacity-100"} ${i === selected ? "z-10" : ""}`}
                   style={{
                     width: indented ? cardW - INDENT : cardW,
@@ -1438,8 +1502,6 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     type="button"
                     // An offered option belongs to the Customizations stream: selecting it goes there.
                     onClick={() => select(i, !inStream(i))}
-                    onMouseEnter={focus && !from ? () => setHovered(i) : undefined}
-                    onMouseLeave={focus && !from ? () => setHovered((h) => (h === i ? null : h)) : undefined}
                     title={[
                       n.title,
                       offer ? COPY.offerKind[offer] : null,
@@ -1465,7 +1527,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                               : compatibleShown.has(i)
                           ? "border-foreground/60 ring-1 ring-foreground/40"
                           : "border-border"
-                    } ${arriving ? "animate-in fade-in slide-in-from-bottom-6 fill-mode-backwards duration-300 ease-out" : ""}`}
+                    } ${traced} ${arriving ? "animate-in fade-in slide-in-from-bottom-6 fill-mode-backwards duration-300 ease-out" : ""}`}
                     style={
                       arriving
                         ? {
@@ -1500,6 +1562,19 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                       />
                     ) : null}
                   </button>
+                  {/* Pin a card's links so they stay marked while the columns scroll. */}
+                  {focus && !from && !gone && i !== selected && (pinned === i || (hovered === i && pinned === null)) ? (
+                    <button
+                      type="button"
+                      aria-pressed={pinned === i}
+                      aria-label={pinned === i ? COPY.unpin(n.title) : COPY.pin(n.title)}
+                      title={pinned === i ? COPY.unpin(n.title) : COPY.pin(n.title)}
+                      onClick={() => setPinned((p) => (p === i ? null : i))}
+                      className={`absolute -bottom-2 -right-2 z-[1] flex size-5 items-center justify-center rounded-full border shadow-xs ${pinned === i ? "border-blue-600 bg-blue-600 text-white" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {pinned === i ? <PinOff className="size-3" /> : <Pin className="size-3" />}
+                    </button>
+                  ) : null}
                   {pending.length && !change && !gone ? (
                     <span
                       aria-hidden
@@ -1639,6 +1714,21 @@ function SpecMapView({ data }: { data: SpecMapData }) {
           >
             {COPY.onlyRelated}
           </Label>
+        </div>
+        <div role="group" aria-label={COPY.linkMode} className="flex items-center gap-1 text-sm text-muted-foreground">
+          <span className="mr-1">{COPY.linkMode}</span>
+          {(["highlight", "lines"] as const).map((m) => (
+            <Button
+              key={m}
+              size="xs"
+              variant={linkMode === m ? "secondary" : "ghost"}
+              aria-pressed={linkMode === m}
+              title={COPY.linkModeTitle[m]}
+              onClick={() => setLinkMode(m)}
+            >
+              {COPY.linkModes[m]}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -1822,13 +1912,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                     : null}
                 </g>
               ) : null}
-              {hovered !== null && hoverSet && focus && !from ? (
+              {/* "Lines": from the traced card to its partners (beside their column) and its links next door. */}
+              {linkMode === "lines" && trace !== null && hoverSet && focus && !from ? (
                 <g fill="none" strokeLinejoin="round">
                   {/* A derived option and its partners: arcs in the gutter beside their column. */}
                   {offerUi
-                    ? (derivedFrom.has(hovered)
-                        ? derivedFrom.get(hovered)!.map((p) => [p, hovered] as const)
-                        : (partnersOf.get(hovered) ?? []).map((d) => [hovered, d] as const)
+                    ? (derivedFrom.has(trace)
+                        ? derivedFrom.get(trace)!.map((p) => [p, trace] as const)
+                        : (partnersOf.get(trace) ?? []).map((d) => [trace, d] as const)
                       )
                         .filter(([p, d]) => focus.pos.has(p) && focus.pos.has(d))
                         .map(([p, d]) => {
@@ -1847,15 +1938,14 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                           );
                         })
                     : null}
-                  {/* Neighbouring columns: a thin line from the hovered card to each card it links to (not
-                      from the selection — everything on screen is its link). */}
-                  {(hovered === selected ? [] : [...hoverSet])
-                    .filter((j) => j !== hovered && focus.pos.has(j) && focus.pos.has(hovered) && !isGone(j))
+                  {/* Neighbouring columns: a thin line from the traced card to each card it links to. */}
+                  {[...hoverSet]
+                    .filter((j) => j !== trace && focus.pos.has(j) && focus.pos.has(trace) && !isGone(j))
                     .flatMap((j) => {
-                      const ca = colOfX(focus.pos.get(hovered)!.x);
+                      const ca = colOfX(focus.pos.get(trace)!.x);
                       const cb = colOfX(focus.pos.get(j)!.x);
                       if (Math.abs(ca - cb) !== 1) return [];
-                      const [l, r] = ca < cb ? [hovered, j] : [j, hovered];
+                      const [l, r] = ca < cb ? [trace, j] : [j, trace];
                       const pl = view(posOf(l)!);
                       const pr = view(posOf(r)!);
                       const x1 = PAD + Math.min(ca, cb) * colW + cardW;
@@ -2078,6 +2168,27 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                 })}
               </>
             ) : null}
+            {linkedOut.flatMap(([c, e]) =>
+              (["up", "down"] as const).map((dir) => {
+                const ys = dir === "up" ? e.up : e.down;
+                if (!ys.length) return null;
+                // The nearest one: the lowest above, the highest below.
+                const next = dir === "up" ? Math.max(...ys) : Math.min(...ys);
+                return (
+                  <button
+                    key={`out-${c}-${dir}`}
+                    type="button"
+                    disabled={pinned === null}
+                    // Brings the next one a third of the way down the column, clear of both counters.
+                    onClick={() => scrollCol(c, next - e.top - Math.round((areaH - e.top) / 3))}
+                    className="absolute z-[16] -translate-x-1/2 rounded-full border border-blue-500/60 bg-card px-2 py-0.5 text-[11px] font-medium tabular-nums text-blue-700 shadow-xs enabled:hover:bg-blue-50 disabled:cursor-default dark:text-blue-300 dark:enabled:hover:bg-blue-950"
+                    style={{ left: PAD + c * colW + cardW / 2, top: dir === "up" ? e.top + 4 : areaH - 30 }}
+                  >
+                    {COPY.linkedOut(ys.length, dir)}
+                  </button>
+                );
+              }),
+            )}
             {columnsMode
               ? levels.map((level, li) => {
                   if (streamOf(level) !== stream || collapsed.has(level)) return null;

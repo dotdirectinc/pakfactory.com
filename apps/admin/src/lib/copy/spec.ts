@@ -370,8 +370,18 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
 export const ADMIN_SPEC_MAP_COPY = {
   title: "Spec Map",
   lead:
-    "One stream at a time, one column per level, each column its own A–Z list; each header names how its column relates to the one before. Click a card to see only what it is connected to — grouped under what it hangs off and, for products and options, what the rules make them compatible with; hover a card to light up its own links. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
-  hint: "Scroll each column on its own · click a card to see what it is connected to · hover a card to light up its links.",
+    "One stream at a time, one column per level, each column its own A–Z list; each header names how its column relates to the one before. Click a card to see only what it is connected to — grouped under what it hangs off and, for products and options, what the rules make them compatible with; hover a card (or pin it) to see its own links, outlined or as lines. Select a product or an option and use Edit rules to change what it offers; open a record's full page for the rest of its rules; everything else in Studio.",
+  hint: "Scroll each column on its own · click a card to see what it is connected to · then hover or pin a card to see its own links.",
+  linkMode: "Links",
+  linkModes: { highlight: "Outline", lines: "Lines" },
+  linkModeTitle: {
+    highlight: "Hover or pin a card: its links are outlined, and each column counts the ones scrolled out of view",
+    lines: "Hover or pin a card: a line runs to each of its links in the next column",
+  },
+  pin: (title: string) => `Pin ${title}: keep its links marked while you scroll (Esc to unpin)`,
+  unpin: (title: string) => `Unpin ${title}`,
+  /** A column's linked cards scrolled out of view, above or below; click to scroll to the next. */
+  linkedOut: (n: number, dir: "up" | "down") => `${dir === "up" ? "▲" : "▼"} ${n} linked`,
   /** A column header's relation into it, ER-style: "Lines has →" over Styles. */
   relation: (from: string, verb: string) => `${from} ${verb} →`,
   verb: { has: "has", states: "states", declares: "declares", lists: "lists", matches: "matches", offers: "offers" },
