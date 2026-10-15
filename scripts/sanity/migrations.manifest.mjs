@@ -536,6 +536,21 @@ export const MIGRATIONS = [
     // Probe: no inspiration product still has product stills with an empty lifestyle list.
     probe: `count(*[_type == "product" && kind == "inspiration" && count(images) > 0 && count(coalesce(lifestyleImages, [])) == 0]) == 0`,
   },
+  {
+    id: '20261015-publish-draft-solution-styles-not-active',
+    ticket: 'PROD-3093',
+    title: 'Publish draft-only Solution Styles with a registry id, as Not active',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:publish-draft-solution-styles',
+    script: 'apps/studio/scripts/publish-draft-solution-styles-not-active.mjs',
+    args: 'flags',
+    // The old shape is "a registry-id'd Solution Style that exists only as a draft".
+    // `development` held 96 on 2026-10-15. A style the content team creates later as a
+    // draft with an entityId would flip this back to false — that is a true reading: the
+    // registry fill could not see it either.
+    probe: `count(*[_type == "solutionStyle" && _id in path("drafts.**") && defined(entityId) &&
+        !defined(*[_id == string::split(^._id, "drafts.")[1]][0])]) == 0`,
+  },
 ]
 
 /**
