@@ -1,7 +1,8 @@
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { getCurrentRules } from "@/lib/spec/current-rules";
 import { SpecRulesView } from "@/components/spec/spec-rules-view";
-import { ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
+import { SpecFutureAction } from "@/components/spec/spec-future-action";
+import { ADMIN_SPEC_FUTURE_COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
 
 export const metadata = { title: "Spec rules" };
 
@@ -12,11 +13,14 @@ export default async function SpecRulesPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          {ADMIN_SPEC_RULES_COPY.title}
-        </h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">{ADMIN_SPEC_RULES_COPY.lead}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
+            {ADMIN_SPEC_RULES_COPY.title}
+          </h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">{ADMIN_SPEC_RULES_COPY.lead}</p>
+        </div>
+        <SpecFutureAction label={ADMIN_SPEC_FUTURE_COPY.addRule} />
       </div>
 
       {!res.ok ? (

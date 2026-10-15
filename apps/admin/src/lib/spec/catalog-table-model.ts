@@ -16,27 +16,28 @@ export type TableKey =
 export type TableGroup = {
   key: "products" | "customizations" | "solutions";
   label: string;
-  levels: { key: TableKey; label: string }[];
+  /** `entity`: one record of the level, in words ("Add a new standard product"). */
+  levels: { key: TableKey; label: string; entity: string }[];
   defaultLevel: TableKey;
 };
 
 export const TABLE_GROUPS: TableGroup[] = [
   { key: "products", label: "Products", levels: [
-    { key: "productLine", label: "Product lines" },
-    { key: "productStyle", label: "Product styles" },
-    { key: "product", label: "Standard products" },
-    { key: "productValue", label: "Product properties & values" },
+    { key: "productLine", label: "Product lines", entity: "product line" },
+    { key: "productStyle", label: "Product styles", entity: "product style" },
+    { key: "product", label: "Standard products", entity: "standard product" },
+    { key: "productValue", label: "Product properties & values", entity: "product property value" },
   ], defaultLevel: "product" },
   { key: "customizations", label: "Customizations", levels: [
-    { key: "customizationCategory", label: "Categories" },
-    { key: "customizationType", label: "Types" },
-    { key: "customizationOption", label: "Options" },
-    { key: "optionValue", label: "Option properties & values" },
+    { key: "customizationCategory", label: "Categories", entity: "customization category" },
+    { key: "customizationType", label: "Types", entity: "customization type" },
+    { key: "customizationOption", label: "Options", entity: "customization option" },
+    { key: "optionValue", label: "Option properties & values", entity: "option property value" },
   ], defaultLevel: "customizationOption" },
   { key: "solutions", label: "Solutions", levels: [
-    { key: "solution", label: "Solutions" },
-    { key: "solutionStyle", label: "Solution styles" },
-    { key: "inspiration", label: "Inspiration products" },
+    { key: "solution", label: "Solutions", entity: "solution" },
+    { key: "solutionStyle", label: "Solution styles", entity: "solution style" },
+    { key: "inspiration", label: "Inspiration products", entity: "inspiration product" },
   ], defaultLevel: "inspiration" },
 ];
 
