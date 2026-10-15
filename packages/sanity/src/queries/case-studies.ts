@@ -47,19 +47,15 @@ const CUSTOMIZATION_TAXONOMY_ITEM = /* groq */ `{
 }`;
 
 /**
- * ⚠️ This resolves the label from the solution's H1, which is marketing copy —
- * an *Apparel & Fashion* client reads as "Custom Apparel & Fashion Packaging" on
- * the card, in the meta card and in the JSON-LD `articleSection`. It should be
- * `coalesce(shortName, title)`; `shortName` now exists for exactly this, and
- * PROD-2460 makes that fix a deliberate change of its own.
- *
- * `headline` was listed here alongside `h1` for the span of the migration, so
- * the deploy order could not matter while production still had `h1` unpopulated
- * (PROD-2458). PROD-2459 unset the old key, so the arm is dead and gone.
+ * Industry / solution label for case-study chips, meta card, and JSON-LD
+ * `articleSection` (PROD-2460). Prefer `shortName` when authored; otherwise
+ * `title`. Skip empty string — GROQ `coalesce` treats `""` as a value, so a
+ * cleared shortName would blank the chip. `linkable` gates the Solution chip
+ * href (`SOLUTION_ACTIVE`); Not active / Coming soon stay labels only.
  */
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
-  "title": coalesce(h1, title),
+  "title": select(defined(shortName) && shortName != "" => shortName, title),
   "linkable": ${SOLUTION_ACTIVE},
   "slug": slug.current,
   solutionType,
@@ -221,7 +217,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
  * at that array when it ships; do not restore `order asc`.
  */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(h1, title) asc) ${SOLUTION_TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(select(defined(shortName) && shortName != "" => shortName, title) asc) ${SOLUTION_TAXONOMY_ITEM},
   // Only lines that have a page (PROD-2620): hidden or discontinued lines are not filter options.
   "products": *[_type == "productLine" && ${LINE_STYLE_LISTED}] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "discontinued"] | order(title asc) ${TAXONOMY_ITEM}
