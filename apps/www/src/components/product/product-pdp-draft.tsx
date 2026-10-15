@@ -229,8 +229,8 @@ export function ProductPdpDraftProvider({
     const ready = volumes.length > 0 && contentsReady;
     const hasQuantity = volumes.length > 0;
     const hasContents = contentsReady;
-    const showStickyBar =
-        hasQuantity || hasContents || hasDiyBuilderSignal(builderState);
+    // Sticky bar only after quantity — contents / DIY preselect do not open it.
+    const showStickyBar = hasQuantity;
 
     const missingForRequest = useMemo(() => {
         const missing: MissingRequestField[] = [];

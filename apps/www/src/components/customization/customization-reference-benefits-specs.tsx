@@ -21,8 +21,9 @@ type CustomizationReferenceBenefitsSpecsProps = {
 
 /**
  * Shared Benefits + Specs band (PROD-1299).
- * Left column stacks both blocks (separate scroll anchors); right column
- * sticky lifestyle video (else lifestyle primary image).
+ * Benefits heads the story. The spec table keeps its Specs & performance
+ * label. The right column is the lifestyle image when one exists; otherwise
+ * the spec table takes that column.
  */
 export function CustomizationReferenceBenefitsSpecs({
     detail,
@@ -38,6 +39,9 @@ export function CustomizationReferenceBenefitsSpecs({
     const hasLifestyleMedia = Boolean(
         lifestyleVideoUrl || lifestyleStill?.src,
     );
+    const specsInRightColumn =
+        !hasLifestyleMedia && showOverview && showSpecs;
+    const twoColumns = hasLifestyleMedia || specsInRightColumn;
 
     return (
         <div className={cn(className)}>
@@ -48,21 +52,25 @@ export function CustomizationReferenceBenefitsSpecs({
                 <div
                     className={cn(
                         'grid gap-10 lg:items-start',
-                        hasLifestyleMedia
-                            ? 'lg:grid-cols-2'
-                            : 'lg:grid-cols-1',
+                        twoColumns ? 'lg:grid-cols-2' : 'lg:grid-cols-1',
                     )}
                 >
-                    <div className="flex min-w-0 flex-col gap-16">
+                    <div
+                        className={cn(
+                            'flex min-w-0 flex-col gap-10',
+                            !twoColumns && 'lg:max-w-[calc(50%-1.25rem)]',
+                        )}
+                    >
                         {showOverview ? (
                             <CustomizationReferenceBenefitsContent
                                 detail={detail}
                             />
                         ) : null}
-                        {showSpecs ? (
+                        {showSpecs && !specsInRightColumn ? (
                             <CustomizationReferenceSpecsContent
                                 detail={detail}
                                 compareLabel={compareLabel}
+                                heading={showOverview ? 'label' : 'section'}
                             />
                         ) : null}
                     </div>
@@ -74,6 +82,15 @@ export function CustomizationReferenceBenefitsSpecs({
                             imageAlt={
                                 lifestyleStill?.alt || detail.title
                             }
+                        />
+                    ) : null}
+                    {specsInRightColumn ? (
+                        <CustomizationReferenceSpecsContent
+                            detail={detail}
+                            compareLabel={compareLabel}
+                            heading="label"
+                            // Clears the Benefits title so this label lines up with the why line.
+                            className="lg:mt-[calc(42px*1.12+3rem)]"
                         />
                     ) : null}
                 </div>

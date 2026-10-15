@@ -7,6 +7,7 @@ import {Badge} from '@pakfactory/ui/components/badge';
 import {AccountRequestProductCard} from '@/components/account/account-request-product-card';
 import {RequestWizardChrome} from '@/components/request/request-wizard-chrome';
 import {
+    REQUEST_PANEL_SECTION_TOP_OFFSET,
     scrollToRequestWizardSection,
     useRequestWizardScrollSpy,
 } from '@/components/request/request-wizard-scroll';
@@ -128,10 +129,16 @@ export function AccountRequestDetailView({
     };
 
     function scrollToSection(key: string) {
-        scrollToRequestWizardSection(sectionRefs, key, setActiveKey);
+        scrollToRequestWizardSection(sectionRefs, key, setActiveKey, {
+            offset: REQUEST_PANEL_SECTION_TOP_OFFSET,
+            root: 'nearest',
+        });
     }
 
-    useRequestWizardScrollSpy(railRows, sectionRefs, setActiveKey);
+    useRequestWizardScrollSpy(railRows, sectionRefs, setActiveKey, {
+        offset: REQUEST_PANEL_SECTION_TOP_OFFSET,
+        root: 'nearest',
+    });
 
     const mailtoHref = `mailto:${ACCOUNT_COPY.quotesEmail}?subject=${encodeURIComponent(
         `Re: ${request.reference}`,
@@ -159,8 +166,9 @@ export function AccountRequestDetailView({
     );
 
     return (
-        <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen bg-background -mt-10 -mb-10 sm:-mt-12 sm:-mb-12">
+        <div className="bg-background">
             <RequestWizardChrome
+                frame="panel"
                 rows={railRows}
                 activeKey={activeKey}
                 onSelect={scrollToSection}
@@ -193,7 +201,7 @@ export function AccountRequestDetailView({
                         <section
                             id="section-products"
                             ref={productsRef}
-                            className="mb-16 flex scroll-mt-[108px] flex-col"
+                            className="mb-16 flex scroll-mt-6 flex-col"
                         >
                             <div className="mb-7">
                                 <h2 className="text-2xl font-semibold tracking-tight">
@@ -245,7 +253,7 @@ export function AccountRequestDetailView({
                     <section
                         id="section-requirements"
                         ref={requirementsRef}
-                        className="flex scroll-mt-[108px] flex-col"
+                        className="flex scroll-mt-6 flex-col"
                     >
                         <div className="mb-7">
                             <h2 className="text-[26px] font-semibold tracking-tight">

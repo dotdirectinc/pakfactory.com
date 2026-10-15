@@ -24,6 +24,10 @@ export const REQUEST_COPY = {
     no: 'No',
     yes: 'Yes',
     customizationHeading: 'Customization',
+    /** Compatibility → PDP: clear applied preselects. */
+    clearSelection: 'Clear selection',
+    /** Shown beside a summary row title when that category was preselected. */
+    preselectedLabel: 'Preselected',
     /** Inspiration PDP — product ships with options already chosen. */
     customizationPresetDescription:
         'This product is already customized with the options below. Change any of them to fit your project.',
