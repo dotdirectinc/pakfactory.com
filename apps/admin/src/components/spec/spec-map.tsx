@@ -405,6 +405,7 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   const { editing: sessionEditing, setEditing: setSessionEditing, addNames: addSessionNames } = session;
   useEffect(() => { if (!sessionEditing) setStructure(false); }, [sessionEditing]);
   const startStructure = useCallback(() => { setSessionEditing(true); setStructure(true); }, [setSessionEditing]);
+  const rulesOn = sessionEditing && !structure;
   // Every card's name, for the pending sentences of a move made by dragging.
   useEffect(() => { addSessionNames(Object.fromEntries(data.nodes.map((n) => [n.id, n.title]))); }, [data.nodes, addSessionNames]);
   const [stream, setStream] = useState<string>(TABLE_GROUPS[0]!.key);
@@ -448,7 +449,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
       ro.disconnect();
       window.removeEventListener("resize", fit);
     };
-  }, []);
+    // Re-fit when an edit mode's strip opens or closes above the map.
+  }, [sessionEditing]);
 
   const parentsOf = useMemo(
     () => adjacency(nodes.length, edges, 1, 0),
@@ -1428,6 +1430,8 @@ function SpecMapView({ data }: { data: SpecMapData }) {
   // ── editing on the diagram: offer or stop offering an option on a product ──
   // Not on stale data: never while the map is re-reading the rules after a submit, or before this
   // record's offers have loaded (2026-10-14).
+  /** Edit rules needs a product or an option to edit. */
+  const rulesTarget = sel !== null && (sel.level === "product" || sel.level === "customizationOption");
   const editingHere = session.editing && !structure && session.canEdit && !session.refreshing && compatLoaded && sel !== null && (sel.level === "product" || sel.level === "customizationOption");
   const [editNote, setEditNote] = useState<string | null>(null);
 
@@ -1834,22 +1838,53 @@ function SpecMapView({ data }: { data: SpecMapData }) {
             </Button>
           ))}
         </div>
+        {/* The edit modes, together and easy to find (2026-10-15): one group, filled buttons. */}
         {session.canEdit ? (
-          <div className="flex items-center gap-2">
+          <div role="group" aria-label={COPY.editGroup} className="ml-auto flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/5 p-1 shadow-xs">
+            <span className="px-1.5 text-xs font-semibold uppercase tracking-wide text-primary">{COPY.editGroup}</span>
             <Button
-              size="xs"
-              variant={structure ? "secondary" : "outline"}
-              aria-pressed={structure}
-              disabled={session.refreshing || (session.editing && !structure) || (structure && session.edits.length > 0)}
-              title={structure && session.edits.length ? COPY.moveDoneBlocked : COPY.moveRecordsTitle}
-              onClick={() => (structure ? setSessionEditing(false) : startStructure())}
+              size="sm"
+              variant={rulesOn ? "secondary" : "default"}
+              aria-pressed={rulesOn}
+              disabled={session.refreshing || structure || (!rulesOn && !rulesTarget)}
+              title={session.refreshing ? EDIT.refreshingMap : !rulesTarget && !rulesOn ? COPY.editRulesNeedsSelection : undefined}
+              onClick={() => session.setEditing(true)}
             >
-              <Move /> {structure ? COPY.moveDone : COPY.moveRecords}
+              <Pencil /> {session.refreshing ? EDIT.refreshingMap : EDIT.mapEdit}
             </Button>
-            {dropNote ? <span className="text-xs text-destructive">{dropNote}</span> : null}
+            <Button
+              size="sm"
+              variant={structure ? "secondary" : "default"}
+              aria-pressed={structure}
+              disabled={session.refreshing || rulesOn}
+              title={COPY.moveRecordsTitle}
+              onClick={startStructure}
+            >
+              <Move /> {COPY.moveRecords}
+            </Button>
           </div>
         ) : null}
       </div>
+
+      {/* While a mode is on: what it is, how to use it, and the way out. */}
+      {session.editing ? (
+        <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-2 text-sm ${structure ? "border-amber-500/50 bg-amber-500/10" : "border-primary/40 bg-primary/10"}`}>
+          {structure ? <Move className="size-4 shrink-0" /> : <Pencil className="size-4 shrink-0" />}
+          <span className="font-semibold text-foreground">{structure ? COPY.movingTitle : COPY.editingRulesTitle}</span>
+          <span className="text-muted-foreground">{structure ? COPY.movingHow : COPY.editingRulesHow}</span>
+          {dropNote ? <span className="text-destructive">{dropNote}</span> : null}
+          <Button
+            size="xs"
+            variant="outline"
+            className="ml-auto"
+            disabled={session.edits.length > 0 || session.submitting}
+            title={session.edits.length ? COPY.moveDoneBlocked : undefined}
+            onClick={() => setSessionEditing(false)}
+          >
+            {COPY.doneEditing}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex h-9 shrink-0 items-center">
         {sel ? (
@@ -1925,15 +1960,10 @@ function SpecMapView({ data }: { data: SpecMapData }) {
                 {COPY.relatedIn(relatedByStream.get(g.key)!, g.label)}
               </Button>
             ))}
-            {session.canEdit && !session.editing && (sel.level === "product" || sel.level === "customizationOption") ? (
-              <Button size="xs" variant="outline" className="ml-auto" disabled={session.refreshing} title={session.refreshing ? EDIT.refreshingMap : undefined} onClick={() => session.setEditing(true)}>
-                <Pencil /> {session.refreshing ? EDIT.refreshingMap : EDIT.mapEdit}
-              </Button>
-            ) : null}
             <Button
               size="xs"
               variant="ghost"
-              className={session.canEdit && !session.editing && (sel.level === "product" || sel.level === "customizationOption") ? "" : "ml-auto"}
+              className="ml-auto"
               onClick={clearSelection}
             >
               {COPY.clear}
