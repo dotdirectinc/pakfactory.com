@@ -65,6 +65,7 @@ import { migrationRun } from './migrationRun'
 import { featuredVideo } from './featuredVideo'
 import { catalogVideo } from './catalogVideo'
 import { productModel3d } from './productModel3d'
+import specRelationsOwner from './specRelationsOwner'
 import {
   pageBuilderBlocks,
   pageBuilderHome,
@@ -73,6 +74,8 @@ import {
 } from './blocks'
 
 export const schemaTypes = [
+  // The relations-owner marker, written by the server only (PROD-2988 / PROD-3008).
+  specRelationsOwner,
   // Shared objects
   socialLink,
   featuredVideo,

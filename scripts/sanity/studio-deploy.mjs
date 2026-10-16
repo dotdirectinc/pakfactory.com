@@ -80,14 +80,6 @@ const env = {
   ...Object.fromEntries(
     Object.entries(PREVIEW_VARS).map(([k, name]) => [name, target.previews[k] ?? ""]),
   ),
-  // PROD-2988: the rules' read-only switch, stated for every deploy (an omitted variable would
-  // hand the decision to a developer's .env.local — the 2026-09-17 lesson above). A value typed
-  // in the shell for this one deploy wins: that is the revert flag.
-  SANITY_STUDIO_SPEC_OWNS_RULES:
-    process.env.SANITY_STUDIO_SPEC_OWNS_RULES ?? (target.specOwnsRules ? "true" : "false"),
-  // PROD-3008: the same, for a registered record's parents.
-  SANITY_STUDIO_SPEC_OWNS_STRUCTURE:
-    process.env.SANITY_STUDIO_SPEC_OWNS_STRUCTURE ?? (target.specOwnsStructure ? "true" : "false"),
   SANITY_STUDIO_SPEC_SYSTEM_URL: target.specSystemUrl ?? "",
 };
 
@@ -99,12 +91,6 @@ for (const [k] of Object.entries(PREVIEW_VARS)) {
     `    previews ${k.padEnd(4)}  ${url ?? "— not wired: no Presentation tab for this surface —"}`,
   );
 }
-console.log(
-  `    rules          ${env.SANITY_STUDIO_SPEC_OWNS_RULES === "true" ? "read-only — edited in the Spec System (PROD-2988)" : "editable in Studio"}`,
-);
-console.log(
-  `    parents        ${env.SANITY_STUDIO_SPEC_OWNS_STRUCTURE === "true" ? "read-only once registered — moved in the Spec System (PROD-3008)" : "editable in Studio"}`,
-);
 console.log("");
 
 const result = spawnSync(

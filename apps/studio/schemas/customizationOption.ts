@@ -6,7 +6,7 @@ import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
 import { entityFields } from '../lib/entity-id-field'
-import { parentLocked, SPEC_OWNS_RULES } from '../lib/spec-owned'
+import { parentLocked, rulesLocked } from '../lib/spec-owned'
 import { specOwnedField } from '../components/SpecOwnedField'
 
 /**
@@ -390,7 +390,7 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       // PROD-2988: read-only once the Spec System owns the rules for this Studio's dataset.
-      readOnly: SPEC_OWNS_RULES,
+      readOnly: () => rulesLocked(),
       components: { input: CompatibleCustomizationsInput, field: specOwnedField('customizationOption') },
       description:
         'Which other customizations can be ordered with this one. Recording it on either option is ' +
