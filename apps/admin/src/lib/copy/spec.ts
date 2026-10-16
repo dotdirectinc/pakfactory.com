@@ -279,6 +279,14 @@ export const ADMIN_SPEC_TABLES_COPY = {
   paginationLabel: "Table pages",
 } as const;
 
+/** Planned actions shown greyed out (Richard, 2026-10-15): creating records and rules is phase 2. */
+export const ADMIN_SPEC_FUTURE_COPY = {
+  tag: "Phase 2",
+  title: "Planned for phase 2 — not available yet. Create records in Studio for now.",
+  addRule: "Add a new rule",
+  addEntity: (entity: string) => `Add a new ${entity}`,
+} as const;
+
 /** A catalog record's page (2026-10-08): every record, every level and status. */
 export const ADMIN_SPEC_RECORD_COPY = {
   unreachable: "The record could not be loaded.",
