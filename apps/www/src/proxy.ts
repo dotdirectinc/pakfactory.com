@@ -7,7 +7,7 @@ import {
   type RedirectRuleset,
   type RedirectRow,
 } from "@pakfactory/redirects";
-import { isWwwRedirect } from "@/lib/redirect-surfaces";
+import { isWwwRedirect, redirectBase } from "@/lib/redirect-surfaces";
 
 /**
  * CMS-redirect proxy for the www app (Next 16's renamed middleware — PROD-2157
@@ -184,7 +184,7 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     // Edge emits the doc's real status: 301 permanent / 302 temporary.
     // `destination` is non-null for 301/302; cross-app targets are absolute.
     return NextResponse.redirect(
-      toAbsolute(hit.destination as string, SITE_URL),
+      toAbsolute(hit.destination as string, redirectBase(hit.destination as string, req.nextUrl.origin, SITE_URL)),
       hit.status,
     );
   }

@@ -12,7 +12,21 @@
 const CASE_STUDIES_PREFIX = "/case-studies";
 const CATALOG_SURFACES = ["/products", "/solutions", "/customizations"];
 
+const onCatalog = (path: string) => CATALOG_SURFACES.some((p) => path === p || path.startsWith(`${p}/`));
+
 export function isWwwRedirect(from: string): boolean {
     if (from.startsWith(CASE_STUDIES_PREFIX)) return true;
-    return CATALOG_SURFACES.some((p) => from === p || from.startsWith(`${p}/`));
+    return onCatalog(from);
+}
+
+/**
+ * Where a redirect's destination is resolved. Case studies keep the site URL:
+ * they reach this app through the live site's nginx, so the request's own host
+ * is the origin host, not the one the visitor uses. Catalog paths are served by
+ * this app itself, so a catalog destination stays on the host that was asked —
+ * otherwise staging and previews redirect to the live site (found 2026-10-16:
+ * staging's old solution style URL landed on pakfactory.com's 404).
+ */
+export function redirectBase(destination: string, requestOrigin: string, siteUrl: string): string {
+    return destination.startsWith("/") && onCatalog(destination.split("?")[0]!) ? requestOrigin : siteUrl;
 }
