@@ -26,6 +26,8 @@ import type {RequestServiceOption} from '@/lib/request/service-option';
 import {RFQ_REF_PATTERN} from '@/lib/request/contract.rules';
 import {canSubmitRequest} from '@/lib/request/validation';
 import {MessageDialog} from '@/components/ui/message-dialog';
+import {formatDateTime} from '@pakfactory/utilities/date-time';
+import {useViewerTimeZone} from '@pakfactory/ui/components/local-time';
 import {submitRequest} from '@/lib/rfq/submit-request';
 
 type StepReviewProps = {
@@ -66,11 +68,7 @@ export function StepReview({
 
     const reviewCopy = getRequestReviewCopy();
     const ready = canSubmitRequest(draft, lines);
-    const documentDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
+    const documentDate = formatDateTime(new Date(), 'longDate', useViewerTimeZone());
     const displayRef =
         // The backend's own format (RFQ-2026-00042). The old /^RFQ-\d{5}$/ matched no real
         // reference, so the paper always showed the placeholder (PROD-2605).
