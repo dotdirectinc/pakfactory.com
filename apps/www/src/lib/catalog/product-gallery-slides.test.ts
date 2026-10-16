@@ -38,6 +38,19 @@ test('productGallerySlides dedupes media when it matches featured URL', () => {
     ]);
 });
 
+test('productGallerySlides carries Sanity LQIP onto CatalogMedia', () => {
+    const slides = productGallerySlides(
+        {
+            url: 'https://cdn.example/featured.jpg',
+            alt: 'Featured',
+            lqip: 'data:image/png;base64,abc',
+        },
+        [],
+        'Product',
+    );
+    assert.equal(slides[0]?.lqip, 'data:image/png;base64,abc');
+});
+
 test('productGallerySlides returns featured only when media is empty', () => {
     const slides = productGallerySlides(
         {url: 'https://cdn.example/featured.jpg', alt: 'Featured'},

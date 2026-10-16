@@ -8,6 +8,7 @@ import {cn} from '@pakfactory/ui/lib/utils';
 import {MediaSettleZoom} from '@/components/ui/media-settle-zoom';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {CatalogMedia} from '@/lib/catalog/types';
+import {useSanityImageSettle} from '@/lib/sanity/use-sanity-image-settle';
 import {
     MEDIA_DISSOLVE_MS,
     mediaDissolveTransitionClass,
@@ -21,6 +22,12 @@ type ProductGalleryProps = {
     /** Playable MP4/MOV for feature (index 0); YouTube / missing → still only. */
     featuredVideoUrl?: string | null;
 };
+
+/**
+ * Feature well: under-report so 2× DPR lands near ~720–800, not full-viewport
+ * 1080–1920 (PROD-3102).
+ */
+const GALLERY_WELL_SIZES = '(max-width: 1024px) 50vw, 360px';
 
 function usePrefersReducedMotion(): boolean {
     const [reduced, setReduced] = useState(false);
@@ -49,6 +56,74 @@ function useIsMobileViewport(): boolean {
     }, []);
 
     return isMobile;
+}
+
+function GalleryRailThumb({
+    src,
+    kind,
+    lqip,
+}: {
+    src: string;
+    kind?: CatalogMedia['kind'];
+    lqip?: string;
+}) {
+    const {onLoad, onError, imageClassName} = useSanityImageSettle(src);
+
+    return (
+        <MediaSettleZoom
+            mediaKind={kind === 'lifestyle' ? 'lifestyle' : 'product'}
+        >
+            <SanityImage
+                src={src}
+                alt=""
+                square
+                fill
+                sizes="64px"
+                className={cn('object-fill', imageClassName)}
+                onLoad={onLoad}
+                onError={onError}
+                {...(lqip
+                    ? {placeholder: 'blur' as const, blurDataURL: lqip}
+                    : {})}
+            />
+        </MediaSettleZoom>
+    );
+}
+
+function GalleryWellSlideImage({
+    src,
+    alt,
+    priority,
+    lqip,
+    onReady,
+}: {
+    src: string;
+    alt: string;
+    priority: boolean;
+    lqip?: string;
+    onReady: () => void;
+}) {
+    const {onLoad, onError, imageClassName} = useSanityImageSettle(src, {
+        onReady,
+    });
+
+    return (
+        <SanityImage
+            src={src}
+            alt={alt}
+            square
+            fill
+            priority={priority}
+            loading={priority ? undefined : 'lazy'}
+            sizes={GALLERY_WELL_SIZES}
+            className={cn('object-fill', imageClassName)}
+            onLoad={onLoad}
+            onError={onError}
+            {...(lqip
+                ? {placeholder: 'blur' as const, blurDataURL: lqip}
+                : {})}
+        />
+    );
 }
 
 export function ProductGallery({
@@ -188,28 +263,16 @@ export function ProductGallery({
                                     onClick={() => selectSlide(index)}
                                     className={cn(
                                         'group relative aspect-square w-full shrink-0 cursor-pointer overflow-hidden rounded-sm bg-muted outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
-                                        selected
-                                            ? 'shadow-md'
-                                            : 'opacity-60 hover:opacity-100',
+                                        !selected &&
+                                            'opacity-30 hover:opacity-100',
                                     )}
                                 >
                                     {item.src ? (
-                                        <MediaSettleZoom
-                                            mediaKind={
-                                                item.kind === 'lifestyle'
-                                                    ? 'lifestyle'
-                                                    : 'product'
-                                            }
-                                        >
-                                            <SanityImage
-                                                src={item.src}
-                                                alt=""
-                                                square
-                                                fill
-                                                sizes="64px"
-                                                className="object-fill"
-                                            />
-                                        </MediaSettleZoom>
+                                        <GalleryRailThumb
+                                            src={item.src}
+                                            kind={item.kind}
+                                            lqip={item.lqip}
+                                        />
                                     ) : (
                                         <span className="flex h-full items-center justify-center">
                                             <PackageIcon
@@ -237,7 +300,12 @@ export function ProductGallery({
                     const isTop = index === visibleIndex;
                     const isUnder =
                         index === underIndex && index !== visibleIndex;
-                    const showSlide = isTop || isUnder;
+                    // Mount the active slide even before commit so it can load
+                    // (gate waits on markReady — do not eager-load the whole set).
+                    const isActivePending =
+                        index === activeIndex && index !== visibleIndex;
+                    const showSlide = isTop || isUnder || isActivePending;
+                    if (!showSlide) return null;
 
                     return (
                         <div
@@ -245,28 +313,22 @@ export function ProductGallery({
                             data-gallery-slide={index}
                             aria-hidden={!isTop}
                             className={cn(
-                                'absolute inset-0',
+                                // Opaque muted panel so transparent PNGs dissolve
+                                // against chrome, not the under-slide product (PROD-3102).
+                                'absolute inset-0 bg-muted',
                                 isTop ? 'z-10' : 'z-0',
                                 mediaDissolveTransitionClass,
-                                showSlide ? 'opacity-100' : 'opacity-0',
+                                isTop || isUnder ? 'opacity-100' : 'opacity-0',
                                 !isTop && 'pointer-events-none',
                             )}
                         >
                             {item.src ? (
-                                <SanityImage
+                                <GalleryWellSlideImage
                                     src={item.src}
                                     alt={isTop ? item.alt : ''}
-                                    square
-                                    fill
                                     priority={index === 0}
-                                    loading={index === 0 ? undefined : 'eager'}
-                                    fetchPriority={
-                                        index === 0 ? undefined : 'low'
-                                    }
-                                    sizes="(max-width: 1024px) 100vw, 50vw"
-                                    className="object-fill"
-                                    onLoad={() => markReady(index)}
-                                    onError={() => markReady(index)}
+                                    lqip={item.lqip}
+                                    onReady={() => markReady(index)}
                                 />
                             ) : (
                                 <span className="absolute inset-0 flex items-center justify-center">

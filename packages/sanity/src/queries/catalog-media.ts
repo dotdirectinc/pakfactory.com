@@ -15,6 +15,16 @@ export const CATALOG_IMAGE_PROJ = /* groq */ `{
 }`;
 
 /**
+ * Detail / gallery projection — includes Sanity LQIP for blur settle (PROD-3102).
+ * Do not use on the packed product library list (payload size).
+ */
+export const CATALOG_IMAGE_WITH_LQIP_PROJ = /* groq */ `{
+  ...,
+  "alt": ${IMAGE_ALT},
+  "lqip": asset->metadata.lqip
+}`;
+
+/**
  * Primary product still: marked primary, else first in `images`, else legacy
  * `featuredImage`, else `media[0]`.
  */
@@ -31,6 +41,8 @@ export const CARD_IMAGE_FROM_CATALOG = /* groq */ `"cardImage": ${PRIMARY_PRODUC
 /** Alias as `featuredImage` for consumers that still select that key. */
 export const FEATURED_IMAGE_FROM_CATALOG = /* groq */ `"featuredImage": ${PRIMARY_PRODUCT_IMAGE_GROQ}${CATALOG_IMAGE_PROJ}`;
 
+/** Detail featured still with LQIP (PDP / option gallery). */
+export const FEATURED_IMAGE_WITH_LQIP_FROM_CATALOG = /* groq */ `"featuredImage": ${PRIMARY_PRODUCT_IMAGE_GROQ}${CATALOG_IMAGE_WITH_LQIP_PROJ}`;
 /**
  * Playable URL from a catalogVideo / featuredVideo-shaped object.
  * YouTube and unset → null (ambient/hover keep the still).
@@ -60,28 +72,28 @@ export const LIFESTYLE_VIDEO_URL_FROM_CATALOG = /* groq */ `"lifestyleVideoUrl":
 
 /** Full media arrays for gallery / hover (product + lifestyle). */
 export const CATALOG_MEDIA_ARRAYS = /* groq */ `
-  images[]${CATALOG_IMAGE_PROJ},
-  lifestyleImages[]${CATALOG_IMAGE_PROJ},
+  images[]${CATALOG_IMAGE_WITH_LQIP_PROJ},
+  lifestyleImages[]${CATALOG_IMAGE_WITH_LQIP_PROJ},
   videos[]{
     source,
     url,
     youtubeUrl,
     "fileUrl": file.asset->url,
-    thumbnail${CATALOG_IMAGE_PROJ}
+    thumbnail${CATALOG_IMAGE_WITH_LQIP_PROJ}
   },
   lifestyleVideos[]{
     source,
     url,
     youtubeUrl,
     "fileUrl": file.asset->url,
-    thumbnail${CATALOG_IMAGE_PROJ}
+    thumbnail${CATALOG_IMAGE_WITH_LQIP_PROJ}
   },
-  ${FEATURED_IMAGE_FROM_CATALOG},
+  ${FEATURED_IMAGE_WITH_LQIP_FROM_CATALOG},
   ${FEATURED_VIDEO_URL_FROM_CATALOG},
   ${LIFESTYLE_VIDEO_URL_FROM_CATALOG},
   "media": select(
-    count(images) > 0 => images[]${CATALOG_IMAGE_PROJ},
-    media[]${CATALOG_IMAGE_PROJ}
+    count(images) > 0 => images[]${CATALOG_IMAGE_WITH_LQIP_PROJ},
+    media[]${CATALOG_IMAGE_WITH_LQIP_PROJ}
   )
 `;
 
@@ -90,17 +102,16 @@ export const CATALOG_MEDIA_ARRAYS = /* groq */ `
  * Keeps `featuredImage` / `media` keys for www map-sanity.
  */
 export const OPTION_MEDIA_FIELDS = /* groq */ `
-  ${FEATURED_IMAGE_FROM_CATALOG},
+  ${FEATURED_IMAGE_WITH_LQIP_FROM_CATALOG},
   "media": select(
-    count(images) > 0 => images[]${CATALOG_IMAGE_PROJ},
-    media[]${CATALOG_IMAGE_PROJ}
+    count(images) > 0 => images[]${CATALOG_IMAGE_WITH_LQIP_PROJ},
+    media[]${CATALOG_IMAGE_WITH_LQIP_PROJ}
   ),
-  images[]${CATALOG_IMAGE_PROJ},
-  lifestyleImages[]${CATALOG_IMAGE_PROJ},
+  images[]${CATALOG_IMAGE_WITH_LQIP_PROJ},
+  lifestyleImages[]${CATALOG_IMAGE_WITH_LQIP_PROJ},
   ${FEATURED_VIDEO_URL_FROM_CATALOG},
   ${LIFESTYLE_VIDEO_URL_FROM_CATALOG}
 `;
-
 /** Card / section `imageSrc` from primary product still (legacy coalesce). */
 export const CATALOG_IMAGE_SRC = /* groq */ `coalesce(
   images[primary == true][0].asset->url,
