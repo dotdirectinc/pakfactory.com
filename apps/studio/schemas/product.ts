@@ -21,7 +21,7 @@ import {
 } from '../lib/product-availability'
 import { baseWarning, presetWarning, strayPreselections } from '../lib/preselection-warnings'
 import { entityFields } from '../lib/entity-id-field'
-import { SPEC_OWNS_RULES } from '../lib/spec-owned'
+import { parentLocked, SPEC_OWNS_RULES } from '../lib/spec-owned'
 import { specOwnedField } from '../components/SpecOwnedField'
 
 /**
@@ -333,6 +333,9 @@ export const product = defineType({
     // than one line and 0 in more than one style.
     defineField({
       name: 'productLine',
+      // PROD-3008: read-only once the record is registered and the Spec System owns structure.
+      readOnly: parentLocked,
+      components: { field: specOwnedField('product', 'structure') },
       title: 'Product line',
       type: 'reference',
       group: GROUPS.categorization,
@@ -348,6 +351,9 @@ export const product = defineType({
     }),
     defineField({
       name: 'productStyle',
+      // PROD-3008: read-only once the record is registered and the Spec System owns structure.
+      readOnly: parentLocked,
+      components: { field: specOwnedField('product', 'structure') },
       title: 'Product styles',
       type: 'array',
       group: GROUPS.categorization,
@@ -383,6 +389,9 @@ export const product = defineType({
     }),
     defineField({
       name: 'basedOn',
+      // PROD-3008: read-only once the record is registered and the Spec System owns structure.
+      readOnly: parentLocked,
+      components: { field: specOwnedField('inspiration', 'structure') },
       title: 'Based on',
       type: 'reference',
       group: GROUPS.categorization,
@@ -401,6 +410,9 @@ export const product = defineType({
     }),
     defineField({
       name: 'solutions',
+      // PROD-3008: read-only once the record is registered and the Spec System owns structure.
+      readOnly: parentLocked,
+      components: { field: specOwnedField('product-by-kind', 'structure') },
       title: 'Solutions',
       type: 'array',
       group: GROUPS.categorization,

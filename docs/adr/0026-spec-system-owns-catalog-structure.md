@@ -1,6 +1,6 @@
 # ADR-026: The Spec System owns catalog structure after a record is created
 
-**Status:** **Proposed** (2026-10-13) — decision taken by Richard on 2026-10-13 (option A below); becomes Accepted when Richard accepts this record. **Settles [ADR-025](0025-spec-system-owns-catalog-relations.md) § 7** ("Structure … gets its own record"). Applies to `admin`, `studio` and the Spec registry (`pakfactory.com-backend`). Tickets: PROD-2959 → PROD-3006 (server) · PROD-3007 (admin) · PROD-3008 (switch).
+**Status:** **Accepted** (2026-10-16, with the read-only switch, PROD-3008; proposed 2026-10-13) — decision taken by Richard on 2026-10-13 (option A below). A record's parents lock in Studio once it has a registry id (Richard, 2026-10-16), not on first publish. **Settles [ADR-025](0025-spec-system-owns-catalog-relations.md) § 7** ("Structure … gets its own record"). Applies to `admin`, `studio` and the Spec registry (`pakfactory.com-backend`). Tickets: PROD-2959 → PROD-3006 (server) · PROD-3007 (admin) · PROD-3008 (switch).
 
 ## Context
 

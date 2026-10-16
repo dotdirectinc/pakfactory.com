@@ -11,6 +11,8 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
 import { entityFields } from '../lib/entity-id-field'
 import { FULL_STATUS_LIST, isParentOffStatus, STATUS_DESCRIPTION_TAIL } from '../lib/catalog-status'
 import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
+import { parentLocked } from '../lib/spec-owned'
+import { specOwnedField } from '../components/SpecOwnedField'
 
 /**
  * Product Style — a construction within a line (Magnetic Closure, Straight Tuck
@@ -99,6 +101,9 @@ export const productStyle = defineType({
     }),
     defineField({
       name: 'productLine',
+      // PROD-3008: read-only once the record is registered and the Spec System owns structure.
+      readOnly: parentLocked,
+      components: { field: specOwnedField('productStyle', 'structure') },
       title: 'Parent product line',
       type: 'reference',
       group: GROUPS.content,
