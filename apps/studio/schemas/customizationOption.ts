@@ -6,6 +6,8 @@ import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
 import { entityFields } from '../lib/entity-id-field'
+import { SPEC_OWNS_RULES } from '../lib/spec-owned'
+import { specOwnedField } from '../components/SpecOwnedField'
 
 /**
  * `appearsIn` values (PROD-2732). Exported so nothing has to re-spell them.
@@ -384,7 +386,9 @@ export const customizationOption = defineType({
       title: 'Compatible customizations',
       type: 'array',
       group: 'categorization',
-      components: { input: CompatibleCustomizationsInput },
+      // PROD-2988: read-only once the Spec System owns the rules for this Studio's dataset.
+      readOnly: SPEC_OWNS_RULES,
+      components: { input: CompatibleCustomizationsInput, field: specOwnedField('customizationOption') },
       description:
         'Which other customizations can be ordered with this one. Recording it on either option is ' +
         'enough. Empty means none are compatible.',

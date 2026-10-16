@@ -80,6 +80,12 @@ const env = {
   ...Object.fromEntries(
     Object.entries(PREVIEW_VARS).map(([k, name]) => [name, target.previews[k] ?? ""]),
   ),
+  // PROD-2988: the rules' read-only switch, stated for every deploy (an omitted variable would
+  // hand the decision to a developer's .env.local — the 2026-09-17 lesson above). A value typed
+  // in the shell for this one deploy wins: that is the revert flag.
+  SANITY_STUDIO_SPEC_OWNS_RULES:
+    process.env.SANITY_STUDIO_SPEC_OWNS_RULES ?? (target.specOwnsRules ? "true" : "false"),
+  SANITY_STUDIO_SPEC_SYSTEM_URL: target.specSystemUrl ?? "",
 };
 
 console.log(`\n🚀  Deploying the ${target.label} — ${target.studioUrl}\n`);
@@ -90,6 +96,9 @@ for (const [k] of Object.entries(PREVIEW_VARS)) {
     `    previews ${k.padEnd(4)}  ${url ?? "— not wired: no Presentation tab for this surface —"}`,
   );
 }
+console.log(
+  `    rules          ${env.SANITY_STUDIO_SPEC_OWNS_RULES === "true" ? "read-only — edited in the Spec System (PROD-2988)" : "editable in Studio"}`,
+);
 console.log("");
 
 const result = spawnSync(
