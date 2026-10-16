@@ -40,7 +40,8 @@ const TAB_TRIGGER_CLASS =
 
 /**
  * Catalog tab strip: full width of the section (it bleeds through the inner
- * gutter to the dieline), dashed rule, sticky under the site header, actions
+ * gutter to the dieline), dashed rule, sticky flush at the viewport top (the
+ * site header is not sticky; same as the customization catalog), actions
  * on the right. Built on the `@pakfactory/ui` Tabs primitive (`line`
  * variant). Props-only (ADR-013): the caller owns the active tab and panel.
  */
@@ -60,7 +61,7 @@ export function CatalogTabBar({
             onValueChange={onValueChange}
             className={cn('gap-0', className)}
         >
-            <div className="sticky top-16 z-30 -mx-layout-gutter-inner border-b border-dashed border-border bg-background">
+            <div className="sticky top-0 z-30 -mx-layout-gutter-inner border-b border-dashed border-border bg-background">
                 <div className="flex items-stretch justify-between gap-x-4 px-layout-gutter-inner sm:gap-x-6">
                     <TabsList
                         variant="line"
