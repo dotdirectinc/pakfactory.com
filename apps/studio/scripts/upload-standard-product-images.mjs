@@ -21,6 +21,7 @@
  *
  *   · A product whose copies in different style folders are not byte-identical — someone has
  *     to pick which copy is right first. Listed, skipped; the rest of the line goes ahead.
+ *   · The same image twice in one product.
  *   · Two different products holding a byte-identical PNG — almost always a misfiled image.
  *     Both are skipped. --skip SKU,SKU leaves out any others on purpose.
  *   · A SKU with no product, or more than one, or one whose status is not `active`.
@@ -35,9 +36,10 @@
  *     when an editor picks the image by hand.
  *   · `images` on the published product, and on `drafts.<id>` when one exists (otherwise the
  *     stale draft reverts the upload when someone presses Publish). One patch per product.
- *   · Order: angled, front, side, top, bottom, close-up, then any other view; within a view
- *     the plain image before colour variants, then by number. The first is `primary`.
- *   · `alt`: "<product title>, <colour>, <view>", e.g. "Burlap/Jute Drawstring Bags, kraft,
+ *   · Order: version by version (product-1 before product-2), then angled, front, side, top,
+ *     bottom, close-up, any other view; within a view the plain image before colour variants,
+ *     then by number. The first is `primary`.
+ *   · `alt`: "<product title>, [version N, ]<colour>, <view>", e.g. "Burlap/Jute Drawstring Bags, kraft,
  *     front view". Editable in Studio.
  *
  * Re-running is safe: assets are reused, and a product whose `images` already equal what
@@ -189,6 +191,7 @@ function collectLine(tree, driveRoot) {
         }
         files.push({
           name: f.local_title,
+          folder: prod.local_title,
           driveId: f.id,
           path: join(driveRoot, line.local_title, style.local_title, prod.local_title, '02-Edited', f.local_title),
         })
@@ -204,18 +207,33 @@ function collectLine(tree, driveRoot) {
 
 const VIEW_RANK = [/^angle/, /^front/, /^side/, /^top/, /^bottom/, /^close-up/]
 
-/** line_product_[colour_]view[-N].png → parts. A name without a view part (Box Inserts) keeps only the product. */
-function parseName(name) {
+/** The product part of a file name, from its folder: "[BAG-008] Euro Tote Bags with Ribbon Handle" → "euro-tote-bags-with-ribbon-handle". */
+const productSlug = (folder) =>
+  folder.replace(/^(\[INTERNAL\] )?\[[A-Z]{3}-\d{3}\] /, '').toLowerCase()
+    .replace(/&/g, 'and').replace(/w\//g, 'with ').replace(/[()[\]]/g, '').replace(/[ /,+]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+
+/**
+ * line_product[-version]_[colour_]view[-N].png → parts.
+ *   version — a product with more than one group of images numbers the product part: product-1, product-2…
+ *   N       — the same view shot more than once within one version.
+ * A name without a view part (Box Inserts) keeps only the product, and a number on it is the image number.
+ */
+function parseName(name, folder) {
   const stem = name.replace(/\.png$/i, '')
   const parts = stem.split('_')
   let colour = null
   let view = null
   if (parts.length >= 4) [colour, view] = [parts[2], parts.slice(3).join('_')]
   else if (parts.length === 3) view = parts[2]
+  let version = 0
+  if (view && folder) {
+    const m = parts[1].match(/^(.*)-(\d+)$/)
+    if (m && parts[1] !== productSlug(folder) && m[1] === productSlug(folder)) version = Number(m[2])
+  }
   const tail = (view ?? parts[1] ?? '').match(/-(\d+)$/)
   const number = tail ? Number(tail[1]) : 0
   const viewBase = view ? view.replace(/-\d+$/, '') : null
-  return { colour, view, viewBase, number }
+  return { version, colour, view, viewBase, number }
 }
 
 function orderImages(files) {
@@ -225,8 +243,9 @@ function orderImages(files) {
     return i === -1 ? VIEW_RANK.length : i
   }
   return files
-    .map((f) => ({ ...f, parsed: parseName(f.name) }))
+    .map((f) => ({ ...f, parsed: parseName(f.name, f.folder) }))
     .sort((a, b) =>
+      a.parsed.version - b.parsed.version ||
       rank(a.parsed) - rank(b.parsed) ||
       (a.parsed.colour ? 1 : 0) - (b.parsed.colour ? 1 : 0) ||
       (a.parsed.colour ?? '').localeCompare(b.parsed.colour ?? '') ||
@@ -239,6 +258,7 @@ function orderImages(files) {
 function altFor(title, p) {
   const words = (s) => s.replace(/-/g, ' ')
   const bits = [title]
+  if (p.version) bits.push(`version ${p.version}`)
   if (p.colour) bits.push(words(p.colour))
   if (p.view) bits.push(words(p.view))
   else if (p.number) bits.push(String(p.number))
@@ -298,6 +318,9 @@ async function main() {
       files.push({ ...f, buf, hash })
     }
     if (differs) { needsPick.push(differs); continue }
+    const seen = new Map()
+    const twice = files.filter((f) => (seen.has(f.hash) ? true : (seen.set(f.hash, f.name), false)))
+    if (twice.length) { needsPick.push(`${sku}: the same image twice — ${twice.map((f) => `${seen.get(f.hash)} = ${f.name}`).join('; ')}`); continue }
     plan.set(sku, files)
   }
   // The same image under two different products is almost always a misfiled file.
