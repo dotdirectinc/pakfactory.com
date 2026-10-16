@@ -33,7 +33,9 @@ const EXTRA_PARAMS: Record<string, CatalogExtraParamDef> = {
 
 const NO_FACETS: string[] = [];
 
-const YEAR_ID = 'newsroom-year';
+/** Trigger keeps Radix's own id (the menu's aria-labelledby points at it). */
+const YEAR_LABEL_ID = 'newsroom-year-label';
+const YEAR_VALUE_ID = 'newsroom-year-value';
 
 /** Media assets (mockup's second tab) has no content model yet — Announcements only. */
 const ANNOUNCEMENTS_TAB = 'announcements';
@@ -82,7 +84,7 @@ export function NewsCatalogPanel({items}: NewsCatalogPanelProps) {
         years.length > 0 ? (
             <div className="flex shrink-0 items-center gap-2">
                 <Label
-                    htmlFor={YEAR_ID}
+                    id={YEAR_LABEL_ID}
                     className="font-normal text-muted-foreground"
                 >
                     Year
@@ -93,10 +95,12 @@ export function NewsCatalogPanel({items}: NewsCatalogPanelProps) {
                     <DropdownMenuTrigger asChild>
                         <button
                             type="button"
-                            id={YEAR_ID}
+                            aria-labelledby={`${YEAR_LABEL_ID} ${YEAR_VALUE_ID}`}
                             className="flex h-9 w-32 items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm font-medium whitespace-nowrap shadow-xs outline-none focus-visible:border-primary"
                         >
-                            {year === ALL ? 'All years' : year}
+                            <span id={YEAR_VALUE_ID}>
+                                {year === ALL ? 'All years' : year}
+                            </span>
                             <ChevronDownIcon
                                 className="size-4 shrink-0 text-muted-foreground opacity-50"
                                 aria-hidden
