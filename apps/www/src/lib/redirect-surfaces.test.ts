@@ -19,3 +19,12 @@ test("a catalog surface claims whole path segments only, and other apps' paths s
     assert.equal(isWwwRedirect("/blog/some-post"), false);
     assert.equal(isWwwRedirect("glossy"), false); // a phrase rule
 });
+
+test("a catalog destination stays on the host that was asked; case studies keep the site URL", async () => {
+    const { redirectBase } = await import("./redirect-surfaces");
+    const site = "https://pakfactory.com";
+    assert.equal(redirectBase("/solutions/gifting/x", "https://staging.pakfactory.com", site), "https://staging.pakfactory.com");
+    assert.equal(redirectBase("/products/boxes/sleeve?a=1", "https://preview.vercel.app", site), "https://preview.vercel.app");
+    assert.equal(redirectBase("/case-studies/new-slug", "https://origin.case-studies.pakfactory.com", site), site);
+    assert.equal(redirectBase("https://elsewhere.com/x", "https://staging.pakfactory.com", site), site); // absolute: toAbsolute keeps it as is
+});
