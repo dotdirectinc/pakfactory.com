@@ -212,6 +212,7 @@ const STATE_RANK = {
   '01-Folding Cartons': ['opened', 'semi-opened', 'fully-opened', 'closed'],
   '02-Corrugated Boxes': ['opened', 'semi-opened', 'fully-opened', 'closed'],
   '07-Mailers': ['opened', 'semi-opened', 'fully-opened', 'closed'],
+  '11-Tin Packaging': ['opened', 'semi-opened', 'fully-opened', 'closed'],
   '03-Rigid Boxes': ['opened', 'semi-opened', 'closed'],
 }
 
@@ -232,6 +233,14 @@ const PRIMARY_PICK = {
   'COR-002': 'corrugated_auto-bottom-slotted-container_kraft_bottom-view-opened.png',
   'COR-042': 'corrugated_custom-tuck-top-auto-lock-bottom-corrugated-box_kraft_bottom-view-opened.png',
   'COR-051': 'corrugated_one-piece-folder-with-tuck-flaps_kraft_front-view-opened.png',
+  // Tin Packaging, picked 16 Oct (the rest match the opened-first order)
+  'TIN-019': 'custom-tin-packaging_rectangular-slip-cover-tins-seamless_angled-view-opened-2.png',
+  'TIN-021': 'custom-tin-packaging_rectangular-tin-with-airtight-double-lid_angled-view-3.png',
+  'TIN-025': 'custom-tin-packaging_rectangular-tin-with-friction-fit-slip-cover-lid_angled-view-opened-2.png',
+  'TIN-029': 'custom-tin-packaging_round-tin-can-with-flush-lid_angled-view-opened-2.png',
+  'TIN-040': 'custom-tin-packaging_slip-cover-tin-cans-seamless_front-view-opened.png',
+  'TIN-041': 'custom-tin-packaging_square-tin-with-hinged-lid-2_angled-view-3.png',
+  'TIN-052': 'custom-tin-packaging_tin-can-with-airtight-double-lid_angled-view-opened-2.png',
 }
 
 /** Per-line colour order. Images with no colour still come first; listed colours next; others A–Z after them. */
