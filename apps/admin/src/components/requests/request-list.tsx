@@ -9,21 +9,12 @@ import { Input } from "@pakfactory/ui/components/input";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
 import { entryKindLabel } from "@/lib/request-entry-kind";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 type RequestListProps = {
   requests: RequestSummary[];
 };
 
-function formatSubmittedAt(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return ADMIN_REQUESTS_COPY.emptyValue;
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function matchesListQuery(summary: RequestSummary, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -145,7 +136,7 @@ export function RequestList({ requests }: RequestListProps) {
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap text-muted-foreground tabular-nums">
                         <Link href={href} className="block">
-                          {formatSubmittedAt(request.submittedAt)}
+                          <LocalTime iso={request.submittedAt} preset="shortDateTime" fallback={ADMIN_REQUESTS_COPY.emptyValue} />
                         </Link>
                       </td>
                       <td className="px-4 py-2">

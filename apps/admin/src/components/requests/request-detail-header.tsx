@@ -7,6 +7,7 @@ import { cn } from "@pakfactory/ui/lib/utils";
 import { ComingSoonButton } from "@/components/requests/coming-soon-button";
 import { RequestPreviewDrawer } from "@/components/requests/request-preview-drawer";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 import {
   getRequestStatus,
   requestStatusChipClass,
@@ -18,16 +19,6 @@ type RequestDetailHeaderProps = {
   request: Request;
   preview: ReactNode;
 };
-
-function formatSubmittedAt(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export function RequestDetailHeader({
   request,
@@ -76,7 +67,7 @@ export function RequestDetailHeader({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {formatSubmittedAt(request.submittedAt)}
+        <LocalTime iso={request.submittedAt} preset="longDateTime" />
         {company
           ? ` ${ADMIN_REQUESTS_COPY.detailMetaFromCompany(company)}`
           : null}

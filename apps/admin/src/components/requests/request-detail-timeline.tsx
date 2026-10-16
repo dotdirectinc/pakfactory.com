@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { ComingSoonButton } from "@/components/requests/coming-soon-button";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
+import { formatDateTime } from "@pakfactory/utilities/date-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 type RequestDetailTimelineProps = {
   activities: RequestActivity[];
@@ -15,19 +17,9 @@ type ActivityGroup = {
   items: RequestActivity[];
 };
 
-function formatActivityTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function formatActivityDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-  });
-}
+// Day headings group by the office's calendar day (a grouping key must be the same on the
+// server and in the browser); each entry's own time is shown in the viewer's zone.
+const formatActivityDate = (iso: string) => formatDateTime(iso, "monthDay");
 
 function groupActivitiesByDate(
   activities: RequestActivity[],
@@ -130,7 +122,7 @@ export function RequestDetailTimeline({
                       dateTime={activity.occurredAt}
                       className="shrink-0 text-xs text-muted-foreground sm:text-right"
                     >
-                      {formatActivityTime(activity.occurredAt)}
+                      <LocalTime iso={activity.occurredAt} preset="time" />
                     </time>
                   </li>
                 ))}

@@ -10,6 +10,7 @@ import { dismissSyncAction, requestSyncAction } from "@/app/(admin)/spec/actions
 import type { SyncRun, SyncWriteProblem } from "@/lib/spec/registry-api";
 import { RulesDriftLine, StructureDriftLine } from "@/components/spec/spec-sync-history";
 import { ADMIN_SPEC_SYNC_COPY as COPY, ADMIN_SPEC_SYNC_HISTORY_COPY as HISTORY } from "@/lib/copy/spec";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 type Props = {
   runs: SyncRun[];
@@ -31,8 +32,6 @@ function visibleRuns(runs: SyncRun[]): SyncRun[] {
   return runs.filter((r) => !r.dismissed_at && !(r.state === "failed" && r.requested_at < (lastDone.get(r.kind) ?? "")));
 }
 
-const when = (iso: string) =>
-  new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
 
 /**
  * Sync Sanity and Sync from Notion (PROD-2751). A button queues a run; the backend worker compares
@@ -157,7 +156,7 @@ export function SpecSyncPanel({ runs, canSync, problems = [] }: Props) {
                     <Badge variant="outline" title={COPY.automaticHint}>{COPY.automatic}</Badge>
                   ) : null}
                   <span className="text-muted-foreground">· {r.dataset}</span>
-                  <span className="text-muted-foreground">{when(r.requested_at)}</span>
+                  <LocalTime iso={r.requested_at} className="text-muted-foreground" />
                   {r.result?.documents !== undefined ? (
                     <span className="text-muted-foreground">· {r.result.documents} documents read</span>
                   ) : null}

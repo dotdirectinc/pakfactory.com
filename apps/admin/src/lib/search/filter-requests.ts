@@ -1,5 +1,6 @@
 import type { RequestSummary } from "@pakfactory/request/request";
 import type { AdminSearchHit } from "./types";
+import { formatDateTime } from "@pakfactory/utilities/date-time";
 
 function matchesQuery(summary: RequestSummary, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -52,11 +53,7 @@ export function requestSummariesToHits(
       subtitle: [
         summary.contactCompany,
         summary.contactEmail,
-        new Date(summary.submittedAt).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
+        formatDateTime(summary.submittedAt, "shortDate"),
       ]
         .filter(Boolean)
         .join(" · "),

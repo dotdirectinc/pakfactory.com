@@ -7,6 +7,7 @@ import {
   isAlgoliaSearchConfigured,
 } from "./algolia-client";
 import type { AdminSearchHit } from "./types";
+import { formatDateTime } from "@pakfactory/utilities/date-time";
 
 /**
  * Owner-scoped Algolia search for requests (ADR-018).
@@ -49,13 +50,7 @@ export async function searchRequestsViaAlgolia(input: {
     subtitle: [
       record.contactCompany,
       record.contactEmail,
-      record.submittedAt
-        ? new Date(record.submittedAt).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
-        : null,
+      record.submittedAt ? formatDateTime(record.submittedAt, "shortDate") : null,
     ]
       .filter(Boolean)
       .join(" · "),

@@ -6,12 +6,15 @@
   "exports": {
     "./length-units": "./src/length-units.ts",
     "./dimension-axes": "./src/dimension-axes.ts",
-    "./external-link": "./src/external-link.ts"
+    "./external-link": "./src/external-link.ts",
+    "./date-time": "./src/date-time.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +"
   },
   "devDependencies": {
+    "tsx": "^4.21.0",
     "typescript": "^5.7.3"
   }
 }

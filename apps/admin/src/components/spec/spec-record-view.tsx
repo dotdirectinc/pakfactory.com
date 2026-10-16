@@ -15,8 +15,8 @@ import type { ChildGroup } from "@/lib/spec/catalog-record";
 import type { RecordSection } from "@/lib/spec/record-sections";
 import { WithRuleEditSession } from "@/components/spec/rule-edit-session";
 import { ADMIN_SPEC_RECORD_COPY as COPY } from "@/lib/copy/spec";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
-const when = (iso: string) => new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
 
 /** `/spec/catalog/<level>/<id>` → its level and id; anything else is not a record link. */
 function recordTarget(href: string): { key: TableKey; id: string } | null {
@@ -205,7 +205,7 @@ function RecordSectionView({ sec, Section, onSelect }: { sec: RecordSection; Sec
               ) : f.text === null ? (
                 <span className="text-muted-foreground/60">{COPY.empty}</span>
               ) : f.key === "_createdAt" || f.key === "_updatedAt" ? (
-                when(String(f.text))
+                <LocalTime iso={String(f.text)} />
               ) : (
                 String(f.text)
               )}

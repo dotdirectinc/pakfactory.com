@@ -7,6 +7,7 @@ import { Button } from "@pakfactory/ui/components/button";
 import { Input } from "@pakfactory/ui/components/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@pakfactory/ui/components/select";
 import type { TableKey } from "@/lib/spec/catalog-table-model";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 import type { Choice, RuleEditorData } from "@/lib/spec/rule-editor-data";
 import { loadPendingRules, loadRecordEdits, loadRuleEditor, type RecordEdit } from "@/app/(admin)/spec/rule-edit-actions";
 import type { PendingField, PendingRules } from "@/lib/spec/pending-rules";
@@ -378,7 +379,7 @@ function RecordHistory({ id, title }: { id: string; title: string }) {
             <span className="min-w-0 flex-1">
               {r.sentence}
               {r.more ? <span className="text-muted-foreground"> {COPY.historyMore(r.more)}</span> : null}
-              <span className="block text-xs text-muted-foreground">{new Date(r.at).toLocaleString()}</span>
+              <LocalTime iso={r.at} className="block text-xs text-muted-foreground" />
             </span>
             <Link href={`/spec/${r.id}`} className="shrink-0 text-xs font-medium text-primary hover:underline">{COPY.historyOpen}</Link>
           </li>

@@ -131,6 +131,14 @@ Global search open / dialog behavior stays under ADR-018 (below). Do not bake pi
 
 Worked example: [`src/components/home/`](src/components/home/) — `home-view.tsx` (surface), modules (`metric-strip`, `greeting`, `insight-grid`), panel (`pak-ai-panel`), widgets under `home/ui/`.
 
+## Dates and times — always local
+
+Every date or time the admin shows goes through the shared helper, never `toLocaleString()` on its own: on the server that formats in UTC (Vercel), so times were hours off.
+
+- Rendered: `<LocalTime iso={…} preset="dateTime" />` from `@pakfactory/ui/components/local-time`. It renders in the office zone (`America/Toronto`) on the server and on first paint, then switches to the viewer's own zone; the full date and zone is the tooltip.
+- Plain strings (search subtitles, sentences, grouping keys): `formatDateTime(iso, preset)` from `@pakfactory/utilities/date-time`, which uses the office zone. For a string that should follow the viewer, pass `useViewerTimeZone()` as the zone.
+- Presets live in `DATE_TIME_PRESETS` in [`packages/utilities/src/date-time.ts`](../../packages/utilities/src/date-time.ts). Add a new one there rather than formatting inline.
+
 ## Home
 
 `/` is the staff home surface ([`HomeView`](src/components/home/home-view.tsx)). Layout: metric strip → greeting (signed-in display name) → PakAI panel + quick actions → insight grid. Built from `@pakfactory/ui` primitives plus home widgets.
