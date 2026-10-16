@@ -389,11 +389,11 @@ function place(
 /** Moving records: the level a card can move under, and the level that can move under it (PROD-3007). */
 const MOVE_PARENT: Partial<Record<TableKey, TableKey[]>> = {
   productStyle: ["productLine"], product: ["productStyle"], customizationOption: ["customizationType"],
-  customizationType: ["customizationCategory"], inspiration: ["solution"],
+  customizationType: ["customizationCategory"], inspiration: ["solution"], solutionStyle: ["solution"],
 };
 const MOVE_CHILD: Partial<Record<TableKey, TableKey[]>> = {
   productLine: ["productStyle"], productStyle: ["product"], customizationType: ["customizationOption"],
-  customizationCategory: ["customizationType"], solution: ["inspiration"],
+  customizationCategory: ["customizationType"], solution: ["inspiration", "solutionStyle"],
 };
 
 export function SpecMap({ data, focus = null }: { data: SpecMapData; focus?: { level: string; id: string } | null }) {
@@ -1531,6 +1531,9 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
         if (e.kind === "solutions" && e.productId === child.id) solutionIds = e.solutionIds;
       }
     }
+    // An inspiration product is under a solution style because the style's filter matches it — not a
+    // parent link, so there is nothing to move; say where that is decided (PROD-3095).
+    if (child.level === "inspiration" && target.level === "solutionStyle") { setDropNote(COPY.dropOnSolutionStyle(child.title, target.title)); return; }
     const m = dropMove(child, target, { lineOf: lineOfStyle, styleIds, solutionIds });
     if (!m) { setDropNote(COPY.dropNotParent(child.title, target.title)); return; }
     setDropNote(null);

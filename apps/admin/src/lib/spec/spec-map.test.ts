@@ -106,4 +106,17 @@ describe("moves on the map (PROD-3007)", () => {
     assert.equal(dropMove(node("product", "box"), node("productLine", "line2"), { lineOf }), null);
     assert.deepEqual(dropMove(node("productStyle", "style"), node("productLine", "line2"), { lineOf }), { kind: "styleLine", styleId: "style", lineId: "line2" });
   });
+
+  it("a solution style moves solution (PROD-3095): the drop, and the map redrawn", () => {
+    const d = buildSpecMap(twoLines(), "development");
+    const node = (level: string, id: string) => d.nodes[idx(d, level, id)]!;
+    const lineOf = () => undefined;
+    assert.deepEqual(dropMove(node("solutionStyle", "sty-kw"), node("solution", "sol2"), { lineOf }),
+      { kind: "solutionStyleSolution", styleId: "sty-kw", solutionId: "sol2" });
+    // An inspiration product is not moved onto a solution style: membership comes from the filter.
+    assert.equal(dropMove(node("inspiration", "insp-a"), node("solutionStyle", "sty-kw"), { lineOf }), null);
+    const { data, moved } = applyMovesToMap(d, [{ kind: "solutionStyleSolution", styleId: "sty-kw", solutionId: "sol2" }]);
+    assert.deepEqual(parents(data, "solutionStyle", "sty-kw"), ["solution:sol2"]);
+    assert.deepEqual([...moved], [idx(d, "solutionStyle", "sty-kw")]);
+  });
 });

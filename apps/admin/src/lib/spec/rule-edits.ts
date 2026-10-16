@@ -31,9 +31,10 @@ export type MoveDraft =
   | { kind: "basedOn"; productId: string; baseId: string }
   | { kind: "solutions"; productId: string; solutionIds: string[] }
   | { kind: "optionType"; optionId: string; typeId: string }
-  | { kind: "typeCategory"; typeId: string; categoryId: string };
+  | { kind: "typeCategory"; typeId: string; categoryId: string }
+  | { kind: "solutionStyleSolution"; styleId: string; solutionId: string };
 
-const MOVE_KINDS = new Set(["placement", "styleLine", "basedOn", "solutions", "optionType", "typeCategory"]);
+const MOVE_KINDS = new Set(["placement", "styleLine", "basedOn", "solutions", "optionType", "typeCategory", "solutionStyleSolution"]);
 export const isMove = (e: RuleEditDraft): e is MoveDraft => MOVE_KINDS.has(e.kind);
 
 /** The record a move moves. */
@@ -42,7 +43,8 @@ export function moveSubject(e: MoveDraft): string {
     case "placement":
     case "basedOn":
     case "solutions": return e.productId;
-    case "styleLine": return e.styleId;
+    case "styleLine":
+    case "solutionStyleSolution": return e.styleId;
     case "optionType": return e.optionId;
     case "typeCategory": return e.typeId;
   }
@@ -81,6 +83,8 @@ export function describeEdit(e: RuleEditDraft, name: Names): string {
       return `${name(e.optionId)} → type ${name(e.typeId)}`;
     case "typeCategory":
       return `Type ${name(e.typeId)} → category ${name(e.categoryId)}`;
+    case "solutionStyleSolution":
+      return `Solution style ${name(e.styleId)} → solution ${name(e.solutionId)}`;
   }
 }
 
@@ -97,7 +101,8 @@ export function editKey(e: RuleEditDraft): string {
     case "basedOn":
     case "solutions":
     case "optionType":
-    case "typeCategory": return `move:${e.kind}:${moveSubject(e)}`;
+    case "typeCategory":
+    case "solutionStyleSolution": return `move:${e.kind}:${moveSubject(e)}`;
   }
 }
 
@@ -151,7 +156,8 @@ export function applyEdits(catalog: SummaryCatalog, products: SummaryProduct[], 
       const t = type.get(e.typeId);
       if (t) t.categoryId = e.categoryId;
     }
-    // A product's line, styles and solutions, and an inspiration product's base, are not in the rules.
+    // A product's line, styles and solutions, an inspiration product's base and a solution style's
+    // solution are not in the rules.
   }
   return { catalog: { ...catalog, types, options }, products: prods };
 }

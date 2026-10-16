@@ -60,8 +60,9 @@ const QUERY = /* groq */ `{
   "lines": *[_type == "productLine" && !(_id in path("drafts.**"))] | order(title asc) { _id, title },
   "styles": *[_type == "productStyle" && !(_id in path("drafts.**"))] | order(title asc) { _id, title, "lineId": productLine._ref },
   "solutions": *[_type == "solution" && !(_id in path("drafts.**"))] | order(title asc) { _id, title },
+  "solutionStyles": *[_type == "solutionStyle" && !(_id in path("drafts.**"))] | order(title asc) { _id, title, "solutionId": solution._ref },
   "identity": *[
-    _type in ["product", "customizationOption", "customizationType", "customizationCategory", "productLine", "productStyle", "solution"] &&
+    _type in ["product", "customizationOption", "customizationType", "customizationCategory", "productLine", "productStyle", "solution", "solutionStyle"] &&
     !(_id in path("drafts.**")) &&
     defined(entityCode)
   ]{ _id, entityId, entityCode }
@@ -100,6 +101,8 @@ export type RulesSource = {
   lines: StructureRecord[];
   styles: StructureRecord[];
   solutions: StructureRecord[];
+  /** Solution styles and their one solution (PROD-3095). */
+  solutionStyles: (StructureRecord & { solutionId?: string })[];
   /** Built once per request; every resolution below reuses them. */
   graph: ReturnType<typeof buildDependencyGraph>;
   index: ReturnType<typeof buildCompatibilityIndex>;
@@ -122,6 +125,7 @@ type QueryResult = {
   lines?: StructureRecord[];
   styles?: StructureRecord[];
   solutions?: StructureRecord[];
+  solutionStyles?: (StructureRecord & { solutionId?: string })[];
 };
 
 export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
@@ -155,7 +159,7 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
   for (const o of catalog.options) names.set(o._id, o.title ?? o._id);
   // Products too: the rule-edit checks and the impact name them (PROD-2962).
   for (const p of result.products) names.set(p._id, p.title ?? p._id);
-  for (const x of [...(result.inspirations ?? []), ...(result.lines ?? []), ...(result.styles ?? []), ...(result.solutions ?? [])]) names.set(x._id, x.title ?? x._id);
+  for (const x of [...(result.inspirations ?? []), ...(result.lines ?? []), ...(result.styles ?? []), ...(result.solutions ?? []), ...(result.solutionStyles ?? [])]) names.set(x._id, x.title ?? x._id);
   const identities = new Map((result.identity ?? []).map(({ _id, entityId, entityCode }) => [_id, { entityId, entityCode }]));
   const bySanity = new Map<string, string>();
   for (const [id, x] of identities) {
@@ -174,6 +178,7 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
       lines: result.lines ?? [],
       styles: result.styles ?? [],
       solutions: result.solutions ?? [],
+      solutionStyles: result.solutionStyles ?? [],
       graph: buildDependencyGraph(catalog),
       index: buildCompatibilityIndex(catalog.options),
       name: (id) => names.get(id) ?? id,

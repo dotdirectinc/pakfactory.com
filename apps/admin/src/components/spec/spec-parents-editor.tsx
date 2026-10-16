@@ -9,7 +9,7 @@ import { Textarea } from "@pakfactory/ui/components/textarea";
 import type { TableKey } from "@/lib/spec/catalog-table-model";
 import type { Choice } from "@/lib/spec/rule-editor-data";
 import { editKey, isMove, moveSubject, type MoveDraft, type RuleEditDraft } from "@/lib/spec/rule-edits";
-import { loadParents, type ParentsData } from "@/app/(admin)/spec/rule-edit-actions";
+import { loadParents, type ChildMoves, type ParentsData } from "@/app/(admin)/spec/rule-edit-actions";
 import { ImpactBox, PendingTray, useRuleEditSession } from "@/components/spec/rule-edit-session";
 import { ADMIN_SPEC_PARENTS_COPY as COPY, ADMIN_SPEC_RULE_EDIT_COPY as EDIT } from "@/lib/copy/spec";
 
@@ -25,7 +25,7 @@ import { ADMIN_SPEC_PARENTS_COPY as COPY, ADMIN_SPEC_RULE_EDIT_COPY as EDIT } fr
  */
 const LEVELS = new Set<TableKey>(["product", "inspiration", "productStyle", "customizationOption", "customizationType", "productLine", "customizationCategory", "solution"]);
 /** The Catalog structure rows that are parents — the ones Move edits. */
-export const PARENT_FIELDS = new Set(["productLine", "productStyle", "basedOn", "solutions", "type", "category"]);
+export const PARENT_FIELDS = new Set(["productLine", "productStyle", "basedOn", "solutions", "solution", "type", "category"]);
 
 type Move = {
   id: string;
@@ -61,7 +61,7 @@ export function RecordMoveProvider({ level, id, page, onEdit, children }: {
   const names = useMemo(() => {
     if (!data) return {};
     const c = data.choices;
-    return Object.fromEntries([...c.lines, ...c.styles, ...c.solutions, ...c.types, ...c.categories, ...c.bases, ...(data.children?.add ?? []), ...(data.children?.items ?? [])].map((x) => [x.id, x.title]));
+    return Object.fromEntries([...c.lines, ...c.styles, ...c.solutions, ...c.types, ...c.categories, ...c.bases, ...data.children.flatMap((g) => [...g.add, ...g.items])].map((x) => [x.id, x.title]));
   }, [data]);
   const addNames = s?.addNames;
   useEffect(() => { if (addNames && Object.keys(names).length) addNames(names); }, [names, addNames]);
@@ -137,29 +137,33 @@ export function MoveFooter() {
   );
 }
 
-/** The level of records that can move under this one — its children table with that level takes "Add to …". */
-export const childAddLevel = (m: Move | null): string | null => m?.data.children?.level ?? null;
+/** The levels of records that can move under this one — each children table with one of them takes "Add to …". */
+export const childAddLevels = (m: Move | null): { level: string; label: string }[] =>
+  (m?.data.children ?? []).map((g) => ({ level: g.level, label: g.label }));
+const groupOf = (m: Move, level: string) => m.data.children.find((g) => g.level === level);
 
 /** In a children table's header while moving: the dropdown of records that could move under this one. */
-export function ChildAdd({ label }: { label: string }) {
+export function ChildAdd({ label, level }: { label: string; level: string }) {
   const m = useRecordMove();
   const s = useRuleEditSession();
-  if (!m?.editing || !m.data.children || !s) return null;
-  const added = addedChildren(m, s.edits);
+  const g = m ? groupOf(m, level) : undefined;
+  if (!m?.editing || !g || !s) return null;
+  const added = addedChildren(g, s.edits);
   return (
-    <ParentSelect value={undefined} choices={m.data.children.add.filter((x) => !added.includes(x))} placeholder={COPY.addChild(label)}
-      onChange={(x) => { const c = m.data.children!.add.find((y) => y.id === x); if (c) s.put(c.move); }} />
+    <ParentSelect value={undefined} choices={g.add.filter((x) => !added.includes(x))} placeholder={COPY.addChild(label)}
+      onChange={(x) => { const c = g.add.find((y) => y.id === x); if (c) s.put(c.move); }} />
   );
 }
 
 /** Rows for records added under this one and still pending (shown above the table's own rows). */
-export function ChildPendingRows() {
+export function ChildPendingRows({ level }: { level: string }) {
   const m = useRecordMove();
   const s = useRuleEditSession();
-  if (!m?.data.children || !s) return null;
+  const g = m ? groupOf(m, level) : undefined;
+  if (!m || !g || !s) return null;
   return (
     <>
-      {addedChildren(m, s.edits).map((x) => (
+      {addedChildren(g, s.edits).map((x) => (
         <tr key={x.id} className="border-t border-border bg-amber-500/5 first:border-t-0">
           <td className="px-3 py-2">
             <span className="font-medium text-foreground">{x.title}</span>{" "}
@@ -174,9 +178,9 @@ export function ChildPendingRows() {
   );
 }
 
-function addedChildren(m: Move, edits: RuleEditDraft[]) {
+function addedChildren(g: ChildMoves, edits: RuleEditDraft[]) {
   const byKey = new Map(edits.filter(isMove).map((e) => [editKey(e), JSON.stringify(e)]));
-  return m.data.children!.add.filter((x) => byKey.get(editKey(x.move)) === JSON.stringify(x.move));
+  return g.add.filter((x) => byKey.get(editKey(x.move)) === JSON.stringify(x.move));
 }
 
 // ── the parent rows ─────────────────────────────────────────────────────────────────────────
@@ -244,6 +248,14 @@ function Fields({ data, id }: { data: ParentsData; id: string }) {
     return (
       <Row label={COPY.category}>
         <ParentSelect value={categoryId} choices={c.categories} placeholder={COPY.pickCategory2} onChange={(x) => s.put({ kind: "typeCategory", typeId: id, categoryId: x }, x === cur.categoryId)} />
+      </Row>
+    );
+  }
+  if (data.kind === "solutionStyle") {
+    const solutionId = moveOf("solutionStyleSolution")?.solutionId ?? cur.solutionId;
+    return (
+      <Row label={COPY.solution}>
+        <ParentSelect value={solutionId} choices={c.solutions} placeholder={COPY.pickSolution} onChange={(x) => s.put({ kind: "solutionStyleSolution", styleId: id, solutionId: x }, x === cur.solutionId)} />
       </Row>
     );
   }
