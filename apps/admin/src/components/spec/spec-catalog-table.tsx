@@ -27,6 +27,7 @@ import {
 import type { CatalogRow, CatalogTable } from "@/lib/spec/catalog-tables";
 import { useColumnDrag } from "./use-column-drag";
 import { ADMIN_SPEC_TABLES_COPY as COPY } from "@/lib/copy/spec";
+import { LocalTime } from "@/components/ui/local-time";
 
 type Sort = { key: string; dir: 1 | -1 } | null;
 type Saved = { visible: string[]; pageSize?: number };
@@ -368,6 +369,8 @@ export function SpecCatalogTable({ table }: { table: CatalogTable }) {
                               <Network className="size-3.5" />
                             </Link>
                           </span>
+                        ) : text && (k === "_createdAt" || k === "_updatedAt") ? (
+                          <LocalTime iso={text} className="whitespace-nowrap" />
                         ) : text ? (
                           <span className={`line-clamp-2 break-words ${k === "title" ? "font-medium text-foreground" : ""}`} title={text.length > 80 ? text : undefined}>
                             {text}

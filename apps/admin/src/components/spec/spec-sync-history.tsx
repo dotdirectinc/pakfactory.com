@@ -2,14 +2,13 @@ import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { RulesDrift, SyncHistoryFrame, SyncHistoryRun } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SYNC_COPY as SYNC, ADMIN_SPEC_SYNC_HISTORY_COPY as COPY } from "@/lib/copy/spec";
-
-const when = (iso: string) => new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
+import { LocalTime } from "@/components/ui/local-time";
 
 function FrameDecision({ f }: { f: SyncHistoryFrame }) {
   if (f.state === "approved" && f.approved_at)
-    return <>{COPY.decidedBy(COPY.frameStates.approved, f.approved_by?.name ?? COPY.someone, when(f.approved_at))}</>;
+    return <>{COPY.decidedBy(COPY.frameStates.approved, f.approved_by?.name ?? COPY.someone)}<LocalTime iso={f.approved_at} /></>;
   if (f.state === "discarded" && f.discarded_at)
-    return <>{COPY.decidedBy(COPY.frameStates.discarded, f.discarded_by?.name ?? COPY.someone, when(f.discarded_at))}</>;
+    return <>{COPY.decidedBy(COPY.frameStates.discarded, f.discarded_by?.name ?? COPY.someone)}<LocalTime iso={f.discarded_at} /></>;
   return <>{COPY.frameStates[f.state]}</>;
 }
 
@@ -19,10 +18,10 @@ function Recheck({ f }: { f: SyncHistoryFrame }) {
   const r = f.recheck;
   if (!r) return <p className="text-xs text-muted-foreground">{COPY.recheckPending}</p>;
   if (r.checked === 0) return <p className="text-xs text-muted-foreground">{COPY.recheckNothing}</p>;
-  if (r.still_differ === 0) return <p className="text-xs text-emerald-700 dark:text-emerald-400">✓ {COPY.recheckOk(r.checked)} · {when(r.at)}</p>;
+  if (r.still_differ === 0) return <p className="text-xs text-emerald-700 dark:text-emerald-400">✓ {COPY.recheckOk(r.checked)} · <LocalTime iso={r.at} /></p>;
   return (
     <div className="text-xs text-destructive">
-      <p>{COPY.recheckDiffer(r.still_differ, r.checked)} · {when(r.at)}</p>
+      <p>{COPY.recheckDiffer(r.still_differ, r.checked)} · <LocalTime iso={r.at} /></p>
       {r.items.length ? (
         <p className="text-muted-foreground">{r.items.map((i) => i.title ?? COPY.unnamedRow).join(", ")}</p>
       ) : null}
@@ -38,7 +37,7 @@ export function SpecSyncHistoryRun({ run }: { run: SyncHistoryRun }) {
         <Badge variant={run.state === "failed" ? "destructive" : "secondary"}>{SYNC.states[run.state]}</Badge>
         <span className="font-medium text-foreground">{SYNC.kinds[run.kind] ?? run.kind}</span>
         <span className="text-muted-foreground">· {run.dataset}</span>
-        <span className="text-muted-foreground">{when(run.requested_at)}</span>
+        <LocalTime iso={run.requested_at} className="text-muted-foreground" />
         {run.trigger === "automatic" ? (
           <Badge variant="outline" title={SYNC.automaticHint}>{SYNC.automatic}</Badge>
         ) : (

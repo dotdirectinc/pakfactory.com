@@ -336,7 +336,8 @@ export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
     superseded: "Replaced by a newer sync",
     unknown: "Unknown",
   },
-  decidedBy: (verb: string, name: string, at: string) => `${verb} by ${name}, ${at}`,
+  /** Followed by the time, rendered as <LocalTime>. */
+  decidedBy: (verb: string, name: string) => `${verb} by ${name}, `,
   writes: (w: { applied: number; pending: number; stale: number; failed: number }) =>
     [
       `${w.applied} written to Sanity`,

@@ -11,6 +11,7 @@ import type { Request, ShippingAddress } from "@pakfactory/request/request";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { LogoMark } from "@/components/layout/logo-mark";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
+import { formatDateTime } from "@/lib/date-time";
 import { entryKindLabel } from "@/lib/request-entry-kind";
 
 type RequestDetailViewProps = {
@@ -76,14 +77,7 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
   const contactName = [draft.contactFirstName, draft.contactLastName]
     .filter(Boolean)
     .join(" ");
-  const documentDate = new Date(request.submittedAt).toLocaleDateString(
-    "en-US",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
-  );
+  const documentDate = formatDateTime(request.submittedAt, "longDate");
 
   const paperPreview = (
     <RequestDetailCustomerPaperStack
