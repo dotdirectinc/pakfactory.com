@@ -4,21 +4,10 @@ import type { PostCardData } from "@/components/modules/post-card";
 import type { PopularPostCard } from "@/lib/blog-data";
 import type { HomePostCard } from "@/lib/blog-home";
 import { postDetailHref } from "@/lib/blog-post-url";
+import { formatPostDate } from "@/lib/post-format";
 import { resolveImageAlt, sanityImageBaseUrl } from "@/lib/sanity-image";
 
 export type { PostCardData };
-
-function formatPostDate(iso?: string): string | undefined {
-  if (!iso) return undefined;
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime())
-    ? undefined
-    : date.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-}
 
 function formatReadingTime(minutes?: number): string | undefined {
   if (minutes == null || !Number.isFinite(minutes) || minutes <= 0) {
