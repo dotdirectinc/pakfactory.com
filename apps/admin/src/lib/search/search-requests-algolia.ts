@@ -7,7 +7,7 @@ import {
   isAlgoliaSearchConfigured,
 } from "./algolia-client";
 import type { AdminSearchHit } from "./types";
-import { formatDateTime } from "@/lib/date-time";
+import { formatDateTime } from "@pakfactory/utilities/date-time";
 
 /**
  * Owner-scoped Algolia search for requests (ADR-018).

@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { ComingSoonButton } from "@/components/requests/coming-soon-button";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
-import { formatDateTime } from "@/lib/date-time";
-import { LocalTime } from "@/components/ui/local-time";
+import { formatDateTime } from "@pakfactory/utilities/date-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 type RequestDetailTimelineProps = {
   activities: RequestActivity[];

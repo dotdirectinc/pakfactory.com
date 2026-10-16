@@ -11,7 +11,7 @@ import type { Request, ShippingAddress } from "@pakfactory/request/request";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { LogoMark } from "@/components/layout/logo-mark";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
-import { formatDateTime } from "@/lib/date-time";
+import { formatDateTime } from "@pakfactory/utilities/date-time";
 import { entryKindLabel } from "@/lib/request-entry-kind";
 
 type RequestDetailViewProps = {

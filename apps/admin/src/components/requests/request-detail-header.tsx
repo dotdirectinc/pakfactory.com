@@ -7,7 +7,7 @@ import { cn } from "@pakfactory/ui/lib/utils";
 import { ComingSoonButton } from "@/components/requests/coming-soon-button";
 import { RequestPreviewDrawer } from "@/components/requests/request-preview-drawer";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
-import { LocalTime } from "@/components/ui/local-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 import {
   getRequestStatus,
   requestStatusChipClass,

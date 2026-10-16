@@ -1,6 +1,6 @@
 import type { RequestSummary } from "@pakfactory/request/request";
 import type { AdminSearchHit } from "./types";
-import { formatDateTime } from "@/lib/date-time";
+import { formatDateTime } from "@pakfactory/utilities/date-time";
 
 function matchesQuery(summary: RequestSummary, query: string): boolean {
   const q = query.trim().toLowerCase();

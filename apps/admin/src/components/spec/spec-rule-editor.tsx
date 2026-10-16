@@ -7,7 +7,7 @@ import { Button } from "@pakfactory/ui/components/button";
 import { Input } from "@pakfactory/ui/components/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@pakfactory/ui/components/select";
 import type { TableKey } from "@/lib/spec/catalog-table-model";
-import { LocalTime } from "@/components/ui/local-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 import type { Choice, RuleEditorData } from "@/lib/spec/rule-editor-data";
 import { loadPendingRules, loadRecordEdits, loadRuleEditor, type RecordEdit } from "@/app/(admin)/spec/rule-edit-actions";
 import type { PendingField, PendingRules } from "@/lib/spec/pending-rules";

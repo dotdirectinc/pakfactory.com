@@ -27,7 +27,7 @@ import {
 import type { CatalogRow, CatalogTable } from "@/lib/spec/catalog-tables";
 import { useColumnDrag } from "./use-column-drag";
 import { ADMIN_SPEC_TABLES_COPY as COPY } from "@/lib/copy/spec";
-import { LocalTime } from "@/components/ui/local-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 type Sort = { key: string; dir: 1 | -1 } | null;
 type Saved = { visible: string[]; pageSize?: number };

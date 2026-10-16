@@ -15,7 +15,7 @@ import type { ChildGroup } from "@/lib/spec/catalog-record";
 import type { RecordSection } from "@/lib/spec/record-sections";
 import { WithRuleEditSession } from "@/components/spec/rule-edit-session";
 import { ADMIN_SPEC_RECORD_COPY as COPY } from "@/lib/copy/spec";
-import { LocalTime } from "@/components/ui/local-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 
 /** `/spec/catalog/<level>/<id>` → its level and id; anything else is not a record link. */

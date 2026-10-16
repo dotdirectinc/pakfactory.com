@@ -9,7 +9,7 @@ import { Input } from "@pakfactory/ui/components/input";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
 import { entryKindLabel } from "@/lib/request-entry-kind";
-import { LocalTime } from "@/components/ui/local-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 type RequestListProps = {
   requests: RequestSummary[];

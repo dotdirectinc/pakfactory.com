@@ -133,11 +133,11 @@ Worked example: [`src/components/home/`](src/components/home/) — `home-view.ts
 
 ## Dates and times — always local
 
-Every date or time the admin shows goes through [`src/lib/date-time.ts`](src/lib/date-time.ts), never `toLocaleString()` on its own: on the server that formats in UTC (Vercel), so times were hours off.
+Every date or time the admin shows goes through the shared helper, never `toLocaleString()` on its own: on the server that formats in UTC (Vercel), so times were hours off.
 
-- Rendered: `<LocalTime iso={…} preset="dateTime" />` ([`src/components/ui/local-time.tsx`](src/components/ui/local-time.tsx)). It renders in the office zone (`America/Toronto`) on the server and on first paint, then switches to the viewer's own zone; the full date and zone is the tooltip.
-- Plain strings (search subtitles, sentences, grouping keys): `formatDateTime(iso, preset)`, which uses the office zone.
-- Presets live in `DATE_TIME_PRESETS`. Add a new one there rather than formatting inline.
+- Rendered: `<LocalTime iso={…} preset="dateTime" />` from `@pakfactory/ui/components/local-time`. It renders in the office zone (`America/Toronto`) on the server and on first paint, then switches to the viewer's own zone; the full date and zone is the tooltip.
+- Plain strings (search subtitles, sentences, grouping keys): `formatDateTime(iso, preset)` from `@pakfactory/utilities/date-time`, which uses the office zone. For a string that should follow the viewer, pass `useViewerTimeZone()` as the zone.
+- Presets live in `DATE_TIME_PRESETS` in [`packages/utilities/src/date-time.ts`](../../packages/utilities/src/date-time.ts). Add a new one there rather than formatting inline.
 
 ## Home
 

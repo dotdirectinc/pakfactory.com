@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { RulesDrift, SyncHistoryFrame, SyncHistoryRun } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SYNC_COPY as SYNC, ADMIN_SPEC_SYNC_HISTORY_COPY as COPY } from "@/lib/copy/spec";
-import { LocalTime } from "@/components/ui/local-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 function FrameDecision({ f }: { f: SyncHistoryFrame }) {
   if (f.state === "approved" && f.approved_at)

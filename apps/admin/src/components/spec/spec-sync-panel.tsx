@@ -10,7 +10,7 @@ import { dismissSyncAction, requestSyncAction } from "@/app/(admin)/spec/actions
 import type { SyncRun, SyncWriteProblem } from "@/lib/spec/registry-api";
 import { RulesDriftLine, StructureDriftLine } from "@/components/spec/spec-sync-history";
 import { ADMIN_SPEC_SYNC_COPY as COPY, ADMIN_SPEC_SYNC_HISTORY_COPY as HISTORY } from "@/lib/copy/spec";
-import { LocalTime } from "@/components/ui/local-time";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 
 type Props = {
   runs: SyncRun[];
