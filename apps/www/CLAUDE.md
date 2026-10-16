@@ -89,6 +89,14 @@ www prefers **Sections** language for page composition ([ADR-015](../../docs/adr
 - Env: repo root `.env.local` via `loadEnvConfig` in `next.config.ts` (`forceReload: true`); optional overrides in `apps/www/.env.local` — see [`.env.example`](./.env.example)
 - Performance baseline (crawl + Lighthouse, any base URL): `pnpm --filter @pakfactory/www perf:baseline --base <url>` — [`docs/perf-baseline.md`](./docs/perf-baseline.md)
 
+## Dates and times
+
+Format every date or time through the shared helper, never `toLocaleString()` / `toLocaleDateString()` on its own: on the server that formats in UTC (Vercel), so a date after 8 PM Toronto time shows the next day (PROD-3103).
+
+- **Signed-in pages and anything with a time of day** follow the visitor's own zone: `<LocalTime iso={…} preset="…" />` from `@pakfactory/ui/components/local-time` (office zone on the server and first paint, then the viewer's; full date and zone on hover). For a plain string, pass `useViewerTimeZone()` to `formatDateTime`.
+- **Public, cached, date-only text** uses Toronto, as the newsroom already does. In new code use `formatDateTime(iso, preset)` from `@pakfactory/utilities/date-time`, which defaults to `America/Toronto`.
+- Presets live in `DATE_TIME_PRESETS` in [`packages/utilities/src/date-time.ts`](../../packages/utilities/src/date-time.ts). Add one there rather than formatting inline.
+
 ## Packages
 
 | Package | Role |
@@ -96,6 +104,6 @@ www prefers **Sections** language for page composition ([ADR-015](../../docs/adr
 | `@pakfactory/sanity` | GROQ queries, shared content types |
 | `@pakfactory/seo` | JSON-LD generators |
 | `@pakfactory/ui` | Design tokens and primitives — do not edit for features |
-| `@pakfactory/utilities` | General pure helpers (length units, dim axes, external-link) |
+| `@pakfactory/utilities` | General pure helpers (length units, dim axes, external-link, date-time) |
 | `@pakfactory/supabase` | Auth client + session |
 | `@pakfactory/auth-ui` | Shared login form (props-only) |
