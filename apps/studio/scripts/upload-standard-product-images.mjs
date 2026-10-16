@@ -209,7 +209,28 @@ const VIEW_RANK = [/^angle/, /^front/, /^side/, /^top/, /^bottom/, /^close-up/]
 
 /** Per-line order of a view's state (the part after "view-"), within one colour. Lines not listed sort it A–Z. */
 const STATE_RANK = {
+  '01-Folding Cartons': ['opened', 'semi-opened', 'fully-opened', 'closed'],
   '03-Rigid Boxes': ['opened', 'semi-opened', 'closed'],
+}
+
+/**
+ * Primary picked by hand where the line's order would lead with the wrong shot (SKU → 02-Edited file name).
+ * The picked image moves to the front; the rest keep the line's order.
+ */
+const PRIMARY_PICK = {
+  // Folding Cartons, picked 16 Oct (closed shots would otherwise lead)
+  'FCT-005': 'folding-carton_4-corner-tray-and-lid_side-view-opened-2.png',
+  'FCT-010': 'folding-carton_bookend_front-view-semi-opened.png',
+  'FCT-023': 'folding-carton_double-wall-frame-tray-1_top-view-opened-1.png',
+  'FCT-028': 'folding-carton_double-wall-tray-and-lid_top-view-opened-1.png',
+  'FCT-039': 'folding-carton_full-overlap-seal-end-box_bottom-view-opened.png',
+  'FCT-057': 'folding-carton_prism-shaped-box_angled-view-closed.png',
+  'FCT-066': 'folding-carton_side-lock-cake-box_side-view-opened.png',
+}
+
+/** Per-line colour order. Images with no colour still come first; listed colours next; others A–Z after them. */
+const COLOUR_RANK = {
+  '01-Folding Cartons': ['white', 'kraft'],
 }
 const stateOf = (viewBase) => viewBase?.match(/view-(.+)$/)?.[1] ?? ''
 
@@ -242,8 +263,21 @@ function parseName(name, folder) {
   return { version, colour, view, viewBase, number }
 }
 
+function withPick(sku, ordered) {
+  const name = PRIMARY_PICK[sku]
+  if (!name) return ordered
+  const i = ordered.findIndex((f) => f.name === name)
+  if (i === -1) fail(`${sku}: the picked primary "${name}" is not in its 02-Edited folder.`)
+  return [ordered[i], ...ordered.slice(0, i), ...ordered.slice(i + 1)]
+}
+
 function orderImages(files) {
   const states = STATE_RANK[args.line]
+  const colours = COLOUR_RANK[args.line] ?? []
+  const colourRank = (p) => {
+    const i = colours.indexOf(p.colour)
+    return i === -1 ? colours.length : i
+  }
   const stateRank = (p) => {
     if (!states) return 0
     const i = states.indexOf(stateOf(p.viewBase))
@@ -260,6 +294,7 @@ function orderImages(files) {
       a.parsed.version - b.parsed.version ||
       rank(a.parsed) - rank(b.parsed) ||
       (a.parsed.colour ? 1 : 0) - (b.parsed.colour ? 1 : 0) ||
+      colourRank(a.parsed) - colourRank(b.parsed) ||
       (a.parsed.colour ?? '').localeCompare(b.parsed.colour ?? '') ||
       stateRank(a.parsed) - stateRank(b.parsed) ||
       (a.parsed.viewBase ?? '').localeCompare(b.parsed.viewBase ?? '') ||
@@ -379,7 +414,7 @@ async function main() {
     const doc = published ?? draft
     if (doc.status !== 'active') { refused.push(`${sku}: status is "${doc.status}", not active`); continue }
     const hasImages = (published?.images?.length ?? 0) + (draft?.images?.length ?? 0) > 0
-    targets.push({ sku, id, published, draft, hasImages, title: doc.title, files: orderImages(plan.get(sku)) })
+    targets.push({ sku, id, published, draft, hasImages, title: doc.title, files: withPick(sku, orderImages(plan.get(sku))) })
   }
 
   // Assets already in the dataset, by content.
