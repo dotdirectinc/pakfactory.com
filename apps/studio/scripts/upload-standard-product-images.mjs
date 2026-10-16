@@ -207,6 +207,12 @@ function collectLine(tree, driveRoot) {
 
 const VIEW_RANK = [/^angle/, /^front/, /^side/, /^top/, /^bottom/, /^close-up/]
 
+/** Per-line order of a view's state (the part after "view-"), within one colour. Lines not listed sort it A–Z. */
+const STATE_RANK = {
+  '03-Rigid Boxes': ['opened', 'semi-opened', 'closed'],
+}
+const stateOf = (viewBase) => viewBase?.match(/view-(.+)$/)?.[1] ?? ''
+
 /** The product part of a file name, from its folder: "[BAG-008] Euro Tote Bags with Ribbon Handle" → "euro-tote-bags-with-ribbon-handle". */
 const productSlug = (folder) =>
   folder.replace(/^(\[INTERNAL\] )?\[[A-Z]{3}-\d{3}\] /, '').toLowerCase()
@@ -237,6 +243,12 @@ function parseName(name, folder) {
 }
 
 function orderImages(files) {
+  const states = STATE_RANK[args.line]
+  const stateRank = (p) => {
+    if (!states) return 0
+    const i = states.indexOf(stateOf(p.viewBase))
+    return i === -1 ? states.length : i
+  }
   const rank = (p) => {
     if (!p.viewBase) return VIEW_RANK.length + 1
     const i = VIEW_RANK.findIndex((re) => re.test(p.viewBase))
@@ -249,6 +261,7 @@ function orderImages(files) {
       rank(a.parsed) - rank(b.parsed) ||
       (a.parsed.colour ? 1 : 0) - (b.parsed.colour ? 1 : 0) ||
       (a.parsed.colour ?? '').localeCompare(b.parsed.colour ?? '') ||
+      stateRank(a.parsed) - stateRank(b.parsed) ||
       (a.parsed.viewBase ?? '').localeCompare(b.parsed.viewBase ?? '') ||
       a.parsed.number - b.parsed.number ||
       a.name.localeCompare(b.name),
