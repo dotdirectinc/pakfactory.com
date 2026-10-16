@@ -56,9 +56,8 @@ export const TARGETS = {
     // dataset, so this Studio shows them read-only. Revert without a code change:
     //   SANITY_STUDIO_SPEC_OWNS_RULES=false pnpm sanity:deploy:staging
     specOwnsRules: true,
-    // The admin office the read-only note links to. TBD — set it to the admin office's base URL
-    // (e.g. "https://…", no trailing slash) to turn the note's text into a link to the record.
-    specSystemUrl: null,
+    // The admin office the read-only note links to (its record page under /spec/catalog/…).
+    specSystemUrl: "https://staging.admin.pakfactory.com",
     previews: {
       // staging-blog is mounted under /blog (NEXT_PUBLIC_BLOG_BASE_PATH), so the
       // base carries it — the bare host 404s.
