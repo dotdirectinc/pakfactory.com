@@ -17,8 +17,16 @@ import {
     stubCompareAction,
 } from '@/lib/catalog-card-actions';
 import {displayProductSku} from '@/lib/catalog/display-sku';
+import {useSanityImageSettle} from '@/lib/sanity/use-sanity-image-settle';
 import {Badge} from '@pakfactory/ui/components/badge';
 import {cn} from '@pakfactory/ui/lib/utils';
+
+/**
+ * Catalog thumbs only (PROD-3102): under-report slot width so with 2× DPR
+ * Next asks Sanity for ~display size (~400), not ~800–1080.
+ * Mobile 1-col ≈ half viewport; sm+ fixed 200px CSS → ~400 CDN.
+ */
+const PRODUCT_CARD_IMAGE_SIZES = '(max-width: 640px) 50vw, 200px';
 
 export type ProductCardImage = {
     src: string;
@@ -115,18 +123,12 @@ export function ProductCard({
 
     const hero = gallery[0];
     const media = hero ? (
-        <div className="pointer-events-none absolute inset-0">
-            <SanityImage
-                src={hero.src}
-                alt={hero.alt ?? data.title}
-                applyWatermark={applyWatermark}
-                fill
-                priority={priority}
-                square
-                sizes="(max-width: 640px) 96px, (max-width: 1280px) 50vw, 25vw"
-                className="object-cover"
-            />
-        </div>
+        <ProductCardSettlingImage
+            src={hero.src}
+            alt={hero.alt ?? data.title}
+            applyWatermark={applyWatermark}
+            priority={priority}
+        />
     ) : (
         <div className="pointer-events-none absolute inset-0">
             {placeholder}
@@ -221,6 +223,41 @@ export function ProductCard({
                 </div>
             }
         />
+    );
+}
+
+/**
+ * Dissolves the CDN crop in over the frame's muted well (`MediaCardFrame`
+ * already paints `bg-muted`).
+ */
+function ProductCardSettlingImage({
+    src,
+    alt,
+    applyWatermark,
+    priority,
+}: {
+    src: string;
+    alt: string;
+    applyWatermark: boolean;
+    priority: boolean;
+}) {
+    const {onLoad, onError, imageClassName} = useSanityImageSettle(src);
+
+    return (
+        <div className="pointer-events-none absolute inset-0">
+            <SanityImage
+                src={src}
+                alt={alt}
+                applyWatermark={applyWatermark}
+                fill
+                priority={priority}
+                square
+                sizes={PRODUCT_CARD_IMAGE_SIZES}
+                className={cn('object-cover', imageClassName)}
+                onLoad={onLoad}
+                onError={onError}
+            />
+        </div>
     );
 }
 

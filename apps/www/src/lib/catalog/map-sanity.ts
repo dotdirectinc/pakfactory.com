@@ -58,6 +58,14 @@ function mediaFromSanity(
     });
 }
 
+function catalogLqip(source: unknown): string | undefined {
+    if (source == null || typeof source !== 'object') return undefined;
+    const lqip = (source as {lqip?: unknown}).lqip;
+    return typeof lqip === 'string' && lqip.startsWith('data:')
+        ? lqip
+        : undefined;
+}
+
 /** Single Sanity image → CatalogMedia when it has a URL. */
 function catalogMediaFromImage(
     image: unknown | null | undefined,
@@ -66,7 +74,12 @@ function catalogMediaFromImage(
     if (!image) return null;
     const src = sanityImageBaseUrl(image);
     if (!src) return null;
-    return {src, alt: resolveImageAlt(image, titleFallback)};
+    const lqip = catalogLqip(image);
+    return {
+        src,
+        alt: resolveImageAlt(image, titleFallback),
+        ...(lqip ? {lqip} : {}),
+    };
 }
 
 function isPrimaryCatalogImage(item: unknown): boolean {

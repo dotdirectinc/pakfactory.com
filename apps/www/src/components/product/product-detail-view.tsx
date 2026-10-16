@@ -1,4 +1,4 @@
-import type {ComponentType} from 'react';
+import {Suspense, type ComponentType} from 'react';
 import type {
     PageSectionDoc,
     PageSectionProductsRowItemDoc,
@@ -89,13 +89,70 @@ function toProductsRowInheritItem(
     };
 }
 
-export async function ProductDetailView({product}: ProductDetailViewProps) {
+function buildStaticNavItems(
+    specRowsLength: number,
+    customizationItemsLength: number,
+): AnchorNavItem[] {
+    return [
+        ...(specRowsLength > 0
+            ? [{id: 'pdp-specs', label: 'Specifications'}]
+            : []),
+        ...(customizationItemsLength > 0
+            ? [{id: 'pdp-customizations', label: 'Customization'}]
+            : []),
+    ];
+}
+
+function navItemsFromSections(pageSections: PageSectionDoc[]): AnchorNavItem[] {
+    return pageSections.flatMap((section): AnchorNavItem[] => {
+        if (section._type === 'productsRow') {
+            const items = 'items' in section ? (section.items ?? []) : [];
+            if (items.length === 0) return [];
+            return [
+                {
+                    id: `section-products-${section._key}`,
+                    label: 'Related Products',
+                },
+            ];
+        }
+        if (section._type === 'testimonialsRow') {
+            return [
+                {
+                    id: `section-reviews-${section._key}`,
+                    label: 'Reviews',
+                },
+            ];
+        }
+        if (section._type === 'faqSection') {
+            const sectionFaqs =
+                'faqs' in section ? (section.faqs ?? []) : [];
+            if (sectionFaqs.length === 0) return [];
+            return [
+                {
+                    id: `section-faqs-${section._key}`,
+                    label: 'FAQs',
+                },
+            ];
+        }
+        return [];
+    });
+}
+
+/**
+ * Specs / customizations / sections — awaits related siblings for productsRow
+ * inherit (PROD-3102). Suspended so gallery chrome in {@link ProductPdpShell}
+ * can stream first.
+ */
+async function ProductDetailBelowFold({
+    product,
+    specRows,
+    customizationItems,
+}: {
+    product: Product;
+    specRows: ReturnType<typeof buildProductSpecRows>;
+    customizationItems: ReturnType<typeof mapCustomizationPreviewItems>;
+}) {
     const {productStyle: style} = product;
-    const displaySku = displayProductSku(product.sku, product.slug);
-    const specRows = buildProductSpecRows(product);
-    const customizationItems = mapCustomizationPreviewItems(
-        product.availableCustomizations,
-    );
     const faqs = product.faqs ?? [];
 
     // Related strip inherit: curated on product, else same-line siblings (PROD-1913).
@@ -135,48 +192,42 @@ export async function ProductDetailView({product}: ProductDetailViewProps) {
     );
 
     const navItems: AnchorNavItem[] = [
-        ...(specRows.length > 0
-            ? [{id: 'pdp-specs', label: 'Specifications'}]
-            : []),
-        ...(customizationItems.length > 0
-            ? [{id: 'pdp-customizations', label: 'Customization'}]
-            : []),
-        ...pageSections.flatMap((section): AnchorNavItem[] => {
-            if (section._type === 'productsRow') {
-                const items =
-                    'items' in section ? (section.items ?? []) : [];
-                if (items.length === 0) return [];
-                return [
-                    {
-                        id: `section-products-${section._key}`,
-                        label: 'Related Products',
-                    },
-                ];
-            }
-            if (section._type === 'testimonialsRow') {
-                return [
-                    {
-                        id: `section-reviews-${section._key}`,
-                        label: 'Reviews',
-                    },
-                ];
-            }
-            if (section._type === 'faqSection') {
-                const sectionFaqs =
-                    'faqs' in section ? (section.faqs ?? []) : [];
-                if (sectionFaqs.length === 0) return [];
-                return [
-                    {
-                        id: `section-faqs-${section._key}`,
-                        label: 'FAQs',
-                    },
-                ];
-            }
-            return [];
-        }),
+        ...buildStaticNavItems(specRows.length, customizationItems.length),
+        ...navItemsFromSections(pageSections),
     ];
 
+    return (
+        <>
+            <AnchorNav items={navItems} />
+            <ProductSpecs rows={specRows} />
+            <ProductCustomizationsPreview
+                styleTitle={style.title}
+                items={customizationItems}
+            />
+            {pageSections.length > 0 ? (
+                <SectionRenderer
+                    sections={pageSections}
+                    components={{
+                        testimonialsRow:
+                            PdpTestimonialsRow as ComponentType<PageSectionDoc>,
+                    }}
+                />
+            ) : null}
+        </>
+    );
+}
+
+export async function ProductDetailView({product}: ProductDetailViewProps) {
+    const displaySku = displayProductSku(product.sku, product.slug);
+    const specRows = buildProductSpecRows(product);
+    const customizationItems = mapCustomizationPreviewItems(
+        product.availableCustomizations,
+    );
     const breadcrumbItems = buildProductDetailBreadcrumbs(product);
+    const fallbackNav = buildStaticNavItems(
+        specRows.length,
+        customizationItems.length,
+    );
 
     return (
         <>
@@ -189,21 +240,24 @@ export async function ProductDetailView({product}: ProductDetailViewProps) {
             <PageBreadcrumbSection items={breadcrumbItems} />
             <ProductPdpShell product={product} displaySku={displaySku}>
                 <div className="relative">
-                    <AnchorNav items={navItems} />
-                    <ProductSpecs rows={specRows} />
-                    <ProductCustomizationsPreview
-                        styleTitle={style.title}
-                        items={customizationItems}
-                    />
-                    {pageSections.length > 0 ? (
-                        <SectionRenderer
-                            sections={pageSections}
-                            components={{
-                                testimonialsRow:
-                                    PdpTestimonialsRow as ComponentType<PageSectionDoc>,
-                            }}
+                    <Suspense
+                        fallback={
+                            <>
+                                <AnchorNav items={fallbackNav} />
+                                <ProductSpecs rows={specRows} />
+                                <ProductCustomizationsPreview
+                                    styleTitle={product.productStyle.title}
+                                    items={customizationItems}
+                                />
+                            </>
+                        }
+                    >
+                        <ProductDetailBelowFold
+                            product={product}
+                            specRows={specRows}
+                            customizationItems={customizationItems}
                         />
-                    ) : null}
+                    </Suspense>
                 </div>
             </ProductPdpShell>
         </>

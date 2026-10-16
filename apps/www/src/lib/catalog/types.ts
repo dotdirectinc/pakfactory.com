@@ -103,6 +103,8 @@ export type CatalogMedia = {
      * Omitted means product (legacy slides and cards).
      */
     kind?: 'product' | 'lifestyle';
+    /** Sanity asset LQIP (`data:image/...`) for blur settle on detail galleries. */
+    lqip?: string;
 };
 
 export type ProductLineRef = {

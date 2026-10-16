@@ -4,8 +4,20 @@ import { getSanityDataset, getSanityProjectId } from "./env";
 
 const DEFAULT_LOADER_QUALITY = 80;
 
+/**
+ * Cap CDN `w` (and square/portrait `h`) so a loose `sizes` + high DPR cannot
+ * request multi-megapixel crops (PROD-3102).
+ */
+export const SANITY_LOADER_MAX_WIDTH = 1600;
+
 /** Reference width used to bake hotspot/crop `rect` into a loader base URL. */
 const CROP_BASE_REF_WIDTH = 2000;
+
+/** Clamp Next/Image loader width before asking Sanity CDN. */
+export function clampSanityLoaderWidth(width: number): number {
+  if (!Number.isFinite(width) || width <= 0) return 1;
+  return Math.min(Math.round(width), SANITY_LOADER_MAX_WIDTH);
+}
 
 export type SanityImageCropAspect = "square" | "portrait";
 
@@ -109,7 +121,8 @@ export function sanityImageCropBaseUrl(
 export const sanityImageLoader: ImageLoader = ({ src, width, quality }) => {
   try {
     const url = new URL(src);
-    url.searchParams.set("w", String(width));
+    const w = clampSanityLoaderWidth(width);
+    url.searchParams.set("w", String(w));
     url.searchParams.set("q", String(quality ?? DEFAULT_LOADER_QUALITY));
     url.searchParams.set("auto", "format");
     url.searchParams.set("fit", "max");
@@ -128,8 +141,9 @@ export const sanityImageLoader: ImageLoader = ({ src, width, quality }) => {
 export const sanitySquareImageLoader: ImageLoader = ({ src, width, quality }) => {
   try {
     const url = new URL(src);
-    url.searchParams.set("w", String(width));
-    url.searchParams.set("h", String(width));
+    const w = clampSanityLoaderWidth(width);
+    url.searchParams.set("w", String(w));
+    url.searchParams.set("h", String(w));
     url.searchParams.set("q", String(quality ?? DEFAULT_LOADER_QUALITY));
     url.searchParams.set("auto", "format");
     url.searchParams.set("fit", "crop");
@@ -152,8 +166,9 @@ export const sanityPortraitImageLoader: ImageLoader = ({
 }) => {
   try {
     const url = new URL(src);
-    const height = Math.round(width * (4 / 3));
-    url.searchParams.set("w", String(width));
+    const w = clampSanityLoaderWidth(width);
+    const height = Math.round(w * (4 / 3));
+    url.searchParams.set("w", String(w));
     url.searchParams.set("h", String(height));
     url.searchParams.set("q", String(quality ?? DEFAULT_LOADER_QUALITY));
     url.searchParams.set("auto", "format");
