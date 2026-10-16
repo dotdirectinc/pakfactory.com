@@ -7,6 +7,11 @@ import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {
+    PRODUCT_DETAIL_COPY,
+    withMoq,
+} from '@/lib/copy/product-detail';
+
 function formatVolume(n: number): string {
     return n.toLocaleString('en-US');
 }
@@ -74,9 +79,12 @@ export function QuantityPicker({
     const customValid = hasTypedValue && isMultiple && meetsMoq;
     let customError: string | null = null;
     if (hasTypedValue && !isMultiple) {
-        customError = 'Enter a quantity in multiples of 100.';
+        customError = PRODUCT_DETAIL_COPY.quantityIncrementError;
     } else if (hasTypedValue && !meetsMoq) {
-        customError = `Minimum order is ${formatVolume(moq)} ${unitLabel}.`;
+        customError = withMoq(
+            PRODUCT_DETAIL_COPY.quantityBelowMoqError,
+            moq as number,
+        );
     }
 
     function addCustomVolume() {
@@ -89,8 +97,8 @@ export function QuantityPicker({
     }
 
     const description = hasMoq
-        ? `Quantities are in multiples of 100.  ·  Minimum order ${formatVolume(moq)} ${unitLabel}.`
-        : 'Quantities are in multiples of 100.';
+        ? withMoq(PRODUCT_DETAIL_COPY.quantityHint, moq as number)
+        : PRODUCT_DETAIL_COPY.quantityHintNoMoq;
 
     const selected = uniqueSorted(volumes);
 
@@ -107,7 +115,7 @@ export function QuantityPicker({
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
                         {selected.length === 0 ? (
                             <span className="text-sm font-medium text-muted-foreground">
-                                Select quantities
+                                {PRODUCT_DETAIL_COPY.quantityPlaceholder}
                             </span>
                         ) : (
                             selected.map((volume) => (
@@ -171,7 +179,9 @@ export function QuantityPicker({
                                 <Input
                                     type="number"
                                     min={1}
-                                    placeholder="Type your own quantity"
+                                    placeholder={
+                                        PRODUCT_DETAIL_COPY.customQuantityPlaceholder
+                                    }
                                     className="bg-background"
                                     value={customVolume}
                                     onChange={(event) =>

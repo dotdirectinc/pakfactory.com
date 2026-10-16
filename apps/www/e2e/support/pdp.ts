@@ -9,19 +9,19 @@ export async function pickFirstQuantity(page: Page, scope: Locator): Promise<voi
 }
 
 /**
- * On a PDP: pick a preset quantity, say what goes in the box, Add to request.
+ * On a PDP: pick a preset quantity, say what goes in the box, Add to Quote Request.
  * Asserts the confirmation toast and that the nav's Quote request count rose.
  */
 export async function addCurrentPdpToRequest(page: Page): Promise<void> {
     // The PDP has no <main> landmark; the request rail lives in the product article.
     const rail = page.getByRole('article').filter({has: page.getByRole('heading', {level: 1})});
-    const addButton = rail.getByRole('button', {name: 'Add to request'});
+    const addButton = rail.getByRole('button', {name: 'Add to Quote Request'});
     await expect(addButton).toBeDisabled();
 
     await pickFirstQuantity(page, rail);
 
     await rail
-        .getByRole('textbox', {name: /What are you putting in the packaging/})
+        .getByRole('textbox', {name: /What are you packaging/})
         .fill(BUYER.contents);
 
     await expect(addButton).toBeEnabled();

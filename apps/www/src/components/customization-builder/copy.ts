@@ -8,7 +8,15 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     back: 'Back',
     next: 'Next',
     skipNotSure: 'Need consultation',
-    notSureHelper: 'We’ll keep this Ready — a specialist will advise.',
+    /** Detail panel when Need consultation is selected. */
+    notSureHelper:
+        'A specialist will recommend options when they review your request.',
+    /**
+     * Sub-line under the Need consultation option in the type list / print gate.
+     * Distinct from {@link specialistToAdvise} (summary value when skipped).
+     */
+    consultationSubLine:
+        "We'll recommend options based on your product.",
     specialistToAdvise: 'Specialist to advise',
     notSet: 'Not set',
     ready: 'Ready',
@@ -36,11 +44,11 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     chooseAny: 'Choose any',
     unavailableWithSelections: 'Not available with your current selections',
     additionalNote: 'Additional note',
-    addAdditionalNote: '+ Additional Note',
+    addAdditionalNote: '+ Add a note',
     removeSelection: 'Remove selection',
     additionalNotePlaceholder:
         'Specific {category} details for your specialist…',
-    skip: 'Skip, need consultation',
+    skip: 'Skip, let a specialist advise',
     /** PROD-2629 / ADR-017 — reverse of Sanity `achieves` (candidates, not a recipe). */
     achievedByHelper:
         'This finish can be achieved by these techniques, learn more about them:',

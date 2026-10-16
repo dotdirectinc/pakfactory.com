@@ -16,6 +16,7 @@ import {
     useProductPdpDraft,
     type MissingRequestField,
 } from '@/components/product/product-pdp-draft';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 import {REQUEST_COPY} from '@/lib/copy/request';
 
 export function ProductConfigurationBar() {
@@ -78,7 +79,7 @@ export function ProductConfigurationBar() {
                                     >
                                         {key === 'quantity'
                                             ? REQUEST_COPY.quantityLabel
-                                            : REQUEST_COPY.contentsChip}
+                                            : PRODUCT_DETAIL_COPY.contentsChip}
                                     </Button>
                                 </span>
                             ))}
@@ -98,7 +99,7 @@ export function ProductConfigurationBar() {
                         className="h-auto shrink-0 px-8 py-3 text-[15px] font-medium"
                         onClick={handleAdd}
                     >
-                        {REQUEST_COPY.addToRequest}
+                        {PRODUCT_DETAIL_COPY.addToRequest}
                     </Button>
                 </div>
             </div>
@@ -114,12 +115,12 @@ export function ProductConfigurationBar() {
                         <DialogTitle>
                             {fillModal === 'quantity'
                                 ? REQUEST_COPY.quantityLabel
-                                : REQUEST_COPY.contentsLabel}
+                                : PRODUCT_DETAIL_COPY.contentsLabel}
                         </DialogTitle>
                         <DialogDescription>
                             {fillModal === 'quantity'
                                 ? REQUEST_COPY.quantityFillHelp
-                                : REQUEST_COPY.contentsHelp}
+                                : PRODUCT_DETAIL_COPY.contentsHelp}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col gap-2 px-5 py-4">
@@ -135,7 +136,9 @@ export function ProductConfigurationBar() {
                         {fillModal === 'contents' ? (
                             <Input
                                 className="h-11"
-                                placeholder={REQUEST_COPY.contentsPlaceholder}
+                                placeholder={
+                                    PRODUCT_DETAIL_COPY.contentsPlaceholder
+                                }
                                 value={contents}
                                 onChange={(event) =>
                                     setContents(event.target.value)

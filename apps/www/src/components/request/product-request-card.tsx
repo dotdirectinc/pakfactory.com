@@ -464,9 +464,12 @@ export function ProductRequestCard({
                         <div className="flex flex-col gap-1">
                             <Label
                                 htmlFor={`${fieldId}-contents`}
-                                className="text-sm font-medium"
+                                className="flex flex-col items-start gap-1 text-sm font-medium"
                             >
-                                {REQUEST_COPY.contentsLabel}
+                                <span>{REQUEST_COPY.contentsLabel}</span>
+                                <span className="text-xs font-normal leading-snug text-muted-foreground">
+                                    {REQUEST_COPY.contentsHelp}
+                                </span>
                             </Label>
                             <Input
                                 id={`${fieldId}-contents`}
@@ -504,6 +507,9 @@ export function ProductRequestCard({
                                     {REQUEST_COPY.optional}
                                 </span>
                             </Label>
+                            <p className="text-xs leading-snug text-muted-foreground">
+                                {REQUEST_COPY.referenceImagesHelp}
+                            </p>
                             <div className="flex flex-wrap items-center gap-2">
                                 {draftImages.map((image) => (
                                     <div

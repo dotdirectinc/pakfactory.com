@@ -147,7 +147,7 @@ export function PrintedSideGate({
                             {CUSTOMIZATION_BUILDER_COPY.skipNotSure}
                         </span>
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                            {CUSTOMIZATION_BUILDER_COPY.specialistToAdvise}
+                            {CUSTOMIZATION_BUILDER_COPY.consultationSubLine}
                         </p>
                     </HighlightItem>
                 </div>

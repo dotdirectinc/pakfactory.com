@@ -1,3 +1,10 @@
+import type {ComponentType} from 'react';
+import type {
+    PageSectionDoc,
+    PageSectionProductsRowItemDoc,
+    PageSectionTestimonialsRowDoc,
+} from '@pakfactory/sanity/queries';
+
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
@@ -9,6 +16,7 @@ import {
 } from '@/components/product/anchor-nav';
 import {ProductSpecs} from '@/components/product/product-specs';
 import {SectionRenderer} from '@/components/sections/section-renderer';
+import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {listRelatedProductSiblings} from '@/lib/catalog/catalog';
 import {displayProductSku} from '@/lib/catalog/display-sku';
 import {primaryProductStill} from '@/lib/catalog/map-sanity';
@@ -17,12 +25,52 @@ import {
     buildProductDetailJsonLd,
 } from '@/lib/catalog/product-jsonld';
 import type {Product} from '@/lib/catalog/types';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
+import {getGooglePlaceReviews} from '@/lib/places/reviews';
 import {mergeSolutionSections} from '@/lib/sections/merge-solution-sections';
+import {mapTestimonialsRow} from '@/lib/sections/map-testimonials-row';
 import {
     applySectionTokens,
     sectionTokenContextFromHost,
 } from '@/lib/sections/resolve-section-tokens';
-import type {PageSectionProductsRowItemDoc} from '@pakfactory/sanity/queries';
+
+/**
+ * PDP-only testimonials — same Places data as the registry, but the aggregate
+ * label is “Google rating” (locked PDP-copy.md). Home keeps “Customer Reviews”.
+ */
+async function PdpTestimonialsRow(section: PageSectionDoc) {
+    const mapped = mapTestimonialsRow(
+        section as PageSectionTestimonialsRowDoc,
+    );
+    const reviews = await getGooglePlaceReviews();
+    if (!reviews || reviews.items.length === 0) return null;
+
+    const aggregate = reviews.aggregate
+        ? {
+              ...reviews.aggregate,
+              label: PRODUCT_DETAIL_COPY.googleRatingLabel,
+          }
+        : undefined;
+
+    return (
+        <TestimonialsRow
+            sectionId={`section-reviews-${section._key}`}
+            items={reviews.items}
+            aggregate={aggregate}
+            reviewsProfileUrl={reviews.reviewsProfileUrl}
+            title={mapped.heading}
+            description={mapped.intro}
+            eyebrow={mapped.eyebrow}
+            align={mapped.align}
+            borderTop={mapped.borderTop}
+            borderBottom={mapped.borderBottom}
+            paddingBlock={mapped.paddingBlock}
+            cta={mapped.cta}
+            layoutVariant={mapped.layoutVariant}
+            aggregatePlacement={mapped.aggregatePlacement}
+        />
+    );
+}
 
 type ProductDetailViewProps = {
     product: Product;
@@ -148,7 +196,13 @@ export async function ProductDetailView({product}: ProductDetailViewProps) {
                         items={customizationItems}
                     />
                     {pageSections.length > 0 ? (
-                        <SectionRenderer sections={pageSections} />
+                        <SectionRenderer
+                            sections={pageSections}
+                            components={{
+                                testimonialsRow:
+                                    PdpTestimonialsRow as ComponentType<PageSectionDoc>,
+                            }}
+                        />
                     ) : null}
                 </div>
             </ProductPdpShell>
