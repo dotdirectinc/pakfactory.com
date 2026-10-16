@@ -19,6 +19,7 @@ import {
   type AvailabilityCatalog,
   type ProductRulesInput,
 } from '../lib/product-availability'
+import { baseWarning, presetWarning, strayPreselections } from '../lib/preselection-warnings'
 import { entityFields } from '../lib/entity-id-field'
 
 /**
@@ -724,12 +725,13 @@ export const product = defineType({
             const client = context.getClient({ apiVersion: '2024-01-01' })
             const { catalog, base } = await client.fetch<{
               catalog: AvailabilityCatalog
-              base: ProductRulesInput | null
+              base: (ProductRulesInput & { title?: string | null }) | null
             }>(
               `{
                 "catalog": ${AVAILABILITY_CATALOG_QUERY},
                 "base": coalesce(*[_id == "drafts." + $baseRef][0], *[_id == $baseRef][0]){
                   _id,
+                  title,
                   "availableCustomizations": availableCustomizations[].customization._ref,
                   "customizationExceptions": customizationExceptions[]{ "optionId": customization._ref, mode, reason }
                 }
@@ -738,16 +740,74 @@ export const product = defineType({
             )
             if (!base) return true // base not landed yet — see above
             const allowed = offeredOptionIds(resolveProductAvailability(catalog, base))
-            const stray = (list as { customization?: { _ref?: string } }[]).filter(
-              (e) => e?.customization?._ref && !allowed.has(e.customization._ref),
-            ).length
-            if (stray > 0) {
-              return `${stray} option(s) here are not offered by the product this preset is based on, directly or through the customization rules. A preset cannot offer what the box it is built from cannot be made with — add them to the base product first, or remove them here.`
+            const stray = strayPreselections(
+              allowed,
+              (list as { customization?: { _ref?: string } }[]).map((e) => e?.customization?._ref),
+            )
+            if (stray.length > 0) {
+              // Named, with the base (PROD-3035): "3 option(s)" sent editors hunting for which.
+              const title = new Map(catalog.options.map((o) => [o._id, o.title ?? o._id]))
+              return presetWarning(stray.map((id) => title.get(id) ?? id), base.title || 'the base product')
             }
           } catch {
             return true // never block on a lookup failure
           }
           return true
+        }).warning(),
+        // The other side of the rule above (PROD-3035): a STANDARD product whose own offer no longer
+        // covers what the inspiration products built from it pre-select. Its offer is computed from
+        // this document as edited (list + exceptions), so the warning appears before publishing.
+        // Presets are read published — what the site starts the configurator from. Warn only, for the
+        // same reason as above: the base and its presets can be fixed in either order.
+        Rule.custom(async (value, context) => {
+          const doc = context.document as
+            | {
+                _id?: string
+                kind?: string
+                customizationExceptions?: { customization?: { _ref?: string }; mode?: string; reason?: string }[]
+              }
+            | undefined
+          if (!doc?._id || !isStandard(doc)) return true
+          const id = doc._id.replace(/^drafts\./, '')
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const { catalog, presets } = await client.fetch<{
+              catalog: AvailabilityCatalog
+              presets: { title: string | null; preselected: string[] | null }[]
+            }>(
+              `{
+                "catalog": ${AVAILABILITY_CATALOG_QUERY},
+                "presets": *[_type == "product" && kind == "inspiration" && basedOn._ref == $id && !(_id in path("drafts.**"))
+                  && count(availableCustomizations[preselected == true]) > 0]{
+                  title, "preselected": availableCustomizations[preselected == true].customization._ref
+                }
+              }`,
+              { id },
+            )
+            if (presets.length === 0) return true
+            const list = Array.isArray(value) ? (value as { customization?: { _ref?: string } }[]) : []
+            const offered = offeredOptionIds(
+              resolveProductAvailability(catalog, {
+                _id: id,
+                availableCustomizations: list.map((e) => e?.customization?._ref).filter((r): r is string => Boolean(r)),
+                customizationExceptions: (doc.customizationExceptions ?? []).map((e) => ({
+                  optionId: e?.customization?._ref ?? null,
+                  mode: e?.mode === 'add' || e?.mode === 'remove' ? e.mode : null,
+                  reason: e?.reason ?? null,
+                })),
+              }),
+            )
+            const title = new Map(catalog.options.map((o) => [o._id, o.title ?? o._id]))
+            const rows = presets
+              .map((p) => ({
+                title: p.title || '(untitled)',
+                options: strayPreselections(offered, p.preselected ?? []).map((o) => title.get(o) ?? o),
+              }))
+              .filter((r) => r.options.length > 0)
+            return rows.length > 0 ? baseWarning(rows) : true
+          } catch {
+            return true // never block on a lookup failure
+          }
         }).warning(),
         // An option that is a library page rather than a configurator choice.
         // The picker cannot produce one, so this only fires on a script write or
