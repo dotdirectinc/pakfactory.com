@@ -1,18 +1,9 @@
 import Link from 'next/link';
 import type {BuyerRequestSummary} from '@/lib/account/buyer-requests';
 import {Badge} from '@pakfactory/ui/components/badge';
+import {LocalTime} from '@pakfactory/ui/components/local-time';
 import {ACCOUNT_COPY} from '@/lib/copy/account';
 import {accountRequestHref} from '@/lib/www-routes';
-
-function formatSubmittedAt(iso: string): string {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return ACCOUNT_COPY.briefNotSet;
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    });
-}
 
 export function AccountRequestList({
     requests,
@@ -56,9 +47,11 @@ export function AccountRequestList({
                                                 {request.title}
                                             </span>
                                             <span className="block text-xs text-muted-foreground tabular-nums">
-                                                {formatSubmittedAt(
-                                                    request.submittedAt,
-                                                )}
+                                                <LocalTime
+                                                    iso={request.submittedAt}
+                                                    preset="shortDate"
+                                                    fallback={ACCOUNT_COPY.briefNotSet}
+                                                />
                                             </span>
                                         </Link>
                                     </td>

@@ -12,6 +12,8 @@ import {
     useRequestWizardScrollSpy,
 } from '@/components/request/request-wizard-scroll';
 import type {WizardRailRowData} from '@/components/request/wizard-rail-row';
+import {formatDateTime} from '@pakfactory/utilities/date-time';
+import {useViewerTimeZone} from '@pakfactory/ui/components/local-time';
 import {ACCOUNT_COPY} from '@/lib/copy/account';
 import {LEGACY_SERVICE_LABELS, REQUEST_COPY} from '@/lib/copy/request';
 import type {
@@ -77,11 +79,7 @@ export function AccountRequestDetailView({
     thumbsBySlug,
 }: AccountRequestDetailViewProps) {
     const submittedLabel = ACCOUNT_COPY.submittedOn(
-        new Date(request.submittedAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        }),
+        formatDateTime(request.submittedAt, 'longDate', useViewerTimeZone()),
     );
 
     const showProducts = request.lines.length > 0;

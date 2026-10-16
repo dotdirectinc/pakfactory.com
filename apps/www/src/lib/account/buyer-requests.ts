@@ -1,4 +1,5 @@
 import {createClient} from '@pakfactory/supabase/server';
+import {formatDateTime} from '@pakfactory/utilities/date-time';
 
 /**
  * The buyer's own requests.
@@ -172,11 +173,7 @@ function hasShipTo(address: BuyerRequestShipTo): boolean {
 }
 
 function fallbackRequestTitle(submittedAt: string): string {
-    return `Request - ${new Date(submittedAt).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    })}`;
+    return `Request - ${formatDateTime(submittedAt, 'shortDate')}`;
 }
 
 function toSummary(row: Row): BuyerRequestSummary {
