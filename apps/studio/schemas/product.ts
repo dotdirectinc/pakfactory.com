@@ -21,6 +21,8 @@ import {
 } from '../lib/product-availability'
 import { baseWarning, presetWarning, strayPreselections } from '../lib/preselection-warnings'
 import { entityFields } from '../lib/entity-id-field'
+import { SPEC_OWNS_RULES } from '../lib/spec-owned'
+import { specOwnedField } from '../components/SpecOwnedField'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -674,7 +676,11 @@ export const product = defineType({
       // every category — so it patches by `_key` and never writes the array
       // whole. Anything it cannot edit it still lists, at the bottom, rather
       // than leaving it somewhere an editor cannot see it. PROD-2529.
-      components: { input: AvailableCustomizationsInput },
+      // PROD-2988: read-only once the Spec System owns the rules — on a STANDARD product only. On an
+      // inspiration product this list holds its pre-selections, which are content and stay Studio's
+      // (ADR-025 amendment 2026-10-14).
+      readOnly: ({ document }) => SPEC_OWNS_RULES && isStandard(document),
+      components: { input: AvailableCustomizationsInput, field: specOwnedField('product') },
       description: `Reads differently by Product type. On a standard product: what it offers. On an inspiration product: which options are already chosen — it offers whatever the product in "Based on" offers, including the options its Customization tab derives (Finishing, Printing), so only the pre-selections are stored here. On a standard product, which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" does not appear there, since the rules derive it. An option that only has a library page never appears. ${SOURCE_OWNED_NOTE}`,
       // Two rules, two levels. A repeated option is always a mistake, so it is an
       // error. A pre-selected flag on a Standard product is inert rather than
@@ -886,6 +892,9 @@ export const product = defineType({
     // the base, where every preset built from it inherits the answer.
     defineField({
       name: 'customizationExceptions',
+      // PROD-2988: read-only once the Spec System owns the rules for this Studio's dataset.
+      readOnly: SPEC_OWNS_RULES,
+      components: { field: specOwnedField('product') },
       title: 'Customization exceptions',
       type: 'array',
       group: GROUPS.specs,
