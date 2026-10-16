@@ -21,6 +21,8 @@
  *
  *   · A product whose copies in different style folders are not byte-identical — someone has
  *     to pick which copy is right first. Listed, skipped; the rest of the line goes ahead.
+ *   · Two different products holding a byte-identical PNG — almost always a misfiled image.
+ *     Both are skipped. --skip SKU,SKU leaves out any others on purpose.
  *   · A SKU with no product, or more than one, or one whose status is not `active`.
  *   · A product that already has `images`, unless --replace.
  *
@@ -64,20 +66,23 @@ loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
 const USAGE = `Usage:
-  pnpm --filter @pakfactory/studio run upload:product-images -- --dataset <name> --line "<line folder>" [--only SKU,SKU] [--replace] [--confirm] [--yes-production]
+  pnpm --filter @pakfactory/studio run upload:product-images -- --dataset <name> --line "<line folder>" [--only SKU,SKU] [--skip SKU,SKU] [--replace] [--confirm] [--yes-production]
 
   --dataset         REQUIRED. Which dataset to read/write. No env fallback.
   --line            REQUIRED. The line folder, exactly as on Drive, e.g. "12-Fabric Gift Bags & Pouches".
   --only            Limit to these SKUs (comma-separated).
+  --skip            Leave these SKUs out (comma-separated).
   --replace         Overwrite products that already have images.
   --drive-root      The "02_Product Images Sanity" folder on this Mac, if it is not found automatically.
   --confirm         Actually write. Without it the run is a dry run.
   --yes-production  Second gate; required to write to production.`
 
-const args = parseScriptArgs({ usage: USAGE, values: ['line', 'only', 'drive-root'], flags: ['replace'] })
+const args = parseScriptArgs({ usage: USAGE, values: ['line', 'only', 'skip', 'drive-root'], flags: ['replace'] })
 const { confirm: apply, dataset: DATASET } = args
 if (!args.line) fail(`--line is required.\n\n${USAGE}`)
-const ONLY = args.only ? new Set(args.only.split(',').map((s) => s.trim()).filter(Boolean)) : null
+const skuList = (v) => (v ? new Set(v.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)) : null)
+const ONLY = skuList(args.only)
+const SKIP = skuList(args.skip) ?? new Set()
 
 /** The shared-drive folder "02_Product Images Sanity". */
 const ROOT_FOLDER_ID = '16vpFB8XqfWHNuslE-TxJiJZ4RmIxBj2x'
@@ -165,7 +170,7 @@ function collectLine(tree, driveRoot) {
     fail(`No line folder "${args.line}". Line folders: ${names.join(' · ')}`)
   }
   const bySku = new Map()
-  const skipped = { internal: 0, notPng: [] }
+  const skipped = { internal: 0, notPng: [], byFlag: new Set() }
   for (const style of children(line.stable_id).filter((i) => i.is_folder)) {
     for (const prod of children(style.stable_id).filter((i) => i.is_folder)) {
       if (prod.local_title.startsWith('[INTERNAL]')) { skipped.internal++; continue }
@@ -173,6 +178,7 @@ function collectLine(tree, driveRoot) {
       if (!m) { skipped.notPng.push(`${style.local_title} › ${prod.local_title} (no [SKU] in the folder name)`); continue }
       const sku = m[1]
       if (ONLY && !ONLY.has(sku)) continue
+      if (SKIP.has(sku)) { skipped.byFlag.add(sku); continue }
       const edited = children(prod.stable_id).find((i) => i.is_folder && i.local_title === '02-Edited')
       const files = []
       for (const f of edited ? children(edited.stable_id) : []) {
@@ -265,6 +271,7 @@ async function main() {
   const driveRoot = findDriveRoot()
   const { bySku, skipped } = collectLine(readDriveTree(), driveRoot)
   console.log(`    Drive: ${plural(bySku.size, 'product')} in the line · ${skipped.internal} internal folders skipped`)
+  if (skipped.byFlag.size) console.log(`    skipped by --skip: ${[...skipped.byFlag].sort().join(', ')}`)
   if (skipped.notPng.length) {
     console.log(`    not uploaded (not a PNG/JPG or no SKU): ${skipped.notPng.length}`)
     skipped.notPng.forEach((s) => console.log(`      · ${s}`))
@@ -293,9 +300,21 @@ async function main() {
     if (differs) { needsPick.push(differs); continue }
     plan.set(sku, files)
   }
+  // The same image under two different products is almost always a misfiled file.
+  const owners = new Map()
+  for (const [sku, files] of plan) for (const f of files) {
+    if (!owners.has(f.hash)) owners.set(f.hash, [])
+    owners.get(f.hash).push(`${sku} ${f.name}`)
+  }
+  for (const list of owners.values()) {
+    const skus = [...new Set(list.map((x) => x.split(' ')[0]))]
+    if (skus.length < 2) continue
+    needsPick.push(`same image in ${skus.join(' and ')}: ${list.map((x) => x.split(' ')[1]).join(' = ')}`)
+    skus.forEach((s) => plan.delete(s))
+  }
   if (empty.length) console.log(`    no PNGs in 02-Edited (skipped): ${empty.join(', ')}`)
   if (needsPick.length) {
-    console.log(`\n    ⚠ ${plural(needsPick.length, 'product')} skipped — style copies differ, pick one first:`)
+    console.log(`\n    ⚠ skipped — fix on Drive first:`)
     needsPick.forEach((s) => console.log(`      · ${s}`))
   }
 
