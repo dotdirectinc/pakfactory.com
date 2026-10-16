@@ -233,6 +233,13 @@ const PRIMARY_PICK = {
   'COR-002': 'corrugated_auto-bottom-slotted-container_kraft_bottom-view-opened.png',
   'COR-042': 'corrugated_custom-tuck-top-auto-lock-bottom-corrugated-box_kraft_bottom-view-opened.png',
   'COR-051': 'corrugated_one-piece-folder-with-tuck-flaps_kraft_front-view-opened.png',
+  // Packaging Accessories, picked 16 Oct (the other 11 picks match the default order)
+  'ACC-018': 'packaging-accessories-inserts_custom-shape-die-cut-hang-tags-2_angled-view.png',
+  'ACC-028': 'packaging-accessories-inserts_foil-stamped-tissue-paper_angled-view-rolled.png',
+  'ACC-052': 'packaging-accessories-inserts_patterned-tissue-paper_angled-view-rolled.png',
+  'ACC-062': 'packaging-accessories-inserts_recycled-kraft-tissue-paper_angled-view-rolled.png',
+  'ACC-073': 'packaging-accessories-inserts_washi-wrapping-paper_angled-view-rolled.png',
+  'ACC-075': 'packaging-accessories-inserts_wax-paper_angled-view-rolled.png',
   // Tin Packaging, picked 16 Oct (the rest match the opened-first order)
   'TIN-019': 'custom-tin-packaging_rectangular-slip-cover-tins-seamless_angled-view-opened-2.png',
   'TIN-021': 'custom-tin-packaging_rectangular-tin-with-airtight-double-lid_angled-view-3.png',
