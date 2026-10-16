@@ -416,7 +416,7 @@ function dimensionsStep(): BuilderStep {
                 title: 'External',
                 categoryId: 'dimensions',
                 cardinality: 'one',
-                description: 'Outside length, width, and height.',
+                description: 'Outside measurements of the packaging.',
             },
             {
                 id: 'internal',
@@ -424,7 +424,7 @@ function dimensionsStep(): BuilderStep {
                 title: 'Internal',
                 categoryId: 'dimensions',
                 cardinality: 'one',
-                description: 'Inside length, width, and height.',
+                description: 'Inside measurements of the packaging.',
             },
         ],
         options: [],

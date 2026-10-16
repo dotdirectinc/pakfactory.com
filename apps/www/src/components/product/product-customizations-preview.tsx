@@ -12,6 +12,7 @@ import {CustomizationQuickView} from '@/components/customization/customization-q
 import {CustomizationCatalogCard} from '@/components/ui/customization-catalog-card';
 import {SectionHeading} from '@/components/ui/section-heading';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 
 type ProductCustomizationsPreviewProps = {
     styleTitle: string;
@@ -27,10 +28,10 @@ const PAGE_SIZE = 8;
 const CATEGORY_LABELS: Record<string, string> = {
     materials: 'Materials',
     material: 'Materials',
-    print: 'Print',
-    printing: 'Print',
-    finish: 'Finish',
-    finishing: 'Finish',
+    print: 'Printing',
+    printing: 'Printing',
+    finish: 'Finishing',
+    finishing: 'Finishing',
 };
 
 const CATEGORY_ORDER = [
@@ -59,10 +60,10 @@ function categorySortKey(slug: string): number {
  * Show more loads the next batch so the document stays the only scroller.
  */
 export function ProductCustomizationsPreview({
-    styleTitle,
+    styleTitle: _styleTitle,
     items,
     heading,
-    description = 'Browse materials, print, and finish options for this style. To add choices to your request, customize in the product overview above.',
+    description = PRODUCT_DETAIL_COPY.customizationsDescription,
     className,
 }: ProductCustomizationsPreviewProps) {
     const categories = useMemo(() => {
@@ -103,13 +104,13 @@ export function ProductCustomizationsPreview({
     if (items.length === 0) return null;
 
     const title =
-        heading ?? `Everything this ${styleTitle} supports`;
+        heading ?? PRODUCT_DETAIL_COPY.customizationsHeading;
 
     return (
         <section id="pdp-customizations" className={cn('scroll-mt-20', className)}>
             <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
                 <SectionHeading
-                    eyebrow="Customization"
+                    eyebrow={PRODUCT_DETAIL_COPY.customizationsEyebrow}
                     title={title}
                     description={description}
                 />

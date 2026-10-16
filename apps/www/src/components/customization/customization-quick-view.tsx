@@ -14,6 +14,7 @@ import {
 import type {CustomizationPreviewItem} from '@/components/product/map-customization-preview-items';
 import {Icon} from '@/components/ui/icon';
 import {SanityImage} from '@/components/ui/sanity-image';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 
 const OVERVIEW_ANCHOR_ID = 'pdp-overview';
 
@@ -112,7 +113,7 @@ export function CustomizationQuickView({
                                         className="h-10 cursor-pointer rounded-xl px-5 text-sm font-medium"
                                         onClick={handleCustomize}
                                     >
-                                        Customize this option
+                                        {PRODUCT_DETAIL_COPY.selectThisOption}
                                     </Button>
                                 </div>
                             </div>

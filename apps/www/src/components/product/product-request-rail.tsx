@@ -6,6 +6,7 @@ import {ContentsField} from '@/components/product/contents-field';
 import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
 import {useProductPdpDraft} from '@/components/product/product-pdp-draft';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {resolvePrintableSides} from '@/lib/customization-builder';
 
@@ -48,6 +49,9 @@ export function ProductRequestRail() {
                         *
                     </span>
                 </h2>
+                <p className="mt-1 text-sm leading-snug text-muted-foreground">
+                    {PRODUCT_DETAIL_COPY.quantityHelper}
+                </p>
                 <QuantityPicker
                     className="mt-4"
                     volumes={volumes}

@@ -22,6 +22,7 @@ import {AdditionalNoteField} from '@/components/customization-builder/ui/additio
 import {OptionDetailHeader} from '@/components/customization-builder/ui/option-detail-header';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
+import {enterDimensionInputCopy} from '@/lib/copy/product-detail';
 import {
     getDimensionsValue,
     patchFace,
@@ -151,7 +152,7 @@ export function CustomizationDimensionOption({
         <div className="flex flex-col">
             <OptionDetailHeader
                 title={faceTitle}
-                description={`${CUSTOMIZATION_BUILDER_COPY.measurements} (${dimensions.unit})`}
+                description={enterDimensionInputCopy(axisIds)}
             />
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">

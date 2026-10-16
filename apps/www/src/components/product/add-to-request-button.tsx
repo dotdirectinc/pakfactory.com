@@ -1,7 +1,7 @@
 'use client';
 
 import {Button} from '@pakfactory/ui/components/button';
-import {REQUEST_COPY} from '@/lib/copy/request';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 
 type AddToRequestButtonProps = {
     disabled: boolean;
@@ -17,12 +17,12 @@ export function AddToRequestButton({disabled, onClick}: AddToRequestButtonProps)
                 disabled={disabled}
                 onClick={onClick}
             >
-                {REQUEST_COPY.addToRequest}
+                {PRODUCT_DETAIL_COPY.addToRequest}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
                 {disabled
-                    ? 'Add a quantity and say what you’re putting in the packaging.'
-                    : 'Adds to your request — keep browsing and create your request later.'}
+                    ? PRODUCT_DETAIL_COPY.addToRequestDisabledHelp
+                    : PRODUCT_DETAIL_COPY.addToRequestEnabledHelp}
             </p>
         </div>
     );

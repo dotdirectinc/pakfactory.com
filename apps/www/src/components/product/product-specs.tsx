@@ -11,6 +11,7 @@ import type {
 } from '@/components/product/build-product-spec-rows';
 import {Icon} from '@/components/ui/icon';
 import {SectionHeading} from '@/components/ui/section-heading';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 
 type ProductSpecsProps = {
     heading?: string;
@@ -63,8 +64,8 @@ function SpecValueCell({value}: {value: ProductSpecValue}) {
  * Not a free-form Sanity section — derived from catalog facts.
  */
 export function ProductSpecs({
-    heading = 'The details',
-    description = 'Fixed properties of this style: size, material, and finishing are confirmed with a specialist on quote.',
+    heading = PRODUCT_DETAIL_COPY.specsHeading,
+    description = PRODUCT_DETAIL_COPY.specsDescription,
     rows,
     className,
 }: ProductSpecsProps) {

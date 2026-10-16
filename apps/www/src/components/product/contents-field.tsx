@@ -13,6 +13,7 @@ import {
     TabsList,
     TabsTrigger,
 } from '@pakfactory/ui/components/tabs';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {
     fileRejectionReason,
@@ -100,21 +101,21 @@ export function ContentsField({
                 className="flex flex-col items-start gap-1 font-semibold text-brand-blue"
             >
                 <span className="text-base">
-                    {REQUEST_COPY.contentsLabel}
+                    {PRODUCT_DETAIL_COPY.contentsLabel}
                     <span className="text-destructive" aria-hidden>
                         {' '}
                         *
                     </span>
                 </span>
                 <span className="text-sm font-normal leading-snug text-muted-foreground">
-                    {REQUEST_COPY.contentsHelp}
+                    {PRODUCT_DETAIL_COPY.contentsHelp}
                 </span>
             </Label>
             <Input
                 id={id}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                placeholder={REQUEST_COPY.contentsPlaceholder}
+                placeholder={PRODUCT_DETAIL_COPY.contentsPlaceholder}
                 aria-required="true"
                 className="h-11 rounded-sm bg-background shadow-none"
             />
@@ -128,11 +129,13 @@ export function ContentsField({
             >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                     <p className="text-sm font-medium leading-snug text-foreground">
-                        {REQUEST_COPY.additionalNotesOrImages}
+                        {PRODUCT_DETAIL_COPY.additionalNotesOrImages}
                     </p>
                     <TabsList
                         className="w-fit shrink-0 bg-input"
-                        aria-label={REQUEST_COPY.additionalNotesOrImages}
+                        aria-label={
+                            PRODUCT_DETAIL_COPY.additionalNotesOrImages
+                        }
                     >
                         <TabsTrigger value="no">{REQUEST_COPY.no}</TabsTrigger>
                         <TabsTrigger value="yes">{REQUEST_COPY.yes}</TabsTrigger>
@@ -144,24 +147,29 @@ export function ContentsField({
                             htmlFor={`${id}-notes`}
                             className="text-xs font-medium"
                         >
-                            {REQUEST_COPY.additionalNotesLabel}
+                            {PRODUCT_DETAIL_COPY.additionalNotesLabel}
                         </Label>
                         <Textarea
                             id={`${id}-notes`}
                             rows={6}
                             className="min-h-[8.5rem] rounded-sm bg-background"
-                            placeholder={REQUEST_COPY.additionalNotesPlaceholder}
+                            placeholder={
+                                PRODUCT_DETAIL_COPY.additionalNotesPlaceholder
+                            }
                             value={notes}
                             onChange={(event) => onNotesChange(event.target.value)}
                         />
                     </div>
                     <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium">
-                            {REQUEST_COPY.addImagesLabel}
+                            {PRODUCT_DETAIL_COPY.addImagesLabel}
                             <span className="ml-1 font-normal text-muted-foreground">
                                 {REQUEST_COPY.optional}
                             </span>
                         </Label>
+                        <p className="text-xs leading-snug text-muted-foreground">
+                            {PRODUCT_DETAIL_COPY.referenceImagesHelp}
+                        </p>
                         <div className="flex flex-wrap items-center gap-2">
                             {referenceImages.map((image) => (
                                 <div
@@ -218,7 +226,9 @@ export function ContentsField({
                                         type="button"
                                         variant="outline"
                                         size="icon-sm"
-                                        aria-label={REQUEST_COPY.addImagesLabel}
+                                        aria-label={
+                                            PRODUCT_DETAIL_COPY.addImagesLabel
+                                        }
                                         className="size-11"
                                         onClick={() => fileInputRef.current?.click()}
                                     >

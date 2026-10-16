@@ -11,6 +11,7 @@ import {
     CompatibilityPreselectDroppedNote,
     type CompatibilityPreselectNotice,
 } from '@/components/product/compatibility-preselect';
+import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {
     CustomizationOption,
@@ -280,7 +281,7 @@ export function CustomizationEntry({
                         preselectedKeys={preselectedKeys}
                     />
                     <SummaryGroup
-                        title={REQUEST_COPY.materialFinishGroup}
+                        title={PRODUCT_DETAIL_COPY.materialFinishGroup}
                         rows={materialFinishRows}
                         builderState={builderState}
                         onCustomize={openBuilder}
@@ -297,7 +298,7 @@ export function CustomizationEntry({
                                 onBuilderStateChange(createEmptyBuilderState())
                             }
                         >
-                            {REQUEST_COPY.revertToSpecialist}
+                            {PRODUCT_DETAIL_COPY.revertToSpecialist}
                         </button>
                     ) : null}
                 </div>
@@ -309,7 +310,7 @@ export function CustomizationEntry({
                             aria-hidden
                         />
                         <p className="text-sm text-foreground">
-                            {REQUEST_COPY.specialistCanPropose}
+                            {PRODUCT_DETAIL_COPY.specialistCanPropose}
                         </p>
                     </div>
                     <Button
