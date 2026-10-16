@@ -599,6 +599,9 @@ export const TASKS = [
   { task: 'seed:expertise-strategy', pkg: '@pakfactory/studio', why: 'idempotent content seed (PROD-2577); fixed _ids, replaces the stage template body' },
   { task: 'import:notion-customization-demo', pkg: '@pakfactory/studio', why: 're-importable source of truth' },
   { task: 'fill:catalog', pkg: '@pakfactory/studio', why: 'run per catalogue review' },
+  // PROD-3023. Drive 02-Edited PNGs → product.images, one line per run. Dry-run by default;
+  // skips products whose style-folder copies differ and products that already have images.
+  { task: 'upload:product-images', pkg: '@pakfactory/studio', why: 'Standard product PNGs from Drive, per line (repeatable)' },
   // Destructive, and paired with fill:catalog — the purge is only ever a prelude to a
   // rebuild from Notion + the Miro board. Dry-run by default; refuses to delete
   // referenced documents without --emit-map, which is what makes the rebuild repairable.
