@@ -239,6 +239,22 @@ function altFor(title, p) {
   return bits.join(', ')
 }
 
+/** The `images` value for a product, or null while any of its PNGs has no asset yet. */
+function imagesFor(t, assetFor) {
+  if (t.files.some((f) => !assetFor.has(f.hash))) return null
+  return t.files.map((f, i) => ({
+    _type: 'image',
+    _key: key(),
+    asset: { _type: 'reference', _ref: assetFor.get(f.hash) },
+    alt: altFor(t.title, f.parsed),
+    primary: i === 0,
+  }))
+}
+
+/** Same images, same order, alt and primary — `_key`s aside. */
+const same = (stored, next) =>
+  JSON.stringify((stored ?? []).map((i) => [i.asset?._ref, i.alt, !!i.primary])) === JSON.stringify(next.map((i) => [i.asset._ref, i.alt, i.primary]))
+
 // ─── 3. Run ──────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -307,24 +323,36 @@ async function main() {
     const [[id, { published, draft }]] = [...ids]
     const doc = published ?? draft
     if (doc.status !== 'active') { refused.push(`${sku}: status is "${doc.status}", not active`); continue }
-    const has = (published?.images?.length ?? 0) + (draft?.images?.length ?? 0)
-    if (has && !args.replace) { refused.push(`${sku}: already has images — pass --replace to overwrite`); continue }
-    targets.push({ sku, id, published, draft, title: doc.title, files: orderImages(plan.get(sku)) })
+    const hasImages = (published?.images?.length ?? 0) + (draft?.images?.length ?? 0) > 0
+    targets.push({ sku, id, published, draft, hasImages, title: doc.title, files: orderImages(plan.get(sku)) })
+  }
+
+  // Assets already in the dataset, by content.
+  const allHashes = [...new Set(targets.flatMap((t) => t.files.map((f) => f.hash)))]
+  const existing = allHashes.length
+    ? await client.fetch(`*[_type == "sanity.imageAsset" && sha1hash in $hashes]{ _id, sha1hash }`, { hashes: allHashes })
+    : []
+  const assetFor = new Map(existing.map((a) => [a.sha1hash, a._id]))
+
+  // A product that already has images is left alone unless --replace — except when its images
+  // already ARE what this run would write (a re-run): then it stays in, writes nothing, and its
+  // assets still get checked for the media tag.
+  for (let i = targets.length - 1; i >= 0; i--) {
+    const t = targets[i]
+    if (!t.hasImages || args.replace) continue
+    const next = imagesFor(t, assetFor)
+    const upToDate = next && [t.published, t.draft].filter(Boolean).every((d) => same(d.images, next))
+    if (!upToDate) { refused.push(`${t.sku}: already has other images — pass --replace to overwrite`); targets.splice(i, 1) }
   }
   if (refused.length) {
     console.log(`\n    ⚠ ${plural(refused.length, 'product')} not written:`)
     refused.forEach((s) => console.log(`      · ${s}`))
   }
-
-  // Assets already in the dataset, by content.
   const hashes = [...new Set(targets.flatMap((t) => t.files.map((f) => f.hash)))]
-  const existing = hashes.length
-    ? await client.fetch(`*[_type == "sanity.imageAsset" && sha1hash in $hashes]{ _id, sha1hash }`, { hashes })
-    : []
-  const assetFor = new Map(existing.map((a) => [a.sha1hash, a._id]))
   const toUpload = hashes.filter((h) => !assetFor.has(h))
 
-  console.log(`\n    ${plural(targets.length, 'product')} to write · ${plural(hashes.length, 'PNG')} · ${assetFor.size} already in ${DATASET}, ${toUpload.length} to upload`)
+  const upToDate = targets.filter((t) => { const n = imagesFor(t, assetFor); return n && [t.published, t.draft].filter(Boolean).every((d) => same(d.images, n)) }).length
+  console.log(`\n    ${plural(targets.length - upToDate, 'product')} to write · ${upToDate} already up to date · ${plural(hashes.length, 'PNG')} · ${hashes.length - toUpload.length} already in ${DATASET}, ${toUpload.length} to upload`)
   for (const t of targets) {
     console.log(`\n    ${t.sku}  ${t.title}${t.draft ? '  (+ draft)' : ''}`)
     t.files.forEach((f, i) => console.log(`      ${i === 0 ? '★' : ' '} ${f.name}\n          alt: ${altFor(t.title, f.parsed)}`))
@@ -357,7 +385,10 @@ async function main() {
 
   // Tag every asset this run uses (idempotent: only assets missing the tag are patched).
   const assetIds = [...new Set(targets.flatMap((t) => t.files.map((f) => assetFor.get(f.hash))))]
-  const untagged = await client.fetch(`*[_id in $ids && !($tag in coalesce(opt.media.tags[]._ref, []))]._id`, { ids: assetIds, tag: tag._id })
+  // Ask which ones already HAVE the tag, not which ones lack it: an asset uploaded a moment
+  // ago may not be queryable yet, and a "lacks it" query silently skips it (FAB-024, 15 Oct).
+  const tagged = new Set(await client.fetch(`*[_id in $ids && $tag in opt.media.tags[]._ref]._id`, { ids: assetIds, tag: tag._id }))
+  const untagged = assetIds.filter((id) => !tagged.has(id))
   for (let i = 0; i < untagged.length; i += BATCH) {
     const tx = client.transaction()
     for (const id of untagged.slice(i, i + BATCH)) {
@@ -370,20 +401,12 @@ async function main() {
 
   // Products: one patch each, published and draft.
   const log = { dataset: DATASET, line: args.line, at: new Date().toISOString(), products: [] }
-  const same = (stored, next) =>
-    JSON.stringify((stored ?? []).map((i) => [i.asset?._ref, i.alt, !!i.primary])) === JSON.stringify(next.map((i) => [i.asset._ref, i.alt, i.primary]))
   let written = 0
   let unchanged = 0
   let tx = client.transaction()
   let pending = 0
   for (const t of targets) {
-    const images = t.files.map((f, i) => ({
-      _type: 'image',
-      _key: key(),
-      asset: { _type: 'reference', _ref: assetFor.get(f.hash) },
-      alt: altFor(t.title, f.parsed),
-      primary: i === 0,
-    }))
+    const images = imagesFor(t, assetFor)
     const ids = [t.published && t.id, t.draft && `drafts.${t.id}`].filter(Boolean)
     const changing = ids.filter((id) => !same((id.startsWith('drafts.') ? t.draft : t.published)?.images, images))
     if (!changing.length) { unchanged++; continue }
