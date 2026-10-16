@@ -228,6 +228,7 @@ const PRIMARY_PICK = {
   'FCT-057': 'folding-carton_prism-shaped-box_angled-view-closed.png',
   'FCT-066': 'folding-carton_side-lock-cake-box_side-view-opened.png',
   // Corrugated Boxes, picked 16 Oct
+  'COR-002': 'corrugated_auto-bottom-slotted-container_kraft_bottom-view-opened.png',
   'COR-042': 'corrugated_custom-tuck-top-auto-lock-bottom-corrugated-box_kraft_bottom-view-opened.png',
   'COR-051': 'corrugated_one-piece-folder-with-tuck-flaps_kraft_front-view-opened.png',
 }
