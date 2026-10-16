@@ -6,7 +6,7 @@ import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
 import { entityFields } from '../lib/entity-id-field'
-import { SPEC_OWNS_RULES } from '../lib/spec-owned'
+import { parentLocked, SPEC_OWNS_RULES } from '../lib/spec-owned'
 import { specOwnedField } from '../components/SpecOwnedField'
 
 /**
@@ -146,6 +146,9 @@ export const customizationOption = defineType({
     // a picker shorter. Search in the picker covers it.
     defineField({
       name: 'type',
+      // PROD-3008: read-only once the record is registered and the Spec System owns structure.
+      readOnly: parentLocked,
+      components: { field: specOwnedField('customizationOption', 'structure') },
       title: 'Type',
       type: 'reference',
       group: 'content',

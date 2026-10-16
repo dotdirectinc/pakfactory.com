@@ -7,6 +7,8 @@ import { groupsFor, GROUPS } from '../lib/field-groups'
 import { uniqueSlugWithinParent } from '../lib/slug-rules'
 import { entityFields } from '../lib/entity-id-field'
 import { TAXONOMY_STATUS_LIST } from '../lib/catalog-status'
+import { parentLocked } from '../lib/spec-owned'
+import { specOwnedField } from '../components/SpecOwnedField'
 
 /**
  * Solution Style — the second level under a Solution (Entities/Solution Style.md).
@@ -84,6 +86,9 @@ export const solutionStyle = defineType({
     }),
     defineField({
       name: 'solution',
+      // PROD-3008: read-only once the record is registered and the Spec System owns structure.
+      readOnly: parentLocked,
+      components: { field: specOwnedField('solutionStyle', 'structure') },
       title: 'Parent solution',
       type: 'reference',
       to: [{ type: 'solution' }],

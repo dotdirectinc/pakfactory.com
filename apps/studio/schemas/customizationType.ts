@@ -3,7 +3,7 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { entityFields } from '../lib/entity-id-field'
 import { ON_OFF_STATUS_LIST } from '../lib/catalog-status'
 import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
-import { SPEC_OWNS_RULES } from '../lib/spec-owned'
+import { parentLocked, SPEC_OWNS_RULES } from '../lib/spec-owned'
 import { specOwnedField } from '../components/SpecOwnedField'
 
 /** `dependsOn` → each requirement's refs (published ids). Tolerates the old flat shape: a bare
@@ -105,6 +105,9 @@ export const customizationType = defineType({
     }),
     defineField({
       name: 'category',
+      // PROD-3008: read-only once the record is registered and the Spec System owns structure.
+      readOnly: parentLocked,
+      components: { field: specOwnedField('customizationType', 'structure') },
       title: 'Category',
       type: 'reference',
       group: 'content',
