@@ -1,32 +1,36 @@
 import type { ConditionalPropertyCallback } from 'sanity'
 
 /**
- * The read-only switch for the customization rules (PROD-2988, ADR-025): once the Spec System owns
- * the rules for a dataset, Studio shows them but cannot change them.
+ * Who owns the catalog RELATIONS in this Studio's dataset (PROD-2988 / PROD-3008): the Spec System
+ * ("spec") or Studio. When the Spec System owns them, Studio shows them read-only:
  *
- * Per DEPLOYED STUDIO, not per codebase: the same build serves the staging Studio (development
- * dataset, where the Spec System edits the rules) and the production Studio (production dataset, not
- * yet — PROD-2963). So the switch is a build-time setting each target in
- * scripts/sanity/studio-targets.mjs exports. Unset is the safe default: the fields stay editable.
- * Turning it off again — the revert flag — is the same setting, set to anything but "true", and a
- * redeploy; no code change.
+ *   rules      the five customization-rule fields (an inspiration product's pre-selections excepted)
+ *   structure  a REGISTERED record's parents — a new record keeps editable parents until Sync gives it a
+ *              registry id (Richard, 2026-10-16), so neither side is ever without a way to set them
+ *
+ * Read at RUN TIME from the read-only marker document `specRelationsOwner`, which only the server writes
+ * when an admin flips the switch in the admin office (Spec System → Registry). No marker = Studio owns
+ * both — the production dataset has none. `SpecOwnerLayout` loads it before the Studio renders and
+ * keeps it current; reverting is one click there, no redeploy.
  */
 
-export const SPEC_OWNS_RULES = process.env.SANITY_STUDIO_SPEC_OWNS_RULES === 'true'
+let owner = { rules: false, structure: false }
 
-/**
- * The same switch for catalog STRUCTURE — a record's parents (PROD-3008, ADR-026 option A): Studio
- * creates a record with its parents; once the record has a registry id (Sync registered it, so the
- * Spec System can move it) its parent fields are read-only here. Decided by Richard 2026-10-16 over
- * "on first publish", which left a gap where neither side could change a new record's parents.
- */
-export const SPEC_OWNS_STRUCTURE = process.env.SANITY_STUDIO_SPEC_OWNS_STRUCTURE === 'true'
+/** Set by SpecOwnerLayout from the marker; anything but "spec" leaves the field editable. */
+export function setSpecOwner(marker: { rules?: unknown; structure?: unknown } | null | undefined): void {
+  owner = { rules: marker?.rules === 'spec', structure: marker?.structure === 'spec' }
+}
 
-/** A parent field's `readOnly`: locked when the switch is on and the record is registered. */
+/** A rule field's `readOnly`. */
+export const rulesLocked = (): boolean => owner.rules
+
+/** A parent field's `readOnly`: locked when the Spec System owns structure and the record is registered. */
 export const parentLocked: ConditionalPropertyCallback = ({ document }) => {
   const entityId = (document as { entityId?: unknown } | undefined)?.entityId
-  return SPEC_OWNS_STRUCTURE && typeof entityId === 'string' && entityId.length > 0
+  return owner.structure && typeof entityId === 'string' && entityId.length > 0
 }
+
+export const SPEC_OWNER_MARKER_ID = 'specRelationsOwner'
 
 /** The admin office's base URL, for the note's link; unset leaves the note without one. */
 const SPEC_SYSTEM_URL = (process.env.SANITY_STUDIO_SPEC_SYSTEM_URL || '').trim().replace(/\/+$/, '')

@@ -3,7 +3,7 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { entityFields } from '../lib/entity-id-field'
 import { ON_OFF_STATUS_LIST } from '../lib/catalog-status'
 import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
-import { parentLocked, SPEC_OWNS_RULES } from '../lib/spec-owned'
+import { parentLocked, rulesLocked } from '../lib/spec-owned'
 import { specOwnedField } from '../components/SpecOwnedField'
 
 /** `dependsOn` → each requirement's refs (published ids). Tolerates the old flat shape: a bare
@@ -137,7 +137,7 @@ export const customizationType = defineType({
     defineField({
       name: 'customerSelects',
       // PROD-2988: read-only once the Spec System owns the rules for this Studio's dataset.
-      readOnly: SPEC_OWNS_RULES,
+      readOnly: () => rulesLocked(),
       components: { field: specOwnedField('customizationType') },
       title: 'How many customization options can a customer choose?',
       type: 'string',
@@ -185,7 +185,7 @@ export const customizationType = defineType({
     defineField({
       name: 'availabilityDecidedBy',
       // PROD-2988: read-only once the Spec System owns the rules for this Studio's dataset.
-      readOnly: SPEC_OWNS_RULES,
+      readOnly: () => rulesLocked(),
       components: { field: specOwnedField('customizationType') },
       title: 'Who decides whether a product offers these options?',
       type: 'string',
@@ -241,7 +241,7 @@ export const customizationType = defineType({
     defineField({
       name: 'dependsOn',
       // PROD-2988: read-only once the Spec System owns the rules for this Studio's dataset.
-      readOnly: SPEC_OWNS_RULES,
+      readOnly: () => rulesLocked(),
       components: { field: specOwnedField('customizationType') },
       title: 'What decides which of these are available?',
       type: 'array',
