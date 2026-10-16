@@ -331,7 +331,8 @@ export type RegistryMove =
   | { kind: "basedOn"; productId: string; baseId: string }
   | { kind: "solutions"; productId: string; solutionIds: string[] }
   | { kind: "optionType"; optionId: string; typeId: string }
-  | { kind: "typeCategory"; typeId: string; categoryId: string };
+  | { kind: "typeCategory"; typeId: string; categoryId: string }
+  | { kind: "solutionStyleSolution"; styleId: string; solutionId: string };
 
 export type RuleEditResult = {
   changeset_id: string;

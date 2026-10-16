@@ -10,7 +10,7 @@ import type { RecordGroup, RecordItem } from "@/lib/spec/record-sections";
 import { isTableKey, type TableKey } from "@/lib/spec/catalog-table-model";
 import { SpecRegistryId } from "@/components/spec/spec-registry-id";
 import { SpecRuleEditor } from "@/components/spec/spec-rule-editor";
-import { ChildAdd, ChildPendingRows, MoveButton, MoveFieldRows, MoveFooter, PARENT_FIELDS, RecordMoveProvider, childAddLevel, useRecordMove } from "@/components/spec/spec-parents-editor";
+import { ChildAdd, ChildPendingRows, MoveButton, MoveFieldRows, MoveFooter, PARENT_FIELDS, RecordMoveProvider, childAddLevels, useRecordMove } from "@/components/spec/spec-parents-editor";
 import type { ChildGroup } from "@/lib/spec/catalog-record";
 import type { RecordSection } from "@/lib/spec/record-sections";
 import { WithRuleEditSession } from "@/components/spec/rule-edit-session";
@@ -226,28 +226,32 @@ function RecordSectionView({ sec, Section, onSelect }: { sec: RecordSection; Sec
  */
 function ChildTables({ groups, Section, onSelect, hasStructure }: { groups: ChildGroup[]; Section: SectionTag; onSelect?: OnSelect; hasStructure: boolean }) {
   const m = useRecordMove();
-  const addLevel = childAddLevel(m);
-  const label = m?.data.children?.label ?? "";
-  const shown: ChildGroup[] = addLevel && !groups.some((g) => g.table === addLevel) && (m?.editing || (!hasStructure && m?.data.canEdit))
-    ? [...groups, { label, table: addLevel as ChildGroup["table"], rows: [], total: 0 }]
-    : groups;
+  const adds = childAddLevels(m);
+  const addLevels = new Set(adds.map((a) => a.level));
+  const showEmpty = Boolean(m?.editing || (!hasStructure && m?.data.canEdit));
+  const shown: ChildGroup[] = [
+    ...groups,
+    ...(showEmpty ? adds.filter((a) => !groups.some((g) => g.table === a.level)).map((a) => ({ label: a.label, table: a.level as ChildGroup["table"], rows: [], total: 0 })) : []),
+  ];
+  // With no Catalog structure section, Move sits on the first table that takes "Add to …".
+  const moveOn = shown.find((c) => addLevels.has(c.table))?.table;
   return (
     <>
       {shown.map((c) => {
-        const takesAdd = c.table === addLevel;
+        const takesAdd = addLevels.has(c.table);
         return (
           <section key={c.label} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Section className="text-base font-semibold text-foreground">
                 {c.label} <span className="font-normal text-muted-foreground">({c.total})</span>
               </Section>
-              {takesAdd && !hasStructure ? <MoveButton /> : null}
+              {c.table === moveOn && !hasStructure ? <MoveButton /> : null}
             </div>
-            {takesAdd ? <ChildAdd label={c.label} /> : null}
+            {takesAdd ? <ChildAdd label={c.label} level={c.table} /> : null}
             <div className={`overflow-hidden rounded-md border bg-card ${takesAdd && m?.editing ? "border-primary/50" : "border-border"}`}>
               <table className="w-full text-sm">
                 <tbody>
-                  {takesAdd ? <ChildPendingRows /> : null}
+                  {takesAdd ? <ChildPendingRows level={c.table} /> : null}
                   {c.rows.map((row) => (
                     <tr key={row.id} className="border-t border-border first:border-t-0 even:bg-muted/50 hover:bg-muted">
                       <td className="px-3 py-2">
@@ -261,7 +265,7 @@ function ChildTables({ groups, Section, onSelect, hasStructure }: { groups: Chil
               </table>
             </div>
             {c.total > c.rows.length ? <p className="text-xs text-muted-foreground">{COPY.more(c.rows.length, c.total)}</p> : null}
-            {takesAdd && !hasStructure ? <MoveFooter /> : null}
+            {c.table === moveOn && !hasStructure ? <MoveFooter /> : null}
           </section>
         );
       })}

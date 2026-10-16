@@ -165,6 +165,14 @@ describe("structure moves in the pending set (PROD-3007)", () => {
     assert.equal(isMove({ kind: "offer", productId: "mailer", optionId: "kraft", offered: true }), false);
   });
 
+  it("a solution style's move (PROD-3095): one tray entry per style, a sentence, never in the rules", () => {
+    const a: RuleEditDraft = { kind: "solutionStyleSolution", styleId: "sty", solutionId: "tea" };
+    const b: RuleEditDraft = { kind: "solutionStyleSolution", styleId: "sty", solutionId: "coffee" };
+    assert.equal(editKey(a), editKey(b));
+    assert.equal(isMove(a), true);
+    assert.equal(describeEdit(a, (id) => ({ sty: "Coffee Bags", tea: "Tea" })[id] ?? id), "Solution style Coffee Bags → solution Tea");
+  });
+
   it("a product's line, styles and solutions do not enter the rules: no offer changes, a sentence each", () => {
     const r = impact([
       { kind: "placement", productId: "mailer", lineId: "bags", styleIds: ["pouch"] },

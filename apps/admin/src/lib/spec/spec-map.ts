@@ -221,6 +221,7 @@ export function applyMovesToMap(data: SpecMapData, moves: MoveDraft[]): { data: 
       case "solutions": reparent("inspiration", m.productId, ["solution"], m.solutionIds.map((s) => ["solution", s] as [TableKey, string])); break;
       case "optionType": reparent("customizationOption", m.optionId, ["customizationType"], [["customizationType", m.typeId]]); break;
       case "typeCategory": reparent("customizationType", m.typeId, ["customizationCategory"], [["customizationCategory", m.categoryId]]); break;
+      case "solutionStyleSolution": reparent("solutionStyle", m.styleId, ["solution"], [["solution", m.solutionId]]); break;
       case "basedOn": {
         const a = at.get(`inspiration:${m.productId}`);
         const b = at.get(`product:${m.baseId}`);
@@ -253,6 +254,7 @@ export function dropMove(
   }
   if (child.level === "customizationOption" && target.level === "customizationType") return { kind: "optionType", optionId: child.id, typeId: target.id };
   if (child.level === "customizationType" && target.level === "customizationCategory") return { kind: "typeCategory", typeId: child.id, categoryId: target.id };
+  if (child.level === "solutionStyle" && target.level === "solution") return { kind: "solutionStyleSolution", styleId: child.id, solutionId: target.id };
   if (child.level === "inspiration" && target.level === "solution") {
     return { kind: "solutions", productId: child.id, solutionIds: [target.id, ...(current.solutionIds ?? []).filter((s) => s !== target.id)] };
   }
