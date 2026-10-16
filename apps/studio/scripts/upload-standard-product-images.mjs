@@ -210,6 +210,7 @@ const VIEW_RANK = [/^angle/, /^front/, /^side/, /^top/, /^bottom/, /^close-up/]
 /** Per-line order of a view's state (the part after "view-"), within one colour. Lines not listed sort it A–Z. */
 const STATE_RANK = {
   '01-Folding Cartons': ['opened', 'semi-opened', 'fully-opened', 'closed'],
+  '02-Corrugated Boxes': ['opened', 'semi-opened', 'fully-opened', 'closed'],
   '03-Rigid Boxes': ['opened', 'semi-opened', 'closed'],
 }
 
@@ -226,11 +227,15 @@ const PRIMARY_PICK = {
   'FCT-039': 'folding-carton_full-overlap-seal-end-box_bottom-view-opened.png',
   'FCT-057': 'folding-carton_prism-shaped-box_angled-view-closed.png',
   'FCT-066': 'folding-carton_side-lock-cake-box_side-view-opened.png',
+  // Corrugated Boxes, picked 16 Oct
+  'COR-042': 'corrugated_custom-tuck-top-auto-lock-bottom-corrugated-box_kraft_bottom-view-opened.png',
+  'COR-051': 'corrugated_one-piece-folder-with-tuck-flaps_kraft_front-view-opened.png',
 }
 
 /** Per-line colour order. Images with no colour still come first; listed colours next; others A–Z after them. */
 const COLOUR_RANK = {
   '01-Folding Cartons': ['white', 'kraft'],
+  '02-Corrugated Boxes': ['white', 'kraft'],
 }
 const stateOf = (viewBase) => viewBase?.match(/view-(.+)$/)?.[1] ?? ''
 
