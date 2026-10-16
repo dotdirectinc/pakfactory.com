@@ -27,7 +27,7 @@ function recordTarget(href: string): { key: TableKey; id: string } | null {
 type OnSelect = (key: TableKey, id: string) => void;
 
 /** Records with a Parents section (PROD-3007) besides the three with rules. */
-const MOVABLE = new Set<TableKey>(["inspiration", "productStyle", "productLine", "customizationCategory", "solution"]);
+const MOVABLE = new Set<TableKey>(["inspiration", "productStyle", "productLine", "customizationCategory", "solution", "solutionStyle"]);
 
 /** A link to another record: a selection when the host handles one (the map), else navigation. */
 function RecordLink({ href, className, onSelect, children }: { href: string; className: string; onSelect?: OnSelect; children: React.ReactNode }) {

@@ -23,7 +23,7 @@ import { ADMIN_SPEC_PARENTS_COPY as COPY, ADMIN_SPEC_RULE_EDIT_COPY as EDIT } fr
  * On a record page Move is the page's own mode (exclusive with Edit rules); in the Spec Map's panel the
  * map's Move records mode is the way in, and the bar under the map submits.
  */
-const LEVELS = new Set<TableKey>(["product", "inspiration", "productStyle", "customizationOption", "customizationType", "productLine", "customizationCategory", "solution"]);
+const LEVELS = new Set<TableKey>(["product", "inspiration", "productStyle", "customizationOption", "customizationType", "productLine", "customizationCategory", "solution", "solutionStyle"]);
 /** The Catalog structure rows that are parents — the ones Move edits. */
 export const PARENT_FIELDS = new Set(["productLine", "productStyle", "basedOn", "solutions", "solution", "type", "category"]);
 

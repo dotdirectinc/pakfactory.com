@@ -1483,7 +1483,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
   const [editNote, setEditNote] = useState<string | null>(null);
 
   // ── moving records by dragging (PROD-3007) ──
-  const DRAGGABLE = new Set<TableKey>(["productStyle", "product", "customizationOption", "customizationType", "inspiration"]);
+  const DRAGGABLE = new Set<TableKey>(["productStyle", "product", "customizationOption", "customizationType", "inspiration", "solutionStyle"]);
   const [drag, setDrag] = useState<{
     i: number; x: number; y: number; over: number | null; ok: boolean; targets: Set<number>; same: Set<number>; primary: Set<number>;
     /** Where the card was grabbed, and its size: the card follows the pointer as it was held (2026-10-15). */
