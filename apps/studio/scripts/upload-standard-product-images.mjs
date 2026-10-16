@@ -211,6 +211,7 @@ const VIEW_RANK = [/^angle/, /^front/, /^side/, /^top/, /^bottom/, /^close-up/]
 const STATE_RANK = {
   '01-Folding Cartons': ['opened', 'semi-opened', 'fully-opened', 'closed'],
   '02-Corrugated Boxes': ['opened', 'semi-opened', 'fully-opened', 'closed'],
+  '07-Mailers': ['opened', 'semi-opened', 'fully-opened', 'closed'],
   '03-Rigid Boxes': ['opened', 'semi-opened', 'closed'],
 }
 
@@ -237,6 +238,7 @@ const PRIMARY_PICK = {
 const COLOUR_RANK = {
   '01-Folding Cartons': ['white', 'kraft'],
   '02-Corrugated Boxes': ['white', 'kraft'],
+  '07-Mailers': ['white', 'kraft'],
 }
 const stateOf = (viewBase) => viewBase?.match(/view-(.+)$/)?.[1] ?? ''
 
