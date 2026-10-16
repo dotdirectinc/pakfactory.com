@@ -1,15 +1,16 @@
 'use client';
 
 import {useMemo} from 'react';
+import {ChevronDownIcon} from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from '@pakfactory/ui/components/dropdown-menu';
 import {Label} from '@pakfactory/ui/components/label';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@pakfactory/ui/components/select';
 
 import {NewsListItem} from '@/components/newsroom/news-list-item';
 import {CatalogTabBar, type CatalogTab} from '@/components/ui/catalog-tab-bar';
@@ -86,25 +87,38 @@ export function NewsCatalogPanel({items}: NewsCatalogPanelProps) {
                 >
                     Year
                 </Label>
-                <Select
-                    value={year}
-                    onValueChange={(next) => setExtra('year', next)}
-                >
-                    <SelectTrigger id={YEAR_ID} className="w-32 font-medium">
-                        {/* Explicit label so the server HTML is not blank before hydration. */}
-                        <SelectValue>
+                {/* Non-modal menu, not Select: Select locks page scroll and drops
+                    the scrollbar, which shifts the page sideways (PROD-2913). */}
+                <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            id={YEAR_ID}
+                            className="flex h-9 w-32 items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm font-medium whitespace-nowrap shadow-xs outline-none focus-visible:border-primary"
+                        >
                             {year === ALL ? 'All years' : year}
-                        </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value={ALL}>All years</SelectItem>
-                        {years.map((value) => (
-                            <SelectItem key={value} value={value}>
-                                {value}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                            <ChevronDownIcon
+                                className="size-4 shrink-0 text-muted-foreground opacity-50"
+                                aria-hidden
+                            />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-32">
+                        <DropdownMenuRadioGroup
+                            value={year}
+                            onValueChange={(next) => setExtra('year', next)}
+                        >
+                            <DropdownMenuRadioItem value={ALL}>
+                                All years
+                            </DropdownMenuRadioItem>
+                            {years.map((value) => (
+                                <DropdownMenuRadioItem key={value} value={value}>
+                                    {value}
+                                </DropdownMenuRadioItem>
+                            ))}
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         ) : null;
 
