@@ -7,6 +7,7 @@ import '@fontsource-variable/geist';
 import {GoogleTagManager} from '@next/third-parties/google';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
 import {SanityVisualEditing} from '@/components/layout/sanity-visual-editing';
+import {ScrollLockShiftFix} from '@/components/layout/scroll-lock-shift-fix';
 import {VirtualPageviewTracker} from '@/components/layout/virtual-pageview-tracker';
 import {buildFaviconIcons} from '@pakfactory/sanity/favicon';
 import {WatermarkProvider} from '@pakfactory/ui/components/watermark-context';
@@ -56,6 +57,7 @@ export default async function RootLayout({
         <html lang="en">
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
+                <ScrollLockShiftFix />
                 <WatermarkProvider value={watermark}>
                 <Suspense fallback={null}>
                     <VirtualPageviewTracker />

@@ -1,13 +1,23 @@
 'use client';
 
 import {useEffect, useRef, useState} from 'react';
-import {PackageIcon} from 'lucide-react';
-import {Badge} from '@pakfactory/ui/components/badge';
+import {Maximize2Icon, PackageIcon, XIcon} from 'lucide-react';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@pakfactory/ui/components/dialog';
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {MediaSettleZoom} from '@/components/ui/media-settle-zoom';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {CatalogMedia} from '@/lib/catalog/types';
+import {
+    sanityImageLoader,
+    sanitySquareImageLoader,
+} from '@/lib/sanity/image';
 import {useSanityImageSettle} from '@/lib/sanity/use-sanity-image-settle';
 import {
     MEDIA_DISSOLVE_MS,
@@ -17,8 +27,6 @@ import {
 type ProductGalleryProps = {
     media: CatalogMedia[];
     productTitle: string;
-    /** Optional chip overlaid on the feature image (e.g. Inspiration). */
-    badgeLabel?: string;
     /** Playable MP4/MOV for feature (index 0); YouTube / missing → still only. */
     featuredVideoUrl?: string | null;
 };
@@ -28,6 +36,18 @@ type ProductGalleryProps = {
  * 1080–1920 (PROD-3102).
  */
 const GALLERY_WELL_SIZES = '(max-width: 1024px) 50vw, 360px';
+
+/** Prefetch width ≈ 360 CSS × 2 DPR / common Next bucket for {@link GALLERY_WELL_SIZES}. */
+const GALLERY_WELL_PREFETCH_WIDTH = 750;
+
+/** Near-viewport lightbox stage — full asset, no square crop. */
+const GALLERY_LIGHTBOX_SIZES = '(max-width: 640px) 96vw, min(96vw, 56rem)';
+
+/** Prefetch width for lightbox intent hover (`fit=max`, CDN max clamp). */
+const GALLERY_LIGHTBOX_PREFETCH_WIDTH = 1600;
+
+const LIGHTBOX_CLOSE_CLASS =
+    'absolute top-4 right-4 z-30 inline-flex size-9 cursor-pointer items-center justify-center rounded-full bg-white/80 text-foreground shadow-sm transition-opacity hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 function usePrefersReducedMotion(): boolean {
     const [reduced, setReduced] = useState(false);
@@ -126,19 +146,53 @@ function GalleryWellSlideImage({
     );
 }
 
+function GalleryLightboxImage({
+    src,
+    alt,
+    lqip,
+}: {
+    src: string;
+    alt: string;
+    lqip?: string;
+}) {
+    const {onLoad, onError, imageClassName} = useSanityImageSettle(src);
+
+    return (
+        <SanityImage
+            src={src}
+            alt={alt}
+            applyWatermark
+            fill
+            sizes={GALLERY_LIGHTBOX_SIZES}
+            className={cn('object-contain', imageClassName)}
+            onLoad={onLoad}
+            onError={onError}
+            {...(lqip
+                ? {placeholder: 'blur' as const, blurDataURL: lqip}
+                : {})}
+        />
+    );
+}
+
 export function ProductGallery({
     media,
     productTitle,
-    badgeLabel,
     featuredVideoUrl,
 }: ProductGalleryProps) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [visibleIndex, setVisibleIndex] = useState(0);
     const [underIndex, setUnderIndex] = useState(0);
+    /** Panel enter fade — false until rAF so switches dissolve, not hard-swap. */
+    const [topRevealed, setTopRevealed] = useState(true);
+    /** Slide 0 decoded — unlock idle prefetch of other well crops (PROD-3102). */
+    const [heroReady, setHeroReady] = useState(false);
+    const [enlargeOpen, setEnlargeOpen] = useState(false);
     const [playing, setPlaying] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const wellRef = useRef<HTMLDivElement>(null);
     const loadedRef = useRef<Set<number>>(new Set());
+    /** Lightbox `fit=max` URLs already warmed via View larger intent. */
+    const lightboxPrefetchedRef = useRef(new Set<string>());
     const activeIndexRef = useRef(0);
     const visibleIndexRef = useRef(0);
     const prefersReducedMotion = usePrefersReducedMotion();
@@ -150,6 +204,18 @@ export function ProductGallery({
 
     activeIndexRef.current = activeIndex;
     visibleIndexRef.current = visibleIndex;
+
+    const prefetchLightbox = (src: string | undefined) => {
+        if (!src || lightboxPrefetchedRef.current.has(src)) return;
+        lightboxPrefetchedRef.current.add(src);
+        const url = sanityImageLoader({
+            src,
+            width: GALLERY_LIGHTBOX_PREFETCH_WIDTH,
+            quality: 80,
+        });
+        const img = new window.Image();
+        img.src = url;
+    };
 
     const videoUrl = featuredVideoUrl?.trim() || '';
     const allowVideoPlay =
@@ -163,10 +229,16 @@ export function ProductGallery({
         visibleIndexRef.current = index;
         setUnderIndex(prev);
         setVisibleIndex(index);
+        if (prefersReducedMotion) {
+            setTopRevealed(true);
+        } else {
+            setTopRevealed(false);
+        }
     };
 
     const markReady = (index: number) => {
         loadedRef.current.add(index);
+        if (index === 0) setHeroReady(true);
         if (activeIndexRef.current === index) {
             commitVisible(index);
         }
@@ -185,8 +257,17 @@ export function ProductGallery({
     };
 
     useEffect(() => {
+        if (!enlargeOpen) return;
+        prefetchLightbox(active?.src);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- warm active on open
+    }, [enlargeOpen, active?.src]);
+
+    useEffect(() => {
         items.forEach((item, index) => {
-            if (!item.src) loadedRef.current.add(index);
+            if (!item.src) {
+                loadedRef.current.add(index);
+                if (index === 0) setHeroReady(true);
+            }
         });
         const well = wellRef.current;
         if (!well) return;
@@ -219,6 +300,76 @@ export function ProductGallery({
         }, MEDIA_DISSOLVE_MS);
         return () => window.clearTimeout(timer);
     }, [visibleIndex, underIndex, prefersReducedMotion]);
+
+    // Paint top at opacity-0, then reveal so CSS dissolve runs on every switch.
+    useEffect(() => {
+        if (topRevealed) return;
+        let inner = 0;
+        const outer = window.requestAnimationFrame(() => {
+            inner = window.requestAnimationFrame(() => {
+                setTopRevealed(true);
+            });
+        });
+        return () => {
+            window.cancelAnimationFrame(outer);
+            window.cancelAnimationFrame(inner);
+        };
+    }, [visibleIndex, topRevealed]);
+
+    // After LCP hero is ready, warm other well crops so first thumb click dissolves.
+    useEffect(() => {
+        if (!heroReady || items.length <= 1) return;
+
+        let cancelled = false;
+        const prefetches: HTMLImageElement[] = [];
+
+        const run = () => {
+            if (cancelled) return;
+            items.forEach((item, index) => {
+                if (index === 0 || !item.src || loadedRef.current.has(index)) {
+                    return;
+                }
+                const url = sanitySquareImageLoader({
+                    src: item.src,
+                    width: GALLERY_WELL_PREFETCH_WIDTH,
+                    quality: 80,
+                });
+                const img = new window.Image();
+                prefetches.push(img);
+                const done = () => {
+                    if (cancelled) return;
+                    loadedRef.current.add(index);
+                };
+                img.onload = done;
+                img.onerror = done;
+                img.src = url;
+            });
+        };
+
+        let idleId: number | undefined;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        if (typeof window.requestIdleCallback === 'function') {
+            idleId = window.requestIdleCallback(run);
+        } else {
+            timeoutId = window.setTimeout(run, 1);
+        }
+
+        return () => {
+            cancelled = true;
+            if (
+                idleId != null &&
+                typeof window.cancelIdleCallback === 'function'
+            ) {
+                window.cancelIdleCallback(idleId);
+            }
+            if (timeoutId != null) window.clearTimeout(timeoutId);
+            for (const img of prefetches) {
+                img.onload = null;
+                img.onerror = null;
+                img.src = '';
+            }
+        };
+    }, [heroReady, items]);
 
     useEffect(() => {
         if (showVideo) return;
@@ -262,7 +413,7 @@ export function ProductGallery({
                                     aria-pressed={selected}
                                     onClick={() => selectSlide(index)}
                                     className={cn(
-                                        'group relative aspect-square w-full shrink-0 cursor-pointer overflow-hidden rounded-sm bg-muted outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
+                                        'group relative aspect-square w-full shrink-0 cursor-pointer overflow-hidden rounded-sm bg-product-image-bg outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
                                         !selected &&
                                             'opacity-30 hover:opacity-100',
                                     )}
@@ -290,7 +441,7 @@ export function ProductGallery({
             <div
                 ref={wellRef}
                 className={cn(
-                    'relative aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl bg-muted',
+                    'relative aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl bg-product-image-bg',
                     showVideo && 'cursor-pointer',
                 )}
                 onPointerEnter={showVideo ? startVideo : undefined}
@@ -307,6 +458,14 @@ export function ProductGallery({
                     const showSlide = isTop || isUnder || isActivePending;
                     if (!showSlide) return null;
 
+                    const panelOpacity = isUnder
+                        ? 'opacity-100'
+                        : isTop
+                          ? topRevealed
+                              ? 'opacity-100'
+                              : 'opacity-0'
+                          : 'opacity-0';
+
                     return (
                         <div
                             key={`${item.alt}-${index}`}
@@ -315,10 +474,10 @@ export function ProductGallery({
                             className={cn(
                                 // Opaque muted panel so transparent PNGs dissolve
                                 // against chrome, not the under-slide product (PROD-3102).
-                                'absolute inset-0 bg-muted',
+                                'absolute inset-0 bg-product-image-bg',
                                 isTop ? 'z-10' : 'z-0',
                                 mediaDissolveTransitionClass,
-                                isTop || isUnder ? 'opacity-100' : 'opacity-0',
+                                panelOpacity,
                                 !isTop && 'pointer-events-none',
                             )}
                         >
@@ -371,15 +530,83 @@ export function ProductGallery({
                         Hover to see the effects
                     </p>
                 ) : null}
-                {badgeLabel ? (
-                    <Badge
-                        variant="default"
-                        className="pointer-events-none absolute right-4 top-4 z-20"
+                {active?.src ? (
+                    <button
+                        type="button"
+                        aria-label="View larger"
+                        className={cn(
+                            'group absolute top-4 right-4 z-30 inline-flex h-10 cursor-pointer items-center overflow-hidden bg-white/80 text-sm font-medium text-foreground',
+                            'rounded-xl hover:rounded-full focus-visible:rounded-full',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            !prefersReducedMotion &&
+                                'transition-[border-radius] duration-200 ease-out',
+                        )}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onPointerEnter={() => prefetchLightbox(active.src)}
+                        onFocus={() => prefetchLightbox(active.src)}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            prefetchLightbox(active.src);
+                            setEnlargeOpen(true);
+                        }}
                     >
-                        {badgeLabel}
-                    </Badge>
+                        <span
+                            className={cn(
+                                'overflow-hidden whitespace-nowrap',
+                                'max-w-0 opacity-0 pl-0',
+                                'group-hover:max-w-[7.5rem] group-hover:opacity-100 group-hover:pl-3',
+                                'group-focus-visible:max-w-[7.5rem] group-focus-visible:opacity-100 group-focus-visible:pl-3',
+                                !prefersReducedMotion &&
+                                    'transition-[max-width,opacity,padding] duration-200 ease-out',
+                            )}
+                        >
+                            View larger
+                        </span>
+                        <span className="inline-flex size-10 shrink-0 items-center justify-center">
+                            <Maximize2Icon
+                                className="size-4"
+                                aria-hidden
+                            />
+                        </span>
+                    </button>
                 ) : null}
             </div>
+            <Dialog open={enlargeOpen} onOpenChange={setEnlargeOpen}>
+                <DialogContent
+                    showCloseButton={false}
+                    className="flex aspect-square size-[min(96vmin,72rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
+                    aria-describedby={undefined}
+                >
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>
+                            {active?.alt?.trim() || productTitle}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <DialogClose
+                        type="button"
+                        aria-label="Close"
+                        className={LIGHTBOX_CLOSE_CLASS}
+                    >
+                        <XIcon className="size-4" aria-hidden />
+                    </DialogClose>
+                    <div className="relative min-h-0 w-full flex-1 bg-product-image-bg">
+                        {active?.src ? (
+                            <GalleryLightboxImage
+                                src={active.src}
+                                alt={active.alt || productTitle}
+                                lqip={active.lqip}
+                            />
+                        ) : (
+                            <span className="absolute inset-0 flex items-center justify-center">
+                                <PackageIcon
+                                    className="size-32 text-muted-foreground opacity-40"
+                                    aria-hidden
+                                />
+                            </span>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
@@ -396,7 +623,7 @@ export function ProductGallerySkeleton() {
             aria-live="polite"
         >
             <span className="sr-only">Loading product gallery</span>
-            <div className="relative aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl bg-muted">
+            <div className="relative aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl bg-product-image-bg">
                 <Skeleton className="absolute inset-0 rounded-2xl" />
             </div>
         </div>

@@ -38,7 +38,6 @@ async function ProductCatalogGrid({copy}: {copy: ResolvedCatalogPageCopy}) {
             library={library}
             urlSync
             showPageChrome={false}
-            hideCatalogBorderTop
             searchPlaceholder={copy.searchPlaceholder}
             emptyMessage={copy.emptyMessage}
             resetLabel={copy.resetLabel}
@@ -63,7 +62,7 @@ export default async function ProductsIndexPage() {
         <>
             <ProductCatalogPageChrome heading={copy.h1} intro={copy.intro} />
             <Suspense
-                fallback={<ProductCatalogPanelLoading hideCatalogBorderTop />}
+                fallback={<ProductCatalogPanelLoading />}
             >
                 <ProductCatalogGrid copy={copy} />
             </Suspense>

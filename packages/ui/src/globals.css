@@ -45,6 +45,9 @@
     /* Meta/CTA highlight surface (PROD-2201 follow-up: #FBFBFB) */
     --brand-highlight: #fbfbfb;
 
+    /* Product media well / placeholder (PDP gallery, catalog tiles) */
+    --product-image-bg: hsla(60, 9%, 93%, 1);
+
     /* Catalog Color swatch fallbacks (configurator / property values without image) */
     --swatch-white: #f5f5f3;
     --swatch-black: #1a1a1a;
@@ -214,6 +217,9 @@
     --brand-cream-foreground: rgb(250 250 250);
     --brand-highlight: #1f1f1f;
 
+    /* Product photography well stays warm cream (do not flip to --muted) */
+    --product-image-bg: hsla(60, 9%, 93%, 1);
+
     --shadow-2xs: 0 1px 3px 0px rgb(0 0 0 / 0.05);
     --shadow-xs: 0 1px 3px 0px rgb(0 0 0 / 0.05);
     --shadow-sm:
@@ -250,6 +256,7 @@
     --color-brand-cream: var(--brand-cream);
     --color-brand-cream-foreground: var(--brand-cream-foreground);
     --color-brand-highlight: var(--brand-highlight);
+    --color-product-image-bg: var(--product-image-bg);
     --color-swatch-white: var(--swatch-white);
     --color-swatch-black: var(--swatch-black);
     --color-swatch-brown: var(--swatch-brown);
