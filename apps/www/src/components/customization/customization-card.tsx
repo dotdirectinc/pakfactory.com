@@ -8,6 +8,8 @@ import {
     type MouseEvent,
 } from 'react';
 import Link from 'next/link';
+import {useLinkStatus} from 'next/link';
+import {useRouter} from 'next/navigation';
 import {Columns2, Package} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -18,6 +20,7 @@ import {MediaCardFrame} from '@/components/ui/media-card-frame';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {stubBookmarkAction, stubCompareAction} from '@/lib/catalog-card-actions';
 import type {CustomizationLibraryItem} from '@/lib/catalog/types';
+import {useSanityImageSettle} from '@/lib/sanity/use-sanity-image-settle';
 import {
     mediaDissolveHoverInClass,
     mediaDissolveRestHoverOutClass,
@@ -57,8 +60,12 @@ const compareAction = {
     onClick: stubCompareAction,
 } as const;
 
-const IMAGE_SIZES =
-    '(max-width: 640px) 96px, (max-width: 1280px) 33vw, 25vw';
+/**
+ * Catalog thumbs only (PROD-3102 parity): under-report slot width so with 2× DPR
+ * Next asks Sanity for ~display size (~400), not ~800–1080.
+ * Same 1/2/3/4 grid as products.
+ */
+const IMAGE_SIZES = '(max-width: 640px) 50vw, 200px';
 
 function usePrefersReducedMotion(): boolean {
     const [reduced, setReduced] = useState(false);
@@ -131,10 +138,13 @@ function resolveCardMedia(item: CustomizationCardData) {
  * **Transactional card** — customization catalog tile (category eyebrow, bookmark / compare).
  * Composes {@link MediaCardFrame}. Card media rules: primary product still at rest;
  * hover product video when both still + video exist, else the next product still.
+ * Prefetch stays off for the grid; the card under the pointer opts into full route
+ * prefetch (PROD-3102 product catalog parity).
  */
 export function CustomizationCard({item, priority = false}: CustomizationCardProps) {
     const href = customizationCategoryHref(item.categoryValue, item.slug);
     const eyebrow = (item.categoryLabel ?? item.categoryValue).toUpperCase();
+    const router = useRouter();
     const [saved, setSaved] = useState(false);
     const [prefetch, setPrefetch] = useState(false);
     const [playing, setPlaying] = useState(false);
@@ -161,7 +171,9 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
         setSaved((prev) => !prev);
     }
 
+    /** Warm the route immediately — don't wait for Link prefetch={true} state. */
     function enablePrefetch() {
+        void router.prefetch(href);
         setPrefetch(true);
     }
 
@@ -195,21 +207,12 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
     const media = (
         <div className="pointer-events-none absolute inset-0">
             {thumbSrc ? (
-                <SanityImage
+                <CustomizationCardSettlingImage
                     src={thumbSrc}
                     alt={thumbAlt}
-                    applyWatermark={false}
-                    fill
                     priority={priority}
-                    square
-                    sizes={IMAGE_SIZES}
-                    className={cn(
-                        'object-cover',
-                        showHoverImage
-                            ? mediaDissolveRestHoverOutClass
-                            : mediaDissolveTransitionClass,
-                        showHoverVideo && playing && 'sm:opacity-0',
-                    )}
+                    showHoverImage={showHoverImage}
+                    hideForVideo={showHoverVideo && playing}
                 />
             ) : (
                 placeholder
@@ -315,12 +318,64 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
                         onFocus={enablePrefetch}
                         className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
-                            {item.title}
-                        </h3>
+                        <CustomizationCardTitlePending title={item.title} />
                     </Link>
                 </div>
             }
         />
+    );
+}
+
+/**
+ * Dissolves the CDN crop in over the frame's product-image well (`MediaCardFrame`
+ * already paints `bg-product-image-bg`). Hover still / video layers stay separate.
+ */
+function CustomizationCardSettlingImage({
+    src,
+    alt,
+    priority,
+    showHoverImage,
+    hideForVideo,
+}: {
+    src: string;
+    alt: string;
+    priority: boolean;
+    showHoverImage: boolean;
+    hideForVideo: boolean;
+}) {
+    const {onLoad, onError, imageClassName} = useSanityImageSettle(src);
+
+    return (
+        <SanityImage
+            src={src}
+            alt={alt}
+            applyWatermark={false}
+            fill
+            priority={priority}
+            square
+            sizes={IMAGE_SIZES}
+            className={cn(
+                'object-cover',
+                imageClassName,
+                showHoverImage && mediaDissolveRestHoverOutClass,
+                hideForVideo && 'sm:opacity-0',
+            )}
+            onLoad={onLoad}
+            onError={onError}
+        />
+    );
+}
+
+function CustomizationCardTitlePending({title}: {title: string}) {
+    const {pending} = useLinkStatus();
+    return (
+        <h3
+            className={cn(
+                'line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground transition-opacity duration-200',
+                pending && 'opacity-70',
+            )}
+        >
+            {title}
+        </h3>
     );
 }

@@ -1,3 +1,4 @@
+import {Suspense} from 'react';
 import {
     PortableText,
     type PortableTextComponents,
@@ -10,7 +11,11 @@ import {
     CUSTOMIZATION_COMPARISON_ID,
 } from '@/components/customization/customization-comparison';
 import {CustomizationConfigPanel} from '@/components/customization/customization-config-panel';
-import {ProductGallery} from '@/components/product/product-gallery';
+import {
+    CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH,
+    CUSTOMIZATION_GALLERY_WELL_SIZES,
+    ProductGallery,
+} from '@/components/product/product-gallery';
 import {CustomizationReferenceBenefitsSpecs} from '@/components/customization/customization-reference-benefits-specs';
 import {
     CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
@@ -37,10 +42,16 @@ import type {PageSection} from '@/components/sections/registry';
 import {StatusBadge} from '@/components/ui/status-badge';
 import {formatSectionEyebrow} from '@/components/ui/section-heading';
 import {getReferenceCopy} from '@/lib/catalog/reference-copy';
+import {buildWorksWithProducts} from '@/lib/catalog/build-works-with-products';
 import type {
     WorksWithOptionRef,
     WorksWithProductCard,
 } from '@/lib/catalog/build-works-with-products';
+import {
+    getCustomizationDetailPage,
+    listProductLibrary,
+    listProductOfferIndex,
+} from '@/lib/catalog/catalog';
 import type {CustomizationDetail, ProductLineRef} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -111,40 +122,14 @@ function pageSectionNavItems(
     });
 }
 
-type CustomizationDetailViewProps = {
-    detail: CustomizationDetail;
-    peers?: CustomizationDetail[];
-    /** Shared bands from `customizationDetailPage` layout (template → Default). */
-    pageSections?: PageSection[] | null;
-    /** Compatible products for the Works with browser (PROD-2921). */
-    worksWith?: {
-        option: WorksWithOptionRef;
-        lines: ProductLineRef[];
-        products: WorksWithProductCard[];
-    };
-};
-
-/**
- * Customization detail — hero + page-level section nav (PDP parity).
- */
-export function CustomizationDetailView({
-    detail,
-    peers = [],
-    pageSections = null,
-    worksWith,
-}: CustomizationDetailViewProps) {
-    const categoryLabel = detail.categoryLabel || detail.categoryValue;
-    const categoryListHref = `${WWW_ROUTES.customizations}?category=${encodeURIComponent(detail.categoryValue)}`;
-    const reference = getReferenceCopy(detail.categoryValue, categoryLabel);
-
+function buildStaticNavItems(detail: CustomizationDetail): AnchorNavItem[] {
     const showOverview = hasReferenceOverview(detail);
     const showSpecs = hasReferenceSpecs(detail);
     const showWorksWith = hasReferenceWorksWith();
     const showShowcase = hasCustomizationShowcase(detail);
     const showFaqs = (detail.faqs?.length ?? 0) > 0;
-    const sections = pageSections ?? [];
 
-    const navItems: AnchorNavItem[] = [
+    return [
         ...(showOverview
             ? [
                   {
@@ -173,8 +158,35 @@ export function CustomizationDetailView({
             ? [{id: CUSTOMIZATION_SHOWCASE_ID, label: 'Showcase'}]
             : []),
         ...(showFaqs ? [{id: CUSTOMIZATION_FAQS_ID, label: 'FAQs'}] : []),
-        ...pageSectionNavItems(sections),
     ];
+}
+
+type WorksWithPayload = {
+    option: WorksWithOptionRef;
+    lines: ProductLineRef[];
+    products: WorksWithProductCard[];
+};
+
+type CustomizationDetailViewProps = {
+    detail: CustomizationDetail;
+    peers?: CustomizationDetail[];
+    category: string;
+    handle: string;
+};
+
+/**
+ * Customization detail — hero streams first; works-with + page sections await
+ * heavy library fetches in Suspense (catalog → CDP click parity with PDP).
+ */
+export function CustomizationDetailView({
+    detail,
+    peers = [],
+    category,
+    handle,
+}: CustomizationDetailViewProps) {
+    const categoryLabel = detail.categoryLabel || detail.categoryValue;
+    const categoryListHref = `${WWW_ROUTES.customizations}?category=${encodeURIComponent(detail.categoryValue)}`;
+    const fallbackNav = buildStaticNavItems(detail);
 
     return (
         <>
@@ -189,10 +201,7 @@ export function CustomizationDetailView({
                     {label: detail.title},
                 ]}
             />
-            <PageDielineSection
-                borderBottom
-                paddingBlock="md"
-            >
+            <PageDielineSection borderBottom paddingBlock="md">
                 <article
                     id="customization-overview"
                     className="scroll-mt-32 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
@@ -201,13 +210,20 @@ export function CustomizationDetailView({
                         media={detail.media}
                         productTitle={detail.title}
                         featuredVideoUrl={detail.featuredVideoUrl}
+                        wellSizes={CUSTOMIZATION_GALLERY_WELL_SIZES}
+                        wellPrefetchWidth={
+                            CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH
+                        }
                     />
                     <div>
                         <div className="flex items-center justify-between gap-4">
                             <p className="min-w-0 flex-1 truncate text-[11px] font-semibold tracking-[0.08em] text-brand-blue uppercase">
                                 {formatSectionEyebrow(categoryLabel)}
                             </p>
-                            <StatusBadge status={detail.status} className="shrink-0" />
+                            <StatusBadge
+                                status={detail.status}
+                                className="shrink-0"
+                            />
                         </div>
                         <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
                             {detail.title}
@@ -226,43 +242,149 @@ export function CustomizationDetailView({
             </PageDielineSection>
 
             <div className="relative">
-                <AnchorNav items={navItems} />
-
-                {showOverview || showSpecs ? (
-                    <CustomizationReferenceBenefitsSpecs
+                <Suspense
+                    fallback={
+                        <CustomizationDetailBelowFoldContent
+                            detail={detail}
+                            peers={peers}
+                            pageSections={null}
+                            worksWith={{
+                                option: {
+                                    id: detail.id,
+                                    category: detail.categoryValue,
+                                    slug: detail.slug,
+                                    title: detail.title,
+                                },
+                                lines: detail.productLines,
+                                products: [],
+                            }}
+                            navItems={fallbackNav}
+                        />
+                    }
+                >
+                    <CustomizationDetailBelowFold
                         detail={detail}
-                        compareLabel={reference.compareLabel}
+                        peers={peers}
+                        category={category}
+                        handle={handle}
+                        fallbackNav={fallbackNav}
                     />
-                ) : null}
-                {showWorksWith ? (
-                    <CustomizationReferenceWorksWith
-                        option={
-                            worksWith?.option ?? {
-                                id: detail.id,
-                                category: detail.categoryValue,
-                                slug: detail.slug,
-                                title: detail.title,
-                            }
-                        }
-                        lines={worksWith?.lines ?? detail.productLines}
-                        products={worksWith?.products ?? []}
-                    />
-                ) : null}
-
-                <CustomizationComparison detail={detail} peers={peers} />
-                {showShowcase ? <CustomizationShowcase detail={detail} /> : null}
-                {showFaqs ? (
-                    <FaqSection
-                        sectionId={CUSTOMIZATION_FAQS_ID}
-                        items={detail.faqs ?? []}
-                        footerHref={WWW_ROUTES.contact}
-                        footerLabel="Let's chat"
-                    />
-                ) : null}
-                {sections.length > 0 ? (
-                    <SectionRenderer sections={sections} />
-                ) : null}
+                </Suspense>
             </div>
+        </>
+    );
+}
+
+/**
+ * Awaits product library + offer index + layout sections so gallery chrome
+ * above can stream first (PROD-3102 CDP parity).
+ */
+async function CustomizationDetailBelowFold({
+    detail,
+    peers,
+    category,
+    handle,
+    fallbackNav,
+}: {
+    detail: CustomizationDetail;
+    peers: CustomizationDetail[];
+    category: string;
+    handle: string;
+    fallbackNav: AnchorNavItem[];
+}) {
+    const [page, productLibrary, offerIndex] = await Promise.all([
+        getCustomizationDetailPage(category, handle),
+        listProductLibrary(),
+        listProductOfferIndex(),
+    ]);
+
+    const pageSections = (page?.sections ?? null) as PageSection[] | null;
+    const {products, lines} = buildWorksWithProducts({
+        optionId: detail.id,
+        productLibrary,
+        offerIndex,
+        preferredLines: detail.productLines,
+    });
+
+    const navItems: AnchorNavItem[] = [
+        ...fallbackNav,
+        ...pageSectionNavItems(pageSections),
+    ];
+
+    return (
+        <CustomizationDetailBelowFoldContent
+            detail={detail}
+            peers={peers}
+            pageSections={pageSections}
+            worksWith={{
+                option: {
+                    id: detail.id,
+                    category: detail.categoryValue,
+                    slug: detail.slug,
+                    title: detail.title,
+                },
+                lines,
+                products,
+            }}
+            navItems={navItems}
+        />
+    );
+}
+
+function CustomizationDetailBelowFoldContent({
+    detail,
+    peers,
+    pageSections,
+    worksWith,
+    navItems,
+}: {
+    detail: CustomizationDetail;
+    peers: CustomizationDetail[];
+    pageSections: PageSection[] | null;
+    worksWith: WorksWithPayload;
+    navItems: AnchorNavItem[];
+}) {
+    const categoryLabel = detail.categoryLabel || detail.categoryValue;
+    const reference = getReferenceCopy(detail.categoryValue, categoryLabel);
+
+    const showOverview = hasReferenceOverview(detail);
+    const showSpecs = hasReferenceSpecs(detail);
+    const showWorksWith = hasReferenceWorksWith();
+    const showShowcase = hasCustomizationShowcase(detail);
+    const showFaqs = (detail.faqs?.length ?? 0) > 0;
+    const sections = pageSections ?? [];
+
+    return (
+        <>
+            <AnchorNav items={navItems} />
+
+            {showOverview || showSpecs ? (
+                <CustomizationReferenceBenefitsSpecs
+                    detail={detail}
+                    compareLabel={reference.compareLabel}
+                />
+            ) : null}
+            {showWorksWith ? (
+                <CustomizationReferenceWorksWith
+                    option={worksWith.option}
+                    lines={worksWith.lines}
+                    products={worksWith.products}
+                />
+            ) : null}
+
+            <CustomizationComparison detail={detail} peers={peers} />
+            {showShowcase ? <CustomizationShowcase detail={detail} /> : null}
+            {showFaqs ? (
+                <FaqSection
+                    sectionId={CUSTOMIZATION_FAQS_ID}
+                    items={detail.faqs ?? []}
+                    footerHref={WWW_ROUTES.contact}
+                    footerLabel="Let's chat"
+                />
+            ) : null}
+            {sections.length > 0 ? (
+                <SectionRenderer sections={sections} />
+            ) : null}
         </>
     );
 }
