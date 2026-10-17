@@ -207,6 +207,11 @@ function collectLine(tree, driveRoot) {
 
 const VIEW_RANK = [/^angle/, /^front/, /^side/, /^top/, /^bottom/, /^close-up/]
 
+/** Per-line view order where a line shows its products differently (Box Inserts: the whole insert before a close-up). */
+const LINE_VIEW_RANK = {
+  '06-Box Inserts': [/full-view/, /^close-up/],
+}
+
 /** Per-line order of a view's state (the part after "view-"), within one colour. Lines not listed sort it A–Z. */
 const STATE_RANK = {
   '01-Folding Cartons': ['opened', 'semi-opened', 'fully-opened', 'closed'],
@@ -308,9 +313,10 @@ function orderImages(files) {
     return i === -1 ? states.length : i
   }
   const rank = (p) => {
-    if (!p.viewBase) return VIEW_RANK.length + 1
-    const i = VIEW_RANK.findIndex((re) => re.test(p.viewBase))
-    return i === -1 ? VIEW_RANK.length : i
+    const ranks = LINE_VIEW_RANK[args.line] ?? VIEW_RANK
+    if (!p.viewBase) return ranks.length + 1
+    const i = ranks.findIndex((re) => re.test(p.viewBase))
+    return i === -1 ? ranks.length : i
   }
   return files
     .map((f) => ({ ...f, parsed: parseName(f.name, f.folder) }))
