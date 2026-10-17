@@ -29,16 +29,31 @@ type ProductGalleryProps = {
     productTitle: string;
     /** Playable MP4/MOV for feature (index 0); YouTube / missing → still only. */
     featuredVideoUrl?: string | null;
+    /**
+     * Feature-well `sizes` for Next/Sanity CDN. PDP defaults under-report for
+     * speed; customization detail passes a larger slot so the hero is sharp.
+     */
+    wellSizes?: string;
+    /** Idle prefetch width matching {@link wellSizes} × ~2 DPR (clamped by loader). */
+    wellPrefetchWidth?: number;
 };
 
 /**
- * Feature well: under-report so 2× DPR lands near ~720–800, not full-viewport
- * 1080–1920 (PROD-3102).
+ * Feature well (PDP default): under-report so 2× DPR lands near ~720–800, not
+ * full-viewport 1080–1920 (PROD-3102).
  */
 const GALLERY_WELL_SIZES = '(max-width: 1024px) 50vw, 360px';
 
 /** Prefetch width ≈ 360 CSS × 2 DPR / common Next bucket for {@link GALLERY_WELL_SIZES}. */
 const GALLERY_WELL_PREFETCH_WIDTH = 750;
+
+/**
+ * Customization detail hero: ~3/5 of content column ≈ 720–800 CSS; 2× DPR →
+ * near CDN max so the square well is not soft/pixelated.
+ */
+export const CUSTOMIZATION_GALLERY_WELL_SIZES =
+    '(max-width: 1024px) 92vw, 800px';
+export const CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH = 1600;
 
 /** Near-viewport lightbox stage — full asset, no square crop. */
 const GALLERY_LIGHTBOX_SIZES = '(max-width: 640px) 96vw, min(96vw, 56rem)';
@@ -115,12 +130,14 @@ function GalleryWellSlideImage({
     alt,
     priority,
     lqip,
+    sizes,
     onReady,
 }: {
     src: string;
     alt: string;
     priority: boolean;
     lqip?: string;
+    sizes: string;
     onReady: () => void;
 }) {
     const {onLoad, onError, imageClassName} = useSanityImageSettle(src, {
@@ -135,7 +152,7 @@ function GalleryWellSlideImage({
             fill
             priority={priority}
             loading={priority ? undefined : 'lazy'}
-            sizes={GALLERY_WELL_SIZES}
+            sizes={sizes}
             className={cn('object-fill', imageClassName)}
             onLoad={onLoad}
             onError={onError}
@@ -178,6 +195,8 @@ export function ProductGallery({
     media,
     productTitle,
     featuredVideoUrl,
+    wellSizes = GALLERY_WELL_SIZES,
+    wellPrefetchWidth = GALLERY_WELL_PREFETCH_WIDTH,
 }: ProductGalleryProps) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [visibleIndex, setVisibleIndex] = useState(0);
@@ -197,6 +216,8 @@ export function ProductGallery({
     const visibleIndexRef = useRef(0);
     const prefersReducedMotion = usePrefersReducedMotion();
     const isMobile = useIsMobileViewport();
+    const wellPrefetchWidthRef = useRef(wellPrefetchWidth);
+    wellPrefetchWidthRef.current = wellPrefetchWidth;
 
     const items = media.length > 0 ? media : [{alt: productTitle}];
     const active = items[activeIndex] ?? items[0];
@@ -331,7 +352,7 @@ export function ProductGallery({
                 }
                 const url = sanitySquareImageLoader({
                     src: item.src,
-                    width: GALLERY_WELL_PREFETCH_WIDTH,
+                    width: wellPrefetchWidthRef.current,
                     quality: 80,
                 });
                 const img = new window.Image();
@@ -487,6 +508,7 @@ export function ProductGallery({
                                     alt={isTop ? item.alt : ''}
                                     priority={index === 0}
                                     lqip={item.lqip}
+                                    sizes={wellSizes}
                                     onReady={() => markReady(index)}
                                 />
                             ) : (
