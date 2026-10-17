@@ -207,9 +207,9 @@ function collectLine(tree, driveRoot) {
 
 const VIEW_RANK = [/^angle/, /^front/, /^side/, /^top/, /^bottom/, /^close-up/]
 
-/** Per-line view order where a line shows its products differently (Box Inserts: the whole insert before a close-up). */
+/** Per-line view order where a line shows its products differently (Box Inserts: the close-up leads, as the team picked 17 Oct). */
 const LINE_VIEW_RANK = {
-  '06-Box Inserts': [/full-view/, /^close-up/],
+  '06-Box Inserts': [/^close-up/, /full-view/],
 }
 
 /** Per-line order of a view's state (the part after "view-"), within one colour. Lines not listed sort it A–Z. */
@@ -245,6 +245,11 @@ const PRIMARY_PICK = {
   'ACC-062': 'packaging-accessories-inserts_recycled-kraft-tissue-paper_angled-view-rolled.png',
   'ACC-073': 'packaging-accessories-inserts_washi-wrapping-paper_angled-view-rolled.png',
   'ACC-075': 'packaging-accessories-inserts_wax-paper_angled-view-rolled.png',
+  // Box Inserts, picked 17 Oct (the other 10 picks are the close-up-first order)
+  'INS-005': 'box-inserts_corrugated-box-inserts-1.png',
+  'INS-015': 'box-inserts_multi-wall-die-cut-corrugated-stack-insert-1.png',
+  'INS-018': 'box-inserts_paper-inserts-for-boxes-1.png',
+  'INS-019': 'box-inserts_pet-rpet-blister-insert-2_white_close-up-view.png',
   // Tin Packaging, picked 16 Oct (the rest match the opened-first order)
   'TIN-019': 'custom-tin-packaging_rectangular-slip-cover-tins-seamless_angled-view-opened-2.png',
   'TIN-021': 'custom-tin-packaging_rectangular-tin-with-airtight-double-lid_angled-view-3.png',
