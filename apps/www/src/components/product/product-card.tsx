@@ -5,6 +5,7 @@ import type {CatalogLifecycle} from '@/lib/catalog/types';
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
+import {useRouter} from 'next/navigation';
 import {Columns2, Package} from 'lucide-react';
 
 import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
@@ -99,6 +100,7 @@ export function ProductCard({
     const pathOnly = data.href.split('?')[0] ?? '';
     const slugFromHref = pathOnly.split('/').filter(Boolean).pop() ?? '';
     const eyebrow = displayProductSku(data.sku, slugFromHref).toUpperCase();
+    const router = useRouter();
     const [saved, setSaved] = useState(false);
     const [prefetch, setPrefetch] = useState(false);
     const gallery = resolveGallery(data);
@@ -108,7 +110,9 @@ export function ProductCard({
         setSaved((prev) => !prev);
     }
 
+    /** Warm the route immediately — don't wait for Link prefetch={true} state. */
     function enablePrefetch() {
+        void router.prefetch(data.href);
         setPrefetch(true);
     }
 
@@ -227,8 +231,8 @@ export function ProductCard({
 }
 
 /**
- * Dissolves the CDN crop in over the frame's muted well (`MediaCardFrame`
- * already paints `bg-muted`).
+ * Dissolves the CDN crop in over the frame's product-image well (`MediaCardFrame`
+ * already paints `bg-product-image-bg`).
  */
 function ProductCardSettlingImage({
     src,

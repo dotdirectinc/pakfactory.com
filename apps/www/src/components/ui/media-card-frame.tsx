@@ -29,12 +29,12 @@ type MediaCardFrameProps = {
     /** Settle-zoom on the media chrome. Default true. */
     settleZoom?: boolean;
     className?: string;
-    /** Classes for the media frame (default includes `rounded-2xl bg-muted`). */
+    /** Classes for the media frame (default includes `rounded-2xl bg-product-image-bg`). */
     mediaClassName?: string;
     /** Classes for the meta block (default adds `sm:mt-4 sm:px-3` for vertical spacing + radius alignment). */
     metaClassName?: string;
     /**
-     * `elevated` — media well uses `bg-background` instead of `bg-muted`
+     * `elevated` — media well uses `bg-background` instead of `bg-product-image-bg`
      * (for muted section bands). Ignored when `mediaClassName` is set.
      */
     surface?: 'default' | 'elevated';
@@ -106,7 +106,7 @@ export function MediaCardFrame({
                             mediaClassName ??
                                 (surface === 'elevated'
                                     ? 'rounded-2xl bg-background'
-                                    : 'rounded-2xl bg-muted'),
+                                    : 'rounded-2xl bg-product-image-bg'),
                         )}
                     >
                         {media}

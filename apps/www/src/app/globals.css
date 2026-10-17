@@ -146,16 +146,17 @@
   background-color: var(--border);
 }
 
-/* Reserve scrollbar space so RemoveScroll / html overflow:hidden does not
-   shift fixed UI (e.g. CompareFloatDock) when a Select or Dialog opens. */
+/*
+  Keep a permanent vertical scrollbar column so Dialog/Select open does not
+  expand the layout when RemoveScroll sets body overflow:hidden.
+  `scrollbar-gutter: stable` alone is not enough here — Chromium still grows
+  clientWidth when the scrollbar disappears under body scroll-lock.
+  RemoveScroll’s late `margin-right: Npx !important` is cleared by
+  ScrollLockShiftFix (inline !important wins that stylesheet).
+*/
 html {
+  overflow-y: scroll;
   scrollbar-gutter: stable;
-}
-
-/* Radix RemoveScroll locks body; also lock html so the window scrollbar
-   disappears and fixed dialogs stay visually centered. */
-html:has(body[data-scroll-locked]) {
-  overflow: hidden;
 }
 
 /*

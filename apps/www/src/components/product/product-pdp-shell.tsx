@@ -1,6 +1,7 @@
 'use client';
 
 import type {ReactNode} from 'react';
+import {Badge} from '@pakfactory/ui/components/badge';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {ProductConfigurationBar} from '@/components/product/product-configuration-bar';
@@ -38,15 +39,19 @@ function ProductOverviewChrome({
                 <ProductGallery
                     media={product.media}
                     productTitle={product.title}
-                    badgeLabel={
-                        product.kind === 'inspiration' ? 'Inspiration' : undefined
-                    }
                 />
                 <div>
                     <div className="flex items-center justify-between gap-4">
-                        <p className="min-w-0 flex-1 truncate text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                            {displaySku}
-                        </p>
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                            <p className="min-w-0 truncate text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                                {displaySku}
+                            </p>
+                            {product.kind === 'inspiration' ? (
+                                <Badge variant="default" className="shrink-0">
+                                    Inspiration
+                                </Badge>
+                            ) : null}
+                        </div>
                         <StatusBadge
                             status={product.status}
                             className="shrink-0"
