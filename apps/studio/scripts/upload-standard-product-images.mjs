@@ -238,6 +238,16 @@ const PRIMARY_PICK = {
   'COR-002': 'corrugated_auto-bottom-slotted-container_kraft_bottom-view-opened.png',
   'COR-027': 'corrugated_custom-corrugated-reverse-tuck-end-box_kraft_front-view-opened.png', // picked 17 Oct, after the designer's update
   'COR-029': 'corrugated_custom-corrugated-straight-tuck-end-box_kraft_front-view-opened.png', // picked 17 Oct, after the designer's update
+  // Corrugated, picked 17 Oct where kraft-first alone does not give the pick
+  'COR-001': 'corrugated_1-2-3-bottom-snap-lock-slotted-container_kraft_bottom-view-opened.png',
+  'COR-028': 'corrugated_custom-corrugated-roll-end-tuck-front-box-retf-with-dust-flaps_kraft_side-view-opened.png',
+  'COR-031': 'corrugated_custom-ear-lock-mailer-box_kraft_side-view-opened.png',
+  'COR-033': 'corrugated_custom-mailer-box-with-insert_kraft_side-view-opened-2.png',
+  'COR-038': 'corrugated_custom-roll-end-tuck-top-mailer-with-dust-flaps_kraft_side-view-opened.png',
+  'COR-044': 'corrugated_custom-tuck-top-snap-lock-bottom-corrugated-box_kraft_bottom-view-opened.png',
+  'COR-046': 'corrugated_full-overlap-slotted-containers-fol_kraft_top-view-opened.png',
+  'COR-049': 'corrugated_one-piece-corrugated-mailer-box_kraft_side-view-fully-opened.png',
+  'COR-052': 'corrugated_regular-slotted-container-rsc_kraft_bottom-view-opened.png',
   'COR-042': 'corrugated_custom-tuck-top-auto-lock-bottom-corrugated-box_kraft_bottom-view-opened.png',
   'COR-051': 'corrugated_one-piece-folder-with-tuck-flaps_kraft_front-view-opened.png',
   // Packaging Accessories, picked 16 Oct (the other 11 picks match the default order)
@@ -265,7 +275,7 @@ const PRIMARY_PICK = {
 /** Per-line colour order. Images with no colour still come first; listed colours next; others A–Z after them. */
 const COLOUR_RANK = {
   '01-Folding Cartons': ['white', 'kraft'],
-  '02-Corrugated Boxes': ['white', 'kraft'],
+  '02-Corrugated Boxes': ['kraft', 'white'], // kraft first: the team picked kraft for all 39 primaries they changed, 17 Oct
   '07-Mailers': ['white', 'kraft'],
 }
 const stateOf = (viewBase) => viewBase?.match(/view-(.+)$/)?.[1] ?? ''
