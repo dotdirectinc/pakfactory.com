@@ -344,7 +344,7 @@ function altFor(title, p) {
   if (p.version) bits.push(`version ${p.version}`)
   if (p.colour) bits.push(words(p.colour))
   if (p.view) bits.push(words(p.view))
-  else if (p.number) bits.push(String(p.number))
+  else if (p.number) bits.push(`image ${p.number}`)
   return bits.join(', ')
 }
 
