@@ -226,6 +226,8 @@ const STATE_RANK = {
  * The picked image moves to the front; the rest keep the line's order.
  */
 const PRIMARY_PICK = {
+  // Fabric Gift Bags & Pouches, picked 18 Oct
+  'FAB-009': 'fabric-gift-bags-pouches_gusseted-organza-bags-2_front-view.png',
   // Folding Cartons, picked 16 Oct (closed shots would otherwise lead)
   'FCT-005': 'folding-carton_4-corner-tray-and-lid_side-view-opened-2.png',
   'FCT-010': 'folding-carton_bookend_front-view-semi-opened.png',
