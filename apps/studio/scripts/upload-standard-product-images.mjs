@@ -228,6 +228,18 @@ const STATE_RANK = {
 const PRIMARY_PICK = {
   // Fabric Gift Bags & Pouches, picked 18 Oct
   'FAB-009': 'fabric-gift-bags-pouches_gusseted-organza-bags-2_front-view.png',
+  // Mailers, picked 18 Oct (final check)
+  'MLR-002': 'mailers_cardboard-envelope-mailers-with-bending-line_kraft_angled-view.png',
+  'MLR-006': 'mailers_expandable-kraft-mailers_back-view.png',
+  'MLR-009': 'mailers_flat-bottom-paper-mailers_kraft_angled-view.png',
+  'MLR-010': 'mailers_hard-shell-poly-bubble-mailers_back-view-opened.png',
+  'MLR-014': 'mailers_kraft-mailers_back-view-opened.png',
+  'MLR-015': 'mailers_kraft-paper-bubble-mailers_bottom-view-opened.png',
+  'MLR-018': 'mailers_poly-bubble-mailers_bottom-view-opened.png',
+  'MLR-020': 'mailers_poly-mailers-with-self-seal-strip_bottom-view-opened.png',
+  'MLR-021': 'mailers_post-consumer-recycled-padded-mailers_close-up-view.png',
+  'MLR-023': 'mailers_returnable-resealable-poly-mailer-bags_back-view-opened.png',
+  'MLR-025': 'mailers_soft-shell-poly-bubble-mailers_back-view-opened.png',
   // Rigid Boxes, picked 18 Oct (final check)
   'RGD-008': 'rigid_custom-clamshell-rigid-box_kraft_angled-view-opened-2.png',
   'RGD-013': 'rigid_custom-diagonal-pull-open-magnetic-rigid-box_kraft_angled-view-opened-2.png',
