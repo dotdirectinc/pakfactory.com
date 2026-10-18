@@ -228,6 +228,14 @@ const STATE_RANK = {
 const PRIMARY_PICK = {
   // Fabric Gift Bags & Pouches, picked 18 Oct
   'FAB-009': 'fabric-gift-bags-pouches_gusseted-organza-bags-2_front-view.png',
+  // Rigid Boxes, picked 18 Oct (final check)
+  'RGD-008': 'rigid_custom-clamshell-rigid-box_kraft_angled-view-opened-2.png',
+  'RGD-013': 'rigid_custom-diagonal-pull-open-magnetic-rigid-box_kraft_angled-view-opened-2.png',
+  'RGD-063': 'rigid_custom-magnetic-closure-book-style-rigid-box-with-rounded-spine_white_angled-view-closed.png',
+  'RGD-080': 'rigid_custom-paper-tube-with-lid_white_angled-view-closed.png',
+  'RGD-085': 'rigid_custom-portfolio-style-clamshell-boxes_kraft_angled-view-opened-2.png',
+  'RGD-091': 'rigid_custom-rigid-tray-with-clear-pvc-sleeve_kraft_side-view-semi-opened.png',
+  'RGD-106': 'rigid_custom-two-piece-shoulder-neck-rigid-boxes_kraft_side-view-closed.png',
   // Folding Cartons, picked 18 Oct (final check)
   'FCT-019': 'folding-carton_custom-packaging-sleeves_bottom-view.png',
   'FCT-023': 'folding-carton_double-wall-frame-tray-2_side-view.png',
