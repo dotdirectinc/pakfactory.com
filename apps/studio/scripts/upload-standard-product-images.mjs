@@ -231,7 +231,6 @@ const PRIMARY_PICK = {
   // Folding Cartons, picked 16 Oct (closed shots would otherwise lead)
   'FCT-005': 'folding-carton_4-corner-tray-and-lid_side-view-opened-2.png',
   'FCT-010': 'folding-carton_bookend_front-view-semi-opened.png',
-  'FCT-023': 'folding-carton_double-wall-frame-tray-1_top-view-opened-1.png',
   'FCT-028': 'folding-carton_double-wall-tray-and-lid_top-view-opened-1.png',
   'FCT-039': 'folding-carton_full-overlap-seal-end-box_bottom-view-opened.png',
   'FCT-057': 'folding-carton_prism-shaped-box_angled-view-closed.png',
