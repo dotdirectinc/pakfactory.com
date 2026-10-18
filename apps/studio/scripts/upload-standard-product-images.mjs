@@ -228,6 +228,10 @@ const STATE_RANK = {
 const PRIMARY_PICK = {
   // Fabric Gift Bags & Pouches, picked 18 Oct
   'FAB-009': 'fabric-gift-bags-pouches_gusseted-organza-bags-2_front-view.png',
+  // Retail Bags, picked 18 Oct (final check)
+  'BAG-009': 'retail-promotional-bags_flat-gusseted-paper-bags-2_top-view.png',
+  'BAG-024': 'retail-promotional-bags_paper-bags-with-flat-handles_bottom-view.png',
+  'BAG-033': 'retail-promotional-bags_woven-polypropylene-bags-pp_side-view.png',
   // Mailers, picked 18 Oct (final check)
   'MLR-002': 'mailers_cardboard-envelope-mailers-with-bending-line_kraft_angled-view.png',
   'MLR-006': 'mailers_expandable-kraft-mailers_back-view.png',
