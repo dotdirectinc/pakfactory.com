@@ -228,6 +228,17 @@ const STATE_RANK = {
 const PRIMARY_PICK = {
   // Fabric Gift Bags & Pouches, picked 18 Oct
   'FAB-009': 'fabric-gift-bags-pouches_gusseted-organza-bags-2_front-view.png',
+  // Folding Cartons, picked 18 Oct (final check)
+  'FCT-019': 'folding-carton_custom-packaging-sleeves_bottom-view.png',
+  'FCT-023': 'folding-carton_double-wall-frame-tray-2_side-view.png',
+  'FCT-026': 'folding-carton_double-wall-frame-tray-and-sleeve_angled-view-semi-opened.png',
+  'FCT-041': 'folding-carton_gable-box_front-view-closed.png',
+  'FCT-044': 'folding-carton_gusset-folder_front-view-closed.png',
+  'FCT-053': 'folding-carton_pillow-box_white_back-view.png',
+  'FCT-056': 'folding-carton_pinch-lock-tray_side-view.png',
+  'FCT-064': 'folding-carton_seal-end-boxes_bottom-view-opened.png',
+  'FCT-074': 'folding-carton_stripper-lock-tray_side-view.png',
+  'FCT-079': 'folding-carton_tuck-top-auto-bottom-ttab_bottom-view-opened.png',
   // Folding Cartons, picked 16 Oct (closed shots would otherwise lead)
   'FCT-005': 'folding-carton_4-corner-tray-and-lid_side-view-opened-2.png',
   'FCT-010': 'folding-carton_bookend_front-view-semi-opened.png',
