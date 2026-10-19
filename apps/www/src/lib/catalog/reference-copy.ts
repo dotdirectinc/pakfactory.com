@@ -1,6 +1,9 @@
 /**
  * Category-method copy for the Material Reference band (PROD-1299).
+ * Learn-first CDP section label defaults (PROD-3112) when Studio chrome is empty.
  */
+
+import type {CustomizationDetail} from '@/lib/catalog/types';
 
 export type ReferenceCopy = {
     eyebrow: string;
@@ -8,6 +11,15 @@ export type ReferenceCopy = {
     description: string;
     noun: string;
     compareLabel: string;
+};
+
+/** Section heading props shared by compare / works-with / showcase. */
+export type LearnFirstSectionCopy = {
+    eyebrow: string;
+    title: string;
+    description: string;
+    /** Anchor-nav label (shorter than the section title when needed). */
+    navLabel: string;
 };
 
 const CATEGORY_NOUN: Record<string, string> = {
@@ -24,6 +36,12 @@ const CATEGORY_EYEBROW: Record<string, string> = {
     'additional-customization': 'Customization Reference',
 };
 
+/** Plural peer noun in learn-first compare body (PDF: “other boards”). */
+const COMPARE_PEER_NOUN: Record<string, string> = {
+    materials: 'boards',
+    finishing: 'finishes',
+};
+
 function singularLabel(label: string): string {
     const trimmed = label.trim();
     if (!trimmed) return 'option';
@@ -32,6 +50,11 @@ function singularLabel(label: string): string {
         return trimmed.slice(0, -1).toLowerCase();
     }
     return trimmed.toLowerCase();
+}
+
+function comparePeerNoun(categoryValue: string): string {
+    const key = categoryValue.trim().toLowerCase();
+    return COMPARE_PEER_NOUN[key] ?? 'options';
 }
 
 export function getReferenceCopy(
@@ -57,5 +80,48 @@ export function getReferenceCopy(
                   ? 'finishes'
                   : `${noun}s`
         }`,
+    };
+}
+
+/**
+ * Default labels for learn-first CDP bands when the template section leaves
+ * eyebrow / heading / intro empty (PROD-3112).
+ */
+export function getLearnFirstSectionCopy(
+    detail: Pick<
+        CustomizationDetail,
+        'title' | 'categoryValue' | 'categoryLabel'
+    >,
+): {
+    compare: LearnFirstSectionCopy;
+    worksWith: LearnFirstSectionCopy;
+    showcase: LearnFirstSectionCopy;
+} {
+    const categoryLabel =
+        detail.categoryLabel.trim() || detail.categoryValue.trim() || 'options';
+    const title = detail.title.trim() || 'this option';
+    const peers = comparePeerNoun(detail.categoryValue);
+    const selectionHint =
+        'Apply carries your selection straight into the product.';
+
+    return {
+        compare: {
+            eyebrow: `Same category · ${categoryLabel}`,
+            title: `Compare with other ${categoryLabel} options`,
+            description: `How ${title} stacks up against the other ${peers} in this category — so you can choose the right option, not just this one.`,
+            navLabel: 'Compare',
+        },
+        worksWith: {
+            eyebrow: 'Works on these product styles',
+            title: 'Apply it on different product styles',
+            description: `The styles this option works on. ${selectionHint}`,
+            navLabel: 'Product styles',
+        },
+        showcase: {
+            eyebrow: 'Get inspired',
+            title: 'See it in action',
+            description: `Real packaging using ${title} — so you can picture the finish on a finished product before you apply it.`,
+            navLabel: 'Inspiration',
+        },
     };
 }

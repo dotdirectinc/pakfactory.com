@@ -19,6 +19,11 @@ export type CatalogIndexPageDoc = {
   _type: string
   title?: string | null
   sections?: PageSectionDoc[] | null
+  /**
+   * Customization Detail Page only — sticky AnchorNav under overview.
+   * Undefined / null → show (Default). Explicit false → hide (Learn-first).
+   */
+  showStickyNav?: boolean | null
   /** Hero + SEO + catalog UI labels (hub pages only — PROD-3001). */
   h1?: string | null
   intro?: string | null
@@ -35,6 +40,7 @@ const CATALOG_INDEX_PAGE_PROJECTION = /* groq */ `{
   _id,
   _type,
   title,
+  showStickyNav,
   "sections": sections[]${PAGE_SECTIONS_PROJECTION}
 }`
 

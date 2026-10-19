@@ -68,10 +68,18 @@ function useIsMdUp() {
     return isMdUp;
 }
 
+type CustomizationComparisonHeading = {
+    eyebrow?: string;
+    title?: string;
+    description?: string;
+};
+
 type CustomizationComparisonProps = {
     detail: CustomizationDetail;
     peers: CustomizationDetail[];
     className?: string;
+    /** Override SectionHeading copy (learn-first CDP — PROD-3112). */
+    heading?: CustomizationComparisonHeading;
 };
 
 function seedSlots(
@@ -93,6 +101,7 @@ export function CustomizationComparison({
     detail,
     peers,
     className,
+    heading,
 }: CustomizationComparisonProps) {
     const sectionRef = useRef<HTMLElement | null>(null);
     const heroRef = useRef<HTMLDivElement | null>(null);
@@ -223,9 +232,12 @@ export function CustomizationComparison({
         >
             <PageDielineSection borderBottom innerClassName="py-16 sm:py-20">
                 <SectionHeading
-                    eyebrow="Comparison"
-                    title="How it stacks up"
-                    description="Side-by-side specs for up to three options in the same category. Swap columns or add another to refine the shortlist."
+                    eyebrow={heading?.eyebrow ?? 'Comparison'}
+                    title={heading?.title ?? 'How it stacks up'}
+                    description={
+                        heading?.description ??
+                        'Side-by-side specs for up to three options in the same category. Swap columns or add another to refine the shortlist.'
+                    }
                 />
 
                 <div className="mt-12 flex flex-col gap-0">

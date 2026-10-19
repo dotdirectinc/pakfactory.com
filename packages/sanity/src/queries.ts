@@ -226,6 +226,7 @@ export {
     type PageSectionCaseStudiesRowDoc,
     type PageSectionCaseStudyItemDoc,
     type PageSectionChromeFields,
+    type PageSectionCustomizationDetailDoc,
     type PageSectionDoc,
     type PageSectionExpertiseSequenceDoc,
     type PageSectionExpertiseStageDoc,

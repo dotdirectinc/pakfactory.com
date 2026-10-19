@@ -14,11 +14,19 @@ import {customizationCompatibilityHref} from '@/lib/www-routes';
 export const CUSTOMIZATION_REFERENCE_WORKS_WITH_ID =
     'customization-reference-works-with';
 
+type CustomizationReferenceWorksWithHeading = {
+    eyebrow?: string;
+    title?: string;
+    description?: string;
+};
+
 type CustomizationReferenceWorksWithProps = {
     option: WorksWithOptionRef;
     lines: ProductLineRef[];
     products: WorksWithProductCard[];
     className?: string;
+    /** Override SectionHeading copy (learn-first CDP — PROD-3112). */
+    heading?: CustomizationReferenceWorksWithHeading;
 };
 
 /**
@@ -30,6 +38,7 @@ export function CustomizationReferenceWorksWith({
     lines,
     products,
     className,
+    heading,
 }: CustomizationReferenceWorksWithProps) {
     const engineHref = customizationCompatibilityHref(
         serializeCompatibilityQuery({
@@ -53,9 +62,12 @@ export function CustomizationReferenceWorksWith({
                 innerClassName="py-16 sm:py-20"
             >
                 <SectionHeading
-                    eyebrow="Works with"
-                    title="Works with"
-                    description="Choose a compatible product to apply this option to your request."
+                    eyebrow={heading?.eyebrow ?? 'Works with'}
+                    title={heading?.title ?? 'Works with'}
+                    description={
+                        heading?.description ??
+                        'Choose a compatible product to apply this option to your request.'
+                    }
                     cta={{label: 'Browse all compatible products', href: engineHref}}
                     ctaPlacement="end"
                 />

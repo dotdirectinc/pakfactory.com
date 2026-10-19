@@ -6,6 +6,7 @@ import {ContentsField} from '@/components/product/contents-field';
 import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
 import {useProductPdpDraft} from '@/components/product/product-pdp-draft';
+import {OverviewSection} from '@/components/ui/overview-section';
 import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {resolvePrintableSides} from '@/lib/customization-builder';
@@ -41,27 +42,20 @@ export function ProductRequestRail() {
 
     return (
         <div className="mt-8 space-y-6">
-            <section className="rounded-2xl bg-muted p-6">
-                <h2 className="text-base font-semibold text-brand-blue">
-                    {REQUEST_COPY.quantityLabel}
-                    <span className="text-destructive" aria-hidden>
-                        {' '}
-                        *
-                    </span>
-                </h2>
-                <p className="mt-1 text-sm leading-snug text-muted-foreground">
-                    {PRODUCT_DETAIL_COPY.quantityHelper}
-                </p>
+            <OverviewSection
+                title={REQUEST_COPY.quantityLabel}
+                description={PRODUCT_DETAIL_COPY.quantityHelper}
+                required
+            >
                 <QuantityPicker
-                    className="mt-4"
                     volumes={volumes}
                     onAdd={addVolume}
                     onRemove={removeVolume}
                     moq={product.moq ?? 500}
                 />
-            </section>
+            </OverviewSection>
 
-            <section className="rounded-2xl bg-muted p-6">
+            <OverviewSection>
                 <ContentsField
                     id={`contents-${product.slug}`}
                     value={contents}
@@ -74,9 +68,9 @@ export function ProductRequestRail() {
                     onReferenceImagesChange={setReferenceImages}
                     draftId={draftId}
                 />
-            </section>
+            </OverviewSection>
 
-            <section className="rounded-2xl bg-muted p-6">
+            <OverviewSection>
                 <CustomizationEntry
                     availableCustomizations={product.availableCustomizations}
                     customizationRules={product.customizationRules}
@@ -92,7 +86,7 @@ export function ProductRequestRail() {
                         clearCompatibilityPreselect
                     }
                 />
-            </section>
+            </OverviewSection>
 
             <AddToRequestButton disabled={!ready} onClick={handleAdd} />
         </div>
@@ -112,17 +106,13 @@ export function ProductRequestRailSkeleton() {
         >
             <span className="sr-only">Loading request options</span>
             {Array.from({length: 3}, (_, index) => (
-                <section
-                    key={index}
-                    className="rounded-2xl bg-muted p-6"
-                    aria-hidden
-                >
+                <OverviewSection key={index} aria-hidden>
                     <Skeleton className="h-5 w-28" />
                     <div className="mt-4 space-y-2">
                         <Skeleton className="h-10 w-full rounded-md" />
                         <Skeleton className="h-10 w-3/4 max-w-xs rounded-md" />
                     </div>
-                </section>
+                </OverviewSection>
             ))}
             <div className="space-y-2" aria-hidden>
                 <Skeleton className="h-12 w-full rounded-md" />
