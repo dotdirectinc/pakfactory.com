@@ -204,6 +204,31 @@ export const LEGACY_STATUS_LABEL = {
 } as const;
 
 /** Sync Sanity (PROD-2751): propose registry changes from what Studio holds. */
+/** Who edits the catalog relations — the Spec System or Studio (PROD-2988 / PROD-3008). */
+export const ADMIN_SPEC_OWNER_COPY = {
+  title: "Who edits catalog relations",
+  lead: (dataset: string) =>
+    `Customization rules and a registered record's parents are edited in one place at a time. "Spec System": read-only in Studio, edited and approved here. "Studio": editable in Studio as before, and Sync Changes brings Studio's edits here. Dataset: ${dataset}.`,
+  rules: "Customization rules",
+  structure: "Parents (registered records)",
+  spec: "Spec System",
+  studio: "Studio",
+  never: "Never switched — Studio edits both.",
+  changed: (who: string) => `Last changed by ${who}`,
+  adminOnly: "Only admins can change this.",
+  change: "Change…",
+  note: "Why (optional, kept with the change)",
+  confirmTitle: "Change who edits catalog relations?",
+  confirmBody: (rules: string, structure: string) =>
+    `Rules: ${rules}. Parents: ${structure}. Studio editors see it after they reload Studio; Sync Changes follows on its next run.`,
+  apply: "Apply…",
+  confirm: "Yes, change it",
+  cancel: "Cancel",
+  saving: "Changing…",
+  done: "Changed. Ask editors to reload Studio.",
+  unreachable: "Could not read who edits catalog relations.",
+} as const;
+
 export const ADMIN_SPEC_SYNC_COPY = {
   title: "Sync",
   lead:

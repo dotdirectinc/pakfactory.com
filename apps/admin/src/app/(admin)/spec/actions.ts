@@ -2,7 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
-import { decideChangeset, dismissSyncRun, requestSyncRun, setDocumentExclusion } from "@/lib/spec/registry-api";
+import { decideChangeset, dismissSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type RelationsOwnerValue } from "@/lib/spec/registry-api";
 
 export type DecisionResult = { ok: true } | { ok: false; error: string };
 
@@ -40,6 +40,17 @@ export async function decideFrameAction(
  */
 export async function requestSyncAction(kind: "sanity" | "notion", dataset: string, includeSku = false): Promise<DecisionResult> {
   const res = await requestSyncRun(kind, dataset, includeSku);
+  if (!res.ok) return { ok: false, error: res.error };
+  revalidatePath("/spec");
+  return { ok: true };
+}
+
+/**
+ * Hand the catalog relations to the Spec System or back to Studio (PROD-2988 / PROD-3008), as the
+ * signed-in admin. The backend checks `relations.owner`, sets the registry and tells Studio.
+ */
+export async function setRelationsOwnerAction(dataset: string, rules: RelationsOwnerValue, structure: RelationsOwnerValue, note: string): Promise<DecisionResult> {
+  const res = await setRelationsOwner({ dataset, rules, structure, ...(note.trim() ? { note: note.trim() } : {}) });
   if (!res.ok) return { ok: false, error: res.error };
   revalidatePath("/spec");
   return { ok: true };
