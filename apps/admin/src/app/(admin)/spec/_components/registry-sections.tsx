@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { LocalTime } from "@pakfactory/ui/components/local-time";
-import { Skeleton } from "@pakfactory/ui/components/skeleton";
 import { AutoRefresh } from "@/components/layout/auto-refresh";
 import { SpecChangesetTable, describeFrame, sourceLabel } from "@/components/spec/spec-changeset-table";
 import { RulesDriftLine, StructureDriftLine } from "@/components/spec/spec-sync-history";
@@ -27,16 +26,6 @@ import { RegistryDismissButton } from "./registry-dismiss-button";
  */
 
 const RECENT = 3;
-
-export function SectionSkeleton({ rows = 2 }: { rows?: number }) {
-  return (
-    <div className="flex flex-col gap-2" aria-busy="true" aria-label="Loading">
-      {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-10 w-full" />
-      ))}
-    </div>
-  );
-}
 
 function SectionError({ what, error }: { what: string; error: string }) {
   return (

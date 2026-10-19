@@ -5,11 +5,11 @@ import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecEditHistory } from "@/components/spec/spec-edit-history";
 import { SpecRelationsOwner } from "@/components/spec/spec-relations-owner";
 import { ADMIN_SPEC_COPY, ADMIN_SPEC_REGISTRY_COPY as COPY } from "@/lib/copy/spec";
+import { SectionSkeleton } from "@/components/loading/page-skeleton";
 import {
   AttentionSection,
   RecentSection,
   Section,
-  SectionSkeleton,
   SyncControlSection,
   WaitingSection,
 } from "./_components/registry-sections";

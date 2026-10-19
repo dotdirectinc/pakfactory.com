@@ -1,5 +1,6 @@
 "use client";
 
+import { InlineLoading } from "@/components/loading/page-skeleton";
 import { recordHref, type TableKey } from "@/lib/spec/catalog-table-model";
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -305,7 +306,7 @@ function OptionRow({ option: o }: { option: RuleOptionRow }) {
           <p className="mt-1 text-xs text-destructive">{COPY.unmet(o.unmetRequirements.join("; "))}</p>
         )}
         <div className="mt-1">
-          {state === "loading" && <p className="text-xs text-muted-foreground">{COPY.loadingPartners}</p>}
+          {state === "loading" && <InlineLoading className="text-xs">{COPY.loadingPartners}</InlineLoading>}
           {state === "error" && <p className="text-xs text-destructive">{COPY.partnersFailed}</p>}
           {partners && partners.length > 0 && (
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
