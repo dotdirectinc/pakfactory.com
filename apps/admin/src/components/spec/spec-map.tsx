@@ -1,5 +1,6 @@
 "use client";
 
+import { InlineLoading } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import {
   useCallback,
@@ -2457,7 +2458,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
               details={
                 record?.for === selected && record.res.ok && record.res.data
                   ? <SpecRecordView record={record.res.data as CatalogRecord} heading="h2" onSelect={selectBy} rulesEditor={false} onEditParents={startStructure} />
-                  : <p className="text-sm text-muted-foreground">{COPY.loading}</p>
+                  : <InlineLoading>{COPY.loading}</InlineLoading>
               }
             />
           </aside>
@@ -2501,7 +2502,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
               {isPropertyLevel(sel.level) ? (
                 <p className="text-sm text-muted-foreground">{COPY.propertyCard}</p>
               ) : !record || record.for !== selected ? (
-                <p className="text-sm text-muted-foreground">{COPY.loading}</p>
+                <InlineLoading>{COPY.loading}</InlineLoading>
               ) : !record.res.ok ? (
                 <p role="alert" className="text-sm text-destructive">
                   {COPY.unreachable} ({record.res.error})

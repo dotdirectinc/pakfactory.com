@@ -28,7 +28,8 @@ export type ChangesetSummary = {
   created_at: string;
   approved_by: string | null;
   approved_at: string | null;
-  item_counts?: { entity_type: string; op: string; count: number }[];
+  /** Rows in the frame — what the list endpoint sends (it never sent `item_counts`, so Items showed "—"). */
+  item_count?: number;
 };
 
 export type ChangesetItem = {
@@ -145,8 +146,22 @@ async function callAll<T>(path: string) {
   }
 }
 
-export async function listDraftChangesets() {
-  return callAll<ChangesetSummary>("/api/v1/changesets?state=draft");
+/**
+ * Memoised per request (PROD-3115): the layout counts the waiting frames for the sidebar and the
+ * Registry lists them — one backend call serves both.
+ */
+export const listDraftChangesets = cache(async () => callAll<ChangesetSummary>("/api/v1/changesets?state=draft"));
+
+/**
+ * One page of frames (PROD-3115): the Registry's recently approved, and the edit history. The server
+ * counts rows for the returned page only, so a short page is cheap — unlike listing every frame.
+ */
+export async function listChangesetsPage(q: { state?: ChangesetState; source?: string; order?: "created" | "approved"; limit: number }) {
+  const params = new URLSearchParams({ limit: String(q.limit) });
+  if (q.state) params.set("state", q.state);
+  if (q.source) params.set("source", q.source);
+  if (q.order) params.set("order", q.order);
+  return call<ChangesetSummary[]>(`/api/v1/changesets?${params}`);
 }
 
 /**
@@ -251,9 +266,8 @@ export async function setRelationsOwner(body: { dataset: string; rules: Relation
 }
 
 /** The last 20 runs, newest first. */
-export async function listSyncRuns() {
-  return call<SyncRun[]>("/api/v1/sync-runs");
-}
+/** Memoised per request: the Registry's sync button, problems and recent activity share one read. */
+export const listSyncRuns = cache(async () => call<SyncRun[]>("/api/v1/sync-runs"));
 
 /**
  * Ask the backend to sync — Sanity → registry, or Notion → Sanity. The run is queued and the worker

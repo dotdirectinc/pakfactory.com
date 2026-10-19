@@ -1,5 +1,6 @@
 "use client";
 
+import { InlineLoading } from "@/components/ui/page-skeleton";
 import { useEffect, useMemo, useState } from "react";
 import { buildCompatibilityIndex } from "@pakfactory/sanity/customization-rules";
 import { buildDependencyGraph } from "@pakfactory/sanity/customization-rules/dependencies";
@@ -50,7 +51,7 @@ export function ProductConfigurator(props: {
   }, []);
 
   if (failed) return <p className="text-sm text-destructive">{COPY.configuratorFailed}</p>;
-  if (!snapshot) return <p className="text-sm text-muted-foreground">{COPY.configuratorLoading}</p>;
+  if (!snapshot) return <InlineLoading>{COPY.configuratorLoading}</InlineLoading>;
   return <Configurator {...props} snapshot={snapshot} />;
 }
 
