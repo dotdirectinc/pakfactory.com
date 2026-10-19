@@ -18,6 +18,14 @@ const WIDTH: Record<Width, string> = {
   full: "",
 };
 
+/**
+ * The primitive, a shade stronger: `bg-muted` (#f5f5f3) on the admin's white page is nearly invisible,
+ * so a section looked empty while it loaded (feedback 2026-10-19).
+ */
+function Block({ className }: { className?: string }) {
+  return <Skeleton className={cn("bg-foreground/10", className)} />;
+}
+
 /** Busy region: announced once to screen readers, not read out row by row. */
 function Busy({ className = "", label = "Loading", children }: { className?: string; label?: string; children: ReactNode }) {
   return (
@@ -32,10 +40,10 @@ export function HeaderSkeleton({ action = false }: { action?: boolean }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="flex flex-col gap-2">
-        <Skeleton className="h-7 w-56" />
-        <Skeleton className="h-4 w-96 max-w-full" />
+        <Block className="h-7 w-56" />
+        <Block className="h-4 w-96 max-w-full" />
       </div>
-      {action ? <Skeleton className="h-8 w-40" /> : null}
+      {action ? <Block className="h-8 w-40" /> : null}
     </div>
   );
 }
@@ -45,7 +53,7 @@ export function TabsSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="flex gap-2 border-b border-border pb-2">
       {Array.from({ length: count }, (_, i) => (
-        <Skeleton key={i} className="h-6 w-24" />
+        <Block key={i} className="h-6 w-24" />
       ))}
     </div>
   );
@@ -57,13 +65,13 @@ export function TableSkeleton({ rows = 8, cols = 5 }: { rows?: number; cols?: nu
     <div className="overflow-hidden rounded-md border border-border">
       <div className="flex gap-4 bg-muted/40 px-3 py-2.5">
         {Array.from({ length: cols }, (_, c) => (
-          <Skeleton key={c} className={`h-3 ${c === 0 ? "w-1/4" : "flex-1"}`} />
+          <Block key={c} className={`h-3 ${c === 0 ? "w-1/4" : "flex-1"}`} />
         ))}
       </div>
       {Array.from({ length: rows }, (_, r) => (
         <div key={r} className="flex gap-4 border-t border-border px-3 py-3">
           {Array.from({ length: cols }, (_, c) => (
-            <Skeleton key={c} className={`h-4 ${c === 0 ? "w-1/4" : "flex-1"}`} />
+            <Block key={c} className={`h-4 ${c === 0 ? "w-1/4" : "flex-1"}`} />
           ))}
         </div>
       ))}
@@ -71,22 +79,24 @@ export function TableSkeleton({ rows = 8, cols = 5 }: { rows?: number; cols?: nu
   );
 }
 
-function SectionRows({ rows, title }: { rows: number; title: boolean }) {
+/**
+ * A section's placeholder — the fallback for a part of a page that loads on its own: a line saying what
+ * is loading, over rows in the section's frame, so it never reads as empty.
+ */
+export function SectionSkeleton({ rows = 2, title = false, label }: { rows?: number; title?: boolean; label?: string }) {
   return (
-    <div className="flex flex-col gap-2">
-      {title ? <Skeleton className="h-4 w-40" /> : null}
-      {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-10 w-full" />
-      ))}
-    </div>
-  );
-}
-
-/** A section's rows — the fallback for a part of a page that loads on its own. */
-export function SectionSkeleton({ rows = 2, title = false }: { rows?: number; title?: boolean }) {
-  return (
-    <Busy>
-      <SectionRows rows={rows} title={title} />
+    <Busy label={label ?? "Loading"} className="flex flex-col gap-2">
+      {title ? <Block className="h-4 w-40" /> : null}
+      <div className="flex flex-col divide-y divide-border rounded-md border border-border">
+        {label ? <InlineLoading className="px-3 py-2 text-xs">{label}</InlineLoading> : null}
+        {Array.from({ length: rows }, (_, i) => (
+          <div key={i} className="flex items-center gap-3 px-3 py-3">
+            <Block className="h-4 w-1/3" />
+            <Block className="h-4 flex-1" />
+            <Block className="h-4 w-16" />
+          </div>
+        ))}
+      </div>
     </Busy>
   );
 }
@@ -98,14 +108,14 @@ function DetailBody() {
       <div className="flex flex-col gap-3 rounded-md border border-border p-4">
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="flex gap-4">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 flex-1" />
+            <Block className="h-4 w-32" />
+            <Block className="h-4 flex-1" />
           </div>
         ))}
       </div>
       <div className="flex flex-col gap-2 rounded-md border border-border p-4">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-24 w-full" />
+        <Block className="h-4 w-24" />
+        <Block className="h-24 w-full" />
       </div>
       <div className="lg:col-span-2">
         <TableSkeleton rows={5} cols={3} />
@@ -120,12 +130,28 @@ function MapBody() {
     <div className="flex min-h-0 flex-1 gap-3 overflow-hidden">
       {Array.from({ length: 5 }, (_, c) => (
         <div key={c} className="flex w-56 shrink-0 flex-col gap-2 rounded-md border border-border p-2">
-          <Skeleton className="h-4 w-24" />
+          <Block className="h-4 w-24" />
           {Array.from({ length: 7 - (c % 3) }, (_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
+            <Block key={i} className="h-12 w-full" />
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+function SectionFrame({ rows, title }: { rows: number; title: boolean }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {title ? <Block className="h-4 w-40" /> : null}
+      <div className="flex flex-col divide-y divide-border rounded-md border border-border">
+        {Array.from({ length: rows }, (_, i) => (
+          <div key={i} className="flex items-center gap-3 px-3 py-3">
+            <Block className="h-4 w-1/3" />
+            <Block className="h-4 flex-1" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -134,10 +160,10 @@ function MapBody() {
 function SectionsBody() {
   return (
     <div className="flex flex-col gap-6">
-      <SectionRows title rows={2} />
+      <SectionFrame title rows={2} />
       <div className="grid gap-3 md:grid-cols-2">
-        <SectionRows title rows={3} />
-        <SectionRows title rows={3} />
+        <SectionFrame title rows={3} />
+        <SectionFrame title rows={3} />
       </div>
     </div>
   );
@@ -149,10 +175,10 @@ function ArticleBody() {
     <div className="flex flex-col gap-3">
       {Array.from({ length: 3 }, (_, p) => (
         <div key={p} className="flex flex-col gap-2">
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-11/12" />
-          <Skeleton className="h-4 w-4/5" />
+          <Block className="h-5 w-48" />
+          <Block className="h-4 w-full" />
+          <Block className="h-4 w-11/12" />
+          <Block className="h-4 w-4/5" />
         </div>
       ))}
     </div>
@@ -166,10 +192,10 @@ function ListBody() {
       {Array.from({ length: 6 }, (_, i) => (
         <div key={i} className="flex flex-col gap-2 px-3 py-3">
           <div className="flex gap-2">
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-5 w-40" />
+            <Block className="h-5 w-16" />
+            <Block className="h-5 w-40" />
           </div>
-          <Skeleton className="h-3 w-2/3" />
+          <Block className="h-3 w-2/3" />
         </div>
       ))}
     </div>

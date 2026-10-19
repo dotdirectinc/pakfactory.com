@@ -13,6 +13,7 @@ import {
   SyncControlSection,
   WaitingSection,
 } from "./_components/registry-sections";
+import { RegistryTabLink } from "./_components/registry-tab-link";
 
 export const metadata = { title: "Spec registry" };
 
@@ -24,6 +25,8 @@ const HISTORY_PAGE = 15;
  * The Spec registry (PROD-3115). Overview first — what is waiting, what needs attention, what happened
  * lately — each section loading on its own. Edit history and Settings are tabs, read only when opened.
  */
+// Each tab's sections are keyed by the tab: switching tabs mounts new boundaries, so their loading
+// placeholders show at once instead of the old tab staying on screen until the new one arrives.
 export default async function SpecPage({ searchParams }: { searchParams: Promise<{ view?: string; n?: string }> }) {
   // 404s staff without a grant before anything is fetched or rendered.
   const me = await requireRegistryGrant();
@@ -45,39 +48,34 @@ export default async function SpecPage({ searchParams }: { searchParams: Promise
 
       <nav aria-label={ADMIN_SPEC_COPY.listTitle} className="flex gap-1 border-b border-border">
         {VIEWS.map((v) => (
-          <Link
-            key={v}
-            href={v === "overview" ? "/spec" : `/spec?view=${v}`}
-            aria-current={v === view ? "page" : undefined}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm ${v === view ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-          >
+          <RegistryTabLink key={v} href={v === "overview" ? "/spec" : `/spec?view=${v}`} current={v === view}>
             {COPY.tabs[v]}
-          </Link>
+          </RegistryTabLink>
         ))}
       </nav>
 
       {view === "overview" ? (
         <div className="flex flex-col gap-6">
-          <Suspense fallback={<Section title={COPY.waitingTitle}><SectionSkeleton rows={2} /></Section>}>
+          <Suspense key="waiting" fallback={<Section title={COPY.waitingTitle}><SectionSkeleton rows={2} label={COPY.loadingWaiting} /></Section>}>
             <WaitingSection />
           </Suspense>
           <Suspense fallback={null}>
             <AttentionSection canSync={canSync} />
           </Suspense>
-          <Suspense fallback={<Section title={COPY.recentTitle}><SectionSkeleton rows={3} /></Section>}>
+          <Suspense key="recent" fallback={<Section title={COPY.recentTitle}><SectionSkeleton rows={3} label={COPY.loadingRecent} /></Section>}>
             <RecentSection />
           </Suspense>
         </div>
       ) : null}
 
       {view === "history" ? (
-        <Suspense fallback={<SectionSkeleton rows={6} />}>
+        <Suspense key={`history-${sp.n ?? ""}`} fallback={<SectionSkeleton rows={6} label={COPY.loadingHistory} />}>
           <HistoryView limit={Math.min(Math.max(Number(sp.n) || HISTORY_PAGE, HISTORY_PAGE), 200)} />
         </Suspense>
       ) : null}
 
       {view === "settings" ? (
-        <Suspense fallback={<SectionSkeleton rows={3} />}>
+        <Suspense key="settings" fallback={<SectionSkeleton rows={3} label={COPY.loadingSettings} />}>
           <SettingsView canChange={me.capabilities.includes("relations.owner")} />
         </Suspense>
       ) : null}

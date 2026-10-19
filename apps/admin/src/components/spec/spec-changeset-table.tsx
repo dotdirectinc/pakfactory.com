@@ -18,7 +18,8 @@ export function describeFrame(cs: ChangesetSummary): string {
   const sentences = Array.isArray(impact) ? impact : Array.isArray(cs.summary?.sentences) ? (cs.summary.sentences as unknown[]) : [];
   if (typeof sentences[0] === "string") return sentences.length > 1 ? `${sentences[0]} (+${sentences.length - 1} more)` : sentences[0];
   return Object.entries(cs.summary ?? {})
-    .filter(([k, v]) => typeof v === "number" && k !== "dependsOn")
+    // `items` repeats the Changes count shown beside it.
+    .filter(([k, v]) => typeof v === "number" && k !== "dependsOn" && k !== "items")
     .map(([k, v]) => `${v as number} ${k}`)
     .join(" · ");
 }

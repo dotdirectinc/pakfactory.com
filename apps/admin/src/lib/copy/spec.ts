@@ -296,6 +296,10 @@ export const ADMIN_SPEC_REGISTRY_COPY = {
   frames: (n: number) => `${n} ${n === 1 ? "frame" : "frames"}`,
   approvedAt: "Approved",
   sectionError: (what: string) => `${what} could not be loaded.`,
+  loadingWaiting: "Loading frames waiting for review…",
+  loadingRecent: "Loading the latest syncs and approvals…",
+  loadingHistory: "Loading edit history…",
+  loadingSettings: "Loading settings…",
   historyMore: "Show more",
   settingsLead: "Settings that change how the Spec System and Studio share the catalog.",
 } as const;
