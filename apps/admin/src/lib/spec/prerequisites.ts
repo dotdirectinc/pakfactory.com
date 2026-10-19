@@ -32,7 +32,7 @@ export function blockedBy(cs: ChangesetSummary, all: ChangesetSummary[] | Set<st
  */
 export function byReadiness(
   listed: ChangesetSummary[],
-  all: ChangesetSummary[],
+  all: ChangesetSummary[] | Set<string>,
 ): ChangesetSummary[] {
   return [...listed].sort((a, b) => {
     const ab = blockedBy(a, all).length;

@@ -266,6 +266,40 @@ export const ADMIN_SPEC_SYNC_COPY = {
   dismissing: "Dismissing…",
 } as const;
 
+/** The Spec registry page (PROD-3115): what needs a decision first, then problems, then recent activity. */
+export const ADMIN_SPEC_REGISTRY_COPY = {
+  lead: "Every change to the spec registry arrives here as a frame. Nothing is live until a frame is approved.",
+  tabs: { overview: "Overview", history: "Edit history", settings: "Settings" },
+  allSyncs: "All syncs",
+  waitingTitle: "Waiting for review",
+  waitingNone: "Nothing is waiting for review.",
+  attentionTitle: "Needs attention",
+  syncFailed: (kind: string) => `${kind} sync failed`,
+  recentTitle: "Recent activity",
+  recentSyncs: "Latest syncs",
+  recentApproved: "Recently approved",
+  noneApproved: "Nothing approved yet.",
+  frame: "Frame",
+  source: "From",
+  changes: "Changes",
+  status: "Status",
+  ready: "Ready to review",
+  after: (frames: string) => `After ${frames}`,
+  review: "Review",
+  sources: {
+    "sanity-sync": "Sync (Sanity)",
+    "notion-sync": "Sync (Notion)",
+    "spec-edit": "Spec System edit",
+    "registry-rebuild": "Registry rebuild",
+    relations: "Relations",
+  } as Record<string, string>,
+  frames: (n: number) => `${n} ${n === 1 ? "frame" : "frames"}`,
+  approvedAt: "Approved",
+  sectionError: (what: string) => `${what} could not be loaded.`,
+  historyMore: "Show more",
+  settingsLead: "Settings that change how the Spec System and Studio share the catalog.",
+} as const;
+
 /** Catalog tables (PROD-2926): read-only, Notion-like tables of every record type. */
 export const ADMIN_SPEC_TABLES_COPY = {
   title: "Catalog",
