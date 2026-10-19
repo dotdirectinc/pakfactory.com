@@ -19,8 +19,8 @@ export function dependsOn(cs: ChangesetSummary): string[] {
     : [];
 }
 
-export function blockedBy(cs: ChangesetSummary, all: ChangesetSummary[]): string[] {
-  const approved = new Set(all.filter((c) => c.state === "approved").map((c) => c.frame));
+export function blockedBy(cs: ChangesetSummary, all: ChangesetSummary[] | Set<string>): string[] {
+  const approved = all instanceof Set ? all : new Set(all.filter((c) => c.state === "approved").map((c) => c.frame));
   return dependsOn(cs).filter((f) => !approved.has(f));
 }
 
