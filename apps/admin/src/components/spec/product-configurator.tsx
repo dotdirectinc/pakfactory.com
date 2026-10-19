@@ -1,6 +1,6 @@
 "use client";
 
-import { InlineLoading } from "@/components/loading/page-skeleton";
+import { InlineLoading } from "@/components/ui/page-skeleton";
 import { useEffect, useMemo, useState } from "react";
 import { buildCompatibilityIndex } from "@pakfactory/sanity/customization-rules";
 import { buildDependencyGraph } from "@pakfactory/sanity/customization-rules/dependencies";

@@ -1,6 +1,6 @@
 "use client";
 
-import { InlineLoading } from "@/components/loading/page-skeleton";
+import { InlineLoading } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import {
   useCallback,

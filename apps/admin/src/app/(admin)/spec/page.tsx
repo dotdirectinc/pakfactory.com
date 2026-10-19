@@ -5,15 +5,15 @@ import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecEditHistory } from "@/components/spec/spec-edit-history";
 import { SpecRelationsOwner } from "@/components/spec/spec-relations-owner";
 import { ADMIN_SPEC_COPY, ADMIN_SPEC_REGISTRY_COPY as COPY } from "@/lib/copy/spec";
-import { SectionSkeleton } from "@/components/loading/page-skeleton";
+import { SectionSkeleton } from "@/components/ui/page-skeleton";
 import {
   AttentionSection,
   RecentSection,
   Section,
   SyncControlSection,
   WaitingSection,
-} from "./_components/registry-sections";
-import { RegistryTabLink } from "./_components/registry-tab-link";
+} from "@/components/spec/registry/registry-sections";
+import { RegistryTabLink } from "@/components/spec/registry/registry-tab-link";
 
 export const metadata = { title: "Spec registry" };
 

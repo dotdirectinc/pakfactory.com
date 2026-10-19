@@ -1,6 +1,6 @@
 "use client";
 
-import { InlineLoading } from "@/components/loading/page-skeleton";
+import { InlineLoading } from "@/components/ui/page-skeleton";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@pakfactory/ui/components/badge";

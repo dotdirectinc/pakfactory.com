@@ -1,6 +1,6 @@
 "use client";
 
-import { InlineLoading } from "@/components/loading/page-skeleton";
+import { InlineLoading } from "@/components/ui/page-skeleton";
 import { recordHref, type TableKey } from "@/lib/spec/catalog-table-model";
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
