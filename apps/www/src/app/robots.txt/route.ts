@@ -21,6 +21,8 @@ const robots = `# Vercel origin / preview host — not the canonical site.
 # Disallow all crawling of this origin to avoid duplicate-content indexing (PROD-2207).
 User-agent: *
 Disallow: /
+# Search API (PROD-3110): never crawl, even if the rule above is narrowed.
+Disallow: /api/search
 `;
 
 export function GET() {
