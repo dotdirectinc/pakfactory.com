@@ -6,9 +6,17 @@ import type {CustomizationDetail} from '@/lib/catalog/types';
 
 export const CUSTOMIZATION_SHOWCASE_ID = 'customization-showcase';
 
+type CustomizationShowcaseHeading = {
+    eyebrow?: string;
+    title?: string;
+    description?: string;
+};
+
 type CustomizationShowcaseProps = {
     detail: CustomizationDetail;
     className?: string;
+    /** Override gallery kicker / title / subtitle (learn-first CDP — PROD-3112). */
+    heading?: CustomizationShowcaseHeading;
 };
 
 /** True when the showcase band has at least one tile (nav + render stay in sync). */
@@ -29,6 +37,7 @@ export function hasCustomizationShowcase(detail: CustomizationDetail): boolean {
 export function CustomizationShowcase({
     detail,
     className,
+    heading,
 }: CustomizationShowcaseProps) {
     if (!hasCustomizationShowcase(detail)) return null;
 
@@ -39,9 +48,12 @@ export function CustomizationShowcase({
         >
             <PageDielineSection borderBottom innerClassName="py-16 sm:py-20">
                 <CustomizationShowcaseGallery
-                    kicker="Showcase"
-                    title="See it in use"
-                    subtitle="Examples and close-ups of this option on real packaging — so you can picture the finish before you configure."
+                    kicker={heading?.eyebrow ?? 'Showcase'}
+                    title={heading?.title ?? 'See it in use'}
+                    subtitle={
+                        heading?.description ??
+                        'Examples and close-ups of this option on real packaging — so you can picture the finish before you configure.'
+                    }
                     solutions={detail.showcaseSolutions}
                     caseStudies={detail.showcaseCaseStudies}
                 />

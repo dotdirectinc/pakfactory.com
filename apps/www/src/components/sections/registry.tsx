@@ -26,6 +26,14 @@ import type {
 import {ProductStylesSection} from '@/components/product/product-styles-section';
 import {Benefits} from '@/components/sections/benefits';
 import {CaseStudiesRow} from '@/components/sections/case-studies-row';
+import {
+    CustomizationBenefitsSpecsFromSanity,
+    CustomizationCompareFromSanity,
+    CustomizationOverviewLearnFirstFromSanity,
+    CustomizationOverviewStandardFromSanity,
+    CustomizationShowcaseFromSanity,
+    CustomizationWorksWithFromSanity,
+} from '@/components/sections/customization-detail-sections';
 import {ExpertiseRow} from '@/components/sections/expertise-row';
 import {FaqSection} from '@/components/sections/faq-section';
 import {HeroFinder} from '@/components/sections/hero-finder';
@@ -363,4 +371,16 @@ export const SECTION_COMPONENTS: Record<
     solutionsRow: SolutionsRowFromSanity as ComponentType<PageSection>,
     pressReleasesRow:
         PressReleasesRowFromSanity as ComponentType<PageSection>,
+    customizationOverviewStandard:
+        CustomizationOverviewStandardFromSanity as ComponentType<PageSection>,
+    customizationOverviewLearnFirst:
+        CustomizationOverviewLearnFirstFromSanity as ComponentType<PageSection>,
+    customizationBenefitsSpecs:
+        CustomizationBenefitsSpecsFromSanity as ComponentType<PageSection>,
+    customizationWorksWith:
+        CustomizationWorksWithFromSanity as ComponentType<PageSection>,
+    customizationCompare:
+        CustomizationCompareFromSanity as ComponentType<PageSection>,
+    customizationShowcase:
+        CustomizationShowcaseFromSanity as ComponentType<PageSection>,
 };

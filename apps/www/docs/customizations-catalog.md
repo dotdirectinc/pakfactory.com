@@ -132,10 +132,38 @@ Buyer copy: **customization**, never “capability”.
 - **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line and other properties = **OR** (see [`customization-filter-taxonomy.md`](./customization-filter-taxonomy.md))
 - **UI chrome:** underline category tabs + pill search on `lg+`; below `lg`, sticky search + Filters button, horizontal category chips, and facet groups in a bottom **Drawer** (Clear all + Show N); accordion facet groups (mockup-aligned); each facet group previews **15** options then **Show more** / **Show less** (auto-expands if a selected value is past the fold); option counts share a trailing column centered under the chevron; options with live count **0** are disabled (still uncheckable if already selected)
 
+## Customization Detail Page templates (PROD-3112)
+
+Detail pages at `/customizations/[category]/[handle]` are **section-composed** (ADR-020 catalog exception — overview is a section `_type`, not a route-owned hero radio).
+
+| Piece | Where |
+| --- | --- |
+| Template doc | `customizationDetailPage` — Main Website → Customization Pages → Customization Detail Pages |
+| Option pick | `customizationOption.template` → that layout (empty → Default id `customizationDetailPage`) |
+| Allowlist | `SECTION_ALLOW.customizationDetail` |
+| Overview types | `customizationOverviewStandard` · `customizationOverviewLearnFirst` |
+| Band types | `customizationBenefitsSpecs` · `customizationWorksWith` · `customizationCompare` · `customizationShowcase` |
+| Host inherit | www `CustomizationDetailHostProvider` fills option media/copy/peers/products into those sections |
+
+Breadcrumb stays route-owned. Until the Default template has CDP sections seeded, www falls back to the hardcoded standard CDP (same UX as before).
+
+### Human Studio setup (agents do not write documents)
+
+1. **Default** (`customizationDetailPage`): Overview (standard) → Benefits & specs → … as needed. Publish.
+2. **Learn-first** (`customizationDetailPageLearnFirst`): Overview (learn-first) first; omit Benefits & specs (Why use it lives in the overview). Publish.
+3. Point options at the desired template, or leave empty for Default.
+4. **Seed remaining bands** (Works with → Compare → Showcase) onto both template docs — dry-run then write:
+
+```bash
+pnpm --filter @pakfactory/studio run seed:cdp-detail-pages -- --dataset development
+pnpm --filter @pakfactory/studio run seed:cdp-detail-pages -- --dataset development --confirm
+```
+
+Stable keys: `cdp-works-with`, `cdp-compare`, `cdp-showcase`. Idempotent (appends missing only). Creates stub Default / Learn-first docs when absent. Overview and benefits are not seeded by this script.
+
 ## Out of scope (this ticket)
 
 - Mid-page CTA band
-- Detail body (PROD-1299)
 - Making the `(site)` layout cacheable (PROD-2599 L4 follow-up)
 - Bookmark/compare persistence
 - Changing `customizationsRow` strip behavior

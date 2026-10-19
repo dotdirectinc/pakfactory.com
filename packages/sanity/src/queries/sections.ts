@@ -556,6 +556,16 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     systemIntro,
     "services": services[@->status != "discontinued"]->${EXPERTISE_SERVICE_DIMENSION}
   },
+  _type in [
+    "customizationOverviewStandard",
+    "customizationOverviewLearnFirst",
+    "customizationBenefitsSpecs",
+    "customizationWorksWith",
+    "customizationCompare",
+    "customizationShowcase"
+  ] => {
+    ${SECTION_CHROME}
+  },
   _type == "benefits" => {
     ${SECTION_CHROME},
     "items": items[]{
@@ -1117,6 +1127,18 @@ export type PageSectionStubDoc = PageSectionChromeFields & {
     _key: string;
 };
 
+/** CDP template bands (PROD-3112) — chrome only; host fills option data on www. */
+export type PageSectionCustomizationDetailDoc = PageSectionChromeFields & {
+    _type:
+        | 'customizationOverviewStandard'
+        | 'customizationOverviewLearnFirst'
+        | 'customizationBenefitsSpecs'
+        | 'customizationWorksWith'
+        | 'customizationCompare'
+        | 'customizationShowcase';
+    _key: string;
+};
+
 export type PageSectionDoc =
     | PageSectionProductLinesRowDoc
     | PageSectionSolutionsRowDoc
@@ -1139,4 +1161,5 @@ export type PageSectionDoc =
     | PageSectionGeneralCtaDoc
     | PageSectionStepsDoc
     | PageSectionPressReleasesRowDoc
+    | PageSectionCustomizationDetailDoc
     | PageSectionStubDoc;

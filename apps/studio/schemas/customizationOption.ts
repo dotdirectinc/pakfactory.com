@@ -317,7 +317,7 @@ export const customizationOption = defineType({
       to: [{type: 'customizationDetailPage'}],
       options: {disableNew: true},
       description:
-        'Pick a Customization Detail Page layout version — shared bands below the detail chrome. ' +
+        'Pick a Customization Detail Page layout — section arrangement (overview type + bands). ' +
         'Manage layouts under Main Website → Customization Pages → Customization Detail Pages. ' +
         'Empty → seeded Default layout (`customizationDetailPage`).',
       hidden: ({document}) => !hasDetailPage(document?.appearsIn),

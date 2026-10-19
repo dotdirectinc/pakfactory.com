@@ -4,12 +4,16 @@ import {groupsFor, GROUPS} from '../lib/field-groups'
 import {pageSectionsField, SECTION_ALLOW} from './sections'
 
 /**
- * Customization Detail Page — listable layout version for shared bands under
- * `/customizations/[category]/[handle]` detail pages.
+ * Customization Detail Page — listable layout version for
+ * `/customizations/[category]/[handle]`.
  *
- * Hero / gallery / peer chrome stay route-owned; `sections` render **below**
- * that chrome. Per-option copy stays on each `customizationOption`. Options
- * pick a layout via `customizationOption.template`. Seeded Default id
+ * Templates are **section stacks** (PROD-3112 · ADR-020 catalog exception):
+ * editors arrange CDP overview + band sections; overview chrome is which
+ * overview `_type` is inserted (`customizationOverviewStandard` vs
+ * `customizationOverviewLearnFirst`), not a layout radio. Breadcrumb stays
+ * route-owned. Per-option copy stays on each `customizationOption`.
+ *
+ * Options pick a layout via `customizationOption.template`. Seeded Default id
  * `customizationDetailPage` keeps unpublished picks working (www fallback).
  *
  * Optional `previewImage` is Studio chrome only (list + Template picker).
@@ -27,7 +31,7 @@ export const customizationDetailPage = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'Internal Studio label shown when a customization option picks this layout (e.g. "Default").',
+        'Internal Studio label shown when a customization option picks this layout (e.g. "Default", "Learn-first").',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -40,15 +44,31 @@ export const customizationDetailPage = defineType({
         'Screenshot of this detail layout. Shown in the Customization Detail Pages list and when an ' +
         'option picks this template. Leave empty to use the default icon. Not shown on the site.',
     }),
+    defineField({
+      name: 'showStickyNav',
+      title: 'Show sticky section nav',
+      type: 'boolean',
+      group: GROUPS.content,
+      initialValue: true,
+      description:
+        'When on, shows the sticky Product styles / Compare / Inspiration bar under the overview. ' +
+        'Turn off for Learn-first when the overview rail is enough.',
+    }),
     pageSectionsField(
-      SECTION_ALLOW.catalogIndex,
+      SECTION_ALLOW.customizationDetail,
       'sections',
-      'Sections below the fixed customization detail chrome on option pages that select this layout. ' +
-        'The overview itself is not editable here — rearrange or add bands under the detail only.',
+      'Section order for option pages that select this layout. Insert one overview ' +
+        '(standard or learn-first), then bands (benefits & specs, works with, compare, ' +
+        'showcase, FAQs, …). Option copy and media stay on each customization option — ' +
+        'www host-inherits them into these sections.',
     ),
   ],
   preview: {
-    select: {title: 'title', sections: 'sections', media: 'previewImage'},
+    select: {
+      title: 'title',
+      sections: 'sections',
+      media: 'previewImage',
+    },
     prepare({title, sections, media}) {
       const count = Array.isArray(sections) ? sections.length : 0
       return {

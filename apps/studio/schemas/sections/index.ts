@@ -6,6 +6,7 @@ import { contentSections } from './content-sections'
 import { rowSections } from './row-sections'
 import { conversionSections } from './conversion-sections'
 import { customizationsCatalog } from './customizations-catalog'
+import { customizationDetailSections } from './customization-detail-sections'
 import { inspirationsGrid } from './inspirations-grid'
 import { inspirationIndustry } from './inspiration-industry'
 import { benefits } from './benefits'
@@ -54,6 +55,7 @@ export const websiteSections = [
   videoCaseStudiesRow,
   testimonialsRow,
   customizationsCatalog,
+  ...customizationDetailSections,
   signatureSystem,
   benefits,
   ...conversionSections,
@@ -71,6 +73,8 @@ const FAMILY = {
     'productsRow',
     'bundlesRow',
   ],
+  // Catalog strips only — CDP overview/band types are detail-template-only
+  // (see CDP_DETAIL_SECTIONS + SECTION_ALLOW.customizationDetail).
   customization: ['customizationsRow', 'customizationsCatalog'],
   expertise: ['expertiseSequence', 'signatureSystem'],
   resource: ['guidesRow', 'dielinesRow', 'glossaryStrip', 'postsRow'],
@@ -88,6 +92,16 @@ const FAMILY = {
   cta: ['generalCta', 'newsletterCta', 'linkCards', 'contactForm'],
 } as const
 
+/** CDP template sections (PROD-3112) — Customization insert tab, detail allowlist only. */
+const CDP_DETAIL_SECTIONS = [
+  'customizationOverviewStandard',
+  'customizationOverviewLearnFirst',
+  'customizationBenefitsSpecs',
+  'customizationWorksWith',
+  'customizationCompare',
+  'customizationShowcase',
+] as const
+
 const INSERT_GROUPS: SectionInsertGroup[] = [
   { name: 'hero', title: SECTION_ENTITY_TITLE.hero, of: [...FAMILY.hero] },
   { name: 'solution', title: SECTION_ENTITY_TITLE.solution, of: [...FAMILY.solution] },
@@ -96,7 +110,7 @@ const INSERT_GROUPS: SectionInsertGroup[] = [
   {
     name: 'customization',
     title: SECTION_ENTITY_TITLE.customization,
-    of: [...FAMILY.customization],
+    of: [...FAMILY.customization, ...CDP_DETAIL_SECTIONS],
   },
   { name: 'expertise', title: SECTION_ENTITY_TITLE.expertise, of: [...FAMILY.expertise] },
   { name: 'resource', title: SECTION_ENTITY_TITLE.resource, of: [...FAMILY.resource] },
@@ -137,8 +151,26 @@ export const SECTION_ALLOW = {
   ],
   // Product / Customization catalog indexes (PROD-2589) — sections below the
   // route-owned faceted grid. Exclude `customizationsCatalog` so editors cannot
-  // nest a second full library under the fixed grid.
+  // nest a second full library under the fixed grid. CDP detail overview types
+  // stay off hubs (see customizationDetail).
   catalogIndex: [
+    ...FAMILY.product,
+    'customizationsRow',
+    ...FAMILY.caseStudy,
+    ...FAMILY.client,
+    ...FAMILY.solution,
+    ...FAMILY.expertise,
+    ...FAMILY.resource,
+    ...FAMILY.layout,
+    ...FAMILY.cta,
+  ],
+  /**
+   * Customization Detail Page templates (PROD-3112). Overview = which overview
+   * `_type` is inserted. Bands are host-inherited from the option on www.
+   * Exclude `customizationsCatalog` (full library). Keep shared layout/CTA rows.
+   */
+  customizationDetail: [
+    ...CDP_DETAIL_SECTIONS,
     ...FAMILY.product,
     'customizationsRow',
     ...FAMILY.caseStudy,
