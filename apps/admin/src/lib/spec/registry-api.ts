@@ -210,6 +210,28 @@ export type SyncRun = {
   } | null;
 };
 
+/** Who owns a dataset's catalog relations (PROD-2988 / PROD-3008): the Spec System or Studio. */
+export type RelationsOwnerValue = "spec" | "studio";
+export type RelationsOwner = {
+  dataset: string;
+  rules: RelationsOwnerValue;
+  structure: RelationsOwnerValue;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  updatedByName: string | null;
+  /** "registry" once the switch has been used; "default" = never set (Studio owns both). */
+  source: "registry" | "default" | "env";
+};
+
+export async function getRelationsOwner(dataset: string) {
+  return call<RelationsOwner>(`/api/v1/spec-relations-owner?dataset=${encodeURIComponent(dataset)}`);
+}
+
+/** Admins only (`relations.owner`). The server also tells Studio; if it cannot, nothing changes. */
+export async function setRelationsOwner(body: { dataset: string; rules: RelationsOwnerValue; structure: RelationsOwnerValue; note?: string }) {
+  return call<RelationsOwner>("/api/v1/spec-relations-owner", { method: "PUT", body });
+}
+
 /** The last 20 runs, newest first. */
 export async function listSyncRuns() {
   return call<SyncRun[]>("/api/v1/sync-runs");

@@ -1,8 +1,9 @@
-import { listAllChangesets, listSyncRuns, listSyncWriteProblems } from "@/lib/spec/registry-api";
+import { getRelationsOwner, listAllChangesets, listSyncRuns, listSyncWriteProblems } from "@/lib/spec/registry-api";
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecChangesetTable } from "@/components/spec/spec-changeset-table";
 import { SpecSyncPanel } from "@/components/spec/spec-sync-panel";
 import { SpecEditHistory } from "@/components/spec/spec-edit-history";
+import { SpecRelationsOwner } from "@/components/spec/spec-relations-owner";
 import { ADMIN_SPEC_COPY } from "@/lib/copy/spec";
 
 export const metadata = { title: "Spec registry" };
@@ -10,7 +11,13 @@ export const metadata = { title: "Spec registry" };
 export default async function SpecPage() {
   // 404s staff without a grant before anything is fetched or rendered.
   const me = await requireRegistryGrant();
-  const [res, runs, problems] = await Promise.all([listAllChangesets(), listSyncRuns(), listSyncWriteProblems()]);
+  const [res, runs, problems, owner] = await Promise.all([
+    listAllChangesets(),
+    listSyncRuns(),
+    listSyncWriteProblems(),
+    // Development only, like Sync Changes (production: PROD-2963).
+    getRelationsOwner("development"),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
@@ -23,6 +30,9 @@ export default async function SpecPage() {
 
       {/* A backend without sync runs (not yet deployed) hides the panel rather than failing the page. */}
       {runs.ok ? <SpecSyncPanel runs={runs.data} canSync={me.capabilities.includes("catalog.sync")} problems={problems.ok ? problems.data : []} /> : null}
+
+      {/* Who edits the relations (PROD-2988 / PROD-3008). A backend without the switch hides it. */}
+      {owner.ok ? <SpecRelationsOwner owner={owner.data} canChange={me.capabilities.includes("relations.owner")} /> : null}
 
       {!res.ok ? (
         <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">
