@@ -72,6 +72,14 @@ npx sanity functions test site-search-sync --project-id 8293wrxp --dataset devel
   --document-id <published _id> --with-user-token
 ```
 
+The test removes most of the installed packages (seen twice on 2026-10-19), so the www dev server fails afterwards with `Error evaluating Node.js code` / `Cannot find module '@tailwindcss/postcss'`. Reinstall from the repo root, then restart the dev server:
+
+```bash
+CI=true pnpm install --frozen-lockfile
+```
+
+The test also leaves a `.build/` folder in the Function's directory. It is gitignored.
+
 The Function bundle cannot import `@pakfactory/sanity`, so it carries a **generated** copy of the query (`functions/site-search-sync/query.generated.ts`). After changing `site-search.ts`, run:
 
 ```bash

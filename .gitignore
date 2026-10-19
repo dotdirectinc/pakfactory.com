@@ -8,6 +8,8 @@ next-env.d.ts
 
 # Build
 dist
+# Sanity Function bundles left by `sanity functions test`
+functions/*/.build
 
 # Turbo
 .turbo
