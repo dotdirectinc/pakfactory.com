@@ -229,6 +229,7 @@ const PRIMARY_PICK = {
   // Fabric Gift Bags & Pouches, picked 18 Oct
   'FAB-009': 'fabric-gift-bags-pouches_gusseted-organza-bags-2_front-view.png',
   // Stickers, picked 18 Oct (final check)
+  'STK-002': 'custom-stickers_clear-stickers_top-view-2.png',
   'STK-007': 'custom-stickers_glitter-stickers_top-view.png',
   'STK-009': 'custom-stickers_glow-in-the-dark-stickers_front-view-2.png',
   'STK-024': 'custom-stickers_writeable-uncoated-paper-stickers_top-view-closeup.png',
