@@ -257,6 +257,7 @@ const PRIMARY_PICK = {
   'RGD-085': 'rigid_custom-portfolio-style-clamshell-boxes_kraft_angled-view-opened-2.png',
   'RGD-091': 'rigid_custom-rigid-tray-with-clear-pvc-sleeve_kraft_side-view-semi-opened.png',
   'RGD-106': 'rigid_custom-two-piece-shoulder-neck-rigid-boxes_kraft_side-view-closed.png',
+  'RGD-107': 'rigid_custom-two-piece-telescopic-rigid-boxes-full-flush_kraft_angled-view-closed.png', // new closed shot, picked 19 Oct
   // Folding Cartons, picked 18 Oct (final check)
   'FCT-019': 'folding-carton_custom-packaging-sleeves_bottom-view.png',
   'FCT-023': 'folding-carton_double-wall-frame-tray-2_side-view.png',
