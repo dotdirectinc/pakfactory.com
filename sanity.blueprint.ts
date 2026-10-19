@@ -13,6 +13,10 @@ dotenv.config({ path: path.join(repoRoot, ".env") });
 
 import { ALGOLIA_POST_PROJECTION } from "@pakfactory/sanity/algolia/post-record";
 import { ALGOLIA_CONTENT_PROJECTION } from "@pakfactory/sanity/algolia/content-indexes";
+import {
+  SITE_SEARCH_EVENT_FILTER,
+  SITE_SEARCH_EVENT_PROJECTION,
+} from "@pakfactory/sanity/algolia/site-search";
 
 const { ALGOLIA_APP_ID, ALGOLIA_WRITE_KEY } = process.env;
 
@@ -82,6 +86,32 @@ export default defineBlueprint({
       env: {
         COMMENT:
           "ALGOLIA_APP_ID and ALGOLIA_WRITE_KEY sync content_* indexes for admin search (ADR-018)",
+        ALGOLIA_APP_ID,
+        ALGOLIA_WRITE_KEY,
+      },
+    }),
+    // PROD-3109 — `site_search`, the www ⌘K search index. The projection carries only the
+    // id: the Function reads the record back with SITE_SEARCH_DOC_QUERY (sub-queries are
+    // not allowed in a Function projection). The filter is wider than the index on
+    // purpose, so a document that loses its page still fires and is removed.
+    defineDocumentFunction({
+      name: "site-search-sync",
+      memory: 1,
+      timeout: 10,
+      src: "./functions/site-search-sync",
+      event: {
+        on: ["create", "update", "delete"],
+        filter: SITE_SEARCH_EVENT_FILTER,
+        projection: SITE_SEARCH_EVENT_PROJECTION,
+        // Pinned to one dataset, like algolia-content-sync: unpinned, production edits
+        // would land in the index the backfill fills from this dataset.
+        resource: {
+          type: "dataset",
+          id: `${SANITY_PROJECT_ID}.${SANITY_DATASET}`,
+        },
+      },
+      env: {
+        COMMENT: "ALGOLIA_APP_ID and ALGOLIA_WRITE_KEY sync the site_search index (PROD-3109)",
         ALGOLIA_APP_ID,
         ALGOLIA_WRITE_KEY,
       },
