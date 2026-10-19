@@ -9,10 +9,10 @@ export const metadata = { title: "Spec Map" };
 
 /** Spec Map (PROD-2960): the catalog's structure as a diagram — read-only. */
 export default async function SpecMapPage({ searchParams }: { searchParams: Promise<{ focus?: string | string[] }> }) {
-  await requireRegistryGrant();
   // `?focus=level:id` — opened from the Catalog's "Show on Map".
   const focus = parseMapFocus((await searchParams).focus);
-  const res = await getSpecMap();
+  // Access check and data load together (PROD-3116); the data is only rendered once the check passes.
+  const [, res] = await Promise.all([requireRegistryGrant(), getSpecMap()]);
 
   return (
     <div className="flex h-[calc(100dvh-7rem)] w-full flex-col gap-4">

@@ -15,11 +15,11 @@ export const metadata = { title: "Catalog record" };
  * field. Standard products and active options also link to their rules view.
  */
 export default async function SpecCatalogRecordPage({ params }: { params: Promise<{ table: string; id: string }> }) {
-  await requireRegistryGrant();
   const { table, id } = await params;
   if (!isTableKey(table)) notFound();
   const where = levelOf(table);
-  const res = await getCatalogRecord(table, decodeURIComponent(id));
+  // Access check and data load together (PROD-3116); the data is only rendered once the check passes.
+  const [, res] = await Promise.all([requireRegistryGrant(), getCatalogRecord(table, decodeURIComponent(id))]);
   if (res.ok && !res.data) notFound();
 
   return (

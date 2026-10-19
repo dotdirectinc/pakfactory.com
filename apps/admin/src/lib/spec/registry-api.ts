@@ -81,7 +81,9 @@ async function call<T>(
   path: string,
   init?: { method?: string; body?: unknown },
 ): Promise<{ ok: true; data: T; page?: { has_more: boolean } } | { ok: false; status: number; error: string; code?: string; errors?: string[] }> {
+  const started = performance.now();
   const token = await accessToken();
+  const tokenMs = Math.round(performance.now() - started);
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
@@ -101,6 +103,8 @@ async function call<T>(
     return { ok: false, status: 503, error: "The registry API is not reachable." };
   }
 
+  // PROD-3116: each registry call's time (token lookup + request), in the server logs.
+  console.info(`[timing] api ${init?.method ?? "GET"} ${path.split("?")[0]} ${res.status} ${Math.round(performance.now() - started)}ms (token ${tokenMs})`);
   const body = (await res.json().catch(() => null)) as
     | { data?: T; page?: { has_more: boolean }; error?: string | { code?: string; message?: string; errors?: string[] }; code?: string }
     | null;

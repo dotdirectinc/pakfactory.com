@@ -9,11 +9,11 @@ export const metadata = { title: "Catalog" };
 
 /** Catalog tables (PROD-2926): three groups as tabs, a level picker, one table per record type. */
 export default async function SpecCatalogPage({ searchParams }: { searchParams: Promise<{ group?: string; level?: string }> }) {
-  await requireRegistryGrant();
   const sp = await searchParams;
   const group = TABLE_GROUPS.find((g) => g.key === sp.group) ?? TABLE_GROUPS[0]!;
   const level = isTableKey(sp.level) && group.levels.some((l) => l.key === sp.level) ? sp.level : group.defaultLevel;
-  const res = await getCatalogTable(level);
+  // Access check and data load together (PROD-3116); the data is only rendered once the check passes.
+  const [, res] = await Promise.all([requireRegistryGrant(), getCatalogTable(level)]);
   const entity = group.levels.find((l) => l.key === level)!.entity;
 
   return (
