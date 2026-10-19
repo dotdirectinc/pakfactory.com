@@ -368,7 +368,7 @@ export function ProductGallery({
         };
 
         let idleId: number | undefined;
-        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        let timeoutId: number | undefined;
         if (typeof window.requestIdleCallback === 'function') {
             idleId = window.requestIdleCallback(run);
         } else {
