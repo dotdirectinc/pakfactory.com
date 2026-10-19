@@ -65,6 +65,13 @@ Settings (`SITE_SEARCH_SETTINGS`):
 | Function `site-search-sync` (`functions/site-search-sync/`, `sanity.blueprint.ts`) | On every create, update or delete of an indexed type, pinned to the blueprint's dataset. Its projection carries only the id: Function projections cannot run sub-queries, so it reads the record back with `SITE_SEARCH_DOC_QUERY`. No record means remove it. |
 | Backfill `pnpm --filter @pakfactory/studio run algolia:site-search -- --dataset development` | First fill, and after a parent's status change. Dry run by default; `--confirm` applies the settings and swaps the contents atomically (`replaceAllObjects`). It refuses to write 0 records. |
 
+Run the Function locally against one real document (it writes or removes that one record). Run it from the repo root. `--project-id` is required there, because the CLI config with the project lives in `apps/studio`:
+
+```bash
+npx sanity functions test site-search-sync --project-id 8293wrxp --dataset development \
+  --document-id <published _id> --with-user-token
+```
+
 The Function bundle cannot import `@pakfactory/sanity`, so it carries a **generated** copy of the query (`functions/site-search-sync/query.generated.ts`). After changing `site-search.ts`, run:
 
 ```bash
