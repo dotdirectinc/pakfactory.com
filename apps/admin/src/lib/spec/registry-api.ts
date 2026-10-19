@@ -150,6 +150,24 @@ export async function listDraftChangesets() {
 }
 
 /**
+ * Which of these frames have an approved changeset (PROD-3114). A frame's page needs only its own
+ * prerequisites' states, so it asks about those — one small request each — instead of listing and
+ * counting every changeset ever made. Best-effort, as before: a failed lookup counts as approved, so
+ * the button stays available and the backend refuses an out-of-order approval — the guard that
+ * actually matters.
+ */
+export async function approvedFrames(frames: string[]): Promise<Set<string>> {
+  const unique = [...new Set(frames)];
+  const found = await Promise.all(
+    unique.map(async (f) => {
+      const res = await call<ChangesetSummary[]>(`/api/v1/changesets?state=approved&frame=${encodeURIComponent(f)}&limit=1`);
+      return !res.ok || res.data.length > 0 ? f : null;
+    }),
+  );
+  return new Set(found.filter((f): f is string => f !== null));
+}
+
+/**
  * Every changeset, whatever its state.
  *
  * Readiness needs the APPROVED ones too: a frame is unblocked precisely because its

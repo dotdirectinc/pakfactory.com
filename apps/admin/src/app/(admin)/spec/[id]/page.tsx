@@ -4,8 +4,8 @@ import { SpecFrameImpactNow } from "@/components/spec/spec-frame-impact-now";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
-import { getChangesetDetail, listAllChangesets } from "@/lib/spec/registry-api";
-import { blockedBy } from "@/lib/spec/prerequisites";
+import { approvedFrames, getChangesetDetail } from "@/lib/spec/registry-api";
+import { blockedBy, dependsOn } from "@/lib/spec/prerequisites";
 import { canApprove, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecDecisionBar } from "@/components/spec/spec-decision-bar";
 import { SpecResyncButton } from "@/components/spec/spec-resync-button";
@@ -29,9 +29,9 @@ export default async function SpecChangesetPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const me = await requireRegistryGrant();
+  // The access check and the frame are independent reads: run them together (PROD-3114).
   const { id } = await params;
-  const res = await getChangesetDetail(id);
+  const [me, res] = await Promise.all([requireRegistryGrant(), getChangesetDetail(id)]);
   if (!res.ok) {
     if (res.status === 404) notFound();
     return (
@@ -43,11 +43,10 @@ export default async function SpecChangesetPage({
 
   const cs = res.data;
   const items = cs.items ?? [];
-  // Prerequisites are about the OTHER frames' states, so the list is needed as well as
-  // this one. Best-effort: if it cannot be read the button stays available and the
-  // backend refuses, which is the guard that actually matters.
-  const all = await listAllChangesets();
-  const blocked = all.ok ? blockedBy(cs, all.data) : [];
+  // Prerequisites are about the OTHER frames' states — only this frame's own prerequisites are
+  // looked up (PROD-3114), not every changeset. Only a waiting frame can be blocked.
+  const deps = cs.state === "draft" ? dependsOn(cs) : [];
+  const blocked = deps.length ? blockedBy(cs, await approvedFrames(deps)) : [];
   // Re-sync (2026-10-06): a pending sync frame, offered only to someone who may run that sync.
   const resyncKind =
     cs.state === "draft" && cs.source === "sanity-sync" && me.capabilities.includes("catalog.sync") ? ("sanity" as const)
