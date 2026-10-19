@@ -75,7 +75,7 @@ Also gated, so a hidden target is never shown or linked:
 - **Curated chrome links** — nav, hero slides, finder rail, catalog rows carry `parentsOn` (`LINK_PARENTS_ON`); `isCatalogTargetVisible` returns false when it is false. Case-study chips keep their label and link only when `linkable`.
 - **Solution Styles** read their own status (`SOLUTION_STYLE_ACTIVE`), not just their solution's.
 - **Style pages** exist only for Active / Discontinued styles (`hasPage` on style projections; Active (Internal) styles stay catalog filters).
-- **Algolia admin search** indexes with the same gates; the `algolia-content-sync` Function removes a record when `indexable` turns false. A *parent's* status change fires no event for its children — those catch up on the next backfill.
+- **www search** (`site_search`, [`site-search.md`](./site-search.md)) and **Algolia admin search** index with the same gates; the `algolia-content-sync` Function removes a record when `indexable` turns false. A *parent's* status change fires no event for its children — those catch up on the next backfill.
 
 Tests: `product-faqs.test.ts`, `exclusive-parent.test.ts`, `curated-visibility.test.ts`, `link-parents.test.ts`, `style-page.test.ts`, `algolia/content-indexes.test.ts` (packages/sanity).
 

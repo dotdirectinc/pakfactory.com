@@ -612,6 +612,9 @@ export const TASKS = [
   { task: 'seed:finder-general', pkg: '@pakfactory/studio', why: 'surgical General-rail buckets on existing heroFinder; preserves section order' },
   { task: 'seed:help-categories', pkg: '@pakfactory/studio', why: 'create the Help Center categories (create-if-missing)' },
   { task: 'seed:controller-lab', pkg: '@pakfactory/studio', why: 'idempotent Controller Lab QA seed — Materials type + options, append-only on test product' },
+  // Reads the dataset only; writes the `site_search` Algolia index (PROD-3109). Re-run after
+  // a parent's status change — children are not re-synced by the Function.
+  { task: 'algolia:site-search', pkg: '@pakfactory/studio', why: 'rebuild the www search index from a dataset (repeatable)' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
 ]
