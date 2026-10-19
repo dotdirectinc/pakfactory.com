@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { InternalAccount } from "@pakfactory/request/internal-account";
 import type { User } from "@supabase/supabase-js";
@@ -8,6 +9,7 @@ import {
   isAdminDevBypassEnabled,
 } from "@/lib/auth/dev-bypass";
 import { isSupabaseConfigured } from "@/lib/auth/supabase-configured";
+import { startTiming } from "@/lib/perf/timing";
 
 export type InternalSession = {
   user: User;
@@ -31,15 +33,26 @@ export async function requireInternalUser(
     redirect("/login?error=supabase_not_configured");
   }
 
-  const user = await getUser();
+  const { user, account } = await loadSession();
   if (!user?.email) {
     redirect(`/login?next=${encodeURIComponent(returnTo)}`);
   }
-
-  const account = await getInternalAccountAdapter().getByEmail(user.email);
   if (!account) {
     redirect("/auth/sign-out?error=not_internal");
   }
 
   return { user, account };
 }
+
+/**
+ * The session and the internal account, read once per request (PROD-3116): the layout and the page both
+ * ask, and each ask was a Supabase Auth round trip plus a database lookup. The redirect decisions stay in
+ * `requireInternalUser`, so each caller still sends people to its own return URL.
+ */
+const loadSession = cache(async (): Promise<{ user: User | null; account: InternalAccount | null }> => {
+  const t = startTiming("requireInternalUser");
+  const user = await t.step("getUser", getUser());
+  const account = user?.email ? await t.step("account", getInternalAccountAdapter().getByEmail(user.email)) : null;
+  t.done();
+  return { user, account };
+});

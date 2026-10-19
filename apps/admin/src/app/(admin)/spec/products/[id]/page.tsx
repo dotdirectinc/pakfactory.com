@@ -9,9 +9,9 @@ import { ADMIN_SPEC_PRODUCTS_COPY as COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/c
 export const metadata = { title: "Product rules" };
 
 export default async function SpecProductPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireRegistryGrant();
   const { id } = await params;
-  const res = await getProductView(decodeURIComponent(id));
+  // Access check and data load together (PROD-3116); the data is only rendered once the check passes.
+  const [, res] = await Promise.all([requireRegistryGrant(), getProductView(decodeURIComponent(id))]);
   if (!res.ok) {
     return (
       <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">

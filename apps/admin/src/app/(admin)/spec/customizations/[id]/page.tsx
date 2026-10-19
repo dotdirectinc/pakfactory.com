@@ -13,9 +13,9 @@ export const metadata = { title: "Customization rules" };
 
 /** One option (PROD-2614): its pairs, and the products that end up offering it. */
 export default async function SpecCustomizationPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireRegistryGrant();
   const { id } = await params;
-  const res = await getCustomizationView(decodeURIComponent(id));
+  // Access check and data load together (PROD-3116); the data is only rendered once the check passes.
+  const [, res] = await Promise.all([requireRegistryGrant(), getCustomizationView(decodeURIComponent(id))]);
   if (!res.ok) {
     return (
       <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">

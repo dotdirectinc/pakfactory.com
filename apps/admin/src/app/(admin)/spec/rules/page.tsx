@@ -8,8 +8,8 @@ export const metadata = { title: "Spec rules" };
 
 export default async function SpecRulesPage() {
   // Same gate as the rest of /spec: 404 without a registry grant.
-  await requireRegistryGrant();
-  const res = await getCurrentRules();
+  // Access check and data load together (PROD-3116); the data is only rendered once the check passes.
+  const [, res] = await Promise.all([requireRegistryGrant(), getCurrentRules()]);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">

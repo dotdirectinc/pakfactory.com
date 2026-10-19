@@ -12,8 +12,8 @@ export const metadata = { title: "Sync history" };
  * was decided, and — for approved frames — the re-check that proves the change landed.
  */
 export default async function SpecSyncHistoryPage() {
-  await requireRegistryGrant();
-  const res = await listSyncHistory();
+  // Access check and data load together (PROD-3116); the data is only rendered once the check passes.
+  const [, res] = await Promise.all([requireRegistryGrant(), listSyncHistory()]);
   const runs = res.ok ? res.data : [];
   const current = runs.filter((r) => r.state === "requested" || r.state === "running");
   const past = runs.filter((r) => r.state === "done" || r.state === "failed");

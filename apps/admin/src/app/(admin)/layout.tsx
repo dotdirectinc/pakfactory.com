@@ -6,22 +6,29 @@ import {
 import { AdminShell } from "@/components/layout/admin-shell";
 import { isAdminDevBypassEnabled } from "@/lib/auth/dev-bypass";
 import { requireInternalUser } from "@/lib/auth/require-internal-user";
-import { hasRegistryGrant } from "@/lib/spec/require-grant";
 import { fetchSpecMe, listDraftChangesets } from "@/lib/spec/registry-api";
+import { startTiming } from "@/lib/perf/timing";
 
 export default async function AdminShellLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const { user } = await requireInternalUser("/");
-  const specAccess = await hasRegistryGrant();
-  // fetchSpecMe is memoised per request with hasRegistryGrant's own call — no second round trip.
-  const [me, drafts] = specAccess
-    ? await Promise.all([fetchSpecMe(), listDraftChangesets()])
-    : [null, null];
-  // Frames waiting for approval, for the sidebar's count. Unreachable registry: no count, not an error.
-  const pendingFrames = drafts?.ok ? drafts.data.length : 0;
+  // The sign-in check, the Spec access check and the sidebar's waiting count are independent: run them
+  // together (PROD-3116 — one after another they took 1.0–1.35 s). The registry calls carry the user's
+  // own token and the backend checks it, so starting them before the sign-in check answers exposes
+  // nothing; their results are only used once it has. All three are memoised per request, so the page
+  // below reuses them.
+  const t = startTiming("layout");
+  const [{ user }, me, drafts] = await Promise.all([
+    t.step("user", requireInternalUser("/")),
+    t.step("specMe", fetchSpecMe()),
+    t.step("drafts", listDraftChangesets()),
+  ]);
+  t.done();
+  const specAccess = Boolean(me?.authenticated && me.role);
+  // Frames waiting for approval, for the sidebar's count. No access or unreachable registry: no count, not an error.
+  const pendingFrames = specAccess && drafts.ok ? drafts.data.length : 0;
 
   return (
     <AdminShell
