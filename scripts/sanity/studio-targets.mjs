@@ -32,9 +32,6 @@ export const TARGETS = {
     studioUrl: "http://localhost:3333",
     dataset: "development",
     label: "local Studio (pnpm dev:studio)",
-    // PROD-2988 / PROD-3008: rules and parents stay editable locally (unset = editable).
-    specOwnsRules: false,
-    specOwnsStructure: false,
     specSystemUrl: null,
     // What the Studio's Presentation pane points AT. Ports are taken from the
     // apps' own dev scripts, not from habit: `apps/www` runs on **3003** and
@@ -53,14 +50,9 @@ export const TARGETS = {
     deployHost: "pakfactory-staging",
     dataset: "development",
     label: "staging Studio",
-    // PROD-2988, ADR-025: the Spec System owns the customization rules on the development
-    // dataset, so this Studio shows them read-only. Revert without a code change:
-    //   SANITY_STUDIO_SPEC_OWNS_RULES=false pnpm sanity:deploy:staging
-    specOwnsRules: true,
-    // PROD-3008, ADR-026: a registered record's parents are moved in the Spec System. Revert:
-    //   SANITY_STUDIO_SPEC_OWNS_STRUCTURE=false pnpm sanity:deploy:staging
-    specOwnsStructure: true,
-    // The admin office the read-only note links to (its record page under /spec/catalog/…).
+    // The admin office the "Edited / Moved in Spec System" notes link to (its record page under
+    // /spec/catalog/…). Whether those fields are read-only is NOT decided here: Studio reads it at run
+    // time from the dataset (the admin-office switch, PROD-2988 / PROD-3008).
     specSystemUrl: "https://staging.admin.pakfactory.com",
     previews: {
       // staging-blog is mounted under /blog (NEXT_PUBLIC_BLOG_BASE_PATH), so the
@@ -75,9 +67,6 @@ export const TARGETS = {
     deployHost: "pakfactory",
     dataset: "production",
     label: "production Studio",
-    // PROD-2988 / PROD-3008: NOT on production until the Spec System edits production (PROD-2963).
-    specOwnsRules: false,
-    specOwnsStructure: false,
     specSystemUrl: null,
     previews: {
       BLOG: "https://pakfactory.com/blog/",

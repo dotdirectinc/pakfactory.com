@@ -18,6 +18,7 @@ import {
 } from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
+import { SpecOwnerLayout } from './components/SpecOwnerLayout'
 import { publishCaseStudy } from './actions/publishCaseStudy'
 import { publishPressRelease } from './actions/publishPressRelease'
 import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopicsPage'
@@ -363,6 +364,8 @@ const documentActions = (
   prev: DocumentActionComponent[],
   context: DocumentActionsContext,
 ): DocumentActionComponent[] => {
+  // The relations-owner marker is the server's alone: no publish, delete or duplicate here.
+  if (context.schemaType === 'specRelationsOwner') return []
   let actions = prev.filter((action) => !isSchedulePublishAction(action))
 
   if (context.schemaType === 'post') {
@@ -415,6 +418,7 @@ const makeNewDocumentOptions =
     // (§3.2) — they are reached only through their structure entries. contentPage
     // stays creatable (new company pages). PROD-2292.
     const NON_CREATABLE = new Set([
+      'specRelationsOwner',
       'blogCategory',
       'homePage',
       'listingPage',
@@ -440,6 +444,12 @@ const makeNewDocumentOptions =
 const releasesAndScheduleDisabled = {
   releases: { enabled: false as const },
   scheduledDrafts: { enabled: false as const },
+}
+
+// Who owns the catalog relations (PROD-2988 / PROD-3008): loaded before every workspace renders, so the
+// rule and parent fields know whether they are read-only. See lib/spec-owned.ts.
+const specOwnerLoader = {
+  studio: { components: { layout: SpecOwnerLayout } },
 }
 
 // Presentation for the eight content workspaces (PROD-2494). One factory rather
@@ -515,6 +525,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions('blog') },
     plugins: [
       structureTool({ structure: blogStructure, defaultDocumentNode }),
@@ -576,6 +587,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     // caseStudy needs `documentActions` so `publishCaseStudy` runs (slug-change
     // redirect + `publishedAt` backfill); without it Sanity's stock publish is
     // used and neither happens.
@@ -623,6 +635,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     // `pressRelease` needs `documentActions` so `publishPressRelease` runs
     // (slug-change redirect + `publishedAt` backfill); without it Sanity's stock
     // publish is used and neither happens.
@@ -645,6 +658,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: productsStructure, defaultDocumentNode }),
@@ -664,6 +678,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: customizationStructure, defaultDocumentNode }),
@@ -683,6 +698,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: solutionsWorkspaceStructure, defaultDocumentNode }),
@@ -702,6 +718,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: expertiseStructure, defaultDocumentNode }),
@@ -721,6 +738,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: resourcesWorkspaceStructure, defaultDocumentNode }),
@@ -741,6 +759,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: mainWebsiteStructure, defaultDocumentNode }),
@@ -761,6 +780,7 @@ export default defineConfig([
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
+    ...specOwnerLoader,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: globalStructure, defaultDocumentNode }),
