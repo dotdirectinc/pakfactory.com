@@ -361,8 +361,52 @@ export type SyncHistoryRun = {
   rules_drift?: RulesDrift | null;
   /** Sync Changes only (PROD-3006): records' parents where the registry and Sanity disagree. */
   structure_drift?: RulesDrift | null;
+  /** Sync Changes only (PROD-3117): content Sanity owns where the registry disagreed when the run read it. */
+  content_drift?: ContentDrift | null;
+  /** Sync Changes only (PROD-3118): what the run applied itself, with no frame. The changes load on open. */
+  applied?: SyncApplied | null;
   frames: SyncHistoryFrame[];
 };
+
+/** Content Sanity owns where the registry disagreed, per kind, with a few examples (PROD-3117). */
+export type ContentDrift = RulesDrift & { examples?: Record<string, { title: string; sanity: string; registry: string }[]> };
+
+/** What a run applied with no frame (PROD-3118): counts and failures; the changes load per run. */
+export type SyncApplied = {
+  planned: number;
+  applied: number;
+  failed: { key: string; title: string | null; error: string }[];
+  skipped?: string;
+  has_items?: boolean;
+};
+export type SyncAppliedItem = {
+  entity_type: string;
+  op: string;
+  target_id: string | null;
+  title: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+};
+
+/** One run's applied changes (up to 200), loaded when the run is opened in Sync history (PROD-3119). */
+export async function getSyncRunApplied(runId: string) {
+  return call<(SyncApplied & { items?: SyncAppliedItem[] }) | null>(`/api/v1/sync-runs/${encodeURIComponent(runId)}/applied`);
+}
+
+/** A change a sync run applied to one record (PROD-3119), from the registry's audit trail. */
+export type RecordSyncChange = {
+  at: string;
+  run: { id: string; trigger: "manual" | "automatic"; by: string | null };
+  change: "added" | "removed" | "updated";
+  property_value: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+};
+
+/** One record's changes from Sync Changes, newest first (50). `registryId` is the record's registry uuid. */
+export async function listRecordSyncChanges(registryId: string) {
+  return call<RecordSyncChange[]>(`/api/v1/records/${encodeURIComponent(registryId)}/sync-changes`);
+}
 
 /** Customization rules where the registry and Sanity disagree, decided or not (PROD-2986, ADR-025). */
 export type RulesDrift = { total: number; byKind: Record<string, number> };
