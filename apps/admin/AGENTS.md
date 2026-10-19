@@ -246,7 +246,7 @@ sudo journalctl -u pakfactory-api -n 200 | grep -A5 "failed to resolve an attach
 
 - **Dataset is pinned to `development`** (`ADMIN_SPEC_RULES_DATASET` overrides) until the production fill runs (PROD-2596). It does not follow `NEXT_PUBLIC_SANITY_DATASET`, which would show an empty rule set on the deployed app.
 - Gated like the rest of `/spec`: 404 without a registry grant.
-- `/spec` (Frames to approve) is unchanged: registry changesets from the board, approved in admin.
+- `/spec` (Registry) is the frames-to-approve page; see [Spec System — page speed and loading](#spec-system--page-speed-and-loading).
 - An **Old explorer rules** tab lists the L1–L15 rules of the retired Property Controls sandbox and where each stands now (in Sanity · product data · builder UI · not modelled) — the gap list, not an implementation.
 - Not built yet: "from board / changed in Studio" provenance, history (needs PROD-2559).
 
@@ -288,7 +288,39 @@ PROD-2960 (#836, #837, #839). `/spec/map` draws the Catalog as a diagram: one st
 - **Moving records (PROD-3007, PROD-3095):** "Move records" makes the map editable: drag a card onto a new parent (`dropMove` / `MOVE_PARENT` in `spec-map.tsx`, `lib/spec/spec-map.ts`). Pairs: style → line, standard product → style, option → type, type → category, inspiration product → solution or standard product (its base), solution style → solution. The Catalog's Catalog structure has the same moves as dropdowns, and a parent's children table has "Add to …" (one per child level: a solution has solution styles and inspiration products). Moves join the rule-edit pending set and become one frame (server `POST /api/v1/rule-edits`). An inspiration product dropped on a solution style is refused with a note: membership comes from the style's filter, edited in Studio.
 - **Browser checks:** scroll the map with JS (`area.scrollTop`) — the scroll tool misses the inner container. The glide uses timers, not animation frames, because a background tab pauses frames.
 
-**Sidebar (Spec System):** Spec Map / Catalog / Frames to approve / Current rules / Help (Richard, 2026-10-09). The admin layout fetches draft changesets (`listDraftChangesets`); when any exist, "Frames to approve" is bold with a count pill. Unreachable registry → no pill. The count refreshes on reload or after a frame is decided, not in the background.
+**Sidebar (Spec System):** Map / Catalog / Registry / Rules / Help. The Spec System group shows only when `/api/spec-me` returns a role. The admin layout fetches draft changesets (`listDraftChangesets`, at the same time as the sign-in and Spec access checks); when any exist, Registry is bold with a count pill. Unreachable registry → no pill. The count refreshes on reload or after a frame is decided, not in the background.
+
+## Spec System — page speed and loading
+
+PROD-3113 (2026-10-19). Every admin page loads in about 0.6–1.1 s on staging (was 1.6–6.4 s).
+
+**Shared layout** ([`app/(admin)/layout.tsx`](src/app/(admin)/layout.tsx)). The sign-in check, Spec access (`fetchSpecMe`) and the sidebar's waiting count run **together** (`Promise.all`), so the layout costs the slowest one (0.4–0.85 s), not the sum.
+
+- `loadSession` in [`lib/auth/require-internal-user.ts`](src/lib/auth/require-internal-user.ts), `fetchSpecMe`, `listDraftChangesets` and `listSyncRuns` are wrapped in React `cache()`, so a page that needs the same data again in one request reuses it.
+- Spec pages start their own load **alongside** the access check: `const [, res] = await Promise.all([requireRegistryGrant(), load()])`. The grant still decides what renders, so a page without access shows nothing.
+- Each remaining step is one Vercel → Supabase / registry round trip (~250–450 ms warm). The first request after a deploy or idle spell is slower (cold start).
+
+**Server side** (`pakfactory.com-server` `src/middleware/principal.ts`). The registry grant is read in the same round as the staff lookup. A verified token is remembered for **60 s, for reads only** (GET/HEAD). Accepted trade-off: a signed-out session can still read registry data for up to 60 s; writes always re-verify, and a removed grant applies at once.
+
+**Registry page** ([`app/(admin)/spec/page.tsx`](src/app/(admin)/spec/page.tsx), sections in [`components/spec/registry/`](src/components/spec/registry/)). Overview in priority order: waiting frames → sync problems → at most 3 recent syncs and approvals. Edit history (`?view=history`, "Show more" adds `?n=`) and Settings (`?view=settings`) load only when opened. Each section has its own `Suspense` keyed by tab, so switching tabs shows placeholders at once.
+
+**Loading states** ([`components/ui/page-skeleton.tsx`](src/components/ui/page-skeleton.tsx)). Use these, never empty space:
+
+| Export | Use |
+|---|---|
+| `PageSkeleton({ variant })` | a route's `loading.tsx` — `table`, `detail`, `map`, `sections`, `list`, `article` |
+| `SectionSkeleton({ rows, title, label })` | a `Suspense` fallback for one section; shows a labelled frame |
+| `InlineLoading` | a spinner + words inside a client component while it fetches |
+
+Every real route has a `loading.tsx`; routes that only redirect have none.
+
+**Measuring.** `lib/perf/timing.ts` logs `[timing] layout … · user … · specMe … · drafts …`, and `lib/spec/registry-api.ts` logs `[timing] api GET <path> <status> <ms>`. Read them with the Vercel CLI (the Vercel MCP connector cannot see this team):
+
+```
+vercel --scope pakfactory-projects-00b54385 logs --project pakfactory-com-admin --since 30m --query timing
+```
+
+Page times: a `fetch(path, { cache: "no-store" })` loop from a signed-in tab. A background automation tab cannot measure browser-side time: Chrome slows its timers to once a second.
 
 ## Customization Library
 
