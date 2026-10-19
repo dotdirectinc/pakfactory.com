@@ -6,6 +6,9 @@ import {SiteNav, type SiteNavItem} from '@pakfactory/ui/components/site-nav';
 import {AccountMenu} from '@/components/account/account-menu';
 import Logo from '@/components/layout/logo';
 import {MegaMenu} from '@/components/layout/mega-menu';
+import {SiteSearchDialog} from '@/components/search/site-search-dialog';
+import {SiteSearchProvider} from '@/components/search/site-search-provider';
+import {SiteSearchTrigger} from '@/components/search/site-search-trigger';
 import {useNavAccount} from '@/lib/auth/use-nav-account';
 import {useRequest} from '@/lib/request/request-provider';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -87,7 +90,10 @@ function PendingAccountSlot({signIn}: {signIn: {href: string; label: string}}) {
     );
 }
 
-/** Client bridge: injects live request count + browser-resolved account into SiteNav. */
+/**
+ * Client bridge: injects live request count + browser-resolved account into
+ * SiteNav, plus the ⌘K site search (header icon, one dialog; PROD-3111).
+ */
 export function SiteNavRequestSlot({
     homeHref,
     navItems,
@@ -107,19 +113,23 @@ export function SiteNavRequestSlot({
         ) : undefined;
 
     return (
-        <SiteNav
-            homeHref={homeHref}
-            logo={<Logo className="gap-3" />}
-            items={navItems}
-            desktopNav={<MegaMenu items={navItems} />}
-            cta={cta}
-            signIn={session.status === 'signed-in' ? accountLink : signIn}
-            account={account}
-            request={{
-                href: WWW_ROUTES.request,
-                count: lines.length,
-                label: 'Quote request',
-            }}
-        />
+        <SiteSearchProvider>
+            <SiteNav
+                homeHref={homeHref}
+                logo={<Logo className="gap-3" />}
+                items={navItems}
+                desktopNav={<MegaMenu items={navItems} />}
+                cta={cta}
+                signIn={session.status === 'signed-in' ? accountLink : signIn}
+                account={account}
+                request={{
+                    href: WWW_ROUTES.request,
+                    count: lines.length,
+                    label: 'Quote request',
+                }}
+                search={<SiteSearchTrigger />}
+            />
+            <SiteSearchDialog />
+        </SiteSearchProvider>
     );
 }

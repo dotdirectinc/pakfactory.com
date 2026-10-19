@@ -59,6 +59,10 @@ Navigation is by visible label, read from the Sanity `development` dataset —
 see [`support/fixtures.ts`](support/fixtures.ts). Never use a `[Test] …` entry or
 a `test-` slug as a fixture, and never assert exact menu counts.
 
+## Site search (PROD-3111)
+
+`search/site-search.spec.ts` (S1–S5) opens the header search on desktop and at 390 px, searches "mailer", and follows a result. It is read-only and needs `/api/search` to answer (an Algolia app ID and search key in the target's env).
+
 ## Path catalogue
 
 Three forms are the destinations: **A** product request (`/request/products`,

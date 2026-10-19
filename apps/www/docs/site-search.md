@@ -6,7 +6,7 @@ The ⌘K search dialog on www. Three parts, one ticket each:
 | --- | --- | --- |
 | `site_search` Algolia index | PROD-3109 | built, sync Function deployed |
 | `/api/search` route + abuse gate | PROD-3110 | built |
-| Dialog + header trigger | PROD-3111 | not started |
+| Dialog + header trigger | PROD-3111 | built |
 
 ## The index — `site_search`
 
@@ -134,7 +134,7 @@ Each layer catches what the one before lets through. Only a request that misses 
 | --- | --- | --- |
 | Dialog | 250 ms debounce, 2-character minimum, no query on open | PROD-3111 |
 | CDN | Repeat queries answered from cache for 10 minutes | `Cache-Control` above |
-| Edge firewall | 20 requests per 10 s per IP → blocked for 3 minutes | Vercel Firewall rule, below |
+| Edge firewall | 20 requests per 10 s per IP → 429 for the rest of the window | Vercel Firewall rule, below |
 | Per IP, per instance | 30 per minute (`SITE_SEARCH_PER_IP_PER_MINUTE`) | `search-gate.ts` |
 | Per instance | 300 per minute (`SITE_SEARCH_INSTANCE_PER_MINUTE`) | `search-gate.ts` |
 | Site-wide | 3,000 per clock hour (`SITE_SEARCH_HOURLY_BUDGET`) | `search-gate.ts` + Supabase |
@@ -146,16 +146,20 @@ A blocked request gets `429` with `Retry-After` and `{"error":"rate_limited","re
 
 The RPC is callable with the public anon key (www has no service-role key). It only accepts 0–500 per call and picks the hour itself. Anyone with the anon key could still push the hour over budget and switch search off until the hour ends; that costs search, not Algolia money. To close it: give www a server-only Supabase key and grant the function to `service_role` only.
 
-**Edge firewall rule** (applied by an approved person in the Vercel dashboard, project `pakfactory-com` → Firewall → Rules; recreate on Cloudflare under PROD-2240):
+**Edge firewall rule** (live since 2026-10-19 as `rule_site_search_rate_limit_7jXXSu`; recreate on Cloudflare under PROD-2240). Added with the Vercel CLI from the repo root, then `vercel firewall publish`:
+
+```bash
+vercel firewall rules add "site-search rate limit" --condition '{"type":"path","op":"pre","value":"/api/search"}' --action rate_limit --rate-limit-window 10 --rate-limit-requests 20 --rate-limit-keys ip --rate-limit-action rate_limit --yes
+```
 
 | Field | Value |
 | --- | --- |
 | Name | `site-search rate limit` |
 | If | Request path **starts with** `/api/search` |
 | Then | Rate limit, fixed window **10 s**, **20** requests, key **IP** |
-| Action on limit | **Deny** (429) for **3 minutes** |
+| Action on limit | **Rate limit** (429) until the 10 s window ends. There is no lockout: Vercel's `rate_limit` action has none, and a lockout needs `deny` (403) with 1m/5m/15m/30m/1h only (PROD-3110 AC 3, amended) |
 
-**Env** (www, server-only; also listed in `turbo.json`):
+**Env** (www, server-only; also listed in `turbo.json`). Set on Vercel `pakfactory-com`: `ALGOLIA_APP_ID` and `ALGOLIA_SEARCH_KEY` for **Preview** (2026-10-19). **Production has neither yet.** Without an app ID and a key, `/api/search` answers `503 search_unavailable`:
 
 | Name | Default | Notes |
 | --- | --- | --- |
@@ -171,3 +175,28 @@ The RPC is callable with the public anon key (www has no service-role key). It o
 * Rotate the Algolia write key.
 * Firewall rule on production, Algolia usage alerts.
 * `pakfactory.com/robots.txt` is served by Magento; add `Disallow: /api/search` there when www serves the apex. The www `robots.txt` already disallows it.
+
+## Dialog (PROD-3111)
+
+The header search icon and ⌘K / Ctrl+K open one dialog, after the POC (`pakfactory.com-poc` `src/shared/components/search/SiteSearch.jsx`):
+
+* **Desktop (768 px and up):** a dark dialog (the `dark` scope over the site's own tokens) with a rail (Trending, Products, Solutions, Customizations, Guides, Resources), the input, chips, and sections. Products and solutions show as a grid, customizations as pills, guides and resources as cards.
+* **Mobile (under 768 px):** a light full-screen sheet with Cancel and no rail.
+* **Empty state** (no Algolia call): recent searches, then the POC's curated chips, the product-lines row from `/api/search/idle` (tapping a line searches for it, as in the POC), browse links per tab, and quick links.
+* **Typing:** waits 250 ms, needs 2 characters, and sends the normalized query. Rail counts come from the unfiltered query; opening a tab runs the filtered query.
+* **Keyboard:** ↑/↓ move through every result in order, Enter opens it, Esc closes. Chips are not in the arrow order.
+* **States:** "Searching…", no results ("No results for "…"."), too many searches (429) and search unavailable. The last two keep the browse content visible.
+* **Recent searches:** localStorage `www-search-recents-v1`, 6 entries.
+* **GTM:** `site_search` (`search_term`, `search_filter`, `results_count`) once per settled query, and `site_search_no_results` (`search_term`) when it returns nothing. Both go through `lib/analytics.ts` `captureEvent`, so PostHog can take over later.
+
+Code: `src/components/search/` (provider, trigger, dialog, section) and `src/lib/search/` (`use-site-search.ts`, `use-search-idle.ts`, `search-recents.ts`, `search-browse.ts`). The header icon goes in through `SiteNav`'s `search` slot (`packages/ui`), from `components/layout/site-nav-request-slot.tsx`.
+
+Smoke tests: `e2e/search/site-search.spec.ts` (desktop and a 390 px phone viewport). They are read-only; run them with `pnpm --filter @pakfactory/www test:e2e e2e/search`.
+
+**Deviations from the POC** (also listed on PROD-2525):
+* counts on the rail
+* keyboard navigation
+* Resources instead of Materials; materials stay searchable under Customizations
+* the site's own dark tokens instead of the POC's colours
+* browse sections are links to the catalog pages, since there is no client-side index to sample from
+
