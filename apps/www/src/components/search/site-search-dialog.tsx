@@ -13,15 +13,16 @@ import {
     X,
     type LucideIcon,
 } from 'lucide-react';
-import {Button} from '@pakfactory/ui/components/button';
 import {
     Dialog,
-    DialogContent,
+    DialogOverlay,
+    DialogPortal,
     DialogDescription,
     DialogTitle,
 } from '@pakfactory/ui/components/dialog';
 import {Sheet, SheetContent, SheetDescription, SheetTitle} from '@pakfactory/ui/components/sheet';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {Dialog as DialogPrimitive} from 'radix-ui';
 
 import {
     BROWSE_LINKS,
@@ -262,7 +263,7 @@ function browseSections(
     return sections;
 }
 
-function StatusLine({state, query}: {state: SiteSearchState; query: string}) {
+function StatusLine({state, query, dark}: {state: SiteSearchState; query: string; dark: boolean}) {
     let text: string | null = null;
     if (state.status === 'rate-limited') {
         text = 'Too many searches right now. Try again in a minute — or browse below.';
@@ -273,13 +274,24 @@ function StatusLine({state, query}: {state: SiteSearchState; query: string}) {
     }
     if (!text) return null;
     return (
-        <p className="text-sm text-muted-foreground" role="status">
+        <p
+            className={cn('text-sm', dark ? 'text-white/50' : 'text-muted-foreground')}
+            role="status"
+        >
             {text}
         </p>
     );
 }
 
-function SiteSearchBody({showRail, onClose}: {showRail: boolean; onClose: () => void}) {
+function SiteSearchBody({
+    showRail,
+    dark,
+    onClose,
+}: {
+    showRail: boolean;
+    dark: boolean;
+    onClose: () => void;
+}) {
     const router = useRouter();
     const [query, setQuery] = useState('');
     const [rail, setRail] = useState<RailId>('trending');
@@ -370,6 +382,7 @@ function SiteSearchBody({showRail, onClose}: {showRail: boolean; onClose: () => 
                 section={section}
                 startIndex={start}
                 activeIndex={activeIndex}
+                dark={dark}
                 onSelect={select}
             />
         );
@@ -377,34 +390,49 @@ function SiteSearchBody({showRail, onClose}: {showRail: boolean; onClose: () => 
         return node;
     });
 
+    // Classes below are the POC's (`SiteSearch.jsx` SearchBody), dark and light.
     return (
         <div className="flex min-h-0 flex-1">
             {showRail ? (
                 <nav
                     aria-label="Search sections"
-                    className="flex w-48 shrink-0 flex-col gap-1 border-r border-border p-4"
+                    className={cn(
+                        // POC w-44; w-48 fits our counts ("Customizations 3").
+                        'flex w-48 shrink-0 flex-col gap-0.5 border-r p-3',
+                        dark ? 'border-white/10' : 'border-border',
+                    )}
                 >
                     {RAIL.map(({id, label, icon: Icon}) => {
-                        const active = rail === id;
+                        const isActive = rail === id;
                         const count =
                             id === 'trending' ? null : (counts?.[id] ?? (counts ? 0 : null));
                         return (
                             <button
                                 key={id}
                                 type="button"
-                                aria-current={active ? 'true' : undefined}
+                                aria-current={isActive ? 'true' : undefined}
                                 onClick={() => setRail(id)}
                                 className={cn(
-                                    'flex h-9 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:outline-none',
-                                    active
-                                        ? 'bg-muted text-foreground'
-                                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                                    'inline-flex h-9 items-center justify-start gap-2 rounded-[16px] px-2.5 text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-2',
+                                    dark
+                                        ? isActive
+                                            ? 'bg-white/10 text-white focus-visible:ring-white/50'
+                                            : 'text-white/65 hover:bg-white/5 hover:text-white focus-visible:ring-white/50'
+                                        : isActive
+                                          ? 'bg-muted text-foreground focus-visible:ring-foreground/40'
+                                          : 'text-muted-foreground hover:bg-muted focus-visible:ring-foreground/40',
                                 )}
                             >
                                 <Icon className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
                                 <span className="flex-1 text-left">{label}</span>
+                                {/* Counts are ours (deviation 1 on PROD-2525). */}
                                 {count !== null ? (
-                                    <span className="text-xs tabular-nums text-muted-foreground">
+                                    <span
+                                        className={cn(
+                                            'text-xs tabular-nums',
+                                            dark ? 'text-white/40' : 'text-muted-foreground',
+                                        )}
+                                    >
                                         {count}
                                     </span>
                                 ) : null}
@@ -417,14 +445,19 @@ function SiteSearchBody({showRail, onClose}: {showRail: boolean; onClose: () => 
             <div className="flex min-w-0 flex-1 flex-col">
                 <div
                     className={cn(
-                        'shrink-0 space-y-4 border-b border-border p-4',
-                        showRail && 'pr-16',
+                        'shrink-0 space-y-3 border-b p-4',
+                        dark ? 'border-white/10' : 'border-border',
+                        // Room for the close button (the POC lets it overlap the input).
+                        showRail && 'pr-14',
                     )}
                 >
                     <div className="flex items-center gap-2">
                         <div className="relative min-w-0 flex-1">
                             <Search
-                                className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground"
+                                className={cn(
+                                    'pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2',
+                                    dark ? 'text-white/40' : 'text-muted-foreground',
+                                )}
                                 strokeWidth={1.75}
                                 aria-hidden
                             />
@@ -440,28 +473,45 @@ function SiteSearchBody({showRail, onClose}: {showRail: boolean; onClose: () => 
                                 enterKeyHint="search"
                                 maxLength={80}
                                 data-site-search-input=""
-                                className="h-12 w-full rounded-lg border border-input bg-muted/40 pr-4 pl-10 text-base text-foreground placeholder:text-muted-foreground focus-visible:border-foreground/30 focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:outline-none md:text-sm [&::-webkit-search-cancel-button]:appearance-none"
+                                className={cn(
+                                    // POC Input + `h-11 rounded-xl pl-9 text-sm`.
+                                    'h-11 w-full min-w-0 rounded-[20px] border py-1 pr-2.5 pl-9 text-base transition-colors outline-none focus-visible:ring-3 md:text-sm [&::-webkit-search-cancel-button]:appearance-none',
+                                    dark
+                                        ? 'border-white/15 bg-white/5 text-white placeholder:text-white/40 focus-visible:border-white/30 focus-visible:ring-white/20'
+                                        : 'border-input bg-muted/50 text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50',
+                                )}
                             />
                         </div>
                         {!showRail ? (
-                            <Button type="button" variant="ghost" onClick={onClose}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="inline-flex h-8 shrink-0 items-center justify-center rounded-[24px] px-2.5 text-sm font-medium whitespace-nowrap transition-all outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-foreground/40"
+                            >
                                 Cancel
-                            </Button>
+                            </button>
                         ) : null}
                     </div>
                     {!hasQuery ? (
                         <SiteSearchChips
                             chips={chips}
+                            dark={dark}
                             onSelect={(chip) => select({id: chip, title: chip, query: chip})}
                         />
                     ) : null}
                 </div>
 
                 <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-                    <div className="space-y-8 p-4 pb-8">
-                        <StatusLine state={current} query={normalized} />
+                    <div className="space-y-8 p-4 pb-10">
+                        <StatusLine state={current} query={normalized} dark={dark} />
                         {hasQuery && (current.status === 'loading' || current.status === 'idle') ? (
-                            <p className="text-sm text-muted-foreground" aria-live="polite">
+                            <p
+                                className={cn(
+                                    'text-sm',
+                                    dark ? 'text-white/50' : 'text-muted-foreground',
+                                )}
+                                aria-live="polite"
+                            >
                                 Searching…
                             </p>
                         ) : null}
@@ -492,35 +542,37 @@ export function SiteSearchDialog() {
                     <SheetDescription className="sr-only">
                         Search products, solutions, customizations, guides and resources.
                     </SheetDescription>
-                    {open ? <SiteSearchBody showRail={false} onClose={close} /> : null}
+                    {open ? <SiteSearchBody showRail={false} dark={false} onClose={close} /> : null}
                 </SheetContent>
             </Sheet>
         );
     }
 
+    // Composed from the shared portal/overlay so the overlay can take the POC's
+    // `bg-black/60 backdrop-blur-md` (the shared DialogContent fixes its own).
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent
-                showCloseButton={false}
-                className="dark flex h-[min(720px,85vh)] w-[min(960px,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-hidden border-border bg-background p-0 text-foreground shadow-2xl sm:max-w-none"
-                data-site-search-dialog=""
-            >
-                <DialogTitle className="sr-only">Search</DialogTitle>
-                <DialogDescription className="sr-only">
-                    Search products, solutions, customizations, guides and resources.
-                </DialogDescription>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-4 right-4 z-10 size-8 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    aria-label="Close search"
-                    onClick={close}
+            <DialogPortal>
+                <DialogOverlay className="bg-black/60 backdrop-blur-md" />
+                <DialogPrimitive.Content
+                    className="fixed top-1/2 left-1/2 z-50 flex h-[min(720px,85vh)] w-[min(960px,94vw)] max-w-none -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-[24px] border border-white/10 bg-[#141416] p-0 text-white shadow-2xl outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+                    data-site-search-dialog=""
                 >
-                    <X className="size-4" strokeWidth={1.75} />
-                </Button>
-                {open ? <SiteSearchBody showRail onClose={close} /> : null}
-            </DialogContent>
+                    <DialogTitle className="sr-only">Search</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Search products, solutions, customizations, guides and resources.
+                    </DialogDescription>
+                    <button
+                        type="button"
+                        className="absolute top-3 right-3 z-10 inline-flex size-8 items-center justify-center rounded-[24px] text-white/60 transition-all outline-none hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50"
+                        aria-label="Close search"
+                        onClick={close}
+                    >
+                        <X className="size-4" strokeWidth={1.75} />
+                    </button>
+                    {open ? <SiteSearchBody showRail dark onClose={close} /> : null}
+                </DialogPrimitive.Content>
+            </DialogPortal>
         </Dialog>
     );
 }

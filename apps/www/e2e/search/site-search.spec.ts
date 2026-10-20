@@ -32,7 +32,7 @@ for (const start of ['/', '/products/folding-cartons']) {
         await page.goto(start);
         await openFromIcon(page);
         // Idle state: curated chips and the product-lines row, before any query.
-        await expect(searchDialog(page).getByRole('button', {name: 'kraft'})).toBeVisible();
+        await expect(searchDialog(page).getByRole('button', {name: 'kraft', exact: true})).toBeVisible();
         await expect(searchDialog(page).getByRole('region', {name: 'Product lines'})).toBeVisible();
         await page.keyboard.press('Escape');
         await expect(searchDialog(page)).toBeHidden();

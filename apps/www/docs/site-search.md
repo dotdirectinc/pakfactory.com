@@ -180,7 +180,8 @@ vercel firewall rules add "site-search rate limit" --condition '{"type":"path","
 
 The header search icon and ⌘K / Ctrl+K open one dialog, after the POC (`pakfactory.com-poc` `src/shared/components/search/SiteSearch.jsx`):
 
-* **Desktop (768 px and up):** a dark dialog (the `dark` scope over the site's own tokens) with a rail (Trending, Products, Solutions, Customizations, Guides, Resources), the input, chips, and sections. Products and solutions show as a grid, customizations as pills, guides and resources as cards.
+* **Styling** copies the POC's classes (sizes, colours, radii) inside the search modal only: a deliberate exception to DESIGN.md's tokens and 8pt spacing (Richard, 2026-10-20). Radii are the POC's px (its `--radius` is 16px). Images keep the site's cream `--product-image-bg` well (PROD-3102), and the rail is 192 px instead of 176 px to fit the counts.
+* **Desktop (768 px and up):** a dark dialog (`#141416`, white text, `black/60` blurred overlay, as the POC) with a rail (Trending, Products, Solutions, Customizations, Guides, Resources), the input, chips, and sections. Products and solutions show as a grid, customizations as pills, guides and resources as cards.
 * **Mobile (under 768 px):** a light full-screen sheet with Cancel and no rail.
 * **Empty state** (no Algolia call): recent searches, then the POC's curated chips, then each tab's **browse picks** from `/api/search/idle` (`lib/search/search-browse-data.ts`, rules in `search-browse-picks.ts`). The picks are rule-based for now; a follow-up swaps in the most-clicked item per slot once click data exists.
 
@@ -211,6 +212,5 @@ Smoke tests: `e2e/search/site-search.spec.ts` (desktop and a 390 px phone viewpo
 * counts on the rail
 * keyboard navigation
 * Resources instead of Materials; materials stay searchable under Customizations
-* the site's own dark tokens instead of the POC's colours
 * browse picks are chosen by rule from live content (the POC sampled its static index); solutions and expertise show as pills because most have no image yet
 
