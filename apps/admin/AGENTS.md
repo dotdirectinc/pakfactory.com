@@ -270,7 +270,7 @@ PROD-2614. The customer-facing view of the same rules, for staff: **read-only un
 - **Computed views are cached for 60 s** ([`lib/spec/cache.ts`](src/lib/spec/cache.ts), tag `spec-rules`): Current rules, option partners, product rows, each product and each customization. A miss costs the Sanity read (~0.9 s) and the package's work; a hit costs neither. Failures are never cached. The raw Sanity response is **not** cached — at ~2.4 MB it is over Next's 2 MB data-cache limit.
 - **Load on demand:** By option sends headings only (partner lines via `GET /api/spec/options/[id]/partners` when a row opens); the configurator catalog comes from `GET /api/spec/rules-snapshot` when "Configure as a customer" first opens, once per browser session. Both 404 without a registry grant.
 - **Payloads:** Current rules 432 → 68 KB; product page ~285 → 38 KB; customization page 11 KB; products list 109 KB (all rows, so the filter searches everything; drawn 50 at a time with **Load more**).
-- Current rules' tab is in the URL (`?tab=options`), and `/spec/loading.tsx` shows a skeleton while a view builds.
+- Current rules' tab is in the URL (`?tab=options`), and `/spec/rules/loading.tsx` shows the page's header and a skeleton while a view builds.
 
 ## Spec System — Spec Map (read-only)
 
@@ -302,7 +302,7 @@ PROD-3113 (2026-10-19). Every admin page loads in about 0.6–1.1 s on staging (
 
 **Server side** (`pakfactory.com-server` `src/middleware/principal.ts`). The registry grant is read in the same round as the staff lookup. A verified token is remembered for **60 s, for reads only** (GET/HEAD). Accepted trade-off: a signed-out session can still read registry data for up to 60 s; writes always re-verify, and a removed grant applies at once.
 
-**Registry page** ([`app/(admin)/spec/page.tsx`](src/app/(admin)/spec/page.tsx), sections in [`components/spec/registry/`](src/components/spec/registry/)). Overview in priority order: waiting frames → sync problems → at most 3 recent syncs and approvals. Edit history (`?view=history`, "Show more" adds `?n=`) and Settings (`?view=settings`) load only when opened. Each section has its own `Suspense` keyed by tab, so switching tabs shows placeholders at once.
+**Registry page** ([`app/(admin)/spec/(registry)/page.tsx`](src/app/(admin)/spec/(registry)/page.tsx), sections in [`components/spec/registry/`](src/components/spec/registry/)). Overview in priority order: waiting frames → sync problems → at most 3 recent syncs and approvals. Edit history (`?view=history`, "Show more" adds `?n=`) and Settings (`?view=settings`) load only when opened. Each section has its own `Suspense` keyed by tab, so switching tabs shows placeholders at once.
 
 **Loading states** ([`components/ui/page-skeleton.tsx`](src/components/ui/page-skeleton.tsx)). Use these, never empty space:
 
@@ -314,6 +314,12 @@ PROD-3113 (2026-10-19). Every admin page loads in about 0.6–1.1 s on staging (
 
 Every real route has a `loading.tsx`; routes that only redirect have none.
 
+**Page headers and first paint** (2026-10-20, admin #904, #906). A page's header is [`PageHeader`](src/components/ui/page-header.tsx): back link, title, badge, the description, an action. The description is [`PageLead`](src/components/ui/page-lead.tsx): two lines, "Read more" only when longer, and it closes again on any scroll (the Spec Map's columns included), click or focus elsewhere.
+
+- **The `loading.tsx` renders the same `PageHeader`** (`PageSkeleton`'s `header` prop) with the real title and description, which are fixed copy; an action that needs data stands in as `ActionSkeleton`. The description is usually the page's largest text — its LCP — so it paints with the first frame. `/spec` was 2.45 s when it waited behind a skeleton; 0.1 s on a local production build after.
+- **A `loading.tsx` must never wrap other pages.** On a first load the outermost `loading.tsx` on the path is what shows, so a parent's loading state stands in for its children (`/spec/map` showed the Registry's header). A route with pages below it keeps its page and `loading.tsx` in a **route group** of their own: `(admin)/(home)`, `spec/(registry)`, `spec/catalog/(tables)`, `requests/(list)`. URLs do not change.
+- Check it with the page's HTML: with hidden blocks (`<div hidden id="S:…">`) and scripts removed, the page's own `<h1>` and description should be there.
+
 **Measuring.** `lib/perf/timing.ts` logs `[timing] layout … · user … · specMe … · drafts …`, and `lib/spec/registry-api.ts` logs `[timing] api GET <path> <status> <ms>`. Read them with the Vercel CLI (the Vercel MCP connector cannot see this team):
 
 ```
@@ -321,6 +327,14 @@ vercel --scope pakfactory-projects-00b54385 logs --project pakfactory-com-admin 
 ```
 
 Page times: a `fetch(path, { cache: "no-store" })` loop from a signed-in tab. A background automation tab cannot measure browser-side time: Chrome slows its timers to once a second.
+
+## Spec System — changes from Sanity
+
+PROD-3096 / PROD-3119 (2026-10-20). Sync Changes applies names, status and content that Sanity owns with no frame (server `docs/catalog-sync-v2.md` § 11); the admin shows them:
+
+- **Sync history** ([`/spec/syncs`](src/app/(admin)/spec/syncs/page.tsx), [`spec-sync-history.tsx`](src/components/spec/spec-sync-history.tsx)): each Sync Changes run says "N changes from Sanity applied automatically", any that could not apply, and its Content line (differences by kind). **Show the changes** (`?applied=<run>`) loads that run's list only when opened (`GET /api/v1/sync-runs/:id/applied`); the history list itself carries counts only.
+- **A record's page** ([`catalog/[table]/[id]`](src/app/(admin)/spec/catalog/[table]/[id]/page.tsx)): "Changes from Sanity" under the record, newest first, each with its run (automatic, or who started it) and time — from the audit trail (`GET /api/v1/records/:id/sync-changes`, registry id). Loaded in its own `Suspense`, so the record renders first.
+- Wording in [`lib/spec/sync-applied.ts`](src/lib/spec/sync-applied.ts) (tested): "Removed White", "Slug: old → new", facts as "label value".
 
 ## Customization Library
 
