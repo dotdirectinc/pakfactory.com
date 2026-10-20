@@ -1,5 +1,25 @@
 import type {CustomizationCategory, CustomizationOption} from '@/lib/catalog/types';
 
+/** One uploaded (or local-preview) color reference image for Custom Color. */
+export type CustomColorReferenceImage = {
+    id: string;
+    name: string;
+    /** `blob:` preview only — never submitted. */
+    url: string;
+    key?: string;
+    status?: 'uploading' | 'uploaded' | 'error';
+    bytes?: number;
+};
+
+export type CustomColorReferenceEntry = {
+    image?: CustomColorReferenceImage;
+};
+
+/** optionId → propertyKey → reference entry. */
+export type CustomColorReferencesByOption = Partial<
+    Record<string, Partial<Record<string, CustomColorReferenceEntry>>>
+>;
+
 /**
  * Guided / workspace step keys.
  * `dimensions` is UI-only; other keys are Sanity customizationCategory.slug values.
@@ -73,6 +93,11 @@ export type CustomizationBuilderState = {
      * (`outside`, `inside`, `front-panel`, …). Empty when the gate is hidden.
      */
     printedSides?: Partial<Record<string, PrintSideValue>>;
+    /**
+     * Option id → Property key → optional color-reference upload for Custom Color.
+     * Hex lives on `propertySelections` under `custom-color-hex:<propertyKey>`.
+     */
+    customColorReferences?: CustomColorReferencesByOption;
 };
 
 export type BuilderChoice = {
@@ -166,6 +191,7 @@ export const EMPTY_BUILDER_STATE: CustomizationBuilderState = {
     propertySelections: {},
     propertySelectionSummaries: {},
     printedSides: {},
+    customColorReferences: {},
 };
 
 export type CatalogOptionLike = Pick<

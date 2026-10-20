@@ -77,6 +77,8 @@ type CustomizationEntryProps = {
     /** Compatibility engine → PDP preselect notice under the heading. */
     compatibilityPreselect?: CompatibilityPreselectNotice | null;
     onClearCompatibilityPreselect?: () => void;
+    /** Request draft id for Custom Color reference uploads. */
+    draftId?: string;
 };
 
 type SummaryRowProps = {
@@ -197,6 +199,7 @@ export function CustomizationEntry({
     preset = false,
     compatibilityPreselect = null,
     onClearCompatibilityPreselect,
+    draftId,
 }: CustomizationEntryProps) {
     const [open, setOpen] = useState(false);
     const [initialStepKey, setInitialStepKey] = useState<
@@ -336,6 +339,7 @@ export function CustomizationEntry({
                 dimensionRange={dimensionRange}
                 printableSides={printableSides}
                 customizationRules={customizationRules}
+                draftId={draftId}
             />
         </div>
     );

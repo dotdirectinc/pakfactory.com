@@ -31,6 +31,14 @@ import {
     PANTONE_COUNT_KEY,
     PANTONE_PMS_KEY,
 } from '@/components/customization-builder/pantone-property';
+import {
+    clearCustomColorHex,
+    customColorFileRejectionReason,
+    customColorSummaryLabel,
+    formatCustomColorAttachmentName,
+    readCustomColorHex,
+    withCustomColorHex,
+} from '@/components/customization-builder/custom-color-property';
 import type {
     PropertyFieldDescriptor,
     PropertyFieldOption,
@@ -38,13 +46,23 @@ import type {
 import {summaryKindForField} from '@/lib/catalog/map-detail-to-property-fields';
 import {isCustomColorSlug} from '@/lib/catalog/swatch-colors';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
-import type {PropertySelectionSummaryItem} from '@/lib/customization-builder';
+import type {
+    CustomColorReferenceImage,
+    CustomColorReferencesByOption,
+    PropertySelectionSummaryItem,
+} from '@/lib/customization-builder';
+import {presignAttachment} from '@/lib/rfq/presign-attachment';
+import {newId} from '@/lib/request/request.storage';
+import {cn} from '@pakfactory/ui/lib/utils';
 
 /** Sentinel — not a Sanity catalog option id. */
 export const PROPERTY_CONSULTATION_ID = '__consultation__';
 
 const CUSTOM_COLOR_CONSULT_NOTE =
     'Our specialist will consult with you on your custom color.';
+
+/** Fallback fill for the picker until the buyer chooses a color. */
+const CUSTOM_COLOR_PICKER_FALLBACK = '#808080';
 
 export type PropertySelectionMap = Record<string, string[]>;
 
@@ -53,8 +71,8 @@ type OptionPropertyControllersProps = {
     value: PropertySelectionMap;
     onChange: (propertyKey: string, ids: string[]) => void;
     /**
-     * Full-map updates (Pantone count + codes). When omitted, pantone calls
-     * `onChange` once per key with functional-safe parents.
+     * Full-map updates (Pantone count + codes, custom-color hex). When omitted,
+     * pantone / hex fall back to per-key `onChange`.
      */
     onMapChange?: (next: PropertySelectionMap) => void;
     /** Forwarded to PropertyFieldPanel; builder uses ghost. */
@@ -70,6 +88,18 @@ type OptionPropertyControllersProps = {
     dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
     dimensionUnit?: 'in' | 'mm';
+    /**
+     * Request draft id — when set, color-reference files upload to S3.
+     * Catalog rails omit this (local preview only).
+     */
+    draftId?: string;
+    /** Builder option id — scopes `customColorReferences`. */
+    optionId?: string;
+    customColorReferences?: CustomColorReferencesByOption;
+    onCustomColorReferenceChange?: (
+        propertyKey: string,
+        image: CustomColorReferenceImage | null,
+    ) => void;
 };
 
 function encodeDimensionValue(value: DimensionFieldValue): string {
@@ -179,99 +209,301 @@ function normalizeSelection(
 
 type CustomColorReferencePanelProps = {
     propertyKey: string;
+    propertyLabel: string;
+    hex: string | undefined;
+    onHexChange: (hex: string | null) => void;
+    /** When set, files upload via presign; otherwise local preview only. */
+    draftId?: string;
+    image?: CustomColorReferenceImage | null;
+    onImageChange?: (image: CustomColorReferenceImage | null) => void;
 };
 
 /**
- * Client-only color reference upload (preview + filename).
- * Cleared when the parent unmounts (leaving Custom Color).
+ * Custom Color follow-up: native color wheel + optional reference image.
+ * Hex is stored on the selection map; the image uploads when `draftId` is set.
  */
 function CustomColorReferencePanel({
     propertyKey,
+    propertyLabel,
+    hex,
+    onHexChange,
+    draftId,
+    image: controlledImage,
+    onImageChange,
 }: CustomColorReferencePanelProps) {
-    const inputId = useId();
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [fileName, setFileName] = useState<string | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const colorInputId = useId();
+    const fileInputId = useId();
+    const colorInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [localImage, setLocalImage] = useState<CustomColorReferenceImage | null>(
+        null,
+    );
+    const [rejectReason, setRejectReason] = useState<string | null>(null);
+    const persistUploads = Boolean(draftId && onImageChange);
+    const image = persistUploads ? (controlledImage ?? null) : localImage;
 
     useEffect(() => {
+        if (persistUploads) return;
         return () => {
-            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            if (localImage?.url.startsWith('blob:')) {
+                URL.revokeObjectURL(localImage.url);
+            }
         };
-    }, [previewUrl]);
+    }, [persistUploads, localImage]);
+
+    const setImage = (next: CustomColorReferenceImage | null) => {
+        if (persistUploads) {
+            onImageChange?.(next);
+            return;
+        }
+        setLocalImage((prev) => {
+            if (prev?.url.startsWith('blob:') && prev.url !== next?.url) {
+                URL.revokeObjectURL(prev.url);
+            }
+            return next;
+        });
+    };
 
     const clearFile = () => {
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(null);
-        setFileName(null);
-        if (inputRef.current) inputRef.current.value = '';
+        setRejectReason(null);
+        setImage(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
+
+    const uploadFile = async (file: File) => {
+        const reason = customColorFileRejectionReason(file);
+        if (reason) {
+            setRejectReason(reason);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+        setRejectReason(null);
+
+        const displayName = formatCustomColorAttachmentName(
+            propertyLabel,
+            file.name,
+        );
+        const id = newId('cref');
+        const previewUrl = URL.createObjectURL(file);
+        const preview: CustomColorReferenceImage = {
+            id,
+            name: displayName,
+            url: previewUrl,
+            status: draftId ? 'uploading' : undefined,
+            bytes: file.size,
+        };
+        setImage(preview);
+
+        if (!draftId || !onImageChange) {
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
+        const mark = (patch: Partial<CustomColorReferenceImage>) => {
+            onImageChange({...preview, ...patch});
+        };
+
+        const permit = await presignAttachment({
+            draftId,
+            filename: displayName,
+            contentType: file.type,
+            bytes: file.size,
+        });
+        if (!permit.ok) {
+            mark({status: 'error'});
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
+        const form = new FormData();
+        for (const [k, v] of Object.entries(permit.fields)) form.append(k, v);
+        form.append('file', file, file.name);
+
+        try {
+            const res = await fetch(permit.url, {method: 'POST', body: form});
+            mark(
+                res.ok
+                    ? {status: 'uploaded', key: permit.key}
+                    : {status: 'error'},
+            );
+        } catch {
+            mark({status: 'error'});
+        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const pickerValue = hex ?? CUSTOM_COLOR_PICKER_FALLBACK;
+    const hasPickedHex = Boolean(hex);
 
     return (
         <div
-            className="mt-3 flex flex-col gap-3 rounded-[var(--radius-control)] border border-border bg-muted/40 p-3"
+            className="mt-3 flex flex-col gap-4 rounded-[var(--radius-control)] border border-border bg-muted/40 p-3"
             data-custom-color-panel={propertyKey}
         >
             <p className="text-sm text-muted-foreground">
                 {CUSTOM_COLOR_CONSULT_NOTE}
             </p>
-            <div className="flex flex-wrap items-center gap-3">
-                <input
-                    ref={inputRef}
-                    id={inputId}
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (!file) {
-                            clearFile();
-                            return;
-                        }
-                        if (previewUrl) URL.revokeObjectURL(previewUrl);
-                        setFileName(file.name);
-                        setPreviewUrl(URL.createObjectURL(file));
-                    }}
-                />
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => inputRef.current?.click()}
-                >
-                    {fileName ? 'Replace image' : 'Upload color reference'}
-                </Button>
-                {fileName ? (
+
+            <div className="flex flex-col gap-2">
+                <p className="text-xs font-medium text-foreground">
+                    Pick a color
+                    <span className="ml-1 font-normal text-muted-foreground">
+                        (optional)
+                    </span>
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                    <input
+                        ref={colorInputRef}
+                        id={colorInputId}
+                        type="color"
+                        value={pickerValue}
+                        aria-label="Pick a custom color"
+                        className="sr-only"
+                        onChange={(event) => {
+                            onHexChange(event.target.value);
+                        }}
+                    />
                     <button
                         type="button"
-                        className="text-sm text-muted-foreground underline-offset-4 hover:underline"
-                        onClick={clearFile}
-                    >
-                        Remove
-                    </button>
-                ) : null}
+                        className={cn(
+                            'relative size-9 shrink-0 cursor-pointer rounded-full border border-border',
+                            'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                            !hasPickedHex &&
+                                'bg-[conic-gradient(from_0deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)]',
+                        )}
+                        style={
+                            hasPickedHex
+                                ? {backgroundColor: hex}
+                                : undefined
+                        }
+                        onClick={() => colorInputRef.current?.click()}
+                        aria-label={
+                            hasPickedHex
+                                ? `Change color ${hex}`
+                                : 'Open color picker'
+                        }
+                    />
+                    {hasPickedHex ? (
+                        <>
+                            <span className="font-mono text-sm text-foreground">
+                                {hex}
+                            </span>
+                            <button
+                                type="button"
+                                className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+                                onClick={() => onHexChange(null)}
+                            >
+                                Clear
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            type="button"
+                            className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+                            onClick={() => colorInputRef.current?.click()}
+                        >
+                            Open color wheel
+                        </button>
+                    )}
+                </div>
             </div>
-            {fileName || previewUrl ? (
-                <div className="flex items-center gap-3">
-                    {previewUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
-                        <img
-                            src={previewUrl}
-                            alt=""
-                            className="size-12 shrink-0 rounded-[var(--radius-control)] border border-border object-cover"
-                        />
-                    ) : null}
-                    {fileName ? (
-                        <span className="min-w-0 truncate text-sm text-foreground">
-                            {fileName}
-                        </span>
+
+            <div className="flex flex-col gap-2">
+                <p className="text-xs font-medium text-foreground">
+                    Color reference
+                    <span className="ml-1 font-normal text-muted-foreground">
+                        (optional)
+                    </span>
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                    <input
+                        ref={fileInputRef}
+                        id={fileInputId}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+                        className="sr-only"
+                        onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (!file) {
+                                clearFile();
+                                return;
+                            }
+                            void uploadFile(file);
+                        }}
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        {image ? 'Replace image' : 'Upload color reference'}
+                    </Button>
+                    {image ? (
+                        <button
+                            type="button"
+                            className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+                            onClick={clearFile}
+                        >
+                            Remove
+                        </button>
                     ) : null}
                 </div>
-            ) : (
-                <p className="text-xs text-muted-foreground">
-                    PNG, JPG, or WebP — optional reference for your specialist.
-                </p>
-            )}
+                {rejectReason ? (
+                    <p className="text-xs text-destructive" role="alert">
+                        {rejectReason}
+                    </p>
+                ) : null}
+                {image ? (
+                    <div className="flex items-center gap-3">
+                        {image.url ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
+                            <img
+                                src={image.url}
+                                alt=""
+                                className={cn(
+                                    'size-12 shrink-0 rounded-[var(--radius-control)] border border-border object-cover',
+                                    image.status === 'uploading' &&
+                                        'opacity-40',
+                                    image.status === 'error' &&
+                                        'opacity-40',
+                                )}
+                            />
+                        ) : null}
+                        <div className="flex min-w-0 flex-col gap-1">
+                            <span className="truncate text-sm text-foreground">
+                                {image.name}
+                            </span>
+                            {image.status === 'uploading' ? (
+                                <span className="text-xs text-muted-foreground">
+                                    Uploading…
+                                </span>
+                            ) : null}
+                            {image.status === 'error' ? (
+                                <span className="text-xs text-destructive">
+                                    Upload failed — try again.
+                                </span>
+                            ) : null}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-xs text-muted-foreground">
+                        PNG, JPG, or WebP — optional reference for your
+                        specialist.
+                    </p>
+                )}
+            </div>
         </div>
+    );
+}
+
+function isCustomColorOption(
+    option: DisplayOption | undefined,
+    id: string | undefined,
+): boolean {
+    if (!id || !option) return isCustomColorSlug(id ?? '');
+    return (
+        option.appearance === 'customColor' || isCustomColorSlug(id)
     );
 }
 
@@ -498,8 +730,26 @@ export function OptionPropertyControllers({
     dimensionInput,
     dimensionRange,
     dimensionUnit = 'in',
+    draftId,
+    optionId,
+    customColorReferences,
+    onCustomColorReferenceChange,
 }: OptionPropertyControllersProps) {
     if (fields.length === 0) return null;
+
+    const emitMap = (next: PropertySelectionMap) => {
+        if (onMapChange) {
+            onMapChange(next);
+            return;
+        }
+        // Fallback when the parent only exposes per-key onChange: clear removed keys.
+        for (const key of Object.keys(value)) {
+            if (!(key in next)) onChange(key, []);
+        }
+        for (const [key, ids] of Object.entries(next)) {
+            onChange(key, ids);
+        }
+    };
 
     return (
         <div className="flex flex-col gap-6">
@@ -509,24 +759,50 @@ export function OptionPropertyControllers({
                     : mapFieldOptions(field.options);
                 const selected = value[field.propertyKey] ?? [];
                 const selectedId = selected[0];
-                const selectedTitle = displayOptions.find(
+                const selectedOption = displayOptions.find(
                     (o) => o.id === selectedId,
-                )?.title;
-                const showCustomColorPanel =
-                    typeof selectedId === 'string' &&
-                    (isCustomColorSlug(selectedId) ||
-                        displayOptions.find((o) => o.id === selectedId)
-                            ?.appearance === 'customColor');
+                );
+                const selectedTitle = selectedOption?.title;
+                const showCustomColorPanel = isCustomColorOption(
+                    selectedOption,
+                    selectedId,
+                );
+                const customHex = readCustomColorHex(value, field.propertyKey);
+                const customImage =
+                    optionId && customColorReferences
+                        ? (customColorReferences[optionId]?.[field.propertyKey]
+                              ?.image ?? null)
+                        : null;
 
                 const emitChange = (ids: string[]) => {
-                    onChange(
-                        field.propertyKey,
-                        normalizeSelection(
-                            ids,
-                            selected,
-                            consultationDefault,
-                        ),
+                    const normalized = normalizeSelection(
+                        ids,
+                        selected,
+                        consultationDefault,
                     );
+                    const nextId = normalized[0];
+                    const nextOption = displayOptions.find(
+                        (o) => o.id === nextId,
+                    );
+                    const stayingCustom = isCustomColorOption(
+                        nextOption,
+                        nextId,
+                    );
+                    if (!stayingCustom) {
+                        // Image clear is handled in the builder when selections
+                        // leave Custom Color (same state patch as this map update).
+                        emitMap(
+                            clearCustomColorHex(
+                                {
+                                    ...value,
+                                    [field.propertyKey]: normalized,
+                                },
+                                field.propertyKey,
+                            ),
+                        );
+                        return;
+                    }
+                    onChange(field.propertyKey, normalized);
                 };
 
                 const titles = titleBySlug(displayOptions);
@@ -550,6 +826,28 @@ export function OptionPropertyControllers({
                                     <CustomColorReferencePanel
                                         key={`${field.propertyKey}-custom`}
                                         propertyKey={field.propertyKey}
+                                        propertyLabel={field.label}
+                                        hex={customHex}
+                                        onHexChange={(nextHex) => {
+                                            emitMap(
+                                                withCustomColorHex(
+                                                    value,
+                                                    field.propertyKey,
+                                                    nextHex,
+                                                ),
+                                            );
+                                        }}
+                                        draftId={draftId}
+                                        image={customImage}
+                                        onImageChange={
+                                            onCustomColorReferenceChange
+                                                ? (img) =>
+                                                      onCustomColorReferenceChange(
+                                                          field.propertyKey,
+                                                          img,
+                                                      )
+                                                : undefined
+                                        }
                                     />
                                 ) : null}
                             </>
@@ -791,7 +1089,9 @@ export function OptionPropertyControllers({
                 const titleValue =
                     field.kind === 'dimension'
                         ? summarizeDimensionValue(selectedId)
-                        : selectedTitle;
+                        : showCustomColorPanel && selectedTitle
+                          ? customColorSummaryLabel(selectedTitle, customHex)
+                          : selectedTitle;
 
                 return (
                     <PropertyFieldPanel
@@ -913,11 +1213,23 @@ export function summariesForPropertySelection(
             }
             const option = field.options.find((o) => o.id === id);
             if (!option) continue;
+            const isCustom =
+                option.appearance === 'customColor' ||
+                isCustomColorSlug(id);
+            const hex = isCustom
+                ? readCustomColorHex(selection, field.propertyKey)
+                : undefined;
             items.push({
                 kind: displayKind,
-                label: option.title,
+                label: isCustom
+                    ? customColorSummaryLabel(option.title, hex)
+                    : option.title,
                 omitFromSummary: false,
-                ...(option.color ? {color: option.color} : {}),
+                ...(hex
+                    ? {color: hex}
+                    : option.color
+                      ? {color: option.color}
+                      : {}),
                 ...(option.imageUrl ? {imageUrl: option.imageUrl} : {}),
             });
         }

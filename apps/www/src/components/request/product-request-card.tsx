@@ -418,6 +418,7 @@ export function ProductRequestCard({
                 dimensionRange={line.dimensionRange}
                 printableSides={line.printableSides}
                 customizationRules={line.customizationRules}
+                draftId={draftId}
             />
 
             <Dialog open={qtyOpen} onOpenChange={setQtyOpen}>

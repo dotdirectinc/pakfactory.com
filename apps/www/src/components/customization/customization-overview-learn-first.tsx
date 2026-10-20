@@ -18,6 +18,10 @@ import {
     OptionPropertyControllers,
     type PropertySelectionMap,
 } from '@/components/customization/option-property-controllers';
+import {
+    customColorSummaryLabel,
+    readCustomColorHex,
+} from '@/components/customization-builder/custom-color-property';
 import type {CustomizationOverviewChromeProps} from '@/components/customization/customization-overview-standard';
 import {
     CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH,
@@ -34,6 +38,7 @@ import {
     mapDetailToPropertyFields,
     type PropertyFieldDescriptor,
 } from '@/lib/catalog/map-detail-to-property-fields';
+import {isCustomColorSlug} from '@/lib/catalog/swatch-colors';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 export const CUSTOMIZATION_OVERVIEW_LEARN_FIRST_ID =
@@ -83,10 +88,25 @@ const proseComponents: PortableTextComponents = {
     },
 };
 
-function titlesForIds(field: PropertyFieldDescriptor, ids: string[]): string[] {
-    const byId = new Map(field.options.map((o) => [o.id, o.title]));
+function titlesForIds(
+    field: PropertyFieldDescriptor,
+    ids: string[],
+    selection: PropertySelectionMap,
+): string[] {
+    const byId = new Map(field.options.map((o) => [o.id, o]));
     return ids
-        .map((id) => byId.get(id))
+        .map((id) => {
+            const option = byId.get(id);
+            if (!option) return undefined;
+            const isCustom =
+                option.appearance === 'customColor' ||
+                isCustomColorSlug(id);
+            if (!isCustom) return option.title;
+            return customColorSummaryLabel(
+                option.title,
+                readCustomColorHex(selection, field.propertyKey),
+            );
+        })
         .filter((t): t is string => Boolean(t));
 }
 
@@ -108,7 +128,12 @@ export function CustomizationOverviewLearnFirst({
     );
 
     const setPropertyValue = (propertyKey: string, ids: string[]) => {
-        setSelection((prev) => ({...prev, [propertyKey]: ids}));
+        setSelection((prev) => {
+            const next = {...prev};
+            if (!ids.length) delete next[propertyKey];
+            else next[propertyKey] = ids;
+            return next;
+        });
     };
 
     const onBookmark = (event: MouseEvent<HTMLButtonElement>) => {
@@ -231,6 +256,7 @@ export function CustomizationOverviewLearnFirst({
                                                     fields={fields}
                                                     value={selection}
                                                     onChange={setPropertyValue}
+                                                    onMapChange={setSelection}
                                                     variant="ghost"
                                                 />
                                             </div>
@@ -261,6 +287,7 @@ export function CustomizationOverviewLearnFirst({
                                                     field,
                                                     selection[field.propertyKey] ??
                                                         [],
+                                                    selection,
                                                 ).join(' · ') || '—';
                                             return (
                                                 <div

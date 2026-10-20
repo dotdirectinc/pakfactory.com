@@ -7,6 +7,7 @@ import type {
     BuilderOption,
     BuilderStep,
     BuilderStepKey,
+    CustomColorReferenceImage,
     CustomizationBuilderState,
     PrintSideValue,
     PropertySelectionSummaryItem,
@@ -40,6 +41,12 @@ type CustomizationWorkspaceViewProps = {
     ) => void;
     onPrintedSideChange: (slug: string, next: PrintSideValue) => void;
     onPrintingConsultation: () => void;
+    draftId?: string;
+    onCustomColorReferenceChange?: (
+        optionId: string,
+        propertyKey: string,
+        image: CustomColorReferenceImage | null,
+    ) => void;
 };
 
 export function CustomizationWorkspaceView({
@@ -63,6 +70,8 @@ export function CustomizationWorkspaceView({
     onPropertySelectionsChange,
     onPrintedSideChange,
     onPrintingConsultation,
+    draftId,
+    onCustomColorReferenceChange,
 }: CustomizationWorkspaceViewProps) {
     return (
         <BuilderThreeColumn
@@ -86,6 +95,8 @@ export function CustomizationWorkspaceView({
             onPropertySelectionsChange={onPropertySelectionsChange}
             onPrintedSideChange={onPrintedSideChange}
             onPrintingConsultation={onPrintingConsultation}
+            draftId={draftId}
+            onCustomColorReferenceChange={onCustomColorReferenceChange}
         />
     );
 }

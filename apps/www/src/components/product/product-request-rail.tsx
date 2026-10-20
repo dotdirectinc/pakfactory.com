@@ -85,6 +85,7 @@ export function ProductRequestRail() {
                     onClearCompatibilityPreselect={
                         clearCompatibilityPreselect
                     }
+                    draftId={draftId}
                 />
             </OverviewSection>
 

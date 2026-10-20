@@ -19,6 +19,8 @@ import {
     type BuilderStepKey,
     type BuilderType,
     type CatalogOptionLike,
+    type CustomColorReferenceImage,
+    type CustomColorReferencesByOption,
     type CustomizationBuilderState,
     type DimensionFace,
     type DimensionsValue,
@@ -48,6 +50,7 @@ export function createEmptyBuilderState(): CustomizationBuilderState {
         propertySelections: {},
         propertySelectionSummaries: {},
         printedSides: {},
+        customColorReferences: {},
     };
 }
 
@@ -614,6 +617,9 @@ export function clearStep(
     const propertySelectionSummaries = {
         ...(state.propertySelectionSummaries ?? {}),
     };
+    const customColorReferences = {
+        ...(state.customColorReferences ?? {}),
+    };
 
     if (key === DIMENSIONS_STEP_KEY) {
         delete entryNotes[dimensionEntryNoteKey('external')];
@@ -623,6 +629,7 @@ export function clearStep(
             delete entryNotes[pick.optionId];
             delete propertySelections[pick.optionId];
             delete propertySelectionSummaries[pick.optionId];
+            delete customColorReferences[pick.optionId];
         }
     }
 
@@ -635,6 +642,7 @@ export function clearStep(
         entryNotes,
         propertySelections,
         propertySelectionSummaries,
+        customColorReferences,
     };
     if (key === PRINTING_CATEGORY_SLUG) {
         return {
@@ -656,12 +664,22 @@ function withoutOptionDetails(
     const propertySelectionSummaries = {
         ...(state.propertySelectionSummaries ?? {}),
     };
+    const customColorReferences = {
+        ...(state.customColorReferences ?? {}),
+    };
     for (const id of optionIds) {
         delete entryNotes[id];
         delete propertySelections[id];
         delete propertySelectionSummaries[id];
+        delete customColorReferences[id];
     }
-    return {...state, entryNotes, propertySelections, propertySelectionSummaries};
+    return {
+        ...state,
+        entryNotes,
+        propertySelections,
+        propertySelectionSummaries,
+        customColorReferences,
+    };
 }
 
 function withSelections(
@@ -749,6 +767,33 @@ export function patchPropertySelections(
             ...(state.propertySelectionSummaries ?? {}),
             [optionId]: summaries,
         },
+    };
+}
+
+/** Set or clear the Custom Color reference image for one option + property. */
+export function patchCustomColorReference(
+    state: CustomizationBuilderState,
+    optionId: string,
+    propertyKey: string,
+    image: CustomColorReferenceImage | null,
+): CustomizationBuilderState {
+    const byOption: CustomColorReferencesByOption = {
+        ...(state.customColorReferences ?? {}),
+    };
+    const byProp = {...(byOption[optionId] ?? {})};
+    if (image) {
+        byProp[propertyKey] = {image};
+    } else {
+        delete byProp[propertyKey];
+    }
+    if (Object.keys(byProp).length === 0) {
+        delete byOption[optionId];
+    } else {
+        byOption[optionId] = byProp;
+    }
+    return {
+        ...state,
+        customColorReferences: byOption,
     };
 }
 
@@ -975,6 +1020,10 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
         if (legacyInside) printedSides.inside = legacyInside;
     }
 
+    const customColorReferences = parseCustomColorReferences(
+        raw.customColorReferences,
+    );
+
     return {
         answers,
         guidedComplete: Boolean(raw.guidedComplete),
@@ -982,6 +1031,57 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
         propertySelections,
         propertySelectionSummaries,
         printedSides,
+        customColorReferences,
+    };
+}
+
+/**
+ * Keep only images that still have an S3 key. Blob previews die with the tab, so
+ * a persisted entry without a key is a dead preview and is dropped.
+ */
+function parseCustomColorReferences(
+    value: unknown,
+): CustomColorReferencesByOption {
+    const out: CustomColorReferencesByOption = {};
+    if (!value || typeof value !== 'object') return out;
+    for (const [optionId, byPropRaw] of Object.entries(
+        value as Record<string, unknown>,
+    )) {
+        if (!byPropRaw || typeof byPropRaw !== 'object') continue;
+        const byProp: NonNullable<CustomColorReferencesByOption[string]> = {};
+        for (const [propertyKey, entryRaw] of Object.entries(
+            byPropRaw as Record<string, unknown>,
+        )) {
+            if (!entryRaw || typeof entryRaw !== 'object') continue;
+            const imageRaw = (entryRaw as {image?: unknown}).image;
+            const image = parseCustomColorReferenceImage(imageRaw);
+            if (!image) continue;
+            byProp[propertyKey] = {image};
+        }
+        if (Object.keys(byProp).length > 0) {
+            out[optionId] = byProp;
+        }
+    }
+    return out;
+}
+
+function parseCustomColorReferenceImage(
+    value: unknown,
+): CustomColorReferenceImage | null {
+    if (!value || typeof value !== 'object') return null;
+    const raw = value as Record<string, unknown>;
+    if (typeof raw.id !== 'string' || typeof raw.name !== 'string') return null;
+    if (typeof raw.key !== 'string' || !raw.key.length) return null;
+    return {
+        id: raw.id,
+        name: raw.name,
+        // Reloaded drafts have no live blob preview; empty url is fine for submit.
+        url: typeof raw.url === 'string' ? raw.url : '',
+        key: raw.key,
+        status: 'uploaded',
+        ...(typeof raw.bytes === 'number' && raw.bytes > 0
+            ? {bytes: raw.bytes}
+            : {}),
     };
 }
 
@@ -1109,6 +1209,7 @@ export function seedFromCustomizations(
         entryNotes: {},
         propertySelections: {},
         propertySelectionSummaries: {},
+        customColorReferences: {},
     };
 }
 

@@ -20,6 +20,8 @@ import type {PropertyFieldDescriptor} from '@/lib/catalog/map-detail-to-property
 import {loadOptionPropertyFields} from '@/lib/catalog/load-option-property-fields';
 import type {
     BuilderOption,
+    CustomColorReferenceImage,
+    CustomColorReferencesByOption,
     PropertySelectionSummaryItem,
 } from '@/lib/customization-builder';
 
@@ -35,6 +37,13 @@ type OptionDetailProps = {
     ) => void;
     /** Optional slot under title/description (e.g. Finishing “Achieved by”). */
     afterDescription?: ReactNode;
+    /** Request draft id for Custom Color reference uploads. */
+    draftId?: string;
+    customColorReferences?: CustomColorReferencesByOption;
+    onCustomColorReferenceChange?: (
+        propertyKey: string,
+        image: CustomColorReferenceImage | null,
+    ) => void;
 };
 
 function DetailFade({children}: {children: ReactNode}) {
@@ -72,6 +81,9 @@ export function OptionDetail({
     propertySelections,
     onPropertySelectionsChange,
     afterDescription,
+    draftId,
+    customColorReferences,
+    onCustomColorReferenceChange,
 }: OptionDetailProps) {
     const [fields, setFields] = useState<PropertyFieldDescriptor[]>([]);
     const [loadingFields, setLoadingFields] = useState(false);
@@ -184,6 +196,12 @@ export function OptionDetail({
                             consultationDefault
                             consultationLabel={
                                 CUSTOMIZATION_BUILDER_COPY.skipNotSure
+                            }
+                            draftId={draftId}
+                            optionId={option.id}
+                            customColorReferences={customColorReferences}
+                            onCustomColorReferenceChange={
+                                onCustomColorReferenceChange
                             }
                             onChange={(propertyKey, ids) => {
                                 emitSelections(

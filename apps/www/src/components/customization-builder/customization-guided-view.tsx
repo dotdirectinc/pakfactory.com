@@ -10,6 +10,7 @@ import {
     type BuilderOption,
     type BuilderStep,
     type BuilderStepKey,
+    type CustomColorReferenceImage,
     type CustomizationBuilderState,
     type PrintSideValue,
     type PropertySelectionSummaryItem,
@@ -45,6 +46,12 @@ type CustomizationGuidedViewProps = {
     ) => void;
     onPrintedSideChange: (slug: string, next: PrintSideValue) => void;
     onPrintingConsultation: () => void;
+    draftId?: string;
+    onCustomColorReferenceChange?: (
+        optionId: string,
+        propertyKey: string,
+        image: CustomColorReferenceImage | null,
+    ) => void;
     onBack: () => void;
     onNext: () => void;
     onSkip: () => void;
@@ -73,6 +80,8 @@ export function CustomizationGuidedView({
     onPropertySelectionsChange,
     onPrintedSideChange,
     onPrintingConsultation,
+    draftId,
+    onCustomColorReferenceChange,
     onBack,
     onNext,
     onSkip,
@@ -119,6 +128,8 @@ export function CustomizationGuidedView({
             onPropertySelectionsChange={onPropertySelectionsChange}
             onPrintedSideChange={onPrintedSideChange}
             onPrintingConsultation={onPrintingConsultation}
+            draftId={draftId}
+            onCustomColorReferenceChange={onCustomColorReferenceChange}
             footer={
                 <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-3">
                     <Button
