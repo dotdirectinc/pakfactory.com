@@ -4,7 +4,7 @@ import { getSpecMap } from "@/lib/spec/spec-map";
 import { SpecMap } from "@/components/spec/spec-map";
 import { ADMIN_SPEC_MAP_COPY as COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
 import { parseMapFocus } from "@/lib/spec/map-href";
-import { PageLead } from "@/components/ui/page-lead";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata = { title: "Spec Map" };
 
@@ -17,13 +17,11 @@ export default async function SpecMapPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="flex h-[calc(100dvh-7rem)] w-full flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">{COPY.title}</h1>
-          {res.ok && <Badge variant="secondary">{ADMIN_SPEC_RULES_COPY.datasetNote(res.data.dataset)}</Badge>}
-        </div>
-        <PageLead>{COPY.lead}</PageLead>
-      </div>
+      <PageHeader
+        title={COPY.title}
+        lead={COPY.lead}
+        badge={res.ok ? <Badge variant="secondary">{ADMIN_SPEC_RULES_COPY.datasetNote(res.data.dataset)}</Badge> : null}
+      />
       {res.ok ? (
         <SpecMap data={res.data} focus={focus} />
       ) : (

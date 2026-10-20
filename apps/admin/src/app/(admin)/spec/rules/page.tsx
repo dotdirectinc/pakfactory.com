@@ -3,7 +3,7 @@ import { getCurrentRules } from "@/lib/spec/current-rules";
 import { SpecRulesView } from "@/components/spec/spec-rules-view";
 import { SpecFutureAction } from "@/components/spec/spec-future-action";
 import { ADMIN_SPEC_FUTURE_COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
-import { PageLead } from "@/components/ui/page-lead";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata = { title: "Spec rules" };
 
@@ -14,15 +14,12 @@ export default async function SpecRulesPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            {ADMIN_SPEC_RULES_COPY.title}
-          </h1>
-          <PageLead className="max-w-2xl">{ADMIN_SPEC_RULES_COPY.lead}</PageLead>
-        </div>
-        <SpecFutureAction label={ADMIN_SPEC_FUTURE_COPY.addRule} />
-      </div>
+      <PageHeader
+        title={ADMIN_SPEC_RULES_COPY.title}
+        lead={ADMIN_SPEC_RULES_COPY.lead}
+        leadClassName="max-w-2xl"
+        aside={<SpecFutureAction label={ADMIN_SPEC_FUTURE_COPY.addRule} />}
+      />
 
       {!res.ok ? (
         <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">
