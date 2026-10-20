@@ -8,6 +8,7 @@ import {
   ADMIN_SPEC_PRODUCTS_COPY as COPY,
   ADMIN_SPEC_RULES_COPY as RULES_COPY,
 } from "@/lib/copy/spec";
+import { PageLead } from "@/components/ui/page-lead";
 
 export const metadata = { title: "Customization rules" };
 
@@ -46,7 +47,7 @@ export default async function SpecCustomizationPage({ params }: { params: Promis
           </a>
         )}
       </div>
-      <p className="max-w-2xl text-sm text-muted-foreground">{COPY.customizationLead}</p>
+      <PageLead className="max-w-2xl">{COPY.customizationLead}</PageLead>
       <div className="flex flex-wrap gap-2">
         <Badge variant="secondary">{RULES_COPY.optionStatus[view.status]}</Badge>
         <Badge variant="secondary">{COPY.productsOffering(view.offering.length)}</Badge>
