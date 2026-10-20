@@ -364,6 +364,17 @@ export const ADMIN_SPEC_RECORD_COPY = {
     `From Sanity (${dataset}). Edit its offers on the map (Edit rules above); its compatible options, type settings and the rest of its rules on its full page; everything else in Studio.`,
   images: (n: number) => `Images (${n})`,
   fields: "All fields",
+  /** Changes Sync Changes applied to this record with no frame (PROD-3119). */
+  syncChangesTitle: "Changes from Sanity",
+  syncChangesLead: "Applied by Sync Changes with no frame — Sanity owns these fields. Newest first.",
+  syncChangesNone: "No changes from Sanity applied yet.",
+  syncChangesNoRegistry: "Not in the registry yet — changes from Sanity show here once it has a registry id.",
+  syncChangesUnreachable: "Its changes from Sanity could not be loaded.",
+  loadingSyncChanges: "Loading changes from Sanity…",
+  added: (v: string) => `Added ${v}`,
+  removed: (v: string) => `Removed ${v}`,
+  automaticRun: "Automatic sync",
+  manualRun: (who: string | null) => `Sync by ${who ?? "someone"}`,
   /** Why some names link and others do not (Richard asked, 2026-10-14). */
   legend:
     "Underlined names open their page in the Spec catalog. Grey names are content with no Spec page (properties, glossary terms, case studies…) — edit them in Studio.",
@@ -431,6 +442,23 @@ export const ADMIN_SPEC_SYNC_HISTORY_COPY = {
   },
   structureDriftHint:
     "Every record whose parents (line, styles, base, solutions, type, category) differ between the registry and Sanity, proposed or not. 0 means they match.",
+  /** Content Sanity owns (PROD-3117 / PROD-3118). */
+  contentMatch: "Content: the registry matches Sanity",
+  contentDrift: (total: number, byKind: Record<string, number>) => {
+    const parts = Object.entries(byKind).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${k}`);
+    return `Content: ${total} ${total === 1 ? "difference" : "differences"} when the sync read it${parts.length ? ` (${parts.join(" · ")})` : ""}`;
+  },
+  contentDriftHint:
+    "Names, status, property values, labels, facts, slugs and solution types where the registry differed from Sanity when this sync read them. The sync applies them itself; an inspiration product that differs from its base is only reported.",
+  applied: (n: number) => `${n} ${n === 1 ? "change" : "changes"} from Sanity applied automatically`,
+  appliedHint: "Sanity owns names, status and content: the sync applies them itself, with no frame. Each one is in the registry's audit trail.",
+  appliedFailed: (n: number) => `${n} could not be applied — the next sync tries again`,
+  appliedSkipped: (why: string) => `Nothing applied: ${why}`,
+  showApplied: "Show the changes",
+  hideApplied: "Hide",
+  loadingApplied: "Loading the changes…",
+  appliedUnreachable: "The changes could not be loaded.",
+  appliedMore: (shown: number, total: number) => `Showing ${shown} of ${total}.`,
 } as const;
 
 /** Sanity-bound items in a frame (PROD-2751): before → Notion, and how the approved write went. */

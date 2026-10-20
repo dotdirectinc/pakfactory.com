@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -5,6 +6,11 @@ import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { getCatalogRecord } from "@/lib/spec/catalog-record";
 import { isTableKey, levelOf } from "@/lib/spec/catalog-table-model";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
+import { SectionSkeleton } from "@/components/ui/page-skeleton";
+import { listRecordSyncChanges } from "@/lib/spec/registry-api";
+import { typeidToUuid } from "@/lib/spec/typeid";
+import { fieldChanges } from "@/lib/spec/sync-applied";
+import { LocalTime } from "@pakfactory/ui/components/local-time";
 import { ADMIN_SPEC_RECORD_COPY as COPY } from "@/lib/copy/spec";
 
 export const metadata = { title: "Catalog record" };
@@ -12,7 +18,8 @@ export const metadata = { title: "Catalog record" };
 /**
  * A catalog record (2026-10-08, Richard): every record at every level and status has a page — its
  * images, registry identity, the records above it (as links in its fields) and below it, and every
- * field. Standard products and active options also link to their rules view.
+ * field. Standard products and active options also link to their rules view. Below it, the changes
+ * Sync Changes applied to it from Sanity (PROD-3119), loaded on their own so the record is not held up.
  */
 export default async function SpecCatalogRecordPage({ params }: { params: Promise<{ table: string; id: string }> }) {
   const { table, id } = await params;
@@ -38,8 +45,44 @@ export default async function SpecCatalogRecordPage({ params }: { params: Promis
           {COPY.unreachable} ({res.error})
         </p>
       ) : (
-        <SpecRecordView record={res.data!} />
+        <>
+          <SpecRecordView record={res.data!} />
+          <section className="flex flex-col gap-2">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-base font-semibold text-foreground">{COPY.syncChangesTitle}</h2>
+              <p className="text-sm text-muted-foreground">{COPY.syncChangesLead}</p>
+            </div>
+            <Suspense fallback={<SectionSkeleton rows={3} label={COPY.loadingSyncChanges} />}>
+              <SyncChanges registryId={typeidToUuid(res.data!.registry?.entityId)?.uuid ?? null} />
+            </Suspense>
+          </section>
+        </>
       )}
     </div>
+  );
+}
+
+/** What Sync Changes applied to this record with no frame, newest first, each with its run. */
+async function SyncChanges({ registryId }: { registryId: string | null }) {
+  if (!registryId) return <p className="text-sm text-muted-foreground">{COPY.syncChangesNoRegistry}</p>;
+  const res = await listRecordSyncChanges(registryId);
+  if (!res.ok) return <p role="alert" className="text-sm text-destructive">{COPY.syncChangesUnreachable} ({res.error})</p>;
+  if (res.data.length === 0) return <p className="text-sm text-muted-foreground">{COPY.syncChangesNone}</p>;
+  return (
+    <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
+      {res.data.map((c, n) => {
+        const what = c.change === "added" ? [COPY.added(c.property_value ?? "")]
+          : c.change === "removed" ? [COPY.removed(c.property_value ?? "")]
+          : fieldChanges(c.before, c.after);
+        return (
+          <li key={`${c.run.id}-${n}`} className="flex flex-col gap-0.5 px-3 py-2 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+            <span className="text-foreground">{what.join(" · ") || "—"}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {c.run.trigger === "automatic" ? COPY.automaticRun : COPY.manualRun(c.run.by)} · <LocalTime iso={c.at} preset="dateTime" />
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
