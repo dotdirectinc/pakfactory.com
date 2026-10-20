@@ -452,9 +452,11 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   ${PRODUCT_EFFECTIVE_STATUS},
   moq,
   ${FEATURED_IMAGE_FROM_CATALOG},
-  "productLine": *[
-    _id == coalesce(^.productLine._ref, ^.basedOn->productLine._ref) &&
-    ${LINE_STYLE_LISTED}
+  // Dereference, then filter — never \`*[_id == coalesce(^…)]\`: with an expression
+  // instead of a literal id Sanity scans the whole dataset once per product
+  // (~10 s per lookup on 1,243 products; 30 s for this query). Same rows, 1–1.5 s.
+  "productLine": [coalesce(productLine, basedOn->productLine)->][
+    defined(_id) && ${LINE_STYLE_LISTED}
   ][0]{
     _id,
     title,
@@ -464,9 +466,8 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
     ${LINE_CARD_IMAGE}
   },
   // Primary (canonical) — card display. Membership uses productStyles (PROD-2843).
-  "productStyle": *[
-    _id == coalesce(^.productStyle[0]._ref, ^.basedOn->productStyle[0]._ref) &&
-    ${LINE_STYLE_LISTED}
+  "productStyle": [coalesce(productStyle[0], basedOn->productStyle[0])->][
+    defined(_id) && ${LINE_STYLE_LISTED}
   ][0]${STYLE_LIBRARY_REF_PROJ},
   // Every listed style in Sanity order — catalog facet / style-page membership.
   // Project then filter: filter-on-deref (arr[]->[pred]) drops rows to null in
