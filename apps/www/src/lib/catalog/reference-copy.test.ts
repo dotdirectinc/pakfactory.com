@@ -38,6 +38,13 @@ describe('getLearnFirstSectionCopy (PROD-3112)', () => {
         assert.equal(copy.showcase.eyebrow, 'Get inspired');
         assert.equal(copy.showcase.title, 'See it in action');
         assert.match(copy.showcase.description, /Color Chipboard/);
+        assert.equal(copy.overview.eyebrow, 'Overview');
+        assert.equal(
+            copy.overview.title,
+            'Get to know Color Chipboard (Pure Color Core)',
+        );
+        assert.equal(copy.overview.navLabel, 'Overview');
+        assert.equal(copy.specsLabel, 'Key properties');
     });
 
     it('uses finishes peer noun for finishing compare description', () => {

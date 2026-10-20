@@ -3,7 +3,9 @@ import {describe, it} from 'node:test';
 import {
     buildCompareMatrix,
     buildReferenceSpecRows,
+    buildSustainabilitySpecRows,
     COMPARE_EMPTY_CELL,
+    specRowValues,
 } from './compare-matrix';
 import type {CustomizationDetail} from './types';
 
@@ -58,6 +60,113 @@ describe('buildReferenceSpecRows', () => {
         assert.equal(rows.length, 1);
         assert.equal(rows[0]?.label, 'Fiber Source');
         assert.equal(rows[0]?.value, 'Virgin fibre');
+    });
+});
+
+describe('buildSustainabilitySpecRows (PROD-3120)', () => {
+    const coating = detail({
+        id: 'aq',
+        title: 'AQ Coating (Aqueous)',
+        slug: 'aq-coating-aqueous',
+        categoryValue: 'finishing',
+        declaredProperties: [
+            {
+                usage: 'stated',
+                propertySlug: 'sustainability',
+                propertyTitle: 'Sustainability',
+            },
+            {
+                usage: 'stated',
+                propertySlug: 'durability',
+                propertyTitle: 'Durability',
+            },
+            {
+                usage: 'stated',
+                propertySlug: 'material-source',
+                propertyTitle: 'Material Source',
+                showOnDetailPage: false,
+            },
+        ],
+        properties: [
+            {
+                id: 's1',
+                title: 'Low VOC',
+                slug: 'low-voc',
+                propertySlug: 'sustainability',
+                propertyTitle: 'Sustainability',
+                facts: [{label: 'x', display: 'Low VOC Emissions'}],
+            },
+            {
+                id: 's2',
+                title: 'Recycling-Friendly',
+                slug: 'recycling-friendly',
+                propertySlug: 'sustainability',
+                propertyTitle: 'Sustainability',
+                facts: [{label: 'x', display: 'Recycling-Friendly'}],
+            },
+            {
+                id: 'd1',
+                title: 'High',
+                slug: 'high',
+                propertySlug: 'durability',
+                propertyTitle: 'Durability',
+                facts: [{label: 'x', display: 'High'}],
+            },
+            {
+                id: 'src',
+                title: 'Virgin Fiber',
+                slug: 'virgin-fiber',
+                propertySlug: 'material-source',
+                facts: [],
+            },
+        ],
+    });
+
+    it('keeps sustainability stated rows and drops other stated rows', () => {
+        const rows = buildSustainabilitySpecRows(coating);
+        assert.deepEqual(
+            rows.map((r) => r.label),
+            ['Sustainability'],
+        );
+        assert.equal(
+            rows[0]?.value,
+            'Low VOC Emissions · Recycling-Friendly',
+        );
+    });
+
+    it('splits joined sustainability values for the hero icons', () => {
+        const rows = buildSustainabilitySpecRows(coating);
+        assert.deepEqual(specRowValues(rows[0]!), [
+            'Low VOC Emissions',
+            'Recycling-Friendly',
+        ]);
+    });
+
+    it('omits hidden stated sustainability', () => {
+        const hidden = detail({
+            id: 'hidden',
+            title: 'Hidden',
+            slug: 'hidden',
+            categoryValue: 'finishing',
+            declaredProperties: [
+                {
+                    usage: 'stated',
+                    propertySlug: 'sustainability',
+                    propertyTitle: 'Sustainability',
+                    showOnDetailPage: false,
+                },
+            ],
+            properties: [
+                {
+                    id: 's',
+                    title: 'Recyclable',
+                    slug: 'recyclable',
+                    propertySlug: 'sustainability',
+                    facts: [],
+                },
+            ],
+        });
+        assert.deepEqual(buildSustainabilitySpecRows(hidden), []);
     });
 });
 

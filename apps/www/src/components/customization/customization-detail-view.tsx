@@ -108,7 +108,10 @@ function pageSectionNavItems(
                 return [
                     {
                         id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
-                        label: section.heading?.trim() || 'Benefits',
+                        label:
+                            section.heading?.trim() ||
+                            learnCopy?.overview.navLabel ||
+                            'Benefits',
                     },
                 ];
             case 'productsRow': {
@@ -309,7 +312,27 @@ async function CustomizationDetailBody({
     const showStickyNav = page?.showStickyNav !== false;
 
     if (useTemplate && pageSections) {
-        const navItems = pageSectionNavItems(pageSections, detail, learnFirst);
+        const hasBenefitsSpecs = pageSections.some(
+            (s) => s._type === 'customizationBenefitsSpecs',
+        );
+        const injectBenefitsSpecs =
+            learnFirst &&
+            !hasBenefitsSpecs &&
+            (hasReferenceOverview(detail) || hasReferenceSpecs(detail));
+        const learnCopy = learnFirst
+            ? getLearnFirstSectionCopy(detail)
+            : null;
+        const navItems = [
+            ...(injectBenefitsSpecs
+                ? [
+                      {
+                          id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
+                          label: learnCopy?.overview.navLabel || 'Overview',
+                      },
+                  ]
+                : []),
+            ...pageSectionNavItems(pageSections, detail, learnFirst),
+        ];
         const sectionsWithFaqs = applyFaqHostInherit(pageSections, detail);
         const overviewSections = sectionsWithFaqs.filter((s) =>
             OVERVIEW_SECTION_TYPES.has(s._type),
@@ -317,6 +340,8 @@ async function CustomizationDetailBody({
         const bandSections = sectionsWithFaqs.filter(
             (s) => !OVERVIEW_SECTION_TYPES.has(s._type),
         );
+        const categoryLabel = detail.categoryLabel || detail.categoryValue;
+        const reference = getReferenceCopy(detail.categoryValue, categoryLabel);
 
         return (
             <CustomizationDetailHostProvider
@@ -330,6 +355,13 @@ async function CustomizationDetailBody({
                 <SectionRenderer sections={overviewSections} />
                 {showStickyNav && navItems.length > 0 ? (
                     <AnchorNav items={navItems} />
+                ) : null}
+                {injectBenefitsSpecs ? (
+                    <CustomizationReferenceBenefitsSpecs
+                        detail={detail}
+                        compareLabel={reference.compareLabel}
+                        copyVariant="learnFirst"
+                    />
                 ) : null}
                 <SectionRenderer sections={bandSections} />
             </CustomizationDetailHostProvider>

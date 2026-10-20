@@ -150,7 +150,7 @@ Breadcrumb stays route-owned. Until the Default template has CDP sections seeded
 ### Human Studio setup (agents do not write documents)
 
 1. **Default** (`customizationDetailPage`): Overview (standard) → Benefits & specs → … as needed. Publish.
-2. **Learn-first** (`customizationDetailPageLearnFirst`): Overview (learn-first) first; omit Benefits & specs (Why use it lives in the overview). Publish.
+2. **Learn-first** (`customizationDetailPageLearnFirst`): Overview (learn-first) first, then Benefits & specs (Get to know + Key properties — why copy lives in this band, not the hero). Publish. If the template omits Benefits & specs, www injects that band so why/specs still render.
 3. Point options at the desired template, or leave empty for Default.
 4. **Seed remaining bands** (Works with → Compare → Showcase) onto both template docs — dry-run then write:
 

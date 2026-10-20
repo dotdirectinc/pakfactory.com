@@ -93,6 +93,8 @@ export function getLearnFirstSectionCopy(
         'title' | 'categoryValue' | 'categoryLabel'
     >,
 ): {
+    overview: LearnFirstSectionCopy;
+    specsLabel: string;
     compare: LearnFirstSectionCopy;
     worksWith: LearnFirstSectionCopy;
     showcase: LearnFirstSectionCopy;
@@ -105,6 +107,13 @@ export function getLearnFirstSectionCopy(
         'Apply carries your selection straight into the product.';
 
     return {
+        overview: {
+            eyebrow: 'Overview',
+            title: `Get to know ${title}`,
+            description: '',
+            navLabel: 'Overview',
+        },
+        specsLabel: 'Key properties',
         compare: {
             eyebrow: `Same category · ${categoryLabel}`,
             title: `Compare with other ${categoryLabel} options`,

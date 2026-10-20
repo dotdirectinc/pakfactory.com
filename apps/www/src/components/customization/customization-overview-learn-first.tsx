@@ -5,12 +5,16 @@ import {
     PortableText,
     type PortableTextComponents,
 } from '@portabletext/react';
-import {Bookmark, Download} from 'lucide-react';
+import {Bookmark, Download, Leaf} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@pakfactory/ui/components/tooltip';
 import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
 import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
-import {hasReferenceOverview} from '@/components/customization/customization-reference-overview';
 import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
 import {useCustomizationDetailHost} from '@/components/customization/customization-detail-host';
 import {
@@ -33,7 +37,10 @@ import {OverviewSection} from '@/components/ui/overview-section';
 import {formatSectionEyebrow} from '@/components/ui/section-heading';
 import {StatusBadge, StatusNotice} from '@/components/ui/status-badge';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
-import {buildReferenceSpecRows} from '@/lib/catalog/compare-matrix';
+import {
+    buildSustainabilitySpecRows,
+    specRowValues,
+} from '@/lib/catalog/compare-matrix';
 import {
     mapDetailToPropertyFields,
     type PropertyFieldDescriptor,
@@ -111,18 +118,30 @@ function titlesForIds(
 }
 
 /**
- * Learn-first CDP overview — educate + properties + standard Your selection CTA
- * (PROD-3112).
+ * Learn-first CDP overview — type eyebrow, sustainability + applicable-on,
+ * choose-your-specs, Your selection CTA (PROD-3112 · PROD-3120).
  */
 export function CustomizationOverviewLearnFirst({
     paddingBlock = 'md',
     borderTop = false,
     borderBottom = true,
 }: CustomizationOverviewChromeProps = {}) {
-    const {detail} = useCustomizationDetailHost();
-    const categoryLabel = detail.categoryLabel || detail.categoryValue;
+    const {detail, worksWith, setWorksWithLine} = useCustomizationDetailHost();
+    const typeEyebrow =
+        detail.typeTitle?.trim() ||
+        detail.categoryLabel ||
+        detail.categoryValue;
     const fields = useMemo(() => mapDetailToPropertyFields(detail), [detail]);
-    const factRows = useMemo(() => buildReferenceSpecRows(detail), [detail]);
+    const sustainabilityValues = useMemo(
+        () =>
+            buildSustainabilitySpecRows(detail).flatMap((row) =>
+                specRowValues(row),
+            ),
+        [detail],
+    );
+    const productLines = (
+        worksWith.lines.length > 0 ? worksWith.lines : detail.productLines
+    ).filter((line) => line.title?.trim());
     const [selection, setSelection] = useState<PropertySelectionMap>(() =>
         initialPropertySelection(fields),
     );
@@ -140,9 +159,11 @@ export function CustomizationOverviewLearnFirst({
         stubBookmarkAction(event);
     };
 
-    const showWhy = hasReferenceOverview(detail);
-    const showFactProperties = factRows.length > 0;
     const showSelectable = fields.length > 0;
+    const showSustainability = sustainabilityValues.length > 0;
+    const showApplicableOn = productLines.length > 0;
+    const showFactsWell =
+        showSustainability || showApplicableOn || showSelectable;
     const lifecycle = detail.status;
     const showOrderCtas = !lifecycle || lifecycle === 'active';
     const specSheetUrl = detail.specSheetUrl?.trim() || null;
@@ -171,9 +192,7 @@ export function CustomizationOverviewLearnFirst({
                         <div>
                             <div className="flex items-center justify-between gap-4">
                                 <p className="min-w-0 flex-1 truncate text-[11px] font-semibold tracking-[0.08em] text-primary uppercase">
-                                    {formatSectionEyebrow(
-                                        `${categoryLabel} — A customization option`,
-                                    )}
+                                    {formatSectionEyebrow(typeEyebrow)}
                                 </p>
                                 <StatusBadge
                                     status={detail.status}
@@ -193,63 +212,85 @@ export function CustomizationOverviewLearnFirst({
                             ) : null}
                         </div>
 
-                        {showWhy ? (
-                            <div className="flex flex-col gap-4">
-                                <h2 className="text-base font-semibold text-foreground">
-                                    Why use it
-                                </h2>
-                                {detail.benefitsBody?.length ? (
-                                    <div className="text-base">
-                                        <PortableText
-                                            value={detail.benefitsBody}
-                                            components={proseComponents}
-                                        />
-                                    </div>
-                                ) : null}
-                            </div>
-                        ) : null}
-
-                        {showFactProperties || showSelectable ? (
-                            <OverviewSection title="Properties">
+                        {showFactsWell ? (
+                            <OverviewSection>
                                 <div className="flex flex-col gap-6">
-                                    {showFactProperties ? (
-                                        <div className="flex flex-col gap-6">
-                                            {factRows.map((row) => {
-                                                const chips = row.value
-                                                    .split(' · ')
-                                                    .map((part) => part.trim())
-                                                    .filter(Boolean);
-                                                return (
-                                                    <div key={row.label}>
-                                                        <p className="mb-1.5 px-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                                            {row.label}
-                                                        </p>
-                                                        {chips.length > 0 ? (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {chips.map(
-                                                                    (chip) => (
-                                                                        <span
-                                                                            key={`${row.label}-${chip}`}
-                                                                            className="rounded-full border border-border bg-background px-3 py-1 text-sm text-foreground"
-                                                                        >
+                                    {showSustainability ? (
+                                        <div>
+                                            <p className="mb-2 px-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                                Sustainability
+                                            </p>
+                                            <ul className="flex flex-wrap gap-2">
+                                                {sustainabilityValues.map(
+                                                    (value) => (
+                                                        <li key={value}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <button
+                                                                        type="button"
+                                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                                    >
+                                                                        <Icon
+                                                                            icon={
+                                                                                Leaf
+                                                                            }
+                                                                            size="sm"
+                                                                        />
+                                                                        <span className="sr-only">
                                                                             {
-                                                                                chip
+                                                                                value
                                                                             }
                                                                         </span>
-                                                                    ),
-                                                                )}
-                                                            </div>
-                                                        ) : null}
-                                                    </div>
-                                                );
-                                            })}
+                                                                    </button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent
+                                                                    side="bottom"
+                                                                    sideOffset={
+                                                                        8
+                                                                    }
+                                                                    variant="pill"
+                                                                >
+                                                                    {value}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </li>
+                                                    ),
+                                                )}
+                                            </ul>
+                                        </div>
+                                    ) : null}
+
+                                    {showApplicableOn ? (
+                                        <div>
+                                            <p className="mb-2 px-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                                Applicable on
+                                            </p>
+                                            <ul className="flex flex-wrap gap-2">
+                                                {productLines.map((line) => (
+                                                    <li key={line.slug}>
+                                                        <InPageAnchorLink
+                                                            href={`#${CUSTOMIZATION_REFERENCE_WORKS_WITH_ID}`}
+                                                            onClick={() =>
+                                                                setWorksWithLine(
+                                                                    line.slug,
+                                                                )
+                                                            }
+                                                            className="inline-block rounded-full border border-border bg-background px-3 py-1 text-sm text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                        >
+                                                            {line.title}
+                                                        </InPageAnchorLink>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
                                     ) : null}
 
                                     {showSelectable ? (
                                         <div>
-                                            <p className="mb-1.5 px-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                                Configurable
+                                            <p className="mb-2 px-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                                Choose your specs
                                             </p>
                                             <div className="rounded-xl border border-border bg-background p-4">
                                                 <OptionPropertyControllers
