@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState, useTransition} from 'react';
 import {useRouter} from 'next/navigation';
 import {
     BookOpen,
@@ -336,8 +336,27 @@ function SiteSearchBody({
 
     useEffect(() => setActiveIndex(-1), [normalized, rail]);
 
+    // Opening a result: the dialog stays up with the item marked "Opening…" until
+    // the new page has rendered, then closes — instead of closing at once and
+    // leaving the old page on screen while a cold page renders.
+    const [navigating, startNavigation] = useTransition();
+    const [pendingId, setPendingId] = useState<string | null>(null);
+    useEffect(() => {
+        if (pendingId && !navigating) onClose();
+    }, [pendingId, navigating, onClose]);
+
+    /** Warm the page while it's highlighted or hovered (production prefetch; dev ignores it). */
+    const prefetched = useRef(new Set<string>());
+    function prefetch(item: SearchNavItem | undefined) {
+        const href = item?.href;
+        if (!href || !href.startsWith('/') || prefetched.current.has(href)) return;
+        prefetched.current.add(href);
+        router.prefetch(href);
+    }
+
     useEffect(() => {
         if (activeIndex < 0) return;
+        prefetch(flat[activeIndex]);
         scrollRef.current
             ?.querySelector(`[data-search-index="${activeIndex}"]`)
             ?.scrollIntoView({block: 'nearest'});
@@ -353,9 +372,15 @@ function SiteSearchBody({
         if (!item.href) return;
         if (item.track) reportClick(item.track);
         if (hasQuery) push(normalized);
-        onClose();
-        if (/^https?:\/\//.test(item.href)) window.location.assign(item.href);
-        else router.push(item.href);
+        const href = item.href;
+        if (/^https?:\/\//.test(href)) {
+            // Blog guides live on another origin: a full page load.
+            onClose();
+            window.location.assign(href);
+            return;
+        }
+        setPendingId(item.id);
+        startNavigation(() => router.push(href));
     }
 
     function onInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -382,8 +407,10 @@ function SiteSearchBody({
                 section={section}
                 startIndex={start}
                 activeIndex={activeIndex}
+                pendingId={pendingId}
                 dark={dark}
                 onSelect={select}
+                onPrefetch={prefetch}
             />
         );
         start += section.items.length;
@@ -503,7 +530,19 @@ function SiteSearchBody({
 
                 <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
                     <div className="space-y-8 p-4 pb-10">
-                        <StatusLine state={current} query={normalized} dark={dark} />
+                        {pendingId ? (
+                            <p
+                                className={cn(
+                                    'text-sm',
+                                    dark ? 'text-white/50' : 'text-muted-foreground',
+                                )}
+                                role="status"
+                            >
+                                Opening…
+                            </p>
+                        ) : (
+                            <StatusLine state={current} query={normalized} dark={dark} />
+                        )}
                         {hasQuery && (current.status === 'loading' || current.status === 'idle') ? (
                             <p
                                 className={cn(

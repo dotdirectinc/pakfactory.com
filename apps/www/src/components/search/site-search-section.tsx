@@ -47,8 +47,12 @@ type SectionProps = {
     section: SearchSectionModel;
     startIndex: number;
     activeIndex: number;
+    /** The item being opened: shows "Opening…" until the new page renders. */
+    pendingId?: string | null;
     dark: boolean;
     onSelect: (item: SearchNavItem) => void;
+    /** Hover / focus: warm the page before the click. */
+    onPrefetch?: (item: SearchNavItem) => void;
 };
 
 /** POC radii (Tailwind lg/xl/2xl at --radius 16px). */
@@ -67,7 +71,13 @@ function Thumb({
 }) {
     if (src && isSanityCdnUrl(src)) {
         return (
-            <SanityImage src={src} alt={alt ?? ''} fill sizes={sizes} className="bg-[var(--product-image-bg)] object-cover" />
+            <SanityImage
+                src={src}
+                alt={alt ?? ''}
+                fill
+                sizes={sizes}
+                className="bg-[var(--product-image-bg)] object-cover"
+            />
         );
     }
     return (
@@ -85,7 +95,7 @@ function Thumb({
 /** Keyboard highlight (not in the POC, which has no arrow-key navigation). */
 const active = (dark: boolean) =>
     cn(
-        'outline-none data-[active=true]:ring-2 focus-visible:ring-2',
+        'outline-none data-[active=true]:ring-2 focus-visible:ring-2 disabled:cursor-wait data-[pending]:animate-pulse data-[pending]:ring-2',
         dark
             ? 'data-[active=true]:ring-white/50 focus-visible:ring-white/50'
             : 'data-[active=true]:ring-foreground/40 focus-visible:ring-foreground/40',
@@ -95,8 +105,10 @@ export function SiteSearchSection({
     section,
     startIndex,
     activeIndex,
+    pendingId,
     dark,
     onSelect,
+    onPrefetch,
 }: SectionProps) {
     const {variant, items} = section;
     if (!items.length) return null;
@@ -105,7 +117,12 @@ export function SiteSearchSection({
         type: 'button' as const,
         'data-active': isActive(i),
         'data-search-index': startIndex + i,
+        'data-pending': pendingId === item.id || undefined,
+        'aria-busy': pendingId === item.id || undefined,
+        disabled: Boolean(pendingId),
         onClick: () => onSelect(item),
+        onPointerEnter: () => onPrefetch?.(item),
+        onFocus: () => onPrefetch?.(item),
     });
 
     return (
