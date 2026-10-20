@@ -65,7 +65,10 @@ export function CustomizationOverviewStandard({
     borderBottom = true,
 }: CustomizationOverviewChromeProps = {}) {
     const {detail} = useCustomizationDetailHost();
-    const categoryLabel = detail.categoryLabel || detail.categoryValue;
+    const typeEyebrow =
+        detail.typeTitle?.trim() ||
+        detail.categoryLabel ||
+        detail.categoryValue;
 
     return (
         <PageDielineSection
@@ -87,7 +90,7 @@ export function CustomizationOverviewStandard({
                 <div>
                     <div className="flex items-center justify-between gap-4">
                         <p className="min-w-0 flex-1 truncate text-[11px] font-semibold tracking-[0.08em] text-primary uppercase">
-                            {formatSectionEyebrow(categoryLabel)}
+                            {formatSectionEyebrow(typeEyebrow)}
                         </p>
                         <StatusBadge
                             status={detail.status}

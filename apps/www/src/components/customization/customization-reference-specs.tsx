@@ -1,13 +1,15 @@
-import Link from 'next/link';
 import {ChevronDown} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
+import type {CustomizationReferenceCopyVariant} from '@/components/customization/customization-reference-overview';
 import {Icon} from '@/components/ui/icon';
 import {SectionHeading} from '@/components/ui/section-heading';
 import {
     buildReferenceSpecRows,
     CUSTOMIZATION_COMPARISON_ID,
 } from '@/lib/catalog/compare-matrix';
+import {getLearnFirstSectionCopy} from '@/lib/catalog/reference-copy';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 
 export const CUSTOMIZATION_REFERENCE_SPECS_ID =
@@ -25,6 +27,8 @@ type CustomizationReferenceSpecsContentProps = {
      * `label` matches the benefits “why” title — Specs still belongs to Benefits.
      */
     heading?: 'section' | 'label';
+    /** Learn-first uses Key properties; standard keeps Specs & performance. */
+    copyVariant?: CustomizationReferenceCopyVariant;
 };
 
 /**
@@ -35,11 +39,16 @@ export function CustomizationReferenceSpecsContent({
     compareLabel,
     className,
     heading = 'label',
+    copyVariant = 'standard',
 }: CustomizationReferenceSpecsContentProps) {
     const rows = buildReferenceSpecRows(detail);
     if (rows.length === 0) return null;
 
     const compareHref = `#${CUSTOMIZATION_COMPARISON_ID}`;
+    const specsTitle =
+        copyVariant === 'learnFirst'
+            ? getLearnFirstSectionCopy(detail).specsLabel
+            : 'Specs & performance';
 
     return (
         <div
@@ -48,12 +57,12 @@ export function CustomizationReferenceSpecsContent({
         >
             {heading === 'section' ? (
                 <SectionHeading
-                    title="Specs & performance"
+                    title={specsTitle}
                     className="[&>div]:md:max-w-none"
                 />
             ) : (
                 <h3 className="text-base font-semibold text-foreground sm:text-lg">
-                    Specs &amp; performance
+                    {specsTitle}
                 </h3>
             )}
 
@@ -84,10 +93,10 @@ export function CustomizationReferenceSpecsContent({
                     variant="link"
                     className="h-auto gap-2 px-0 has-[>svg]:px-0"
                 >
-                    <Link href={compareHref}>
+                    <InPageAnchorLink href={compareHref}>
                         {compareLabel}
                         <Icon icon={ChevronDown} size="sm" />
-                    </Link>
+                    </InPageAnchorLink>
                 </Button>
             </div>
         </div>

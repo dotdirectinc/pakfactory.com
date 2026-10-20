@@ -1,3 +1,4 @@
+import {isSustainabilityProperty} from '@/lib/catalog/customization-filter-taxonomy';
 import type {
     CustomizationDeclaredProperty,
     CustomizationDetail,
@@ -96,6 +97,34 @@ export function buildReferenceSpecRows(
         rows.push({label, value});
     }
     return rows;
+}
+
+/**
+ * Stated spec rows that are the Sustainability property (PROD-3120 hero strip).
+ * Reuses {@link buildReferenceSpecRows} so hidden stated rows stay out.
+ */
+export function buildSustainabilitySpecRows(
+    detail: CustomizationDetail,
+): ReferenceSpecRow[] {
+    return buildReferenceSpecRows(detail).filter((row) => {
+        const declared = detail.declaredProperties.find(
+            (d) =>
+                d.propertyTitle?.trim() === row.label ||
+                d.propertySlug === row.label,
+        );
+        return isSustainabilityProperty(
+            declared?.propertySlug,
+            declared?.propertyTitle ?? row.label,
+        );
+    });
+}
+
+/** Chip / icon labels for a joined spec cell (` · ` separator). */
+export function specRowValues(row: ReferenceSpecRow): string[] {
+    return row.value
+        .split(' · ')
+        .map((part) => part.trim())
+        .filter(Boolean);
 }
 
 function statedRowsByKey(

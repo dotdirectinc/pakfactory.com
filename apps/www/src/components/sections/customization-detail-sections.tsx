@@ -58,7 +58,7 @@ export function CustomizationBenefitsSpecsFromSanity(
 ) {
     const host = useHost();
     if (!host) return null;
-    const {detail} = host;
+    const {detail, isLearnFirstTemplate} = host;
     const categoryLabel = detail.categoryLabel || detail.categoryValue;
     const reference = getReferenceCopy(detail.categoryValue, categoryLabel);
     void section;
@@ -66,6 +66,7 @@ export function CustomizationBenefitsSpecsFromSanity(
         <CustomizationReferenceBenefitsSpecs
             detail={detail}
             compareLabel={reference.compareLabel}
+            copyVariant={isLearnFirstTemplate ? 'learnFirst' : 'standard'}
         />
     );
 }

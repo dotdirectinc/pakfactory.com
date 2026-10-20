@@ -120,23 +120,24 @@ export const customizationOverviewStandard = cdpSectionType({
   chrome: 'none',
 })
 
-/** Learn-first CDP hero — educate + why + properties + apply in one rail. */
+/** Learn-first CDP hero — type eyebrow, sustainability, applicable-on, specs, apply. */
 export const customizationOverviewLearnFirst = cdpSectionType({
   name: 'customizationOverviewLearnFirst',
   title: 'Customization overview (learn-first)',
   description:
-    'Gallery + learn-first rail (why use it, properties as facts, carry-forward value, Apply). ' +
-    'Host fills glossary, benefits, and properties from the option.',
+    'Gallery + learn-first rail (type eyebrow, sustainability, applicable-on product lines, choose-your-specs, Apply). ' +
+    'Host fills glossary and properties from the option. Pair with Benefits & specs for Get to know / Key properties.',
   icon: ComposeIcon,
   chrome: 'none',
 })
 
-/** Benefits + Specs band (use with standard overview; skip on learn-first). */
+/** Benefits + Specs band (standard + learn-first). */
 export const customizationBenefitsSpecs = cdpSectionType({
   name: 'customizationBenefitsSpecs',
   title: 'Customization benefits & specs',
   description:
-    'Benefits story + Specs & performance table. Host fills from the option’s benefits and stated properties.',
+    'Benefits story + Specs & performance table (Get to know + Key properties on learn-first). ' +
+    'Host fills from the option’s benefits and stated properties. Recommended on learn-first as well as Default.',
   icon: DocumentsIcon,
 })
 

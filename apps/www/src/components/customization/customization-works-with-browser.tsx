@@ -1,11 +1,12 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useMemo} from 'react';
 import {ChevronDown} from 'lucide-react';
 
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {useCustomizationDetailHost} from '@/components/customization/customization-detail-host';
 import {ProductCapabilityCard} from '@/components/product/product-capability-card';
 import type {
     WorksWithOptionRef,
@@ -65,10 +66,10 @@ export function CustomizationWorksWithBrowser({
         return slugs;
     }, [requestLines, option]);
 
-    const [activeLine, setActiveLine] = useState<string | null>(null);
+    const {worksWithLine, setWorksWithLine} = useCustomizationDetailHost();
     const selectedLine =
-        activeLine && lines.some((line) => line.slug === activeLine)
-            ? activeLine
+        worksWithLine && lines.some((line) => line.slug === worksWithLine)
+            ? worksWithLine
             : (lines[0]?.slug ?? null);
 
     const gridProducts = useMemo(() => {
@@ -117,7 +118,7 @@ export function CustomizationWorksWithBrowser({
                                 key={line.slug}
                                 label={line.title}
                                 selected={selectedLine === line.slug}
-                                onSelect={() => setActiveLine(line.slug)}
+                                onSelect={() => setWorksWithLine(line.slug)}
                                 mobile
                             />
                         ))}
@@ -131,7 +132,7 @@ export function CustomizationWorksWithBrowser({
                                 key={line.slug}
                                 label={line.title}
                                 selected={selectedLine === line.slug}
-                                onSelect={() => setActiveLine(line.slug)}
+                                onSelect={() => setWorksWithLine(line.slug)}
                             />
                         ))}
                     </nav>
