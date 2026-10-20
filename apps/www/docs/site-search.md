@@ -182,14 +182,28 @@ The header search icon and ⌘K / Ctrl+K open one dialog, after the POC (`pakfac
 
 * **Desktop (768 px and up):** a dark dialog (the `dark` scope over the site's own tokens) with a rail (Trending, Products, Solutions, Customizations, Guides, Resources), the input, chips, and sections. Products and solutions show as a grid, customizations as pills, guides and resources as cards.
 * **Mobile (under 768 px):** a light full-screen sheet with Cancel and no rail.
-* **Empty state** (no Algolia call): recent searches, then the POC's curated chips, the product-lines row from `/api/search/idle` (tapping a line searches for it, as in the POC), browse links per tab, and quick links.
+* **Empty state** (no Algolia call): recent searches, then the POC's curated chips, then each tab's **browse picks** from `/api/search/idle` (`lib/search/search-browse-data.ts`, rules in `search-browse-picks.ts`). The picks are rule-based for now; a follow-up swaps in the most-clicked item per slot once click data exists.
+
+  | Tab | Shows | Rule |
+  | --- | --- | --- |
+  | Trending | product-lines row, 4 products, 8 solutions, customization categories, 2 guides, 2 case studies, latest press release, quick links | a few of each tab |
+  | Products | product-lines row (tap = search, as in the POC), 8 products | the 8 lines with the most products → each line's first product with an image |
+  | Solutions | all solutions with a page, as pills (most have no image yet) | title order |
+  | Customizations | category pills → `/customizations?category=…`, then 8 options | first 2 options with a page per category |
+  | Guides | 4 latest blog posts | newest `publishedAt` |
+  | Resources | 4 latest case studies, latest press release, expertise stages | newest first |
+
+  Each tab ends with "Browse all" links. Everything is read with the `site_search` filter and projection, so links, images and visibility match search results (products with `allowIndex` off never show).
 * **Typing:** waits 250 ms, needs 2 characters, and sends the normalized query. Rail counts come from the unfiltered query; opening a tab runs the filtered query.
 * **Keyboard:** ↑/↓ move through every result in order, Enter opens it, Esc closes. Chips are not in the arrow order.
 * **States:** "Searching…", no results ("No results for "…"."), too many searches (429) and search unavailable. The last two keep the browse content visible.
 * **Recent searches:** localStorage `www-search-recents-v1`, 6 entries.
+* **Click tracking:** opening a search result posts `{queryID, objectID, position}` to `POST /api/search/click`, which sends an Algolia Insights `clickedObjectIDsAfterSearch` event ("Search result clicked", userToken = hashed IP). Search responses carry `queryID` (`clickAnalytics: true`) and each hit's `position`. The route allows 60 clicks per IP per minute; the edge rule covers it too. Browse picks are not tracked (there is no query). This history is what the follow-up ranks by.
 * **GTM:** `site_search` (`search_term`, `search_filter`, `results_count`) once per settled query, and `site_search_no_results` (`search_term`) when it returns nothing. Both go through `lib/analytics.ts` `captureEvent`, so PostHog can take over later.
 
-Code: `src/components/search/` (provider, trigger, dialog, section) and `src/lib/search/` (`use-site-search.ts`, `use-search-idle.ts`, `search-recents.ts`, `search-browse.ts`). The header icon goes in through `SiteNav`'s `search` slot (`packages/ui`), from `components/layout/site-nav-request-slot.tsx`.
+Code: `src/components/search/` (provider, trigger, dialog, section) and `src/lib/search/` (`use-site-search.ts`, `use-search-idle.ts`, `search-recents.ts`, `search-browse.ts`, `search-browse-data.ts`, `search-browse-picks.ts`, `user-token.ts`); routes `app/api/search/idle` and `app/api/search/click`.
+
+`/api/search/idle` reads one cached GROQ query (about 150 KB raw, 21 KB response). It used to load the `/products` library for line images, which is about 3.9 MB, over Next's 2 MB data-cache limit, so every CDN miss refetched it from Sanity (fixed in PROD-3111). The header icon goes in through `SiteNav`'s `search` slot (`packages/ui`), from `components/layout/site-nav-request-slot.tsx`.
 
 Smoke tests: `e2e/search/site-search.spec.ts` (desktop and a 390 px phone viewport). They are read-only; run them with `pnpm --filter @pakfactory/www test:e2e e2e/search`.
 
@@ -198,5 +212,5 @@ Smoke tests: `e2e/search/site-search.spec.ts` (desktop and a 390 px phone viewpo
 * keyboard navigation
 * Resources instead of Materials; materials stay searchable under Customizations
 * the site's own dark tokens instead of the POC's colours
-* browse sections are links to the catalog pages, since there is no client-side index to sample from
+* browse picks are chosen by rule from live content (the POC sampled its static index); solutions and expertise show as pills because most have no image yet
 

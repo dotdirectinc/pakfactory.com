@@ -67,7 +67,12 @@ test('S3: arrow keys + Enter open the highlighted result', async ({page}) => {
     await input.press('ArrowDown');
     const highlighted = searchDialog(page).locator('[data-active="true"]');
     await expect(highlighted).toHaveCount(1);
+    // Opening a result reports the click (Algolia Insights, via our API).
+    const clicked = page.waitForResponse(
+        (res) => res.url().endsWith('/api/search/click') && res.request().method() === 'POST',
+    );
     await input.press('Enter');
+    expect((await clicked).status()).toBe(204);
 
     await expect(searchDialog(page)).toBeHidden();
     await expect(page).toHaveURL(/\/products\/[^/]+/);
@@ -104,4 +109,29 @@ test.describe('mobile', () => {
         await searchDialog(page).getByRole('button', {name: 'Cancel'}).tap();
         await expect(searchDialog(page)).toBeHidden();
     });
+});
+
+test('S6: rail tabs show browse picks before any query (no Algolia call)', async ({page}) => {
+    const searches: string[] = [];
+    page.on('request', (req) => {
+        if (req.url().includes('/api/search?')) searches.push(req.url());
+    });
+    await page.goto('/');
+    await openFromIcon(page);
+    const dialog = searchDialog(page);
+    const rail = dialog.getByRole('navigation', {name: 'Search sections'});
+
+    await rail.getByRole('button', {name: 'Products'}).click();
+    await expect(
+        dialog.getByRole('region', {name: 'Products'}).getByRole('button'),
+    ).not.toHaveCount(0);
+    await rail.getByRole('button', {name: 'Customizations'}).click();
+    await expect(
+        dialog.getByRole('region', {name: 'Categories'}).getByRole('button'),
+    ).not.toHaveCount(0);
+    await rail.getByRole('button', {name: 'Resources'}).click();
+    await expect(
+        dialog.getByRole('region', {name: 'Case studies'}).getByRole('button'),
+    ).not.toHaveCount(0);
+    expect(searches, 'browsing tabs makes no search request').toEqual([]);
 });

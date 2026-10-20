@@ -83,7 +83,7 @@ function useIsMobile(breakpoint = 768) {
     return mobile;
 }
 
-function hitToItem(hit: SearchHit): SearchNavItem {
+function hitToItem(hit: SearchHit, queryID: string | null): SearchNavItem {
     return {
         id: hit.id,
         title: hit.title,
@@ -92,7 +92,22 @@ function hitToItem(hit: SearchHit): SearchNavItem {
         imageAlt: hit.imageAlt,
         summary: hit.summary,
         label: TYPE_LABELS[hit.type],
+        track: queryID ? {queryID, objectID: hit.id, position: hit.position} : undefined,
     };
+}
+
+/** Fire-and-forget; `keepalive` lets it finish while the page navigates. */
+function reportClick(track: NonNullable<SearchNavItem['track']>) {
+    try {
+        void fetch('/api/search/click', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(track),
+            keepalive: true,
+        }).catch(() => {});
+    } catch {
+        // Analytics never blocks opening a result.
+    }
 }
 
 const VARIANT: Record<SearchGroup, SearchSectionModel['variant']> = {
@@ -112,18 +127,48 @@ function resultSections(data: SearchResponse, limit: number): SearchSectionModel
             key: `results-${g.group}`,
             title: GROUP_LABELS[g.group],
             variant: VARIANT[g.group],
-            items: g.hits.slice(0, limit).map(hitToItem),
+            items: g.hits.slice(0, limit).map((hit) => hitToItem(hit, data.queryID)),
         }));
 }
 
+type BrowseItem = NonNullable<SearchIdleData['browse']>['products'][number];
+
+function browseItem(item: BrowseItem): SearchNavItem {
+    return {
+        id: item.id,
+        title: item.title,
+        href: item.href,
+        image: item.image,
+        imageAlt: item.imageAlt,
+        summary: item.summary,
+        label: TYPE_LABELS[item.type],
+    };
+}
+
+const linkItems = (prefix: string, links: {label: string; href: string}[]): SearchNavItem[] =>
+    links.map((link) => ({id: `${prefix}-${link.href}`, title: link.label, href: link.href}));
+
+/**
+ * Empty-state content per rail tab (rule-based picks from `/api/search/idle`,
+ * see lib/search/search-browse-data.ts). Trending shows a few of each; a tab
+ * shows its full set, then "Browse all" links to the catalog pages.
+ */
 function browseSections(
     rail: RailId,
     idle: SearchIdleData | null,
     showLines: boolean,
 ): SearchSectionModel[] {
+    const b = idle?.browse;
+    const trending = rail === 'trending';
+    const take = <T,>(list: T[] | undefined, n: number) =>
+        (list ?? []).slice(0, trending ? n : undefined);
     const sections: SearchSectionModel[] = [];
-    if (showLines && idle?.productLines.length) {
-        sections.push({
+    const add = (section: SearchSectionModel) => {
+        if (section.items.length) sections.push(section);
+    };
+
+    if (showLines && (trending || rail === 'products') && idle?.productLines.length) {
+        add({
             key: 'lines',
             title: 'Product lines',
             variant: 'lines',
@@ -136,29 +181,82 @@ function browseSections(
             })),
         });
     }
-    const groups = rail === 'trending' ? SEARCH_GROUPS : [rail];
-    for (const group of groups) {
-        sections.push({
-            key: `browse-${group}`,
-            title: GROUP_LABELS[group],
-            variant: 'pills',
-            items: BROWSE_LINKS[group].map((link) => ({
-                id: `browse-${group}-${link.href}`,
-                title: link.label,
-                href: link.href,
-            })),
+    if (trending || rail === 'products') {
+        add({
+            key: 'products',
+            title: 'Products',
+            variant: 'grid',
+            items: take(b?.products, 4).map(browseItem),
         });
     }
-    if (rail === 'trending' && idle?.quickLinks.length) {
-        sections.push({
+    if (trending || rail === 'solutions') {
+        // Most solutions have no image yet, so names rather than a grid of placeholders.
+        add({
+            key: 'solutions',
+            title: 'Solutions',
+            variant: 'pills',
+            items: take(b?.solutions, 8).map(browseItem),
+        });
+    }
+    if (trending || rail === 'customizations') {
+        add({
+            key: 'customization-categories',
+            title: trending ? 'Customizations' : 'Categories',
+            variant: 'pills',
+            items: linkItems('category', b?.customizationCategories ?? []),
+        });
+        if (!trending) {
+            add({
+                key: 'customizations',
+                title: 'Options',
+                variant: 'pills',
+                items: (b?.customizations ?? []).map(browseItem),
+            });
+        }
+    }
+    if (trending || rail === 'guides') {
+        add({
+            key: 'guides',
+            title: trending ? 'Latest guides' : 'Guides',
+            variant: 'cards',
+            items: take(b?.guides, 2).map(browseItem),
+        });
+    }
+    if (trending || rail === 'resources') {
+        add({
+            key: 'case-studies',
+            title: 'Case studies',
+            variant: 'cards',
+            items: take(b?.caseStudies, 2).map(browseItem),
+        });
+        add({
+            key: 'newsroom',
+            title: 'Newsroom',
+            variant: 'cards',
+            items: take(b?.pressReleases, 1).map(browseItem),
+        });
+        if (!trending) {
+            add({
+                key: 'expertise',
+                title: 'Expertise',
+                variant: 'pills',
+                items: (b?.expertise ?? []).map(browseItem),
+            });
+        }
+    }
+    if (trending) {
+        add({
             key: 'quick',
             title: 'Quick links',
             variant: 'pills',
-            items: idle.quickLinks.map((link) => ({
-                id: `quick-${link.href}`,
-                title: link.label,
-                href: link.href,
-            })),
+            items: linkItems('quick', idle?.quickLinks ?? []),
+        });
+    } else {
+        add({
+            key: 'all',
+            title: 'Browse all',
+            variant: 'pills',
+            items: linkItems(`all-${rail}`, BROWSE_LINKS[rail]),
         });
     }
     return sections;
@@ -219,7 +317,7 @@ function SiteSearchBody({showRail, onClose}: {showRail: boolean; onClose: () => 
             return [];
         }
         // No query, rate-limited or failed: keep browse content visible.
-        return browseSections(rail, idle, !showRail || rail === 'trending');
+        return browseSections(rail, idle, !showRail || rail === 'trending' || rail === 'products');
     }, [hasQuery, current, rail, idle, showRail]);
 
     const flat = useMemo(() => sections.flatMap((s) => s.items), [sections]);
@@ -241,6 +339,7 @@ function SiteSearchBody({showRail, onClose}: {showRail: boolean; onClose: () => 
             return;
         }
         if (!item.href) return;
+        if (item.track) reportClick(item.track);
         if (hasQuery) push(normalized);
         onClose();
         if (/^https?:\/\//.test(item.href)) window.location.assign(item.href);

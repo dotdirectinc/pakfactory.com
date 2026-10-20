@@ -1,6 +1,6 @@
 import 'server-only';
 
-import {algoliasearch, type Algoliasearch} from 'algoliasearch';
+import {algoliasearch, type Algoliasearch, type InsightsClient} from 'algoliasearch';
 
 /**
  * Server-only Algolia client for `/api/search` (PROD-3110).
@@ -36,4 +36,14 @@ export function getSearchClient(): Algoliasearch | null {
     if (!appId || !key) return null;
     client = algoliasearch(appId, key);
     return client;
+}
+
+let insights: InsightsClient | null = null;
+
+/** Algolia Insights, for search click events (PROD-3111). Same app and search key. */
+export function getInsightsClient(): InsightsClient | null {
+    if (insights) return insights;
+    // `insightsClient` is a type-only export of algoliasearch; build it off the search client.
+    insights = getSearchClient()?.initInsights({}) ?? null;
+    return insights;
 }

@@ -89,6 +89,8 @@ export type SearchHit = {
     image: string | null;
     imageAlt: string;
     parents: string[];
+    /** 1-based rank in Algolia's response, for click events. */
+    position: number;
 };
 
 export type SearchResponse = {
@@ -98,10 +100,12 @@ export type SearchResponse = {
     /** Facet counts. With a filter they count within that filter only. */
     counts: {group: Record<string, number>; type: Record<string, number>};
     groups: {group: string; hits: SearchHit[]}[];
+    /** Algolia queryID (click analytics), null when absent. */
+    queryID: string | null;
 };
 
 export function emptyResponse(query: string, filter: SearchFilter): SearchResponse {
-    return {query, filter, total: 0, counts: {group: {}, type: {}}, groups: []};
+    return {query, filter, total: 0, counts: {group: {}, type: {}}, groups: [], queryID: null};
 }
 
 type RawHit = {objectID: string} & Partial<Record<string, unknown>>;
@@ -126,13 +130,14 @@ export function shapeResponse(
     filter: SearchFilter,
     result: {
         nbHits?: number;
+        queryID?: string;
         hits: RawHit[];
         facets?: Record<string, Record<string, number>>;
     },
     blogUrl: string,
 ): SearchResponse {
     const byGroup = new Map<string, SearchHit[]>();
-    for (const raw of result.hits) {
+    for (const [index, raw] of result.hits.entries()) {
         const href = str(raw.href);
         const title = str(raw.title);
         if (!href || !title) continue;
@@ -149,6 +154,7 @@ export function shapeResponse(
             parents: Array.isArray(raw.parents)
                 ? raw.parents.filter((p): p is string => typeof p === 'string')
                 : [],
+            position: index + 1,
         };
         const list = byGroup.get(hit.group) ?? [];
         list.push(hit);
@@ -162,6 +168,7 @@ export function shapeResponse(
         query,
         filter,
         total: result.nbHits ?? 0,
+        queryID: result.queryID ?? null,
         counts: {
             group: result.facets?.group ?? {},
             type: result.facets?.type ?? {},

@@ -45,6 +45,7 @@ test('shapeResponse groups hits in rail order, keeps counts, drops unlinked hits
                 {objectID: 's', type: 'solution', group: 'solutions', title: 'Cosmetics', href: '/solutions/cosmetics', kind: ''},
             ],
             facets: {group: {products: 2, guides: 1, solutions: 1}, type: {product: 2}},
+            queryID: 'abc123',
         },
         BLOG,
     );
@@ -54,5 +55,9 @@ test('shapeResponse groups hits in rail order, keeps counts, drops unlinked hits
     assert.equal(out.groups[1]!.hits[0]!.kind, null);
     assert.equal(out.groups[2]!.hits[0]!.href, `${BLOG}/kraft`);
     assert.equal(out.total, 4);
+    assert.equal(out.queryID, 'abc123');
+    // Position is the rank in Algolia's response, before grouping.
+    assert.equal(out.groups[0]!.hits[0]!.position, 2);
+    assert.equal(out.groups[2]!.hits[0]!.position, 1);
     assert.deepEqual(out.counts.group, {products: 2, guides: 1, solutions: 1});
 });

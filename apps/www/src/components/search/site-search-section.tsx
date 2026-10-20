@@ -25,6 +25,8 @@ export type SearchNavItem = {
     imageAlt?: string;
     summary?: string;
     label?: string;
+    /** Set on search results: reported to `/api/search/click` when opened. */
+    track?: {queryID: string; objectID: string; position: number};
 };
 
 export type SearchSectionModel = {

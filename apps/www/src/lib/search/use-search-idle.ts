@@ -2,6 +2,8 @@
 
 import {useEffect, useState} from 'react';
 
+import type {SearchBrowseData} from './search-browse-picks';
+
 /**
  * `/api/search/idle` — product lines and quick links for the empty dialog
  * (PROD-3111). Fetched once per page load, the first time the dialog opens;
@@ -16,6 +18,8 @@ export type SearchIdleData = {
         imageAlt: string;
     }[];
     quickLinks: {label: string; href: string}[];
+    /** Per-tab picks (`lib/search/search-browse-data.ts`); absent on an older cached response. */
+    browse?: SearchBrowseData;
 };
 
 let cache: Promise<SearchIdleData | null> | null = null;
