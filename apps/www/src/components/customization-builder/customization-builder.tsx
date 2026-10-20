@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
 import {
     Dialog,
@@ -27,6 +27,7 @@ import {
     isPrintingCategoryStep,
     markGuidedComplete,
     patchAnswer,
+    patchCustomColorReference,
     patchEntryNote,
     patchPrintedSide,
     patchPropertySelections,
@@ -40,6 +41,7 @@ import {
     type BuilderOption,
     type BuilderStep,
     type BuilderStepKey,
+    type CustomColorReferenceImage,
     type CustomizationBuilderState,
     type PrintSideValue,
     type PropertySelectionSummaryItem,
@@ -47,6 +49,7 @@ import {
 } from '@/lib/customization-builder';
 import type {PrintableSide} from '@/lib/customization-builder/printable-sides';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
+import {isCustomColorSlug} from '@/lib/catalog/swatch-colors';
 import {resolveProductDims} from '@pakfactory/sanity/resolve-product-dims';
 
 export type CustomizationBuilderProps = {
@@ -74,6 +77,11 @@ export type CustomizationBuilderProps = {
      * line) — the options are listed as given, with no narrowing.
      */
     customizationRules?: CustomizationRulesSnapshot | null;
+    /**
+     * Request draft id — enables Custom Color reference uploads to S3.
+     * Catalog / non-request surfaces omit this.
+     */
+    draftId?: string;
 };
 
 /** The pick the detail panel reopens on: the most recent one in the step. */
@@ -125,7 +133,12 @@ export function CustomizationBuilder({
     dimensionRange,
     printableSides = [],
     customizationRules,
+    draftId,
 }: CustomizationBuilderProps) {
+    // Async color-reference uploads must patch the latest state, not a stale render.
+    const valueRef = useRef(value);
+    valueRef.current = value;
+
     const dimensionAxisIds = useMemo(
         () =>
             resolveProductDims(dimensionInput ?? 'rectangular', dimensionRange)
@@ -302,8 +315,44 @@ export function CustomizationBuilder({
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) {
+        const current = valueRef.current;
+        let next = patchPropertySelections(
+            current,
+            optionId,
+            selections,
+            summaries,
+        );
+        // Drop color-reference uploads when the property leaves Custom Color.
+        const refs = current.customColorReferences?.[optionId];
+        if (refs) {
+            for (const propertyKey of Object.keys(refs)) {
+                const ids = selections[propertyKey] ?? [];
+                const stillCustom = ids.some((id) => isCustomColorSlug(id));
+                if (!stillCustom) {
+                    next = patchCustomColorReference(
+                        next,
+                        optionId,
+                        propertyKey,
+                        null,
+                    );
+                }
+            }
+        }
+        onChange(next);
+    }
+
+    function handleCustomColorReferenceChange(
+        optionId: string,
+        propertyKey: string,
+        image: CustomColorReferenceImage | null,
+    ) {
         onChange(
-            patchPropertySelections(value, optionId, selections, summaries),
+            patchCustomColorReference(
+                valueRef.current,
+                optionId,
+                propertyKey,
+                image,
+            ),
         );
     }
 
@@ -439,6 +488,10 @@ export function CustomizationBuilder({
                             }
                             onPrintedSideChange={handlePrintedSideChange}
                             onPrintingConsultation={handlePrintingConsultation}
+                            draftId={draftId}
+                            onCustomColorReferenceChange={
+                                handleCustomColorReferenceChange
+                            }
                             onBack={goBack}
                             onNext={goNext}
                             onSkip={handleSkip}
@@ -468,6 +521,10 @@ export function CustomizationBuilder({
                             }
                             onPrintedSideChange={handlePrintedSideChange}
                             onPrintingConsultation={handlePrintingConsultation}
+                            draftId={draftId}
+                            onCustomColorReferenceChange={
+                                handleCustomColorReferenceChange
+                            }
                         />
                     )}
                 </div>

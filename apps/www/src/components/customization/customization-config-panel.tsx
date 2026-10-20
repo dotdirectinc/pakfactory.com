@@ -10,6 +10,10 @@ import {
     OptionPropertyControllers,
     type PropertySelectionMap,
 } from '@/components/customization/option-property-controllers';
+import {
+    customColorSummaryLabel,
+    readCustomColorHex,
+} from '@/components/customization-builder/custom-color-property';
 import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
 import {Icon} from '@/components/ui/icon';
 import {StatusNotice} from '@/components/ui/status-badge';
@@ -18,6 +22,7 @@ import {
     mapDetailToPropertyFields,
     type PropertyFieldDescriptor,
 } from '@/lib/catalog/map-detail-to-property-fields';
+import {isCustomColorSlug} from '@/lib/catalog/swatch-colors';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -25,10 +30,25 @@ type CustomizationConfigPanelProps = {
     detail: CustomizationDetail;
 };
 
-function titlesForIds(field: PropertyFieldDescriptor, ids: string[]): string[] {
-    const byId = new Map(field.options.map((o) => [o.id, o.title]));
+function titlesForIds(
+    field: PropertyFieldDescriptor,
+    ids: string[],
+    selection: PropertySelectionMap,
+): string[] {
+    const byId = new Map(field.options.map((o) => [o.id, o]));
     return ids
-        .map((id) => byId.get(id))
+        .map((id) => {
+            const option = byId.get(id);
+            if (!option) return undefined;
+            const isCustom =
+                option.appearance === 'customColor' ||
+                isCustomColorSlug(id);
+            if (!isCustom) return option.title;
+            return customColorSummaryLabel(
+                option.title,
+                readCustomColorHex(selection, field.propertyKey),
+            );
+        })
         .filter((t): t is string => Boolean(t));
 }
 
@@ -49,7 +69,7 @@ export function CustomizationConfigPanel({
         const parts: string[] = [];
         for (const field of fields) {
             const ids = selection[field.propertyKey] ?? [];
-            parts.push(...titlesForIds(field, ids));
+            parts.push(...titlesForIds(field, ids, selection));
         }
         return parts.join(' · ');
     }, [fields, selection]);
@@ -57,7 +77,12 @@ export function CustomizationConfigPanel({
     const specSheetUrl = detail.specSheetUrl?.trim() || null;
 
     const setPropertyValue = (propertyKey: string, ids: string[]) => {
-        setSelection((prev) => ({...prev, [propertyKey]: ids}));
+        setSelection((prev) => {
+            const next = {...prev};
+            if (!ids.length) delete next[propertyKey];
+            else next[propertyKey] = ids;
+            return next;
+        });
     };
 
     const onBookmark = (event: MouseEvent<HTMLButtonElement>) => {
@@ -80,6 +105,7 @@ export function CustomizationConfigPanel({
                             fields={fields}
                             value={selection}
                             onChange={setPropertyValue}
+                            onMapChange={setSelection}
                         />
                     </div>
                 </div>

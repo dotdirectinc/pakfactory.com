@@ -18,6 +18,7 @@ import {
     type BuilderOption,
     type BuilderStep,
     type BuilderStepKey,
+    type CustomColorReferenceImage,
     type CustomizationBuilderState,
     type DimensionFace,
     type PrintSideValue,
@@ -56,6 +57,13 @@ type BuilderThreeColumnProps = {
     ) => void;
     onPrintedSideChange?: (slug: string, next: PrintSideValue) => void;
     onPrintingConsultation?: () => void;
+    /** Request draft id for Custom Color reference uploads. */
+    draftId?: string;
+    onCustomColorReferenceChange?: (
+        optionId: string,
+        propertyKey: string,
+        image: CustomColorReferenceImage | null,
+    ) => void;
 };
 
 export function BuilderThreeColumn({
@@ -83,6 +91,8 @@ export function BuilderThreeColumn({
     onPropertySelectionsChange,
     onPrintedSideChange,
     onPrintingConsultation,
+    draftId,
+    onCustomColorReferenceChange,
 }: BuilderThreeColumnProps) {
     const step = steps.find((item) => item.key === activeKey) ?? steps[0];
     if (!step) return null;
@@ -219,6 +229,18 @@ export function BuilderThreeColumn({
                                     summaries,
                                 );
                             }}
+                            draftId={draftId}
+                            customColorReferences={state.customColorReferences}
+                            onCustomColorReferenceChange={
+                                selectedOption && onCustomColorReferenceChange
+                                    ? (propertyKey, image) =>
+                                          onCustomColorReferenceChange(
+                                              selectedOption.id,
+                                              propertyKey,
+                                              image,
+                                          )
+                                    : undefined
+                            }
                             {...noteProps}
                         />
                     ) : (
@@ -234,6 +256,18 @@ export function BuilderThreeColumn({
                                     summaries,
                                 );
                             }}
+                            draftId={draftId}
+                            customColorReferences={state.customColorReferences}
+                            onCustomColorReferenceChange={
+                                selectedOption && onCustomColorReferenceChange
+                                    ? (propertyKey, image) =>
+                                          onCustomColorReferenceChange(
+                                              selectedOption.id,
+                                              propertyKey,
+                                              image,
+                                          )
+                                    : undefined
+                            }
                             {...noteProps}
                         />
                     )}

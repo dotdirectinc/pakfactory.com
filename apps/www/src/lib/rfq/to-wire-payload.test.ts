@@ -139,6 +139,92 @@ describe('an older request line keeps every pick when it is edited (G4)', () => 
     });
 });
 
+describe('toWireSubmission — custom color hex and reference upload', () => {
+    it('sends the picked hex in the customization properties string', () => {
+        const state = builder();
+        state.propertySelectionSummaries = {
+            ...state.propertySelectionSummaries,
+            'o.soft': [
+                {
+                    kind: 'swatch',
+                    label: 'Custom Color · #ff5500',
+                    omitFromSummary: false,
+                    color: '#ff5500',
+                },
+            ],
+        };
+        const wire = toWireSubmission(draft, [line({customizationBuilder: state})], 'sub-hex')
+            .lines[0]!;
+        const soft = wire.customizations.find((c) => c.id === 'o.soft')!;
+        assert.deepEqual(soft.properties, ['Custom Color · #ff5500']);
+    });
+
+    it('appends uploaded color-reference keys onto the line attachments', () => {
+        const state = builder();
+        state.customColorReferences = {
+            'o.soft': {
+                color: {
+                    image: {
+                        id: 'cref-1',
+                        name: 'Color reference — Color — swatch.png',
+                        url: '',
+                        key: 'pending/d1/cref-1.png',
+                        status: 'uploaded',
+                        bytes: 1200,
+                    },
+                },
+            },
+        };
+        const wire = toWireSubmission(
+            draft,
+            [
+                line({
+                    customizationBuilder: state,
+                    referenceImages: [
+                        {
+                            id: 'ref-1',
+                            name: 'pack.png',
+                            url: '',
+                            key: 'pending/d1/pack.png',
+                            status: 'uploaded',
+                        },
+                    ],
+                }),
+            ],
+            'sub-cref',
+        ).lines[0]!;
+        assert.deepEqual(
+            wire.attachments.map((a) => [a.id, a.key, a.kind]),
+            [
+                ['ref-1', 'pending/d1/pack.png', 'reference'],
+                ['cref-1', 'pending/d1/cref-1.png', 'reference'],
+            ],
+        );
+    });
+
+    it('omits color-reference images that never finished uploading', () => {
+        const state = builder();
+        state.customColorReferences = {
+            'o.soft': {
+                color: {
+                    image: {
+                        id: 'cref-pending',
+                        name: 'Color reference — Color — x.png',
+                        url: 'blob:x',
+                        status: 'uploading',
+                    },
+                },
+            },
+        };
+        const wire = toWireSubmission(
+            draft,
+            [line({customizationBuilder: state})],
+            'sub-pending',
+        ).lines[0]!;
+        assert.deepEqual(wire.attachments, []);
+    });
+});
+
 describe('toWireSubmission — services', () => {
     it('sends stage slugs and aligned titles when provided', () => {
         const withServices = {

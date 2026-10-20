@@ -12,6 +12,8 @@ import {
 import {TypePropertyController} from '@/components/customization/type-property-controller';
 import type {
     BuilderOption,
+    CustomColorReferenceImage,
+    CustomColorReferencesByOption,
     PropertySelectionSummaryItem,
 } from '@/lib/customization-builder';
 import type {
@@ -31,6 +33,12 @@ type SelectionDetailProps = {
     onPropertySelectionsChange?: (
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
+    ) => void;
+    draftId?: string;
+    customColorReferences?: CustomColorReferencesByOption;
+    onCustomColorReferenceChange?: (
+        propertyKey: string,
+        image: CustomColorReferenceImage | null,
     ) => void;
 };
 

@@ -14,6 +14,7 @@
  */
 import {AXIS_LABEL, type DimensionAxis} from '@pakfactory/sanity/dimension-inputs';
 import {resolveProductDims} from '@pakfactory/sanity/resolve-product-dims';
+import {uploadedCustomColorImages} from '@/components/customization-builder/custom-color-property';
 import {
     DIMENSIONS_STEP_KEY,
     dimensionEntryNoteKey,
@@ -303,7 +304,12 @@ export function toWireSubmission(
                 return dimensions ? {dimensions} : {};
             })(),
             ...(trimmed(line.notes) ? {notes: line.notes!.trim()} : {}),
-            attachments: toWireAttachments(line.referenceImages),
+            attachments: toWireAttachments([
+                ...(line.referenceImages ?? []),
+                ...uploadedCustomColorImages(
+                    line.customizationBuilder?.customColorReferences,
+                ),
+            ]),
             addedAt: line.addedAt,
         })),
         services,
