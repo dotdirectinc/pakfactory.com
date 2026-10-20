@@ -558,19 +558,27 @@ export function SiteSearchDialog() {
                     className="fixed top-1/2 left-1/2 z-50 flex h-[min(720px,85vh)] w-[min(960px,94vw)] max-w-none -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-[24px] border border-white/10 bg-[#141416] p-0 text-white shadow-2xl outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
                     data-site-search-dialog=""
                 >
-                    <DialogTitle className="sr-only">Search</DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Search products, solutions, customizations, guides and resources.
-                    </DialogDescription>
-                    <button
-                        type="button"
-                        className="absolute top-3 right-3 z-10 inline-flex size-8 items-center justify-center rounded-[24px] text-white/60 transition-all outline-none hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50"
-                        aria-label="Close search"
-                        onClick={close}
-                    >
-                        <X className="size-4" strokeWidth={1.75} />
-                    </button>
-                    {open ? <SiteSearchBody showRail dark onClose={close} /> : null}
+                    {/*
+                      The POC grows its root font at wide screens (17px ≥1600, 18px ≥1920),
+                      so its rem-based type and spacing scale up while the dialog box stays
+                      960×720. www keeps a fixed 16px root site-wide (packages/ui globals.css),
+                      so the same growth is applied to the modal's contents only.
+                    */}
+                    <div className="relative flex min-h-0 flex-1 flex-col min-[1600px]:[zoom:1.0625] min-[1920px]:[zoom:1.125]">
+                        <DialogTitle className="sr-only">Search</DialogTitle>
+                        <DialogDescription className="sr-only">
+                            Search products, solutions, customizations, guides and resources.
+                        </DialogDescription>
+                        <button
+                            type="button"
+                            className="absolute top-3 right-3 z-10 inline-flex size-8 items-center justify-center rounded-[24px] text-white/60 transition-all outline-none hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50"
+                            aria-label="Close search"
+                            onClick={close}
+                        >
+                            <X className="size-4" strokeWidth={1.75} />
+                        </button>
+                        {open ? <SiteSearchBody showRail dark onClose={close} /> : null}
+                    </div>
                 </DialogPrimitive.Content>
             </DialogPortal>
         </Dialog>
