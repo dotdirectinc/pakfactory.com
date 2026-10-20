@@ -7,6 +7,7 @@ import { SpecSyncAppliedChanges, SpecSyncHistoryRun } from "@/components/spec/sp
 import { InlineLoading } from "@/components/ui/page-skeleton";
 import type { SyncHistoryRun } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SYNC_HISTORY_COPY as COPY } from "@/lib/copy/spec";
+import { PageLead } from "@/components/ui/page-lead";
 
 export const metadata = { title: "Sync history" };
 
@@ -44,7 +45,7 @@ export default async function SpecSyncHistoryPage({ searchParams }: { searchPara
           ← {COPY.back}
         </Link>
         <h1 className="text-xl font-semibold tracking-tight text-foreground">{COPY.title}</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">{COPY.lead}</p>
+        <PageLead className="max-w-2xl">{COPY.lead}</PageLead>
       </div>
 
       {!res.ok ? (

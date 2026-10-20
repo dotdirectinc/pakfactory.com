@@ -14,6 +14,7 @@ import {
   WaitingSection,
 } from "@/components/spec/registry/registry-sections";
 import { RegistryTabLink } from "@/components/spec/registry/registry-tab-link";
+import { PageLead } from "@/components/ui/page-lead";
 
 export const metadata = { title: "Spec registry" };
 
@@ -39,7 +40,7 @@ export default async function SpecPage({ searchParams }: { searchParams: Promise
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">{ADMIN_SPEC_COPY.listTitle}</h1>
-          <p className="max-w-xl text-sm text-muted-foreground">{COPY.lead}</p>
+          <PageLead className="max-w-xl">{COPY.lead}</PageLead>
         </div>
         <Suspense fallback={null}>
           <SyncControlSection canSync={canSync} />

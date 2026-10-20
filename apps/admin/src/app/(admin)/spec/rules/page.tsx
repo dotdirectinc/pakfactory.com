@@ -3,6 +3,7 @@ import { getCurrentRules } from "@/lib/spec/current-rules";
 import { SpecRulesView } from "@/components/spec/spec-rules-view";
 import { SpecFutureAction } from "@/components/spec/spec-future-action";
 import { ADMIN_SPEC_FUTURE_COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
+import { PageLead } from "@/components/ui/page-lead";
 
 export const metadata = { title: "Spec rules" };
 
@@ -18,7 +19,7 @@ export default async function SpecRulesPage() {
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             {ADMIN_SPEC_RULES_COPY.title}
           </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">{ADMIN_SPEC_RULES_COPY.lead}</p>
+          <PageLead className="max-w-2xl">{ADMIN_SPEC_RULES_COPY.lead}</PageLead>
         </div>
         <SpecFutureAction label={ADMIN_SPEC_FUTURE_COPY.addRule} />
       </div>

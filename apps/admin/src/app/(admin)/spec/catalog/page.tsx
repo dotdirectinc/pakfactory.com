@@ -4,6 +4,7 @@ import { SpecCatalogTable } from "@/components/spec/spec-catalog-table";
 import { SpecCatalogNav } from "@/components/spec/spec-catalog-nav";
 import { SpecFutureAction } from "@/components/spec/spec-future-action";
 import { ADMIN_SPEC_FUTURE_COPY, ADMIN_SPEC_TABLES_COPY as COPY } from "@/lib/copy/spec";
+import { PageLead } from "@/components/ui/page-lead";
 
 export const metadata = { title: "Catalog" };
 
@@ -21,7 +22,7 @@ export default async function SpecCatalogPage({ searchParams }: { searchParams: 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">{COPY.title}</h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">{COPY.lead}</p>
+          <PageLead>{COPY.lead}</PageLead>
         </div>
         <SpecFutureAction label={ADMIN_SPEC_FUTURE_COPY.addEntity(entity)} />
       </div>
