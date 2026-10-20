@@ -92,6 +92,12 @@ export type SiteNavProps = {
    * {@link SiteNavLinks} renders flat + mega items from `items`.
    */
   desktopNav?: ReactNode;
+  /**
+   * Optional search trigger (e.g. www's ⌘K icon). Rendered once, after the nav
+   * links on desktop and beside the request icon on mobile, above the open
+   * mobile menu. Omitted → header unchanged.
+   */
+  search?: ReactNode;
 };
 
 export function siteNavPromoIsVisible(
@@ -190,6 +196,7 @@ export function SiteNav({
   account,
   request,
   desktopNav,
+  search,
 }: SiteNavProps) {
   const headerRef = useRef<HTMLElement>(null);
   const [mobileChrome, setMobileChrome] =
@@ -254,6 +261,10 @@ export function SiteNav({
 
         <div className="flex items-center gap-2 sm:gap-5">
           {desktopNav ?? <SiteNavLinks items={items} />}
+
+          {search ? (
+            <div className="relative z-[60] flex items-center">{search}</div>
+          ) : null}
 
           {request ? (
             <SiteNavRequestIcon

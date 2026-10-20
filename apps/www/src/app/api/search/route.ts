@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import { after, NextResponse } from "next/server";
 import { SITE_SEARCH_INDEX } from "@pakfactory/sanity/algolia/site-search";
 
@@ -15,6 +13,7 @@ import {
   RETRIEVED_ATTRIBUTES,
   shapeResponse,
 } from "@/lib/search/search-query";
+import { searchUserToken } from "@/lib/search/user-token";
 import { BLOG_URL } from "@/lib/www-nav";
 
 /**
@@ -41,12 +40,6 @@ function json(body: unknown, status: number, cacheControl: string, extra?: Heade
   });
 }
 
-/** Algolia's rate limit counts per IP or userToken; every call comes from our IP, so send the visitor's. */
-function userTokenFor(ip: string | null): string | undefined {
-  if (!ip) return undefined;
-  return createHash("sha256").update(ip).digest("hex").slice(0, 32);
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const query = normalizeQuery(url.searchParams.get("q"));
@@ -70,7 +63,7 @@ export async function GET(request: Request) {
     });
   }
 
-  const userToken = userTokenFor(ip);
+  const userToken = searchUserToken(ip);
   try {
     const result = await client.searchSingleIndex<Record<string, unknown>>(
       {
@@ -83,7 +76,8 @@ export async function GET(request: Request) {
           attributesToHighlight: [],
           filters: filter ? `${filter.facet}:${filter.value}` : undefined,
           analytics: true,
-          clickAnalytics: false,
+          // Returns a queryID so the dialog can report clicks (PROD-3111).
+          clickAnalytics: true,
         },
       },
       userToken ? { headers: { "X-Algolia-UserToken": userToken } } : undefined,

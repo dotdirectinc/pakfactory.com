@@ -6,7 +6,7 @@ The ⌘K search dialog on www. Three parts, one ticket each:
 | --- | --- | --- |
 | `site_search` Algolia index | PROD-3109 | built, sync Function deployed |
 | `/api/search` route + abuse gate | PROD-3110 | built |
-| Dialog + header trigger | PROD-3111 | not started |
+| Dialog + header trigger | PROD-3111 | built |
 
 ## The index — `site_search`
 
@@ -134,7 +134,7 @@ Each layer catches what the one before lets through. Only a request that misses 
 | --- | --- | --- |
 | Dialog | 250 ms debounce, 2-character minimum, no query on open | PROD-3111 |
 | CDN | Repeat queries answered from cache for 10 minutes | `Cache-Control` above |
-| Edge firewall | 20 requests per 10 s per IP → blocked for 3 minutes | Vercel Firewall rule, below |
+| Edge firewall | 20 requests per 10 s per IP → 429 for the rest of the window | Vercel Firewall rule, below |
 | Per IP, per instance | 30 per minute (`SITE_SEARCH_PER_IP_PER_MINUTE`) | `search-gate.ts` |
 | Per instance | 300 per minute (`SITE_SEARCH_INSTANCE_PER_MINUTE`) | `search-gate.ts` |
 | Site-wide | 3,000 per clock hour (`SITE_SEARCH_HOURLY_BUDGET`) | `search-gate.ts` + Supabase |
@@ -146,16 +146,20 @@ A blocked request gets `429` with `Retry-After` and `{"error":"rate_limited","re
 
 The RPC is callable with the public anon key (www has no service-role key). It only accepts 0–500 per call and picks the hour itself. Anyone with the anon key could still push the hour over budget and switch search off until the hour ends; that costs search, not Algolia money. To close it: give www a server-only Supabase key and grant the function to `service_role` only.
 
-**Edge firewall rule** (applied by an approved person in the Vercel dashboard, project `pakfactory-com` → Firewall → Rules; recreate on Cloudflare under PROD-2240):
+**Edge firewall rule** (live since 2026-10-19 as `rule_site_search_rate_limit_7jXXSu`; recreate on Cloudflare under PROD-2240). Added with the Vercel CLI from the repo root, then `vercel firewall publish`:
+
+```bash
+vercel firewall rules add "site-search rate limit" --condition '{"type":"path","op":"pre","value":"/api/search"}' --action rate_limit --rate-limit-window 10 --rate-limit-requests 20 --rate-limit-keys ip --rate-limit-action rate_limit --yes
+```
 
 | Field | Value |
 | --- | --- |
 | Name | `site-search rate limit` |
 | If | Request path **starts with** `/api/search` |
 | Then | Rate limit, fixed window **10 s**, **20** requests, key **IP** |
-| Action on limit | **Deny** (429) for **3 minutes** |
+| Action on limit | **Rate limit** (429) until the 10 s window ends. There is no lockout: Vercel's `rate_limit` action has none, and a lockout needs `deny` (403) with 1m/5m/15m/30m/1h only (PROD-3110 AC 3, amended) |
 
-**Env** (www, server-only; also listed in `turbo.json`):
+**Env** (www, server-only; also listed in `turbo.json`). Set on Vercel `pakfactory-com`: `ALGOLIA_APP_ID` and `ALGOLIA_SEARCH_KEY` for **Preview** (2026-10-19). **Production has neither yet.** Without an app ID and a key, `/api/search` answers `503 search_unavailable`:
 
 | Name | Default | Notes |
 | --- | --- | --- |
@@ -171,3 +175,42 @@ The RPC is callable with the public anon key (www has no service-role key). It o
 * Rotate the Algolia write key.
 * Firewall rule on production, Algolia usage alerts.
 * `pakfactory.com/robots.txt` is served by Magento; add `Disallow: /api/search` there when www serves the apex. The www `robots.txt` already disallows it.
+
+## Dialog (PROD-3111)
+
+The header search icon and ⌘K / Ctrl+K open one dialog, after the POC (`pakfactory.com-poc` `src/shared/components/search/SiteSearch.jsx`):
+
+* **Styling** copies the POC's classes (sizes, colours, radii) inside the search modal only: a deliberate exception to DESIGN.md's tokens and 8pt spacing (Richard, 2026-10-20). Radii are the POC's px (its `--radius` is 16px). Images keep the site's cream `--product-image-bg` well (PROD-3102), and the rail is 192 px instead of 176 px to fit the counts. The POC also grows its root font on wide screens (17 px at ≥1600 px, 18 px at ≥1920 px); www keeps a fixed 16 px root site-wide, so the modal's contents get the same growth with CSS `zoom` (1.0625 / 1.125) inside a box that stays 960×720, as in the POC.
+* **Desktop (768 px and up):** a dark dialog (`#141416`, white text, `black/60` blurred overlay, as the POC) with a rail (Trending, Products, Solutions, Customizations, Guides, Resources), the input, chips, and sections. Products and solutions show as a grid, customizations as pills, guides and resources as cards.
+* **Mobile (under 768 px):** a light full-screen sheet with Cancel and no rail.
+* **Empty state** (no Algolia call): recent searches, then the POC's curated chips, then each tab's **browse picks** from `/api/search/idle` (`lib/search/search-browse-data.ts`, rules in `search-browse-picks.ts`). The picks are rule-based for now; a follow-up swaps in the most-clicked item per slot once click data exists.
+
+  | Tab | Shows | Rule |
+  | --- | --- | --- |
+  | Trending | product-lines row, 4 products, 8 solutions, customization categories, 2 guides, 2 case studies, latest press release, quick links | a few of each tab |
+  | Products | product-lines row (tap = search, as in the POC), 8 products | the 8 lines with the most products → each line's first product with an image |
+  | Solutions | all solutions with a page, as pills (most have no image yet) | title order |
+  | Customizations | category pills → `/customizations?category=…`, then 8 options | first 2 options with a page per category |
+  | Guides | 4 latest blog posts | newest `publishedAt` |
+  | Resources | 4 latest case studies, latest press release, expertise stages | newest first |
+
+  Each tab ends with "Browse all" links. Everything is read with the `site_search` filter and projection, so links, images and visibility match search results (products with `allowIndex` off never show).
+* **Typing:** waits 250 ms, needs 2 characters, and sends the normalized query. Rail counts come from the unfiltered query; opening a tab runs the filtered query.
+* **Keyboard:** ↑/↓ move through every result in order, Enter opens it, Esc closes. Chips are not in the arrow order.
+* **States:** "Searching…", no results ("No results for "…"."), too many searches (429) and search unavailable. The last two keep the browse content visible.
+* **Recent searches:** localStorage `www-search-recents-v1`, 6 entries.
+* **Click tracking:** opening a search result posts `{queryID, objectID, position}` to `POST /api/search/click`, which sends an Algolia Insights `clickedObjectIDsAfterSearch` event ("Search result clicked", userToken = hashed IP). Search responses carry `queryID` (`clickAnalytics: true`) and each hit's `position`. The route allows 60 clicks per IP per minute; the edge rule covers it too. Browse picks are not tracked (there is no query). This history is what the follow-up ranks by.
+* **GTM:** `site_search` (`search_term`, `search_filter`, `results_count`) once per settled query, and `site_search_no_results` (`search_term`) when it returns nothing. Both go through `lib/analytics.ts` `captureEvent`, so PostHog can take over later.
+
+Code: `src/components/search/` (provider, trigger, dialog, section) and `src/lib/search/` (`use-site-search.ts`, `use-search-idle.ts`, `search-recents.ts`, `search-browse.ts`, `search-browse-data.ts`, `search-browse-picks.ts`, `user-token.ts`); routes `app/api/search/idle` and `app/api/search/click`.
+
+`/api/search/idle` reads one cached GROQ query (about 150 KB raw, 21 KB response). It used to load the `/products` library for line images, which is about 3.9 MB, over Next's 2 MB data-cache limit, so every CDN miss refetched it from Sanity (fixed in PROD-3111). The header icon goes in through `SiteNav`'s `search` slot (`packages/ui`), from `components/layout/site-nav-request-slot.tsx`.
+
+Smoke tests: `e2e/search/site-search.spec.ts` (desktop and a 390 px phone viewport). They are read-only; run them with `pnpm --filter @pakfactory/www test:e2e e2e/search`.
+
+**Deviations from the POC** (also listed on PROD-2525):
+* counts on the rail
+* keyboard navigation
+* Resources instead of Materials; materials stay searchable under Customizations
+* browse picks are chosen by rule from live content (the POC sampled its static index); solutions and expertise show as pills because most have no image yet
+

@@ -44,6 +44,10 @@ on:
       - 'apps/www/src/lib/products/**'
       - 'apps/www/src/lib/catalog/**'
       - 'apps/www/src/lib/*nav*.ts'
+      # site search (PROD-3111): header icon, dialog, API
+      - 'apps/www/src/components/search/**'
+      - 'apps/www/src/lib/search/**'
+      - 'apps/www/src/app/api/search/**'
       # shared UI primitives
       - 'packages/ui/**'
   # Manual runs need this file on the default branch (main) first.
