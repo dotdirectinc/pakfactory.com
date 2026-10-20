@@ -351,6 +351,13 @@ export const ADMIN_SPEC_FUTURE_COPY = {
 } as const;
 
 /** A catalog record's page (2026-10-08): every record, every level and status. */
+/** Spec System → Help: its header, shared with its loading state. */
+export const ADMIN_SPEC_HELP_COPY = {
+  title: "Spec System help",
+  lead:
+    "The Spec System is where the catalog's registry is read and where synced changes are approved. The registry holds every product, customization, rule and property with a permanent ID, shared by the website, Sanity, Notion and requests. Nothing in it changes until someone approves a frame.",
+} as const;
+
 export const ADMIN_SPEC_RECORD_COPY = {
   unreachable: "The record could not be loaded.",
   rules: "Rules view",

@@ -14,7 +14,7 @@ import {
   WaitingSection,
 } from "@/components/spec/registry/registry-sections";
 import { RegistryTabLink } from "@/components/spec/registry/registry-tab-link";
-import { PageLead } from "@/components/ui/page-lead";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata = { title: "Spec registry" };
 
@@ -37,15 +37,16 @@ export default async function SpecPage({ searchParams }: { searchParams: Promise
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">{ADMIN_SPEC_COPY.listTitle}</h1>
-          <PageLead className="max-w-xl">{COPY.lead}</PageLead>
-        </div>
-        <Suspense fallback={null}>
-          <SyncControlSection canSync={canSync} />
-        </Suspense>
-      </header>
+      <PageHeader
+        title={ADMIN_SPEC_COPY.listTitle}
+        lead={COPY.lead}
+        leadClassName="max-w-xl"
+        aside={
+          <Suspense fallback={null}>
+            <SyncControlSection canSync={canSync} />
+          </Suspense>
+        }
+      />
 
       <nav aria-label={ADMIN_SPEC_COPY.listTitle} className="flex gap-1 border-b border-border">
         {VIEWS.map((v) => (

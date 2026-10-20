@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { listSyncHistory } from "@/lib/spec/registry-api";
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { AutoRefresh } from "@/components/layout/auto-refresh";
@@ -7,7 +6,7 @@ import { SpecSyncAppliedChanges, SpecSyncHistoryRun } from "@/components/spec/sp
 import { InlineLoading } from "@/components/ui/page-skeleton";
 import type { SyncHistoryRun } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SYNC_HISTORY_COPY as COPY } from "@/lib/copy/spec";
-import { PageLead } from "@/components/ui/page-lead";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata = { title: "Sync history" };
 
@@ -40,13 +39,7 @@ export default async function SpecSyncHistoryPage({ searchParams }: { searchPara
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <AutoRefresh active={current.length > 0} />
-      <div className="flex flex-col gap-1">
-        <Link href="/spec" className="text-sm text-muted-foreground underline-offset-2 hover:underline">
-          ← {COPY.back}
-        </Link>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{COPY.title}</h1>
-        <PageLead className="max-w-2xl">{COPY.lead}</PageLead>
-      </div>
+      <PageHeader title={COPY.title} lead={COPY.lead} leadClassName="max-w-2xl" back={{ href: "/spec", label: COPY.back }} />
 
       {!res.ok ? (
         <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">

@@ -48,6 +48,11 @@ export function HeaderSkeleton({ action = false }: { action?: boolean }) {
   );
 }
 
+/** A header action that loads with the page (e.g. Sync Changes), beside a real PageHeader. */
+export function ActionSkeleton() {
+  return <Block className="h-8 w-40" />;
+}
+
 /** A row of tabs or filter chips. */
 export function TabsSkeleton({ count = 3 }: { count?: number }) {
   return (
@@ -213,6 +218,7 @@ export function PageSkeleton({
   width = "7xl",
   tabs = false,
   action = false,
+  header,
 }: {
   variant: PageSkeletonVariant;
   width?: Width;
@@ -220,13 +226,18 @@ export function PageSkeleton({
   tabs?: boolean;
   /** Show an action button in the header (e.g. Sync Changes). */
   action?: boolean;
+  /**
+   * The page's real header (PageHeader), when its title and description are fixed text: shown instead
+   * of grey bars, so the description — usually the page's largest text — paints with the first frame.
+   */
+  header?: ReactNode;
 }) {
   const fill = variant === "map";
   return (
     <Busy
       className={`mx-auto flex w-full flex-col gap-4 ${WIDTH[width]} ${fill ? "h-[calc(100dvh-7rem)]" : ""}`}
     >
-      <HeaderSkeleton action={action} />
+      {header ?? <HeaderSkeleton action={action} />}
       {tabs ? <TabsSkeleton /> : null}
       {variant === "table" ? <TableSkeleton /> : null}
       {variant === "detail" ? <DetailBody /> : null}

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
-import { PageLead } from "@/components/ui/page-lead";
+import { PageHeader } from "@/components/ui/page-header";
+import { ADMIN_SPEC_HELP_COPY as HELP } from "@/lib/copy/spec";
 
 export const metadata = { title: "Spec System help" };
 
@@ -42,12 +43,7 @@ export default async function SpecHelpPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Spec System help</h1>
-        <PageLead className="max-w-none">
-          The Spec System is where the catalog's registry is read and where synced changes are approved. The registry
-          holds every product, customization, rule and property with a permanent ID, shared by the website, Sanity,
-          Notion and requests. Nothing in it changes until someone approves a frame.
-        </PageLead>
+        <PageHeader title={HELP.title} lead={HELP.lead} leadClassName="max-w-none" />
         <nav aria-label="On this page" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {TOC.map(([id, label]) => (
             <a key={id} href={`#${id}`} className="text-foreground underline-offset-2 hover:underline">
