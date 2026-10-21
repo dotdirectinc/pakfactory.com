@@ -42,7 +42,8 @@
  *   · Each asset gets the `product` media tag (sanity-plugin-media).
  *   · `images` on the published product, and on `drafts.<id>` when one exists. One patch per
  *     product. `lifestyleImages` and the video fields are never touched.
- *   · Order: by view, then by number (angled-view-1, angled-view-2, …). The first is `primary`.
+ *   · Order: by view, then by number (angled-view-1, angled-view-2, …), except that a hand-picked
+ *     primary (PRIMARY_PICK) moves to the front. The first is `primary`.
  *   · `alt`: "<product title>, <view>", e.g. "Custom Beer Carrier, angled view 2".
  *   · With --replace: an image asset the replaced `images` held is deleted once nothing in the
  *     dataset references it any more. One still referenced elsewhere is kept and listed.
@@ -252,6 +253,111 @@ function orderImages(files) {
     )
 }
 
+/**
+ * Primary picked by hand where the first image by number is not the best lead shot (SKU → 02-Edited file name).
+ * The picked image moves to the front; the rest keep their order. Picked by Aslan on the Inspiration Primary
+ * Picker, 21 Oct (https://claude.ai/artifact/VHAi3W9MbvMnTsQyJY7uRU); the other 126 multi-image products keep
+ * their first image.
+ */
+const PRIMARY_PICK = {
+  'BAG-002-RF1': 'restaurants_custom-twisted-handle-take-out-paper-bags_angled-view-2.png',
+  'COR-012-RF1': 'restaurants_custom-triple-decker-pizza-boxes_angled-view-3.png',
+  'COR-016-BR1': 'beer_custom-12-pack-beer-can-boxes_angled-view-3.png',
+  'COR-028-BC1': 'cosmetics_custom-cosmetic-tab-lock-roll-end-mailer-box_angled-view-2.png',
+  'COR-028-CF1': 'coffee_custom-coffee-subscription-boxes_angled-view-2.png',
+  'COR-028-EC1': 'ecommerce_custom-ecommerce-tab-lock-roll-end-mailer-boxes_angled-view-2.png',
+  'COR-031-CN1': 'candles-fragrance_custom-candle-subscription-box_angled-view-2.png',
+  'COR-031-EC1': 'ecommerce_custom-ecommerce-roll-end-tuck-front-shipping-boxes_angled-view-4.png',
+  'COR-036-RF3': 'restaurants_custom-white-pizza-box_angled-view-2.png',
+  'COR-039-AP1': 'apparel_custom-corrugated-shoe-shipping-boxes_angled-view-2.png',
+  'COR-041-EC1': 'ecommerce_custom-ecommerce-triangle-mailing-tube_angled-view-2.png',
+  'FCT-016-ET3': 'electronics_custom-power-bank-packaging-box_angled-view-3.png',
+  'FCT-026-AP1': 'apparel_custom-double-wall-tray-and-sleeve-for-apparel-clothing-garment_angled-view-3.png',
+  'FCT-026-PR1': 'promotional_custom-trade-show-giveaway-boxes_angled-view-2.png',
+  'FCT-026-SB1': 'soap-bath_custom-soap-double-wall-frame-tray-and-sleeve_angled-view-4.png',
+  'FCT-031-ET1': 'electronics_custom-phone-charger-boxes_angled-view-2.png',
+  'FCT-032-ET1': 'electronics_custom-usb-cable-packaging_angled-view-2.png',
+  'FCT-041-BK2': 'bakery_custom-pie-boxes_angled-view-2.png',
+  'FCT-041-RF1': 'restaurants_custom-fast-food-take-out-gable-carrier-boxes_angled-view-2.png',
+  'FCT-043-CN1': 'candles-fragrance_custom-taper-candle-boxes_angled-view-4.png',
+  'FCT-052-TE1': 'tea_custom-petal-top-tea-box_angled-view-2.png',
+  'FCT-059-BC3': 'cosmetics_custom-lipstick-boxes_angled-view-2.png',
+  'FCT-059-BC5': 'cosmetics_custom-serum-boxes_angled-view-2.png',
+  'FCT-059-SB1': 'soap-bath_custom-reverse-tuck-end-soap-boxes_angled-view-2.png',
+  'FCT-061-PR1': 'promotional_custom-sample-packaging-boxes_angled-view-2.png',
+  'FCT-062-CF1': 'coffee_eco-friendly-custom-sized-retail-coffee-boxes_angled-view-3.png',
+  'FCT-072-LX1': 'luxury_custom-luxury-straight-tuck-end-box_angled-view-4.png',
+  'FCT-076-RF1': 'restaurants_custom-paper-food-tray-and-sleeve_angled-view-2.png',
+  'FCT-076-SB1': 'soap-bath_custom-sleeve-and-tray-soap-boxes_angled-view-4.png',
+  'FCT-079-BC1': 'cosmetics_custom-cosmetic-tuck-top-auto-bottom-box_angled-view-3.png',
+  'FCT-079-WS1': 'wine-spirits_custom-tuck-top-auto-bottom-wine-folding-paper-box_angled-view-2.png',
+  'FCT-081-BC1': 'cosmetics_custom-cosmetic-tuck-end-snap-lock-bottom-box_angled-view-2.png',
+  'FCT-081-CF1': 'coffee_custom-coffee-boxes_angled-view-4.png',
+  'FCT-082-BC1': 'cosmetics_custom-cream-boxes_angled-view-2.png',
+  'FOD-003-RF1': 'restaurants_custom-foldable-carryout-boxes_angled-view-3.png',
+  'RGD-001-LX1': 'luxury_custom-luxury-rigid-sliding-multi-drawer-box_angled-view-2.png',
+  'RGD-011-AP2': 'apparel_custom-printed-sock-boxes_angled-view-3.png',
+  'RGD-017-CF1': 'coffee_custom-double-door-flap-opening-gift-box-for-coffee_angled-view-2.png',
+  'RGD-017-LX1': 'luxury_custom-luxury-double-door-flap-opening-rigid-box_angled-view-3.png',
+  'RGD-021-WS2': 'wine-spirits_custom-hinged-flip-lid-rigid-liquor-bottle-gift-boxes_angled-view-3.png',
+  'RGD-027-BC1': 'cosmetics_custom-cosmetic-explosion-box_angled-view-2.png',
+  'RGD-029-BC1': 'cosmetics_custom-cosmetic-flip-top-magnetic-gift-box_angled-view-2.png',
+  'RGD-029-LX1': 'luxury_custom-luxury-flip-top-magnetic-gift-box_angled-view-2.png',
+  'RGD-032-LX1': 'luxury_custom-luxury-hexagon-shaped-gift-boxes_angled-view-4.png',
+  'RGD-040-ET1': 'electronics_custom-hair-straightener-iron-packaging-boxes_angled-view-2.png',
+  'RGD-041-CC1': 'candy-chocolate_custom-heart-shaped-chocolate-packaging-boxes_angled-view-2.png',
+  'RGD-049-WS1': 'wine-spirits_custom-hinged-flip-lid-angled-neck-shoulder-liquor-bottle-gift-boxes_angled-view-2.png',
+  'RGD-051-WS1': 'wine-spirits_custom-hinged-flip-lid-rigid-wine-boxes_angled-view-2.png',
+  'RGD-058-TG2': 'toys-games_custom-lid-and-base-round-rigid-box-for-game-cards_angled-view-4.png',
+  'RGD-059-BC1': 'cosmetics_custom-perfume-packaging-boxes_angled-view-2.png',
+  'RGD-059-CC2': 'candy-chocolate_custom-chocolate-rigid-boxes_angled-view-2.png',
+  'RGD-060-AP1': 'apparel_custom-apparel-two-piece-lift-off-lid-rigid-box_angled-view-3.png',
+  'RGD-060-AP2': 'apparel_luxury-tie-gift-box_angled-view-2.png',
+  'RGD-060-BC1': 'cosmetics_custom-cosmetic-two-piece-lift-off-lid-rigid-box_angled-view-4.png',
+  'RGD-060-CN1': 'candles-fragrance_custom-two-piece-lift-off-lid-rigid-box-for-candles_angled-view-2.png',
+  'RGD-063-CC1': 'candy-chocolate_custom-luxury-chocolate-gift-boxes_angled-view-3.png',
+  'RGD-067-CN1': 'candles-fragrance_custom-magnetic-closure-luxury-candle-box_angled-view-2.png',
+  'RGD-067-ET1': 'electronics_custom-software-and-video-game-packaging_angled-view-2.png',
+  'RGD-067-LX1': 'luxury_custom-luxury-magnetic-closure-rigid-box_angled-view-2.png',
+  'RGD-067-PR1': 'promotional_custom-marketing-kits_angled-view-5.png',
+  'RGD-067-PR3': 'promotional_custom-product-launch-kits-boxes_angled-view-5.png',
+  'RGD-067-PR4': 'promotional_custom-product-sample-display-boxes_angled-view-3.png',
+  'RGD-067-PR5': 'promotional_custom-sales-presentation-boxes_angled-view-2.png',
+  'RGD-067-WS2': 'wine-spirits_custom-magnetic-closure-rigid-wine-boxes_angled-view-2.png',
+  'RGD-067-WS3': 'wine-spirits_custom-mini-liquor-bottle-gift-boxes_angled-view-2.png',
+  'RGD-068-AP1': 'apparel_custom-apparel-rigid-sliding-drawer-box_angled-view-3.png',
+  'RGD-068-BC1': 'cosmetics_custom-cosmetic-rigid-sliding-drawer-box_angled-view-2.png',
+  'RGD-068-BC2': 'cosmetics_custom-hair-product-box_angled-view-3.png',
+  'RGD-068-CC1': 'candy-chocolate_custom-chocolate-drawer-style-box_angled-view-2.png',
+  'RGD-068-LX1': 'luxury_custom-luxury-rigid-sliding-drawer-box_angled-view-4.png',
+  'RGD-080-WS1': 'wine-spirits_custom-cardboard-tube-box-for-liquor-bottles_angled-view-4.png',
+  'RGD-082-CN1': 'candles-fragrance_custom-two-piece-partial-cover-lift-off-lid-candle-boxes_angled-view-2.png',
+  'RGD-082-JW1': 'jewelry_custom-luxury-two-piece-partial-cover-lift-off-lid-boxes_angled-view-2.png',
+  'RGD-082-SB1': 'soap-bath_custom-two-piece-partial-cover-lift-off-lid-soap-gift-boxes_angled-view-3.png',
+  'RGD-083-WS1': 'wine-spirits_custom-lid-and-base-pedestal-rigid-1-bottle-liquor-gift-boxes_angled-view-2.png',
+  'RGD-089-CN1': 'candles-fragrance_custom-rigid-tray-and-sleeve-candle-boxes_angled-view-3.png',
+  'RGD-089-SB1': 'soap-bath_custom-rigid-tray-and-sleeve-soap-gift-boxes_angled-view-2.png',
+  'RGD-090-BC1': 'cosmetics_custom-cosmetic-rigid-tray-with-clear-transparent-lid_angled-view-3.png',
+  'RGD-103-LX1': 'luxury_custom-luxury-double-deck-rigid-box_angled-view-2.png',
+  'RGD-104-BC1': 'cosmetics_custom-cosmetic-two-piece-angled-shoulder-neck-rigid-box_angled-view-4.png',
+  'RGD-104-CN1': 'candles-fragrance_custom-two-piece-shoulder-neck-rigid-candle-gift-box_angled-view-2.png',
+  'RGD-105-BC1': 'cosmetics_custom-cosmetic-two-piece-shoulder-neck-rigid-box-with-flush-cover_angled-view-2.png',
+  'RGD-105-TG1': 'toys-games_custom-shoulder-neck-box-for-single-deck_angled-view-4.png',
+  'RGD-106-TE1': 'tea_custom-two-piece-shoulder-neck-rigid-tea-gift-boxes_angled-view-3.png',
+  'RGD-107-ET1': 'electronics_custom-phone-accessories-packaging-boxes_angled-view-2.png',
+  'RGD-107-LX1': 'luxury_custom-luxury-two-piece-lift-off-lid-rigid-box_angled-view-2.png',
+  'RGD-107-TG1': 'toys-games_custom-two-piece-telescopic-box-for-board-games_angled-view-3.png',
+  'RGD-107-WS1': 'wine-spirits_custom-rigid-two-piece-full-telescoping-lift-off-lid-box-for-liquor_angled-view-3.png',
+}
+
+function withPick(sku, ordered) {
+  const name = PRIMARY_PICK[sku]
+  if (!name) return ordered
+  const i = ordered.findIndex((f) => f.name === name)
+  if (i === -1) fail(`${sku}: the picked primary "${name}" is not in its 02-Edited folder.`)
+  return [ordered[i], ...ordered.slice(0, i), ...ordered.slice(i + 1)]
+}
+
 function altFor(title, p) {
   return p.view ? `${title}, ${p.view.replace(/-/g, ' ')}` : title
 }
@@ -360,7 +466,7 @@ async function main() {
     const doc = published ?? draft
     if (doc.status !== 'active') { refused.push(`${sku}: status is "${doc.status}", not active`); continue }
     const hasImages = (published?.images?.length ?? 0) + (draft?.images?.length ?? 0) > 0
-    targets.push({ sku, id, published, draft, hasImages, title: doc.title, files: orderImages(plan.get(sku)) })
+    targets.push({ sku, id, published, draft, hasImages, title: doc.title, files: withPick(sku, orderImages(plan.get(sku))) })
   }
 
   // Assets already in the dataset, by content.
