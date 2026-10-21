@@ -42,7 +42,7 @@ export function CompareSpecMatrix({
                         className="border-b border-border px-4 pb-4 pt-8"
                         role="rowheader"
                     >
-                        <p className="text-xl font-semibold leading-7 text-foreground">
+                        <p className="text-xl font-semibold leading-none tracking-tight text-foreground">
                             {row.label}
                         </p>
                     </div>

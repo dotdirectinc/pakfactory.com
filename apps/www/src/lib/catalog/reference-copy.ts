@@ -106,6 +106,7 @@ export function getLearnFirstSectionCopy(
     specsLabel: string;
     compare: LearnFirstSectionCopy;
     worksWith: LearnFirstSectionCopy;
+    compatibleOptions: LearnFirstSectionCopy;
     showcase: LearnFirstSectionCopy;
 } {
     const categoryLabel =
@@ -134,6 +135,12 @@ export function getLearnFirstSectionCopy(
             title: 'Apply it on different product styles',
             description: `The styles this option works on. ${selectionHint}`,
             navLabel: 'Product styles',
+        },
+        compatibleOptions: {
+            eyebrow: 'Compatible customizations',
+            title: 'What it works with',
+            description: `Other options specified together with ${title}.`,
+            navLabel: 'Compatible options',
         },
         showcase: {
             eyebrow: 'Get inspired',

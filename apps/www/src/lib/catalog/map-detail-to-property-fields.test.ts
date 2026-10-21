@@ -3,6 +3,7 @@ import {describe, it} from 'node:test';
 import {mapDetailToPropertyFields} from './map-detail-to-property-fields';
 import type {
     CustomizationDetail,
+    CustomizationPropertyFact,
     CustomizationPropertyValue,
 } from './types';
 
@@ -17,11 +18,11 @@ function prop(
         | 'imageUrl'
         | 'kindOfSlug'
         | 'kindOfTitle'
-    >,
+    > & {facts?: CustomizationPropertyFact[]},
 ): CustomizationPropertyValue {
     return {
         ...partial,
-        facts: [],
+        facts: partial.facts ?? [],
     };
 }
 
@@ -159,6 +160,96 @@ describe('mapDetailToPropertyFields', () => {
         assert.equal(fields.length, 1);
         assert.equal(fields[0]?.kind, 'listbox');
         assert.equal(fields[0]?.valuesPerItem, 'many');
+    });
+
+    it('infers spec table when control is unset and a value has facts', () => {
+        const fields = mapDetailToPropertyFields(
+            detail({
+                title: 'Black Kraft',
+                properties: [
+                    prop({
+                        id: 'pv-6pt',
+                        title: '6pt',
+                        slug: '6pt',
+                        propertySlug: 'caliper',
+                        propertyTitle: 'Caliper',
+                        facts: [
+                            {
+                                key: 'thickness',
+                                label: 'Thickness',
+                                display: '0.1524mm',
+                            },
+                        ],
+                    }),
+                ],
+                declaredProperties: [
+                    {
+                        usage: 'selectable',
+                        propertySlug: 'caliper',
+                        propertyTitle: 'Caliper',
+                    },
+                ],
+            }),
+        );
+        assert.equal(fields[0]?.kind, 'specTable');
+    });
+
+    it('keeps an explicit chip when values have facts', () => {
+        const fields = mapDetailToPropertyFields(
+            detail({
+                title: 'Black Kraft',
+                properties: [
+                    prop({
+                        id: 'pv-6pt',
+                        title: '6pt',
+                        slug: '6pt',
+                        propertySlug: 'caliper',
+                        propertyTitle: 'Caliper',
+                        facts: [
+                            {
+                                key: 'thickness',
+                                label: 'Thickness',
+                                display: '0.1524mm',
+                            },
+                        ],
+                    }),
+                ],
+                declaredProperties: [
+                    {
+                        usage: 'selectable',
+                        propertySlug: 'caliper',
+                        propertyTitle: 'Caliper',
+                        control: 'chip',
+                    },
+                ],
+            }),
+        );
+        assert.equal(fields[0]?.kind, 'chip');
+    });
+
+    it('infers chip when control is unset and values have no facts', () => {
+        const fields = mapDetailToPropertyFields(
+            detail({
+                title: 'Soft Touch Lamination',
+                properties: [
+                    prop({
+                        id: 'pv-1',
+                        title: 'Matte',
+                        slug: 'matte-finish',
+                        propertySlug: 'finish',
+                        propertyTitle: 'Finish',
+                    }),
+                ],
+                declaredProperties: [
+                    {
+                        usage: 'selectable',
+                        propertySlug: 'finish',
+                        propertyTitle: 'Finish',
+                    },
+                ],
+            }),
+        );
+        assert.equal(fields[0]?.kind, 'chip');
     });
 
     it('infers flat swatch when control is unset and a value has a color', () => {

@@ -45,6 +45,13 @@ describe('getLearnFirstSectionCopy (PROD-3112)', () => {
         );
         assert.equal(copy.overview.navLabel, 'Overview');
         assert.equal(copy.specsLabel, 'Key properties');
+        assert.equal(copy.compatibleOptions.eyebrow, 'Compatible customizations');
+        assert.equal(copy.compatibleOptions.title, 'What it works with');
+        assert.equal(
+            copy.compatibleOptions.description,
+            'Other options specified together with Color Chipboard (Pure Color Core).',
+        );
+        assert.equal(copy.compatibleOptions.navLabel, 'Compatible options');
     });
 
     it('uses finishes peer noun for finishing compare description', () => {

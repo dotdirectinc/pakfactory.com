@@ -49,6 +49,15 @@ In a Client Component page, resolve with React `use()` (page cannot be `async`).
 
 `useRouter` / `usePathname` / `useSearchParams` require `'use client'`.
 
+### Card → detail navigation (pointer prefetch)
+
+Discovery / catalog tiles that navigate to a **heavy detail route** (CDP, PDP, capability) must **not** leave default viewport prefetch on a grid of `Link`s.
+
+- Prefetch stays **off** until pointer-enter / pointer-down / focus; then call `router.prefetch(href)` immediately.
+- Pending UI via `useLinkStatus` (`opacity-70`).
+- **General cards:** lives in `MediaTileCard` (via `CatalogCard`). **Transactional cards:** [`usePointerPrefetch`](apps/www/src/lib/ui/use-pointer-prefetch.ts). Do not re-copy the helper.
+- Soft page enter stays [`SoftPageTransition`](apps/www/src/components/layout/soft-page-transition.tsx) — do not add per-card transition wrappers.
+
 ---
 
 ## 3. State scope (narrow → wide)
@@ -138,6 +147,7 @@ Until [ADR-015](docs/adr/0015-page-composition-sections-terminology.md) is **Acc
 | “Make this page interactive.” | `'use client'` on the smallest leaf | `'use client'` on `layout.tsx` / whole `page.tsx` without need |
 | “Optimize re-renders.” | Narrow state; Context value identity only when providing Context | Blanket `useMemo` on every derived string |
 | “Reuse the topic chips on 404.” | Extract/use props-only `ui/` primitive | Copy-paste `TopicRelatedPills` wiring |
+| “Add a card that links to a detail page.” | `CatalogCard` / `MediaTileCard` (pointer prefetch built in) or `usePointerPrefetch` on transactional tiles | Viewport-prefetch a grid of `Link`s; copy-paste `router.prefetch` |
 
 ---
 

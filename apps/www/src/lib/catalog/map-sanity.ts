@@ -1,4 +1,5 @@
 import {
+    type CatalogCompatibleOptionDoc,
     type CatalogCustomizationDetailDoc,
     type CatalogLibraryOptionDoc,
     type CatalogOptionDoc,
@@ -10,12 +11,14 @@ import {
     type PageSectionDoc,
 } from '@pakfactory/sanity/queries';
 import type {PortableTextBlock} from '@portabletext/types';
+import {presentPropertyFact} from '@/lib/catalog/property-facts';
 import {
     resolveImageAlt,
     sanityImageBaseUrl,
 } from '@/lib/sanity/image';
 import type {
     CatalogMedia,
+    CustomizationCompatibleOption,
     CustomizationDeclaredProperty,
     CustomizationDetail,
     CustomizationLibraryItem,
@@ -1172,14 +1175,8 @@ function mapPropertyFacts(
     const out: CustomizationPropertyFact[] = [];
     for (const fact of facts) {
         if (!fact) continue;
-        const label = fact.label?.trim();
-        if (!label) continue;
-        if (typeof fact.value === 'number' && Number.isFinite(fact.value)) {
-            out.push({label, display: String(fact.value)});
-            continue;
-        }
-        const text = fact.text?.trim();
-        if (text) out.push({label, display: text});
+        const presented = presentPropertyFact(fact);
+        if (presented) out.push(presented);
     }
     return out;
 }
@@ -1228,6 +1225,33 @@ function mapDetailPropertyValue(
         ...(imageUrl !== undefined ? {imageUrl} : {}),
         ...(imageAlt ? {imageAlt} : {}),
         facts: mapPropertyFacts(value.facts),
+    };
+}
+
+function mapCompatibleOption(
+    doc: CatalogCompatibleOptionDoc | null | undefined,
+): CustomizationCompatibleOption | null {
+    if (!doc) return null;
+    const slug = doc.slug?.trim();
+    const title = doc.title?.trim();
+    const categorySlug = doc.category?.slug?.trim();
+    if (!slug || !title || !categorySlug) return null;
+
+    const {imageUrl, imageAlt} = cardImageFromSanity(doc.cardImage, title);
+    const shortName = doc.shortName?.trim();
+    const shortDescription = doc.shortDescription?.trim();
+    const typeTitle = doc.type?.title?.trim();
+
+    return {
+        id: doc._id,
+        title,
+        slug,
+        categoryValue: categorySlug,
+        categoryLabel: doc.category?.title?.trim() || categorySlug,
+        ...(shortName ? {shortName} : {}),
+        ...(shortDescription ? {shortDescription} : {}),
+        ...(typeTitle ? {typeTitle} : {}),
+        ...(imageUrl ? {imageUrl, imageAlt} : {}),
     };
 }
 
@@ -1297,8 +1321,13 @@ export function mapSanityCustomizationDetail(
 
     const typeTitle = doc.type?.title?.trim();
     const typeSlug = doc.type?.slug?.trim();
+    const shortName = doc.shortName?.trim();
+    const shortDescription = doc.shortDescription?.trim();
 
     const faqs = mapFaqs(doc.faqs);
+    const compatibleOptions = (doc.compatibleOptions ?? [])
+        .map(mapCompatibleOption)
+        .filter((item): item is CustomizationCompatibleOption => item != null);
 
     const media = customizationGallerySlides(
         doc.featuredImage,
@@ -1317,12 +1346,14 @@ export function mapSanityCustomizationDetail(
         status: toLifecycle(doc.status),
         id: doc._id,
         title,
+        ...(shortName ? {shortName} : {}),
         slug,
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title?.trim() || categorySlug,
         ...(typeTitle ? {typeTitle} : {}),
         ...(typeSlug ? {typeSlug} : {}),
         ...(description ? {description} : {}),
+        ...(shortDescription ? {shortDescription} : {}),
         ...(glossaryDefinition?.length ? {glossaryDefinition} : {}),
         ...(metaDescription ? {metaDescription} : {}),
         ...(benefitsTitle ? {benefitsTitle} : {}),
@@ -1341,5 +1372,6 @@ export function mapSanityCustomizationDetail(
         declaredProperties,
         productLines,
         ...(faqs.length > 0 ? {faqs} : {}),
+        ...(compatibleOptions.length > 0 ? {compatibleOptions} : {}),
     };
 }
