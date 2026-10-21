@@ -336,6 +336,12 @@ PROD-3096 / PROD-3119 (2026-10-20). Sync Changes applies names, status and conte
 - **A record's page** ([`catalog/[table]/[id]`](src/app/(admin)/spec/catalog/[table]/[id]/page.tsx)): "Changes from Sanity" under the record, newest first, each with its run (automatic, or who started it) and time — from the audit trail (`GET /api/v1/records/:id/sync-changes`, registry id). Loaded in its own `Suspense`, so the record renders first.
 - Wording in [`lib/spec/sync-applied.ts`](src/lib/spec/sync-applied.ts) (tested): "Removed White", "Slug: old → new", facts as "label value".
 
+### Sync from Notion picks its fields; a finished sync says so (2026-10-21)
+
+- **Sync Notion is a dialog** ([`spec-notion-sync-dialog.tsx`](src/components/spec/spec-notion-sync-dialog.tsx), from the avatar menu and Re-sync on a Notion frame). The person ticks the field groups Notion owns for that run (names, status, parents, appears in, website copy, product details, solution axis, property values added); they go as `notion_fields` and **every** difference in them is proposed, decided before or not (server `docs/catalog-sync-v2.md`, note above § 0). Day to day Studio owns copy, product details and the solution axis. Group ids: [`lib/spec/notion-fields.ts`](src/lib/spec/notion-fields.ts) — client-safe, because `registry-api.ts` is server-only.
+- **A finished sync says so.** Whoever starts a run (Sync Changes, the dialog, Re-sync) calls `watchSyncRun(id)` ([`lib/spec/sync-watch.ts`](src/lib/spec/sync-watch.ts)); [`SyncRunWatcher`](src/components/layout/sync-run-watcher.tsx) in the shell follows it from any page (3 s, `sessionStorage`, 20 min cap), then toasts what it produced with **Open Registry** and calls `router.refresh()` — which also updates the sidebar's waiting count. Before this, only the Registry and Sync history pages refreshed themselves.
+- **Help → Who owns what** ([`spec/help`](src/app/(admin)/spec/help/page.tsx), `#owners`): the field-ownership table and how fast each direction travels. Keep it in step when ownership or sync behaviour changes.
+
 ## Customization Library
 
 | Route | Role today |
