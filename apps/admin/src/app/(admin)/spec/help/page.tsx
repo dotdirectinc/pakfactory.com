@@ -32,6 +32,7 @@ function Term({ name, children }: { name: string; children: ReactNode }) {
 const TOC = [
   ["pages", "The pages"],
   ["sync", "Syncing and approving"],
+  ["owners", "Who owns what"],
   ["structure", "How the catalog is structured"],
   ["status", "Status"],
   ["codes", "Registry IDs and codes"],
@@ -90,25 +91,33 @@ export default async function SpecHelpPage() {
         </p>
         <dl className="flex flex-col gap-3">
           <Term name="Sync Changes">
-            On Registry. Compares Sanity with the registry and proposes registry changes — frames named{" "}
-            <em>Spec registry · …</em>. Approvers and admins.
+            On Registry. Compares Sanity with the registry. Names, status and content that Sanity owns are{" "}
+            <strong>copied in straight away</strong>, no frame (see <a href="#owners" className="text-foreground underline underline-offset-2">Who owns what</a>);
+            relations and SKUs are proposed as frames named <em>Spec registry · …</em>. Approvers and admins.
           </Term>
           <Term name="Sync Notion">
-            In your avatar menu (top right), admins only. Compares Notion with Sanity and proposes Sanity changes —
-            frames named <em>Website content · …</em>. Approved ones are written to Sanity; run Sync Changes afterwards to
+            In your avatar menu (top right), admins only. Studio owns these fields day to day; Sync Notion is a <strong>forced, manual</strong> sync of the
+            ones you pick. It asks which field groups Notion owns for this run — names, status, parents, appears in,
+            website copy, product details, solution axis, property values added — and proposes{" "}
+            <strong>every</strong> difference in them, even one approved, excluded or discarded before, in frames named{" "}
+            <em>Website content · …</em>. Nothing changes until you approve. Approved rows are written to Sanity; Sync
+            Changes then carries what the registry keeps. Approved ones are written to Sanity; run Sync Changes afterwards to
             carry them into the registry.
           </Term>
           <Term name="Automatic">
             Sync Changes also runs by itself: every 10 minutes the system checks whether a catalog record was published
-            in Sanity since the last comparison, and runs it if so — marked <em>Automatic</em>. It never replaces frames
-            waiting for review: while one is pending it waits. Sync Notion never runs by itself.
+            in Sanity since the last run, and runs it if so — marked <em>Automatic</em>. When nothing was published,
+            nothing runs and Sync history shows no entry, so overnight gaps are normal. A frame waiting for review is
+            never replaced: content still applies, and the relation changes held behind it are proposed once that frame
+            is decided. Sync Notion never runs by itself.
           </Term>
           <Term name="Dataset">Development only for now. Production follows its catalog rebuild.</Term>
         </dl>
         <p>
-          <strong>Only what changed since it was last decided is proposed.</strong> Approving, excluding or discarding a
-          change records it as decided. It is not proposed again unless its source changes it again — so an edit made on
-          the other side is never pushed back by accident.
+          <strong>Sync Changes proposes only what changed since it was last decided.</strong> Approving, excluding or
+          discarding a change records it as decided; it is not proposed again unless Sanity changes it again.{" "}
+          <strong>Sync Notion is the exception:</strong> it proposes every difference in the groups you tick, decided
+          before or not.
         </p>
         <dl className="flex flex-col gap-3">
           <Term name="Approve">Applies every included row of the frame at once. It cannot be undone.</Term>
@@ -118,7 +127,7 @@ export default async function SpecHelpPage() {
             excluded change counts as decided too.
           </Term>
           <Term name="Re-sync">
-            On a pending sync frame: runs that sync again. Its pending frames are <em>replaced</em> with the newest values
+            On a pending sync frame: runs that sync again (for a Notion frame, it asks again which groups Notion owns). Its pending frames are <em>replaced</em> with the newest values
             (the old frame is marked superseded). Undecided changes come back; a row marked <em>New since last sync</em>{" "}
             was not in the frame it replaced.
           </Term>
@@ -144,6 +153,123 @@ export default async function SpecHelpPage() {
           the same kind <strong>re-checks</strong> it: <em>all fields still match</em> means the change landed and holds;
           otherwise it names the rows that no longer match — not written, or changed again since.
         </p>
+      </Section>
+
+      <Section id="owners" title="Who owns what">
+        <p>
+          Each field is edited in one place. Edit it there; a change made anywhere else is overwritten or never copied.
+          <em> Automatic</em> means Sync Changes copies Sanity's value into the registry with no frame, and records it in
+          Sync history and on the record (<em>Changes from Sanity</em>).
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs uppercase tracking-wide text-foreground">
+                <th className="py-2 pr-3 font-medium">Fields</th>
+                <th className="py-2 pr-3 font-medium">Edit in</th>
+                <th className="py-2 pr-3 font-medium">Reaches the registry</th>
+                <th className="py-2 pr-3 font-medium">Reaches Sanity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Names</div><div className="text-xs">options, lines, styles, products, solutions, solution styles, properties, property values</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">Automatic</td>
+                <td className="py-2 pr-3">—<div className="mt-1 text-xs">Edited in Studio. Sync Notion reports a different name, and proposes it only when you tick <em>Names</em>. Category and type names are not copied to the registry.</div></td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Status</div><div className="text-xs">every record</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">Automatic</td>
+                <td className="py-2 pr-3">—<div className="mt-1 text-xs">Sync Notion proposes Notion's status when you tick <em>Status</em> (products: from Notion's <em>Sanity Status</em> column only).</div></td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Slugs</div><div className="text-xs">lines, styles, products, solution styles</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">Automatic</td>
+                <td className="py-2 pr-3">—</td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Properties and values</div><div className="text-xs">the values set on options and standard products; a value's label, facts and kind-of; a property's name</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">Automatic</td>
+                <td className="py-2 pr-3">—<div className="mt-1 text-xs">Stays in Studio after the switch below. Sync Notion may add values to a product, never remove them.</div></td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Solution axis</div><div className="text-xs">solution type</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">Automatic</td>
+                <td className="py-2 pr-3">—</td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Website copy</div><div className="text-xs">short name, H1, descriptions, short descriptions, meta titles and descriptions, benefits; a product's MOQ, kind and dimension input</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">Not copied</td>
+                <td className="py-2 pr-3">—<div className="mt-1 text-xs">A new record created from Notion starts with Notion's text; after that, edit it in Studio. Sync Notion proposes Notion's values only when you tick <em>Website copy</em> or <em>Product details</em>.</div></td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Rules</div><div className="text-xs">decided by / customer selects, depends on, compatible customizations, available customizations, product exceptions</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio or Spec System</td>
+                <td className="py-2 pr-3">Studio edit: a frame to approve</td>
+                <td className="py-2 pr-3">Spec edit: on approval<div className="mt-1 text-xs">Both can edit until the switch below is turned. An approved Spec System change wins over Studio.</div></td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Parents</div><div className="text-xs">a product's line, styles, solutions and base product; a style's line; a type's category; an option's type; a solution style's solution</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio or Spec System</td>
+                <td className="py-2 pr-3">Studio edit: a frame to approve</td>
+                <td className="py-2 pr-3">Spec edit (Map): on approval<div className="mt-1 text-xs">A move re-issues the registry code (the ID never changes) and adds a redirect. Sync Notion proposes them when you tick <em>Parents</em> — not once the Spec System edits parents.</div></td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">SKU</div><div className="text-xs">standard products</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">A frame to approve</td>
+                <td className="py-2 pr-3">—<div className="mt-1 text-xs">Permanent once set.</div></td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">New solution styles</div><div className="text-xs">the record itself</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">A frame to approve</td>
+                <td className="py-2 pr-3">—</td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Display order and filters</div><div className="text-xs">order lists, solution style filters, an inspiration product's pre-selected customizations</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
+                <td className="py-2 pr-3">Not copied</td>
+                <td className="py-2 pr-3">—<div className="mt-1 text-xs">Stays in Studio after the switch.</div></td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Media, SEO titles, templates, featured and related lists, lead time</div></td>
+                <td className="py-2 pr-3 text-foreground">Studio (media from Drive)</td>
+                <td className="py-2 pr-3">Not copied</td>
+                <td className="py-2 pr-3">—</td>
+              </tr>
+              <tr className="border-b border-border align-top last:border-0">
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Registry ID and code</div><div className="text-xs">every record</div></td>
+                <td className="py-2 pr-3 text-foreground">Spec System</td>
+                <td className="py-2 pr-3">—</td>
+                <td className="py-2 pr-3">Written to Sanity<div className="mt-1 text-xs">Read-only in Studio.</div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <dl className="flex flex-col gap-3">
+          <Term name="How fast">
+            <strong>Sanity → Spec System:</strong> within about 10 minutes of publishing — the next automatic check — for
+            the <em>Automatic</em> rows. Relations from Studio wait in a frame until someone approves it.{" "}
+            <strong>Spec System → Sanity:</strong> the moment a rule or parent change is approved (including{" "}
+            <em>Submit &amp; approve</em>), on both the published record and any Studio draft.
+          </Term>
+          <Term name="Inspiration products">
+            Show their base product's properties. A difference from the base is reported on each run, never copied in —
+            fix it in Studio.
+          </Term>
+          <Term name="The switch">
+            Registry → <em>Who edits catalog relations</em>. Set to Spec System, rules and parents become read-only in
+            Studio (parents only once a record has a Registry ID) and Sync Changes stops proposing them. Today Studio
+            and the Spec System can both edit them.
+          </Term>
+        </dl>
       </Section>
 
       <Section id="structure" title="How the catalog is structured">
@@ -210,10 +336,15 @@ export default async function SpecHelpPage() {
             It was not written to Sanity (see the Sync panel), or its source changed it again since.
           </Term>
           <Term name="…my Studio edit not show up in Sync Notion?">
-            Sync Notion only proposes what Notion changed. Run Sync Changes to carry Studio edits into the registry.
+            Sync Notion proposes Notion's values, never Studio's — your edit is already in Sanity. Sync Changes carries it
+            into the registry (automatically within about 10 minutes).
           </Term>
           <Term name="…a frame I was looking at disappear?">
             A newer run of the same sync replaced it. Its undecided changes are in the new frame.
+          </Term>
+          <Term name="…my Studio edit take a few minutes to show here?">
+            Automatic runs check every 10 minutes. Names, status and content arrive with the next one; rules and parents
+            arrive as a frame to approve. To bring it in now, run <strong>Sync Changes</strong>.
           </Term>
           <Term name="…a sync propose nothing?">
             Everything that differs has already been decided, or both sides already agree.

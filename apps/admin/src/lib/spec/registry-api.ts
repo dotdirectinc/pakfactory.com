@@ -277,9 +277,17 @@ export const listSyncRuns = cache(async () => call<SyncRun[]>("/api/v1/sync-runs
  * Ask the backend to sync — Sanity → registry, or Notion → Sanity. The run is queued and the worker
  * takes it within seconds; what it finds arrives as draft frames, never as live changes.
  */
-export async function requestSyncRun(kind: SyncKind, dataset: string, includeSku = false) {
-  // include_sku is sent only when asked, so a backend without the option keeps working.
-  const body = includeSku ? { kind, dataset, include_sku: true } : { kind, dataset };
+import type { NotionFieldGroup } from "@/lib/spec/notion-fields";
+export type { NotionFieldGroup };
+
+export async function requestSyncRun(kind: SyncKind, dataset: string, includeSku = false, notionFields?: readonly NotionFieldGroup[]) {
+  // include_sku / notion_fields are sent only when asked, so a backend without the option keeps working.
+  const body = {
+    kind,
+    dataset,
+    ...(includeSku ? { include_sku: true } : {}),
+    ...(notionFields?.length ? { notion_fields: notionFields } : {}),
+  };
   return call<SyncRun>("/api/v1/sync-runs", { method: "POST", body });
 }
 

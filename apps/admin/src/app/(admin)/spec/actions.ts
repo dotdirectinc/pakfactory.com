@@ -2,7 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
-import { decideChangeset, dismissSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type RelationsOwnerValue } from "@/lib/spec/registry-api";
+import { decideChangeset, dismissSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type NotionFieldGroup, type RelationsOwnerValue } from "@/lib/spec/registry-api";
 
 export type DecisionResult = { ok: true } | { ok: false; error: string };
 
@@ -38,8 +38,13 @@ export async function decideFrameAction(
  * Request a sync run (PROD-2751) — Sync Sanity or Sync from Notion — as the signed-in person. The
  * backend checks `catalog.sync` against their grant and refuses while another run is open.
  */
-export async function requestSyncAction(kind: "sanity" | "notion", dataset: string, includeSku = false): Promise<DecisionResult> {
-  const res = await requestSyncRun(kind, dataset, includeSku);
+export async function requestSyncAction(
+  kind: "sanity" | "notion",
+  dataset: string,
+  includeSku = false,
+  notionFields?: readonly NotionFieldGroup[],
+): Promise<DecisionResult> {
+  const res = await requestSyncRun(kind, dataset, includeSku, notionFields);
   if (!res.ok) return { ok: false, error: res.error };
   revalidatePath("/spec");
   return { ok: true };
