@@ -36,7 +36,8 @@ function matchesFacet(
 
 function engineForCategory(category: string) {
     return createFacetEngine<CustomizationLibraryItem>({
-        getSearchText: (item) => item.title,
+        getSearchText: (item) =>
+            [item.shortName, item.title].filter(Boolean).join(' '),
         matchesFacet,
         matchesContext: (item) =>
             category === CUSTOMIZATION_CATALOG_ALL_CATEGORY ||

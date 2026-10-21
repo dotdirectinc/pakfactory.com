@@ -193,6 +193,24 @@ describe('customization library wire format', () => {
         );
     });
 
+    it('keeps short name and type title on each card (PROD-3100)', () => {
+        const library: CustomizationLibraryResult = {
+            ...customizationLibrary,
+            items: [
+                customization('kraft', {
+                    shortName: 'Kraft',
+                    typeTitle: 'Paperboard',
+                }),
+            ],
+        };
+        const restored = unpackCustomizationLibrary(
+            packCustomizationLibrary(library),
+        );
+        assert.equal(restored.items[0]?.shortName, 'Kraft');
+        assert.equal(restored.items[0]?.typeTitle, 'Paperboard');
+        assert.equal(restored.items[0]?.title, 'kraft');
+    });
+
     it('keeps every title a filter can look up', () => {
         const restored = unpackCustomizationLibrary(
             packCustomizationLibrary(customizationLibrary),
