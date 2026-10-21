@@ -1,4 +1,5 @@
 import {
+    type CatalogAchievedByDoc,
     type CatalogCompatibleOptionDoc,
     type CatalogCustomizationDetailDoc,
     type CatalogLibraryOptionDoc,
@@ -17,6 +18,7 @@ import {
     sanityImageBaseUrl,
 } from '@/lib/sanity/image';
 import type {
+    AchievedByOption,
     CatalogMedia,
     CustomizationCompatibleOption,
     CustomizationDeclaredProperty,
@@ -415,6 +417,46 @@ function preferStyleWithImage(
     return existing;
 }
 
+function mapAchievedByDocs(
+    rows: (CatalogAchievedByDoc | null)[] | null | undefined,
+): AchievedByOption[] {
+    return (rows ?? [])
+        .filter(
+            (item): item is CatalogAchievedByDoc =>
+                Boolean(item?._id && item.title),
+        )
+        .map((item) => {
+            const techniqueFeatured = item.featuredImage
+                ? sanityImageBaseUrl(item.featuredImage)
+                : null;
+            const techniqueMedia = Array.isArray(item.media)
+                ? item.media[0]
+                : null;
+            const techniqueMediaUrl = techniqueMedia
+                ? sanityImageBaseUrl(techniqueMedia)
+                : null;
+            const techniqueDescription = firstNonEmpty(
+                item.shortDescription,
+                item.glossaryPlain,
+                item.benefitsPlain,
+            );
+            return {
+                id: item._id,
+                title: item.title,
+                ...(item.slug ? {slug: item.slug} : {}),
+                ...(item.typeTitle ? {typeTitle: item.typeTitle} : {}),
+                ...(item.categorySlug
+                    ? {categorySlug: item.categorySlug}
+                    : {}),
+                ...(techniqueDescription
+                    ? {description: techniqueDescription}
+                    : {}),
+                imageUrl: techniqueFeatured || techniqueMediaUrl || null,
+                ...(hasDetailPage(item.appearsIn) ? {hasPage: true} : {}),
+            };
+        });
+}
+
 function mapAvailableCustomization(
     row: NonNullable<CatalogProductDoc['availableCustomizations']>[number],
 ): CustomizationOption | null {
@@ -464,42 +506,7 @@ function mapAvailableCustomization(
             ? 'many'
             : 'one';
 
-    const achievedBy = (option.achievedBy ?? [])
-        .filter(
-            (item): item is NonNullable<(typeof option.achievedBy)>[number] =>
-                Boolean(item?._id && item.title),
-        )
-        .map((item) => {
-            const techniqueFeatured = item.featuredImage
-                ? sanityImageBaseUrl(item.featuredImage)
-                : null;
-            const techniqueMedia = Array.isArray(item.media)
-                ? item.media[0]
-                : null;
-            const techniqueMediaUrl = techniqueMedia
-                ? sanityImageBaseUrl(techniqueMedia)
-                : null;
-            // Customer-facing — never metaDescription.
-            const techniqueDescription = firstNonEmpty(
-                item.shortDescription,
-                item.glossaryPlain,
-                item.benefitsPlain,
-            );
-            return {
-                id: item._id,
-                title: item.title,
-                ...(item.slug ? {slug: item.slug} : {}),
-                ...(item.typeTitle ? {typeTitle: item.typeTitle} : {}),
-                ...(item.categorySlug
-                    ? {categorySlug: item.categorySlug}
-                    : {}),
-                ...(techniqueDescription
-                    ? {description: techniqueDescription}
-                    : {}),
-                imageUrl: techniqueFeatured || techniqueMediaUrl || null,
-                ...(hasDetailPage(item.appearsIn) ? {hasPage: true} : {}),
-            };
-        });
+    const achievedBy = mapAchievedByDocs(option.achievedBy);
 
     const typeOrder = (category?.typeOrder ?? []).filter(
         (id): id is string => typeof id === 'string' && id.length > 0,
@@ -1328,6 +1335,7 @@ export function mapSanityCustomizationDetail(
     const compatibleOptions = (doc.compatibleOptions ?? [])
         .map(mapCompatibleOption)
         .filter((item): item is CustomizationCompatibleOption => item != null);
+    const achieves = mapAchievedByDocs(doc.achieves);
 
     const media = customizationGallerySlides(
         doc.featuredImage,
@@ -1373,5 +1381,6 @@ export function mapSanityCustomizationDetail(
         productLines,
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(compatibleOptions.length > 0 ? {compatibleOptions} : {}),
+        ...(achieves.length > 0 ? {achieves} : {}),
     };
 }

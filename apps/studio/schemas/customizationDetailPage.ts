@@ -31,7 +31,7 @@ export const customizationDetailPage = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'Internal Studio label shown when a customization option picks this layout (e.g. "Default", "Learn-first").',
+        'Internal Studio label shown when a customization option picks this layout (e.g. "Customization Detail Page — Default").',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -49,10 +49,10 @@ export const customizationDetailPage = defineType({
       title: 'Show sticky section nav',
       type: 'boolean',
       group: GROUPS.content,
-      initialValue: true,
+      initialValue: false,
       description:
         'When on, shows the sticky Product styles / Compare / Inspiration bar under the overview. ' +
-        'Turn off for Learn-first when the overview rail is enough.',
+        'Off by default — turn on when the page has bands that need that bar.',
     }),
     pageSectionsField(
       SECTION_ALLOW.customizationDetail,

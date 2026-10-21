@@ -112,12 +112,7 @@ const TYPE_PROJ = /* groq */ `{
  * Technical options (Lamination, Surface Coating, …) that can deliver this
  * customer-facing option — candidates, not a recipe.
  */
-const ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
-  _type == "customizationOption" &&
-  !(_id in path("drafts.**")) &&
-  ${OPTION_ACTIVE} &&
-  ^._id in achieves[]._ref
-] | order(title asc) {
+const ACHIEVED_BY_CARD_FIELDS = /* groq */ `
   _id,
   title,
   "slug": slug.current,
@@ -128,6 +123,27 @@ const ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
   ${OPTION_MEDIA_FIELDS}
+`;
+
+const ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
+  _type == "customizationOption" &&
+  !(_id in path("drafts.**")) &&
+  ${OPTION_ACTIVE} &&
+  ^._id in achieves[]._ref
+] | order(title asc) {
+  ${ACHIEVED_BY_CARD_FIELDS}
+}`;
+
+/**
+ * Forward `achieves[]` on a technical option (PROD-3128). Same card shape as
+ * the reverse list; CDP configuration radios pick from these targets.
+ */
+const ACHIEVES_PROJ = /* groq */ `"achieves": *[
+  _id in ^.achieves[]._ref &&
+  !(_id in path("drafts.**")) &&
+  ${OPTION_ACTIVE}
+] | order(title asc) {
+  ${ACHIEVED_BY_CARD_FIELDS}
 }`;
 
 const OPTION_FIELDS = /* groq */ `
@@ -1051,7 +1067,8 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     slug.current != $handle &&
     type->category->slug.current == $category
   ] | order(title asc) ${CUSTOMIZATION_COMPARE_PEER_PROJ},
-  ${COMPATIBLE_OPTIONS_PROJ}
+  ${COMPATIBLE_OPTIONS_PROJ},
+  ${ACHIEVES_PROJ}
 }`;
 
 /**
@@ -1634,4 +1651,9 @@ export type CatalogCustomizationDetailDoc = {
    * Card-shaped; not a full peer/detail projection.
    */
   compatibleOptions?: (CatalogCompatibleOptionDoc | null)[] | null;
+  /**
+   * Forward `achieves[]` — customer-facing options this technical option
+   * can deliver (PROD-3128). Same card shape as reverse `achievedBy`.
+   */
+  achieves?: (CatalogAchievedByDoc | null)[] | null;
 };

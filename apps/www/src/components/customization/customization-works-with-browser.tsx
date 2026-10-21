@@ -13,6 +13,7 @@ import type {
     WorksWithProductCard,
 } from '@/lib/catalog/build-works-with-products';
 import {compatibilityProductHref} from '@/lib/catalog/compatibility-product-href';
+import {resolveWorksWithApplyOption} from '@/lib/catalog/works-with-apply-option';
 import type {ProductLineRef} from '@/lib/catalog/types';
 import {useRequest} from '@/lib/request/request-provider';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
@@ -54,6 +55,24 @@ export function CustomizationWorksWithBrowser({
     products,
 }: CustomizationWorksWithBrowserProps) {
     const {lines: requestLines} = useRequest();
+    const {
+        detail,
+        showCta,
+        configurationSource,
+        selectedAchievesId,
+        worksWithLine,
+        setWorksWithLine,
+    } = useCustomizationDetailHost();
+    const applyOption = resolveWorksWithApplyOption({
+        showCta,
+        configurationSource,
+        pageOption: {
+            category: option.category,
+            slug: option.slug,
+        },
+        achieves: detail.achieves,
+        selectedAchievesId,
+    });
 
     const inRequestSlugs = useMemo(() => {
         const slugs = new Set<string>();
@@ -66,7 +85,6 @@ export function CustomizationWorksWithBrowser({
         return slugs;
     }, [requestLines, option]);
 
-    const {worksWithLine, setWorksWithLine} = useCustomizationDetailHost();
     const selectedLine =
         worksWithLine && lines.some((line) => line.slug === worksWithLine)
             ? worksWithLine
@@ -146,7 +164,7 @@ export function CustomizationWorksWithBrowser({
                                             const href =
                                                 compatibilityProductHref(
                                                     item.slug,
-                                                    option,
+                                                    applyOption,
                                                 );
                                             const inRequest =
                                                 inRequestSlugs.has(item.slug);

@@ -53,6 +53,10 @@ import {
     sectionTokenContextFromHost,
 } from '@/lib/sections/resolve-section-tokens';
 import {WWW_ROUTES} from '@/lib/www-routes';
+import {
+    DEFAULT_OVERVIEW_CHROME,
+    resolveOverviewChrome,
+} from '@/lib/catalog/overview-chrome';
 
 const CUSTOMIZATION_FAQS_ID = 'customization-faqs';
 
@@ -368,6 +372,10 @@ async function CustomizationDetailBody({
     const useTemplate = templateHasCdpSections(pageSections);
     const learnFirst = isLearnFirstTemplate(pageSections);
     const showStickyNav = page?.showStickyNav !== false;
+    const overviewSection = pageSections?.find((s) =>
+        OVERVIEW_SECTION_TYPES.has(s._type),
+    );
+    const overviewChrome = resolveOverviewChrome(overviewSection);
 
     if (useTemplate && pageSections) {
         const hasBenefitsSpecs = pageSections.some(
@@ -411,6 +419,7 @@ async function CustomizationDetailBody({
                     peers,
                     worksWith,
                     isLearnFirstTemplate: learnFirst,
+                    ...overviewChrome,
                 }}
             >
                 <SectionRenderer sections={overviewSections} />
@@ -530,6 +539,7 @@ function CustomizationDetailLegacyBody({
                 peers,
                 worksWith,
                 isLearnFirstTemplate: false,
+                ...DEFAULT_OVERVIEW_CHROME,
             }}
         >
             <CustomizationOverviewStandard />

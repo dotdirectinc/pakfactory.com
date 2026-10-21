@@ -1,10 +1,9 @@
 'use client';
 
-import {useMemo, useState, type MouseEvent} from 'react';
-import {Bookmark, Download} from 'lucide-react';
-import {Button} from '@pakfactory/ui/components/button';
+import {useMemo, useState} from 'react';
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
-import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
+import {useCustomizationDetailHost} from '@/components/customization/customization-detail-host';
+import {CustomizationRailActions} from '@/components/customization/customization-rail-actions';
 import {
     initialPropertySelection,
     OptionPropertyControllers,
@@ -14,21 +13,13 @@ import {
     customColorSummaryLabel,
     readCustomColorHex,
 } from '@/components/customization-builder/custom-color-property';
-import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
-import {Icon} from '@/components/ui/icon';
-import {StatusNotice} from '@/components/ui/status-badge';
-import {stubBookmarkAction} from '@/lib/catalog-card-actions';
+import {mapAchievesToPropertyField} from '@/lib/catalog/map-achieves-to-property-field';
 import {
     mapDetailToPropertyFields,
     type PropertyFieldDescriptor,
 } from '@/lib/catalog/map-detail-to-property-fields';
+import {resolveConfigurationFields} from '@/lib/catalog/resolve-configuration-fields';
 import {isCustomColorSlug} from '@/lib/catalog/swatch-colors';
-import type {CustomizationDetail} from '@/lib/catalog/types';
-import {WWW_ROUTES} from '@/lib/www-routes';
-
-type CustomizationConfigPanelProps = {
-    detail: CustomizationDetail;
-};
 
 function titlesForIds(
     field: PropertyFieldDescriptor,
@@ -53,17 +44,51 @@ function titlesForIds(
 }
 
 /**
- * Right-rail Property controllers for customization Option detail (PROD-1299).
- * Configuration band is omitted when there are no selectable properties
- * (including after echo-title filtering).
+ * Right-rail Property / Achieves controllers for customization Option detail
+ * (PROD-1299 / PROD-3128). Configuration band is omitted when the active
+ * source has nothing to show.
  */
-export function CustomizationConfigPanel({
-    detail,
-}: CustomizationConfigPanelProps) {
-    const fields = useMemo(() => mapDetailToPropertyFields(detail), [detail]);
-    const [selection, setSelection] = useState<PropertySelectionMap>(() =>
-        initialPropertySelection(fields),
+export function CustomizationConfigPanel() {
+    const {
+        detail,
+        showCta,
+        showBookmark,
+        configurationSource,
+        selectedAchievesId,
+        setSelectedAchievesId,
+    } = useCustomizationDetailHost();
+
+    const propertyFields = useMemo(
+        () => mapDetailToPropertyFields(detail),
+        [detail],
     );
+    const achievesField = useMemo(
+        () => mapAchievesToPropertyField(detail.achieves),
+        [detail.achieves],
+    );
+    const fields = useMemo(
+        () =>
+            resolveConfigurationFields(
+                configurationSource,
+                propertyFields,
+                achievesField,
+            ),
+        [configurationSource, achievesField, propertyFields],
+    );
+
+    const [propertySelection, setPropertySelection] =
+        useState<PropertySelectionMap>(() =>
+            initialPropertySelection(propertyFields),
+        );
+
+    const selection = useMemo((): PropertySelectionMap => {
+        if (configurationSource === 'achieves') {
+            return selectedAchievesId
+                ? {achieves: [selectedAchievesId]}
+                : {};
+        }
+        return propertySelection;
+    }, [configurationSource, selectedAchievesId, propertySelection]);
 
     const selectionSummary = useMemo(() => {
         const parts: string[] = [];
@@ -77,7 +102,11 @@ export function CustomizationConfigPanel({
     const specSheetUrl = detail.specSheetUrl?.trim() || null;
 
     const setPropertyValue = (propertyKey: string, ids: string[]) => {
-        setSelection((prev) => {
+        if (configurationSource === 'achieves') {
+            setSelectedAchievesId(ids[0] ?? null);
+            return;
+        }
+        setPropertySelection((prev) => {
             const next = {...prev};
             if (!ids.length) delete next[propertyKey];
             else next[propertyKey] = ids;
@@ -85,13 +114,11 @@ export function CustomizationConfigPanel({
         });
     };
 
-    const onBookmark = (event: MouseEvent<HTMLButtonElement>) => {
-        stubBookmarkAction(event);
-    };
-
-    const lifecycle = detail.status;
-    const showOrderCtas = !lifecycle || lifecycle === 'active';
     const hasConfig = fields.length > 0;
+    const applyDisabled =
+        showCta &&
+        configurationSource === 'achieves' &&
+        !selectedAchievesId;
 
     return (
         <div className="mt-8 flex flex-col gap-6">
@@ -105,7 +132,14 @@ export function CustomizationConfigPanel({
                             fields={fields}
                             value={selection}
                             onChange={setPropertyValue}
-                            onMapChange={setSelection}
+                            onMapChange={
+                                configurationSource === 'achieves'
+                                    ? (next) =>
+                                          setSelectedAchievesId(
+                                              next.achieves?.[0] ?? null,
+                                          )
+                                    : setPropertySelection
+                            }
                         />
                     </div>
                 </div>
@@ -137,51 +171,13 @@ export function CustomizationConfigPanel({
                 </div>
             ) : null}
 
-            {showOrderCtas ? (
-                <div className="flex flex-col gap-2">
-                    <Button asChild className="h-auto w-full px-6 py-3 text-base">
-                        <InPageAnchorLink
-                            href={`#${CUSTOMIZATION_REFERENCE_WORKS_WITH_ID}`}
-                        >
-                            Apply to a product
-                        </InPageAnchorLink>
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="h-auto w-full px-6 py-3 text-base shadow-none"
-                        onClick={onBookmark}
-                    >
-                        <Icon icon={Bookmark} size="sm" />
-                        Bookmark
-                    </Button>
-                    {specSheetUrl ? (
-                        <div className="flex justify-end">
-                            <Button
-                                asChild
-                                variant="link"
-                                size="sm"
-                                className="h-auto gap-1 px-0 text-muted-foreground"
-                            >
-                                <a
-                                    href={specSheetUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <Icon icon={Download} size="sm" />
-                                    Download spec sheet
-                                </a>
-                            </Button>
-                        </div>
-                    ) : null}
-                </div>
-            ) : (
-                <StatusNotice
-                    status={lifecycle}
-                    contactHref={WWW_ROUTES.contact}
-                    className="mt-0"
-                />
-            )}
+            <CustomizationRailActions
+                showCta={showCta}
+                showBookmark={showBookmark}
+                applyDisabled={applyDisabled}
+                specSheetUrl={specSheetUrl}
+                lifecycle={detail.status}
+            />
         </div>
     );
 }

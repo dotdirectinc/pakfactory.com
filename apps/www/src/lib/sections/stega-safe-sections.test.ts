@@ -45,7 +45,7 @@ describe('section helpers are stega-safe (draft mode)', () => {
                 } as PageSectionDoc,
             ],
             [{question: 'Page question', answerPlain: 'Page answer.'}],
-        ) as [{faqs?: {question?: string}[]}];
+        ) as unknown as [{faqs?: {question?: string}[]}];
         assert.deepEqual(
             section.faqs?.map((faq) => faq.question),
             ['Page question'],

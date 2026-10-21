@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Seed Customization Detail Page templates (PROD-3112 / PROD-3124).
+ * Seed Customization Detail Page templates (PROD-3112 / PROD-3124 / PROD-3126).
  *
- * Ensures Default + Learn-first layout docs exist and inserts the remaining
- * host-inherited bands when missing, in this order:
+ * Ensures layout docs exist and inserts missing host-inherited bands, in this
+ * order:
  *   customizationWorksWith
  *   → customizationCompatibleOptions (PROD-3124)
  *   → customizationCompare
@@ -13,8 +13,12 @@
  * before Compare), not blindly appended — so a re-run on already-seeded
  * templates puts compatible options in the right place.
  *
- * Does not seed overview or benefits (editors / other setup own those).
+ * Default + Learn-first: does not seed overview or benefits (editors / other
+ * setup own those). Knowledge + Achieves stubs get an overview when missing
+ * (PROD-3127 / PROD-3128). Knowledge omits Works with.
+ *
  * Stable `_key`s so re-runs are idempotent. Creates stub docs when missing.
+ * Re-runs retitle existing docs to the canonical Studio labels.
  *
  * ⚠️ Written by an agent, RUN BY A HUMAN. Agents never write documents on any
  * dataset (AGENTS.md § Sanity content — agent guardrails).
@@ -80,6 +84,13 @@ const WORKS_WITH_KEY = 'cdp-works-with'
 const COMPATIBLE_OPTIONS_KEY = 'cdp-compatible-options'
 const COMPARE_KEY = 'cdp-compare'
 const SHOWCASE_KEY = 'cdp-showcase'
+const OVERVIEW_STANDARD_KEY = 'cdp-overview-standard'
+const OVERVIEW_LEARN_FIRST_KEY = 'cdp-overview-learn-first'
+
+const OVERVIEW_TYPES = new Set([
+  'customizationOverviewStandard',
+  'customizationOverviewLearnFirst',
+])
 
 /** Chrome-only stubs — www host fills option data; headings fall back in React. */
 const REMAINING_BANDS = [
@@ -105,14 +116,44 @@ const TARGETS = [
   {
     id: 'customizationDetailPage',
     type: 'customizationDetailPage',
-    title: 'Default',
-    showStickyNav: true,
+    title: 'Customization Detail Page — Default',
+    showStickyNav: false,
+    includeWorksWith: true,
   },
   {
     id: 'customizationDetailPageLearnFirst',
     type: 'customizationDetailPage',
-    title: 'Learn-first',
+    title: 'Customization Detail Page — Learn-first',
     showStickyNav: false,
+    includeWorksWith: true,
+  },
+  {
+    id: 'customizationDetailPageKnowledge',
+    type: 'customizationDetailPage',
+    title: 'Customization Detail Page — Knowledge',
+    showStickyNav: false,
+    includeWorksWith: false,
+    overview: {
+      _type: 'customizationOverviewStandard',
+      _key: OVERVIEW_STANDARD_KEY,
+      showCta: false,
+      showBookmark: true,
+      configurationSource: 'properties',
+    },
+  },
+  {
+    id: 'customizationDetailPageAchieves',
+    type: 'customizationDetailPage',
+    title: 'Customization Detail Page — Achieves',
+    showStickyNav: false,
+    includeWorksWith: true,
+    overview: {
+      _type: 'customizationOverviewLearnFirst',
+      _key: OVERVIEW_LEARN_FIRST_KEY,
+      showCta: true,
+      showBookmark: true,
+      configurationSource: 'achieves',
+    },
   },
 ]
 
@@ -155,10 +196,23 @@ function insertBand(sections, band) {
   return true
 }
 
-function ensureRemainingBands(existing) {
+function bandsForTarget(target) {
+  return target.includeWorksWith
+    ? REMAINING_BANDS
+    : REMAINING_BANDS.filter((band) => band._type !== 'customizationWorksWith')
+}
+
+function ensureOverview(sections, overview) {
+  if (!overview) return false
+  if (sections.some((s) => OVERVIEW_TYPES.has(s?._type))) return false
+  sections.unshift(overview)
+  return true
+}
+
+function ensureRemainingBands(existing, target) {
   const sections = Array.isArray(existing) ? [...existing] : []
-  let changed = false
-  for (const band of REMAINING_BANDS) {
+  let changed = ensureOverview(sections, target.overview)
+  for (const band of bandsForTarget(target)) {
     if (insertBand(sections, band)) changed = true
   }
   return {sections, changed}
@@ -180,19 +234,23 @@ async function seed() {
       }`,
       {id: target.id},
     )
-    const {sections, changed: bandsChanged} = ensureRemainingBands(doc?.sections)
+    const {sections, changed: bandsChanged} = ensureRemainingBands(
+      doc?.sections,
+      target,
+    )
     const stickyChanged = doc?.showStickyNav !== target.showStickyNav
+    const titleChanged = (doc?.title?.trim() || '') !== target.title
     const nextDoc = {
       _id: target.id,
       _type: target.type,
-      title: doc?.title?.trim() || target.title,
+      title: target.title,
       showStickyNav: target.showStickyNav,
       sections,
     }
     if (doc?.previewImage) nextDoc.previewImage = doc.previewImage
 
     const isCreate = !doc
-    const changed = isCreate || bandsChanged || stickyChanged
+    const changed = isCreate || bandsChanged || stickyChanged || titleChanged
     plans.push({
       target,
       isCreate,
