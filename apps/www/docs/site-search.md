@@ -1,12 +1,17 @@
 # Site search (PROD-2525)
 
-The ⌘K search dialog on www. Three parts, one ticket each:
+The ⌘K search dialog on www. One ticket per part:
 
 | Part | Ticket | Status |
 | --- | --- | --- |
 | `site_search` Algolia index | PROD-3109 | built, sync Function deployed |
 | `/api/search` route + abuse gate | PROD-3110 | built |
-| Dialog + header trigger | PROD-3111 | built |
+| Dialog + header trigger (now Advanced mode) | PROD-3111 | built |
+| Basic mode, the default: recents, loose suggestions, all results on Enter | PROD-2525 (#912) | built 2026-10-21 |
+| Find products by SKU | PROD-3136 (#918, #922) | built 2026-10-21; Function redeployed, `development` backfilled |
+| Rank Advanced browse picks by clicks | PROD-3122 | backlog (Advanced only) |
+
+After changing the record or settings in `packages/sanity/src/algolia/site-search.ts`: run `gen:site-search-fn`, merge, redeploy the Functions stack (`npx sanity blueprints deploy` from the repo root; it re-uploads all four Functions, all pinned to one dataset), then run the backfill with `--confirm`. Searches are CDN-cached for up to ~70 minutes, so re-test with a query nobody has run since the change.
 
 ## The index — `site_search`
 
