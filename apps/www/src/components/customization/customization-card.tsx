@@ -33,9 +33,11 @@ export type CustomizationCardData = Pick<
     CustomizationLibraryItem,
     | '_id'
     | 'title'
+    | 'shortName'
     | 'slug'
     | 'categoryValue'
     | 'categoryLabel'
+    | 'typeTitle'
     | 'imageUrl'
     | 'imageAlt'
     | 'featuredImageUrl'
@@ -135,7 +137,7 @@ function resolveCardMedia(item: CustomizationCardData) {
 }
 
 /**
- * **Transactional card** — customization catalog tile (category eyebrow, bookmark / compare).
+ * **Transactional card** — customization catalog tile (type eyebrow, short-name title, bookmark / compare).
  * Composes {@link MediaCardFrame}. Card media rules: primary product still at rest;
  * hover product video when both still + video exist, else the next product still.
  * Prefetch stays off for the grid; the card under the pointer opts into full route
@@ -143,7 +145,8 @@ function resolveCardMedia(item: CustomizationCardData) {
  */
 export function CustomizationCard({item, priority = false}: CustomizationCardProps) {
     const href = customizationCategoryHref(item.categoryValue, item.slug);
-    const eyebrow = (item.categoryLabel ?? item.categoryValue).toUpperCase();
+    const displayTitle = item.shortName?.trim() || item.title;
+    const eyebrow = item.typeTitle?.trim().toUpperCase() ?? '';
     const router = useRouter();
     const [saved, setSaved] = useState(false);
     const [prefetch, setPrefetch] = useState(false);
@@ -259,7 +262,7 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
             onPointerDown={enablePrefetch}
             onFocus={enablePrefetch}
             className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={item.title}
+            aria-label={displayTitle}
         />
     );
 
@@ -293,9 +296,13 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
             meta={
                 <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {eyebrow}
-                        </span>
+                        {eyebrow ? (
+                            <span className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {eyebrow}
+                            </span>
+                        ) : (
+                            <span className="min-w-0 flex-1" />
+                        )}
                         <div className="flex shrink-0 items-center gap-2 sm:hidden">
                             <BookmarkIconButton
                                 pressed={saved}
@@ -318,7 +325,7 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
                         onFocus={enablePrefetch}
                         className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                        <CustomizationCardTitlePending title={item.title} />
+                        <CustomizationCardTitlePending title={displayTitle} />
                     </Link>
                 </div>
             }

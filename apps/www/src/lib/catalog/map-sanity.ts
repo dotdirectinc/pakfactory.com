@@ -1133,12 +1133,17 @@ export function mapSanityLibraryOption(
         if (valueTitle) valueTitles[valueSlug] = valueTitle;
     }
 
+    const shortName = doc.shortName?.trim();
+    const typeTitle = doc.type?.title?.trim();
+
     return {
         _id: doc._id,
         title: doc.title,
+        ...(shortName ? {shortName} : {}),
         slug,
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title ?? categorySlug,
+        ...(typeTitle ? {typeTitle} : {}),
         ...(toLifecycle(doc.status) !== 'active' ? {status: toLifecycle(doc.status)} : {}),
         imageUrl,
         imageAlt,
