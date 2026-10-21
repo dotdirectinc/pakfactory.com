@@ -13,6 +13,11 @@ type Props = {
   excludedCount?: number;
   /** The frame has Sanity-bound rows: they are written after approval (PROD-2751). */
   writesToSanity?: boolean;
+  /**
+   * A "Deleted in Sanity" frame (PROD-3141): it cannot be discarded (the registry refuses it), and it may
+   * be approved with every record excluded — that is how a reviewer keeps them all live.
+   */
+  recordsDeletions?: boolean;
   canDecide: boolean;
   /** Frames that must be approved before this one. Empty when it is ready. */
   blockedBy: string[];
@@ -24,8 +29,9 @@ type Props = {
  * afterwards — a changeset is applied or discarded as a whole, and the reverse of
  * an approval is a new changeset, not a button.
  */
-export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, writesToSanity = false, canDecide, blockedBy }: Props) {
+export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, writesToSanity = false, recordsDeletions = false, canDecide, blockedBy }: Props) {
   const included = itemCount - excludedCount;
+  const canDiscard = !recordsDeletions;
   const [pending, startTransition] = useTransition();
   const [isDeciding, setIsDeciding] = useState<null | "approve" | "discard">(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +53,7 @@ export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, wri
           <strong className="font-medium">{blockedBy.join(", ")}</strong>.
         </p>
         <div className="flex items-center gap-2">
-          {confirming === "discard" ? (
+          {!canDiscard ? null : confirming === "discard" ? (
             <>
               <span className="text-sm text-foreground">{ADMIN_SPEC_COPY.discardConfirm}</span>
               <Button size="sm" variant="destructive" disabled={pending} onClick={() => decide("discard")}>
@@ -116,18 +122,25 @@ export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, wri
           </>
         ) : (
           <>
-            <Button size="sm" disabled={pending || included === 0} onClick={() => setConfirming("approve")}>
+            <Button size="sm" disabled={pending || (included === 0 && !recordsDeletions)} onClick={() => setConfirming("approve")}>
               {excludedCount > 0 ? `${ADMIN_SPEC_COPY.approve} (${included.toLocaleString()} of ${itemCount.toLocaleString()})` : ADMIN_SPEC_COPY.approve}
             </Button>
-            {included === 0 ? <span className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.allExcluded}</span> : null}
+            {included === 0 ? (
+              <span className="text-sm text-muted-foreground">
+                {recordsDeletions ? ADMIN_SPEC_COPY.deletionAllExcluded : ADMIN_SPEC_COPY.allExcluded}
+              </span>
+            ) : null}
             {/* Ghost, not outline: discarding throws away a generated frame, and it should
                 never look like the neighbouring, ordinary alternative to approving. */}
-            <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming("discard")}>
-              {ADMIN_SPEC_COPY.discard}
-            </Button>
+            {canDiscard ? (
+              <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming("discard")}>
+                {ADMIN_SPEC_COPY.discard}
+              </Button>
+            ) : null}
           </>
         )}
       </div>
+      {recordsDeletions ? <p className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.deletionNoDiscard}</p> : null}
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}

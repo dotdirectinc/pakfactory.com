@@ -39,6 +39,12 @@ export const ADMIN_SPEC_COPY = {
   excludeHint:
     "Exclude leaves a record out of this approval — all of its rows here together. It will be proposed again only if its source changes again.",
   allExcluded: "Every change is excluded — include at least one, or discard the frame.",
+  /** A "Deleted in Sanity" frame (PROD-3141): approve, excluding any record to keep; it cannot be discarded. */
+  deletionAllExcluded: "Every record is excluded — approving records that they stay live.",
+  deletionNoDiscard:
+    "Records deleted in Sanity: approve to retire them, or exclude a record to keep it live. This frame cannot be discarded — that would hide a real deletion.",
+  /** "What this changes" group labels that read better than "<op> <table>". */
+  groupLabels: { "insert entity_tombstone": "records deleted in Sanity — retire" } as Record<string, string>,
   sanityWriteNote:
     "Its Sanity changes are written right after approval — each row then shows Written, or why it was not; problems also appear in the Sync panel.",
   blockedLead:
