@@ -14,11 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@pakfactory/ui/components/dropdown-menu";
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useState } from "react";
 import { signOutInternal } from "@/lib/auth/actions";
-import { requestSyncAction } from "@/app/(admin)/spec/actions";
+import { SpecNotionSyncDialog } from "@/components/spec/spec-notion-sync-dialog";
 import { ADMIN_ACCOUNT_COPY } from "@/lib/copy/account";
 
 export type AdminAccountMenuProps = {
@@ -46,24 +44,13 @@ export function AdminAccountMenu({
   size = "default",
 }: AdminAccountMenuProps & AdminAccountMenuLayout) {
   const initials = initialsOf(displayName || email);
-  const [syncing, startSync] = useTransition();
-  const router = useRouter();
-
-  // The backend re-checks the capability: hiding the item is convenience, not the guard.
-  function syncNotion() {
-    startSync(async () => {
-      const res = await requestSyncAction("notion", "development");
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      toast.success(ADMIN_ACCOUNT_COPY.syncNotionStarted);
-      router.push("/spec");
-      router.refresh();
-    });
-  }
+  // The item opens a dialog where the person ticks what Notion owns for this run (2026-10-21). The
+  // dialog sits outside the menu, which unmounts when an item is selected. The backend re-checks the
+  // capability: hiding the item is convenience, not the guard.
+  const [notionOpen, setNotionOpen] = useState(false);
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={ADMIN_ACCOUNT_COPY.accountMenu}
@@ -89,7 +76,7 @@ export function AdminAccountMenu({
         <DropdownMenuSeparator />
         {canSyncNotion ? (
           <>
-            <DropdownMenuItem disabled={syncing} onSelect={syncNotion}>
+            <DropdownMenuItem onSelect={() => setNotionOpen(true)}>
               {ADMIN_ACCOUNT_COPY.syncNotion}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -121,5 +108,7 @@ export function AdminAccountMenu({
         </form>
       </DropdownMenuContent>
     </DropdownMenu>
+    {canSyncNotion ? <SpecNotionSyncDialog open={notionOpen} onOpenChange={setNotionOpen} dataset="development" /> : null}
+    </>
   );
 }

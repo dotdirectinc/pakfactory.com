@@ -757,3 +757,27 @@ export const ADMIN_SPEC_PARENTS_COPY = {
   noStyle: "No style in this line yet — add one.",
   none: "—",
 } as const;
+
+/** Sync from Notion — the person picks what Notion owns for this one run (Richard, 2026-10-21). */
+export const ADMIN_SPEC_NOTION_SYNC_COPY = {
+  title: "Sync from Notion",
+  description:
+    "Day to day, Studio owns these fields. For this sync, Notion owns the ones you tick: every field where Notion differs from Sanity is proposed — even one approved, excluded or discarded before. Nothing changes until you approve the frames.",
+  groups: {
+    names: { label: "Names", hint: "Record names." },
+    status: { label: "Status", hint: "Active, internal, not active." },
+    parents: { label: "Parents", hint: "A product's line, styles, solutions and base; a style's line; an option's type. Not offered once the Spec System edits parents." },
+    appearsIn: { label: "Appears in", hint: "Where an option is shown." },
+    copy: { label: "Website copy", hint: "Short name, H1, descriptions, short descriptions, meta title and description, benefits." },
+    productDetails: { label: "Product details", hint: "MOQ, product kind, dimension input." },
+    solutionAxis: { label: "Solution axis", hint: "Industry, use case …" },
+    propertiesAdded: { label: "Property values added", hint: "Values Notion adds to a product. Never removes any." },
+  },
+  all: "All",
+  none: "None",
+  noneTicked: "Tick at least one group.",
+  cancel: "Cancel",
+  start: "Start sync",
+  starting: "Starting…",
+  started: "Notion sync started — its frames appear in Spec System when it finishes.",
+} as const;
