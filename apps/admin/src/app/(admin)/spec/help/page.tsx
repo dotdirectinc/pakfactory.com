@@ -203,10 +203,10 @@ export default async function SpecHelpPage() {
                 <td className="py-2 pr-3">—</td>
               </tr>
               <tr className="border-b border-border align-top last:border-0">
-                <td className="py-2 pr-3"><div className="font-medium text-foreground">Website copy</div><div className="text-xs">short name, H1, descriptions, short descriptions, meta descriptions, benefits, MOQ</div></td>
+                <td className="py-2 pr-3"><div className="font-medium text-foreground">Website copy</div><div className="text-xs">short name, H1, descriptions, short descriptions, meta titles and descriptions, benefits; a product's MOQ, kind and dimension input</div></td>
                 <td className="py-2 pr-3 text-foreground">Studio</td>
                 <td className="py-2 pr-3">Not copied</td>
-                <td className="py-2 pr-3">—<div className="mt-1 text-xs">A new record created from Notion starts with Notion's text; after that, edit it in Studio. Sync Notion proposes Notion's text only when you tick <em>Website copy</em>.</div></td>
+                <td className="py-2 pr-3">—<div className="mt-1 text-xs">A new record created from Notion starts with Notion's text; after that, edit it in Studio. Sync Notion proposes Notion's values only when you tick <em>Website copy</em> or <em>Product details</em>.</div></td>
               </tr>
               <tr className="border-b border-border align-top last:border-0">
                 <td className="py-2 pr-3"><div className="font-medium text-foreground">Rules</div><div className="text-xs">decided by / customer selects, depends on, compatible customizations, available customizations, product exceptions</div></td>
