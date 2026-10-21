@@ -558,7 +558,14 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   },
   _type in [
     "customizationOverviewStandard",
-    "customizationOverviewLearnFirst",
+    "customizationOverviewLearnFirst"
+  ] => {
+    ${SECTION_CHROME},
+    showCta,
+    showBookmark,
+    configurationSource
+  },
+  _type in [
     "customizationBenefitsSpecs",
     "customizationWorksWith",
     "customizationCompatibleOptions",
@@ -652,6 +659,10 @@ export type PageSectionChromeFields = {
     /** Row derive: `derive` | `custom`. */
     curatedSource?: string | null;
     link?: PageSectionLinkDoc | null;
+    /** CDP overview rail — projected on overview `_type`s (PROD-3126). */
+    showCta?: boolean | null;
+    showBookmark?: boolean | null;
+    configurationSource?: 'properties' | 'achieves' | null;
 };
 
 export type PageSectionFaqDoc = {

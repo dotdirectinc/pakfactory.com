@@ -11,8 +11,11 @@ import {productHref} from '@/lib/www-routes';
  */
 export function compatibilityProductHref(
     slug: string,
-    option: {category: string; slug: string},
+    option: {category: string; slug: string} | null | undefined,
 ): string {
+    if (!option?.category?.trim() || !option?.slug?.trim()) {
+        return productHref(slug);
+    }
     return withCompatibilityQuery(productHref(slug), {
         selections: [
             {category: option.category, optionSlug: option.slug},

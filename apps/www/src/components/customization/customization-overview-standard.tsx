@@ -108,7 +108,7 @@ export function CustomizationOverviewStandard({
                             />
                         </div>
                     ) : null}
-                    <CustomizationConfigPanel detail={detail} />
+                    <CustomizationConfigPanel />
                 </div>
             </article>
         </PageDielineSection>

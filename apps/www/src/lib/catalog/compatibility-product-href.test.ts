@@ -23,4 +23,11 @@ describe('compatibilityProductHref', () => {
             '/products/custom-angled-cuff-ring-boxes',
         );
     });
+
+    it('omits the query when the option is null so knowledge rails do not preselect', () => {
+        assert.equal(
+            compatibilityProductHref('custom-angled-cuff-ring-boxes', null),
+            '/products/custom-angled-cuff-ring-boxes',
+        );
+    });
 });

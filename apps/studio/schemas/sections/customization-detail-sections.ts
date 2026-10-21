@@ -75,6 +75,39 @@ function overviewLayoutFields() {
       description:
         'Hide when the block below already shows a dashed edge to avoid a double line.',
     }),
+    defineField({
+      name: 'showCta',
+      title: 'Show CTA',
+      type: 'boolean',
+      group: SECTION_GROUPS.layout,
+      initialValue: true,
+      description:
+        'Apply to a product. Turn off on knowledge-only layouts so this option is not added to a request.',
+    }),
+    defineField({
+      name: 'showBookmark',
+      title: 'Show Bookmark',
+      type: 'boolean',
+      group: SECTION_GROUPS.layout,
+      initialValue: true,
+      description: 'Bookmark control on the overview rail.',
+    }),
+    defineField({
+      name: 'configurationSource',
+      title: 'Configuration',
+      type: 'string',
+      group: SECTION_GROUPS.layout,
+      initialValue: 'properties',
+      description:
+        'One source for the rail selector. Selectable properties are declared on the type. Achieves lists the customer-facing options this technical option delivers.',
+      options: {
+        layout: 'radio',
+        list: [
+          {title: 'Selectable properties', value: 'properties'},
+          {title: 'Achieves', value: 'achieves'},
+        ],
+      },
+    }),
   ]
 }
 
@@ -115,8 +148,9 @@ export const customizationOverviewStandard = cdpSectionType({
   name: 'customizationOverviewStandard',
   title: 'Customization overview (standard)',
   description:
-    'Gallery + configuration rail (Configuration, Your selection, Apply). ' +
-    'Host fills media and selectable properties from the option.',
+    'Gallery + configuration rail. Show CTA / Bookmark and Configuration ' +
+    '(selectable properties or Achieves) are layout toggles on this section. ' +
+    'Host fills media and option data.',
   icon: ComponentIcon,
   chrome: 'none',
 })
@@ -126,8 +160,9 @@ export const customizationOverviewLearnFirst = cdpSectionType({
   name: 'customizationOverviewLearnFirst',
   title: 'Customization overview (learn-first)',
   description:
-    'Gallery + learn-first rail (type eyebrow, sustainability, applicable-on product lines, choose-your-specs, Apply). ' +
-    'Host fills glossary and properties from the option. Pair with Benefits & specs for Get to know / Key properties.',
+    'Gallery + learn-first rail. Same Show CTA / Bookmark and Configuration ' +
+    'toggles as the standard overview. Host fills glossary and option data. ' +
+    'Pair with Benefits & specs for Get to know / Key properties.',
   icon: ComposeIcon,
   chrome: 'none',
 })

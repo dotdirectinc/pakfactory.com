@@ -11,6 +11,8 @@ import type {
     WorksWithOptionRef,
     WorksWithProductCard,
 } from '@/lib/catalog/build-works-with-products';
+import type {ConfigurationSource} from '@/lib/catalog/overview-chrome';
+import {DEFAULT_OVERVIEW_CHROME} from '@/lib/catalog/overview-chrome';
 import type {CustomizationDetail, ProductLineRef} from '@/lib/catalog/types';
 
 export type CustomizationDetailHostData = {
@@ -23,12 +25,18 @@ export type CustomizationDetailHostData = {
     };
     /** True when the template includes the learn-first overview section. */
     isLearnFirstTemplate: boolean;
+    showCta: boolean;
+    showBookmark: boolean;
+    configurationSource: ConfigurationSource;
 };
 
 export type CustomizationDetailHostValue = CustomizationDetailHostData & {
     /** Selected product-line slug in the works-with band; null = first line. */
     worksWithLine: string | null;
     setWorksWithLine: (slug: string) => void;
+    /** Selected forward Achieves target id when configurationSource is achieves. */
+    selectedAchievesId: string | null;
+    setSelectedAchievesId: (id: string | null) => void;
 };
 
 const CustomizationDetailHostContext =
@@ -42,9 +50,19 @@ export function CustomizationDetailHostProvider({
     children: ReactNode;
 }) {
     const [worksWithLine, setWorksWithLine] = useState<string | null>(null);
+    const [selectedAchievesId, setSelectedAchievesId] = useState<string | null>(
+        null,
+    );
     const ctx = useMemo(
-        () => ({...value, worksWithLine, setWorksWithLine}),
-        [value, worksWithLine],
+        () => ({
+            ...DEFAULT_OVERVIEW_CHROME,
+            ...value,
+            worksWithLine,
+            setWorksWithLine,
+            selectedAchievesId,
+            setSelectedAchievesId,
+        }),
+        [value, worksWithLine, selectedAchievesId],
     );
 
     return (

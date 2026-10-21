@@ -77,14 +77,19 @@ export function CustomizationWorksWithFromSanity(
 ) {
     const host = useHost();
     if (!host) return null;
-    const {detail, worksWith, isLearnFirstTemplate} = host;
+    const {detail, worksWith, isLearnFirstTemplate, showCta} = host;
     const defaults = isLearnFirstTemplate
         ? getLearnFirstSectionCopy(detail).worksWith
         : null;
+    const knowledgeDescription = 'Products this option is used on.';
     const heading = {
         eyebrow: section.eyebrow?.trim() || defaults?.eyebrow,
-        title: section.heading?.trim() || defaults?.title,
-        description: section.intro?.trim() || defaults?.description,
+        title:
+            section.heading?.trim() ||
+            (showCta ? defaults?.title : 'Works with'),
+        description:
+            section.intro?.trim() ||
+            (showCta ? defaults?.description : knowledgeDescription),
     };
     return (
         <CustomizationReferenceWorksWith

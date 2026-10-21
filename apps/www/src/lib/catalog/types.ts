@@ -670,6 +670,11 @@ export type CustomizationDetail = {
      * section and nav hide.
      */
     compatibleOptions?: CustomizationCompatibleOption[];
+    /**
+     * Forward `achieves[]` — customer-facing options this technical option
+     * can deliver (PROD-3128). Omit when empty.
+     */
+    achieves?: AchievedByOption[];
 };
 
 export type CustomizationDetailResult = {

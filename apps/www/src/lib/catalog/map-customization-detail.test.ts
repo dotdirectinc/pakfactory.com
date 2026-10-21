@@ -160,3 +160,49 @@ describe('mapSanityCustomizationDetail compatibleOptions (PROD-3124)', () => {
         assert.equal(mapped.compatibleOptions, undefined);
     });
 });
+
+describe('mapSanityCustomizationDetail achieves (PROD-3128)', () => {
+    it('maps forward Achieves targets and skips incomplete rows', () => {
+        const mapped = mapSanityCustomizationDetail(
+            detailDoc({
+                achieves: [
+                    {
+                        _id: 'opt-gloss',
+                        title: 'Gloss',
+                        slug: 'gloss',
+                        typeTitle: 'Finish',
+                        categorySlug: 'finishing',
+                        appearsIn: 'configurable-with-page',
+                        shortDescription: 'High-shine finish.',
+                    },
+                    {
+                        _id: 'opt-skip',
+                        title: '',
+                        slug: 'empty-title',
+                    },
+                    null,
+                ],
+            }),
+        );
+        assert.ok(mapped);
+        assert.equal(mapped.achieves?.length, 1);
+        assert.deepEqual(mapped.achieves?.[0], {
+            id: 'opt-gloss',
+            title: 'Gloss',
+            slug: 'gloss',
+            typeTitle: 'Finish',
+            categorySlug: 'finishing',
+            description: 'High-shine finish.',
+            imageUrl: null,
+            hasPage: true,
+        });
+    });
+
+    it('omits achieves when the list is empty', () => {
+        const mapped = mapSanityCustomizationDetail(
+            detailDoc({achieves: []}),
+        );
+        assert.ok(mapped);
+        assert.equal(mapped.achieves, undefined);
+    });
+});

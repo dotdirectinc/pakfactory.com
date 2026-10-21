@@ -1,12 +1,11 @@
 'use client';
 
-import {useMemo, useState, type MouseEvent} from 'react';
+import {useMemo, useState} from 'react';
 import {
     PortableText,
     type PortableTextComponents,
 } from '@portabletext/react';
-import {Bookmark, Download, Leaf} from 'lucide-react';
-import {Button} from '@pakfactory/ui/components/button';
+import {Leaf} from 'lucide-react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {
     Tooltip,
@@ -17,6 +16,7 @@ import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
 import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
 import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
 import {useCustomizationDetailHost} from '@/components/customization/customization-detail-host';
+import {CustomizationRailActions} from '@/components/customization/customization-rail-actions';
 import {
     initialPropertySelection,
     OptionPropertyControllers,
@@ -35,8 +35,9 @@ import {
 import {Icon} from '@/components/ui/icon';
 import {OverviewSection} from '@/components/ui/overview-section';
 import {formatSectionEyebrow} from '@/components/ui/section-heading';
-import {StatusBadge, StatusNotice} from '@/components/ui/status-badge';
-import {stubBookmarkAction} from '@/lib/catalog-card-actions';
+import {StatusBadge} from '@/components/ui/status-badge';
+import {mapAchievesToPropertyField} from '@/lib/catalog/map-achieves-to-property-field';
+import {resolveConfigurationFields} from '@/lib/catalog/resolve-configuration-fields';
 import {
     buildSustainabilitySpecRows,
     specRowValues,
@@ -46,7 +47,6 @@ import {
     type PropertyFieldDescriptor,
 } from '@/lib/catalog/map-detail-to-property-fields';
 import {isCustomColorSlug} from '@/lib/catalog/swatch-colors';
-import {WWW_ROUTES} from '@/lib/www-routes';
 
 export const CUSTOMIZATION_OVERVIEW_LEARN_FIRST_ID =
     'customization-overview-learn-first';
@@ -126,12 +126,37 @@ export function CustomizationOverviewLearnFirst({
     borderTop = false,
     borderBottom = true,
 }: CustomizationOverviewChromeProps = {}) {
-    const {detail, worksWith, setWorksWithLine} = useCustomizationDetailHost();
+    const {
+        detail,
+        worksWith,
+        setWorksWithLine,
+        showCta,
+        showBookmark,
+        configurationSource,
+        selectedAchievesId,
+        setSelectedAchievesId,
+    } = useCustomizationDetailHost();
     const typeEyebrow =
         detail.typeTitle?.trim() ||
         detail.categoryLabel ||
         detail.categoryValue;
-    const fields = useMemo(() => mapDetailToPropertyFields(detail), [detail]);
+    const propertyFields = useMemo(
+        () => mapDetailToPropertyFields(detail),
+        [detail],
+    );
+    const achievesField = useMemo(
+        () => mapAchievesToPropertyField(detail.achieves),
+        [detail.achieves],
+    );
+    const fields = useMemo(
+        () =>
+            resolveConfigurationFields(
+                configurationSource,
+                propertyFields,
+                achievesField,
+            ),
+        [configurationSource, achievesField, propertyFields],
+    );
     const sustainabilityValues = useMemo(
         () =>
             buildSustainabilitySpecRows(detail).flatMap((row) =>
@@ -142,12 +167,25 @@ export function CustomizationOverviewLearnFirst({
     const productLines = (
         worksWith.lines.length > 0 ? worksWith.lines : detail.productLines
     ).filter((line) => line.title?.trim());
-    const [selection, setSelection] = useState<PropertySelectionMap>(() =>
-        initialPropertySelection(fields),
-    );
+    const [propertySelection, setPropertySelection] =
+        useState<PropertySelectionMap>(() =>
+            initialPropertySelection(propertyFields),
+        );
+    const selection = useMemo((): PropertySelectionMap => {
+        if (configurationSource === 'achieves') {
+            return selectedAchievesId
+                ? {achieves: [selectedAchievesId]}
+                : {};
+        }
+        return propertySelection;
+    }, [configurationSource, selectedAchievesId, propertySelection]);
 
     const setPropertyValue = (propertyKey: string, ids: string[]) => {
-        setSelection((prev) => {
+        if (configurationSource === 'achieves') {
+            setSelectedAchievesId(ids[0] ?? null);
+            return;
+        }
+        setPropertySelection((prev) => {
             const next = {...prev};
             if (!ids.length) delete next[propertyKey];
             else next[propertyKey] = ids;
@@ -155,18 +193,20 @@ export function CustomizationOverviewLearnFirst({
         });
     };
 
-    const onBookmark = (event: MouseEvent<HTMLButtonElement>) => {
-        stubBookmarkAction(event);
-    };
-
     const showSelectable = fields.length > 0;
     const showSustainability = sustainabilityValues.length > 0;
     const showApplicableOn = productLines.length > 0;
     const showFactsWell =
         showSustainability || showApplicableOn || showSelectable;
-    const lifecycle = detail.status;
-    const showOrderCtas = !lifecycle || lifecycle === 'active';
     const specSheetUrl = detail.specSheetUrl?.trim() || null;
+    const specsLabel =
+        configurationSource === 'achieves'
+            ? (achievesField?.label ?? 'Achievable options')
+            : 'Choose your specs';
+    const applyDisabled =
+        showCta &&
+        configurationSource === 'achieves' &&
+        !selectedAchievesId;
 
     return (
             <PageDielineSection
@@ -290,14 +330,24 @@ export function CustomizationOverviewLearnFirst({
                                     {showSelectable ? (
                                         <div>
                                             <p className="mb-2 px-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                                Choose your specs
+                                                {specsLabel}
                                             </p>
                                             <div className="rounded-xl border border-border bg-background p-4">
                                                 <OptionPropertyControllers
                                                     fields={fields}
                                                     value={selection}
                                                     onChange={setPropertyValue}
-                                                    onMapChange={setSelection}
+                                                    onMapChange={
+                                                        configurationSource ===
+                                                        'achieves'
+                                                            ? (next) =>
+                                                                  setSelectedAchievesId(
+                                                                      next
+                                                                          .achieves?.[0] ??
+                                                                          null,
+                                                                  )
+                                                            : setPropertySelection
+                                                    }
                                                     variant="ghost"
                                                 />
                                             </div>
@@ -348,57 +398,13 @@ export function CustomizationOverviewLearnFirst({
                                 </div>
                             ) : null}
 
-                            {showOrderCtas ? (
-                                <div className="flex flex-col gap-2">
-                                    <Button
-                                        asChild
-                                        className="h-auto w-full px-6 py-3 text-base"
-                                    >
-                                        <InPageAnchorLink
-                                            href={`#${CUSTOMIZATION_REFERENCE_WORKS_WITH_ID}`}
-                                        >
-                                            Apply to a product
-                                        </InPageAnchorLink>
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="h-auto w-full px-6 py-3 text-base shadow-none"
-                                        onClick={onBookmark}
-                                    >
-                                        <Icon icon={Bookmark} size="sm" />
-                                        Bookmark
-                                    </Button>
-                                    {specSheetUrl ? (
-                                        <div className="flex justify-end">
-                                            <Button
-                                                asChild
-                                                variant="link"
-                                                size="sm"
-                                                className="h-auto gap-1 px-0 text-muted-foreground"
-                                            >
-                                                <a
-                                                    href={specSheetUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    <Icon
-                                                        icon={Download}
-                                                        size="sm"
-                                                    />
-                                                    Download spec sheet
-                                                </a>
-                                            </Button>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            ) : (
-                                <StatusNotice
-                                    status={lifecycle}
-                                    contactHref={WWW_ROUTES.contact}
-                                    className="mt-0"
-                                />
-                            )}
+                            <CustomizationRailActions
+                                showCta={showCta}
+                                showBookmark={showBookmark}
+                                applyDisabled={applyDisabled}
+                                specSheetUrl={specSheetUrl}
+                                lifecycle={detail.status}
+                            />
                         </div>
                     </div>
                 </article>
