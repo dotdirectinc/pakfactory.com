@@ -4,9 +4,11 @@ import {test} from 'node:test';
 import {
     MAX_QUERY_LENGTH,
     normalizeQuery,
+    parseMatch,
     parseTypeFilter,
     resolveHref,
     shapeResponse,
+    topHits,
 } from './search-query';
 
 const BLOG = 'https://staging-blog.pakfactory.com/blog';
@@ -60,4 +62,33 @@ test('shapeResponse groups hits in rail order, keeps counts, drops unlinked hits
     assert.equal(out.groups[0]!.hits[0]!.position, 2);
     assert.equal(out.groups[2]!.hits[0]!.position, 1);
     assert.deepEqual(out.counts.group, {products: 2, guides: 1, solutions: 1});
+});
+
+test('parseMatch: only "loose" loosens; anything else is the default', () => {
+    assert.equal(parseMatch('loose'), 'loose');
+    assert.equal(parseMatch(' LOOSE '), 'loose');
+    assert.equal(parseMatch(null), 'default');
+    assert.equal(parseMatch('strict'), 'default');
+});
+
+test('topHits: best hits across groups in Algolia rank order', () => {
+    const data = shapeResponse(
+        'box',
+        null,
+        {
+            hits: [
+                {objectID: 'g1', type: 'guide', group: 'guides', title: 'G1', href: '/blog/g1'},
+                {objectID: 'p1', type: 'product', group: 'products', title: 'P1', href: '/p1'},
+                {objectID: 's1', type: 'solution', group: 'solutions', title: 'S1', href: '/s1'},
+                {objectID: 'p2', type: 'product', group: 'products', title: 'P2', href: '/p2'},
+            ],
+        },
+        BLOG,
+    );
+    // Grouped by tab (products first), but suggestions keep the rank.
+    assert.deepEqual(
+        topHits(data, 3).map((h) => h.id),
+        ['g1', 'p1', 's1'],
+    );
+    assert.equal(topHits(data, 10).length, 4);
 });

@@ -1,6 +1,7 @@
 'use client';
 
-import {Boxes, Search} from 'lucide-react';
+import {Fragment} from 'react';
+import {ArrowUpRight, Boxes, Clock, Search, X} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {SanityImage} from '@/components/ui/sanity-image';
@@ -17,8 +18,9 @@ import {isSanityCdnUrl} from '@/lib/sanity/image';
  * sample images carried their own background, ours are transparent PNGs.
  *
  * Layouts: `grid` products/solutions, `pills` customizations and links,
- * `cards` guides/resources, `lines` the product-lines circles. Every item is
- * reachable with the arrow keys; `index` is its place in the flat list.
+ * `cards` guides/resources, `lines` the product-lines circles, `list` the
+ * Basic mode's rows (recent searches, suggestions — not in the POC). Every item
+ * is reachable with the arrow keys; `index` is its place in the flat list.
  */
 
 export type SearchNavItem = {
@@ -32,6 +34,8 @@ export type SearchNavItem = {
     imageAlt?: string;
     summary?: string;
     label?: string;
+    /** `list` rows: a recent search (clock icon, removable) or "see all" (search icon). */
+    icon?: 'recent' | 'search';
     /** Set on search results: reported to `/api/search/click` when opened. */
     track?: {queryID: string; objectID: string; position: number};
 };
@@ -39,8 +43,12 @@ export type SearchNavItem = {
 export type SearchSectionModel = {
     key: string;
     title: string;
-    variant: 'grid' | 'pills' | 'cards' | 'lines';
+    variant: 'grid' | 'pills' | 'cards' | 'lines' | 'list';
     items: SearchNavItem[];
+    /** Optional control beside the heading (e.g. "Clear" on recent searches). */
+    action?: {label: string; onClick: () => void};
+    /** Hide the heading visually (it stays the region's accessible name). */
+    hideTitle?: boolean;
 };
 
 type SectionProps = {
@@ -53,7 +61,41 @@ type SectionProps = {
     onSelect: (item: SearchNavItem) => void;
     /** Hover / focus: warm the page before the click. */
     onPrefetch?: (item: SearchNavItem) => void;
+    /** `list` rows with `icon: 'recent'`: remove that recent search. */
+    onRemove?: (item: SearchNavItem) => void;
+    /** `list` rows: words to bold in titles (the typed query). */
+    highlight?: string;
 };
+
+function escapeRegExp(value: string) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Bold the typed words inside a title (client-side; the API returns no highlights). */
+function Highlighted({text, query, dark}: {text: string; query?: string; dark: boolean}) {
+    const words = (query ?? '')
+        .split(' ')
+        .filter((w) => w.length >= 2)
+        .map(escapeRegExp);
+    if (!words.length) return <>{text}</>;
+    const parts = text.split(new RegExp(`(${words.join('|')})`, 'gi'));
+    return (
+        <>
+            {parts.map((part, i) =>
+                i % 2 === 1 ? (
+                    <strong
+                        key={i}
+                        className={cn('font-semibold', dark ? 'text-white' : 'text-foreground')}
+                    >
+                        {part}
+                    </strong>
+                ) : (
+                    <Fragment key={i}>{part}</Fragment>
+                ),
+            )}
+        </>
+    );
+}
 
 /** POC radii (Tailwind lg/xl/2xl at --radius 16px). */
 export const POC_RADIUS = {lg: 'rounded-[16px]', xl: 'rounded-[20px]', '2xl': 'rounded-[24px]'};
@@ -109,6 +151,8 @@ export function SiteSearchSection({
     dark,
     onSelect,
     onPrefetch,
+    onRemove,
+    highlight,
 }: SectionProps) {
     const {variant, items} = section;
     if (!items.length) return null;
@@ -127,9 +171,146 @@ export function SiteSearchSection({
 
     return (
         <section className="space-y-3" aria-label={section.title}>
-            <h3 className={cn('text-sm font-semibold', dark ? 'text-white' : 'text-foreground')}>
-                {section.title}
-            </h3>
+            <div
+                className={cn(
+                    'flex items-center justify-between gap-2',
+                    section.hideTitle && !section.action && 'sr-only',
+                )}
+            >
+                <h3
+                    className={cn(
+                        variant === 'list'
+                            ? 'text-xs font-medium tracking-wide uppercase'
+                            : 'text-sm font-semibold',
+                        variant === 'list'
+                            ? dark
+                                ? 'text-white/45'
+                                : 'text-muted-foreground'
+                            : dark
+                              ? 'text-white'
+                              : 'text-foreground',
+                        section.hideTitle && 'sr-only',
+                    )}
+                >
+                    {section.title}
+                </h3>
+                {section.action ? (
+                    <button
+                        type="button"
+                        onClick={section.action.onClick}
+                        className={cn(
+                            'rounded-full px-2 py-0.5 text-xs font-medium outline-none focus-visible:ring-2',
+                            dark
+                                ? 'text-white/55 hover:text-white focus-visible:ring-white/50'
+                                : 'text-muted-foreground hover:text-foreground focus-visible:ring-foreground/40',
+                        )}
+                    >
+                        {section.action.label}
+                    </button>
+                ) : null}
+            </div>
+
+            {variant === 'list' ? (
+                <ul className="-mx-2 space-y-0.5">
+                    {items.map((item, i) => {
+                        const LeadIcon =
+                            item.icon === 'recent'
+                                ? Clock
+                                : item.icon === 'search'
+                                  ? Search
+                                  : null;
+                        return (
+                            <li key={item.id} className="group/row relative flex items-center">
+                                <button
+                                    {...common(item, i)}
+                                    className={cn(
+                                        'flex min-h-11 w-full min-w-0 items-center gap-3 px-2 py-1.5 text-left text-sm transition-colors',
+                                        POC_RADIUS.lg,
+                                        dark
+                                            ? 'text-white/75 hover:bg-white/5 data-[active=true]:bg-white/10'
+                                            : 'text-muted-foreground hover:bg-muted data-[active=true]:bg-muted',
+                                        item.icon === 'recent' && onRemove && 'pr-10',
+                                        active(dark),
+                                    )}
+                                >
+                                    {LeadIcon ? (
+                                        <LeadIcon
+                                            className={cn(
+                                                'size-4 shrink-0',
+                                                dark ? 'text-white/40' : 'text-muted-foreground',
+                                            )}
+                                            strokeWidth={1.75}
+                                            aria-hidden
+                                        />
+                                    ) : (
+                                        <span
+                                            className={cn(
+                                                'relative size-9 shrink-0 overflow-hidden',
+                                                'rounded-[10px]',
+                                            )}
+                                        >
+                                            <Thumb
+                                                src={item.image}
+                                                alt=""
+                                                sizes="36px"
+                                                dark={dark}
+                                            />
+                                        </span>
+                                    )}
+                                    <span
+                                        className={cn(
+                                            'min-w-0 flex-1 truncate',
+                                            item.icon
+                                                ? dark
+                                                    ? 'text-white/90'
+                                                    : 'text-foreground'
+                                                : undefined,
+                                        )}
+                                    >
+                                        <Highlighted
+                                            text={item.title}
+                                            query={item.icon ? undefined : highlight}
+                                            dark={dark}
+                                        />
+                                    </span>
+                                    {item.label ? (
+                                        <span
+                                            className={cn(
+                                                'shrink-0 text-xs',
+                                                dark ? 'text-white/40' : 'text-muted-foreground',
+                                            )}
+                                        >
+                                            {item.label}
+                                        </span>
+                                    ) : null}
+                                    {item.icon === 'search' ? (
+                                        <ArrowUpRight
+                                            className="size-4 shrink-0 opacity-0 group-hover/row:opacity-60"
+                                            strokeWidth={1.75}
+                                            aria-hidden
+                                        />
+                                    ) : null}
+                                </button>
+                                {item.icon === 'recent' && onRemove ? (
+                                    <button
+                                        type="button"
+                                        aria-label={`Remove “${item.title}” from recent searches`}
+                                        onClick={() => onRemove(item)}
+                                        className={cn(
+                                            'absolute right-1.5 inline-flex size-7 items-center justify-center rounded-full outline-none focus-visible:ring-2',
+                                            dark
+                                                ? 'text-white/40 hover:bg-white/10 hover:text-white focus-visible:ring-white/50'
+                                                : 'text-muted-foreground hover:bg-background hover:text-foreground focus-visible:ring-foreground/40',
+                                        )}
+                                    >
+                                        <X className="size-3.5" strokeWidth={2} aria-hidden />
+                                    </button>
+                                ) : null}
+                            </li>
+                        );
+                    })}
+                </ul>
+            ) : null}
 
             {variant === 'lines' ? (
                 <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-1">

@@ -92,7 +92,11 @@ export function useSearchRecents() {
         );
     }, []);
 
+    const remove = useCallback((query: string) => {
+        write(getSnapshot().filter((r) => r.query.toLowerCase() !== query.toLowerCase()));
+    }, []);
+
     const clear = useCallback(() => write(EMPTY), []);
 
-    return {recents, push, clear};
+    return {recents, push, remove, clear};
 }

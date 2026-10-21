@@ -9,6 +9,7 @@ import {
   HITS_PER_PAGE,
   MIN_QUERY_LENGTH,
   normalizeQuery,
+  parseMatch,
   parseTypeFilter,
   RETRIEVED_ATTRIBUTES,
   shapeResponse,
@@ -17,7 +18,7 @@ import { searchUserToken } from "@/lib/search/user-token";
 import { BLOG_URL } from "@/lib/www-nav";
 
 /**
- * GET /api/search?q=…&type=… — the www ⌘K search (PROD-3110).
+ * GET /api/search?q=…&type=…&match=loose — the www ⌘K search (PROD-3110).
  *
  * One `site_search` query per request, server-side, so the browser never
  * talks to Algolia. Successful responses are CDN-cached by URL, so a repeat of
@@ -44,6 +45,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const query = normalizeQuery(url.searchParams.get("q"));
   const filter = parseTypeFilter(url.searchParams.get("type"));
+  const match = parseMatch(url.searchParams.get("match"));
 
   if (query.length < MIN_QUERY_LENGTH) {
     return json(emptyResponse(query, filter), 200, CACHED);
@@ -75,6 +77,7 @@ export async function GET(request: Request) {
           attributesToRetrieve: [...RETRIEVED_ATTRIBUTES],
           attributesToHighlight: [],
           filters: filter ? `${filter.facet}:${filter.value}` : undefined,
+          removeWordsIfNoResults: match === "loose" ? "allOptional" : undefined,
           analytics: true,
           // Returns a queryID so the dialog can report clicks (PROD-3111).
           clickAnalytics: true,
