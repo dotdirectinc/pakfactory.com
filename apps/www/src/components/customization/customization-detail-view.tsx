@@ -72,6 +72,20 @@ const OVERVIEW_SECTION_TYPES = new Set([
     'customizationOverviewLearnFirst',
 ]);
 
+function sectionEyebrow(section: PageSection): string | undefined {
+    if (!('eyebrow' in section)) return undefined;
+    const value = section.eyebrow;
+    return typeof value === 'string' ? value.trim() || undefined : undefined;
+}
+
+function stickyEyebrowLabel(
+    section: PageSection,
+    learnEyebrow: string | undefined,
+    fallback: string,
+): string {
+    return sectionEyebrow(section) || learnEyebrow || fallback;
+}
+
 function pageSectionNavItems(
     pageSections: PageSection[] | null | undefined,
     detail: CustomizationDetail,
@@ -88,10 +102,11 @@ function pageSectionNavItems(
                 return [
                     {
                         id: CUSTOMIZATION_REFERENCE_WORKS_WITH_ID,
-                        label:
-                            section.heading?.trim() ||
-                            learnCopy?.worksWith.navLabel ||
+                        label: stickyEyebrowLabel(
+                            section,
+                            learnCopy?.worksWith.eyebrow,
                             'Works with',
+                        ),
                     },
                 ];
             case 'customizationCompatibleOptions': {
@@ -99,10 +114,11 @@ function pageSectionNavItems(
                 return [
                     {
                         id: CUSTOMIZATION_COMPATIBLE_OPTIONS_ID,
-                        label:
-                            section.heading?.trim() ||
-                            learnCopy?.compatibleOptions.navLabel ||
-                            'Compatible options',
+                        label: stickyEyebrowLabel(
+                            section,
+                            learnCopy?.compatibleOptions.eyebrow,
+                            'Compatible customizations',
+                        ),
                     },
                 ];
             }
@@ -110,30 +126,33 @@ function pageSectionNavItems(
                 return [
                     {
                         id: CUSTOMIZATION_COMPARISON_ID,
-                        label:
-                            section.heading?.trim() ||
-                            learnCopy?.compare.navLabel ||
-                            'Compare',
+                        label: stickyEyebrowLabel(
+                            section,
+                            learnCopy?.compare.eyebrow,
+                            'Comparison',
+                        ),
                     },
                 ];
             case 'customizationShowcase':
                 return [
                     {
                         id: CUSTOMIZATION_SHOWCASE_ID,
-                        label:
-                            section.heading?.trim() ||
-                            learnCopy?.showcase.navLabel ||
+                        label: stickyEyebrowLabel(
+                            section,
+                            learnCopy?.showcase.eyebrow,
                             'Showcase',
+                        ),
                     },
                 ];
             case 'customizationBenefitsSpecs':
                 return [
                     {
                         id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
-                        label:
-                            section.heading?.trim() ||
-                            learnCopy?.overview.navLabel ||
+                        label: stickyEyebrowLabel(
+                            section,
+                            learnCopy?.overview.eyebrow,
                             'Benefits',
+                        ),
                     },
                 ];
             case 'productsRow': {
@@ -205,11 +224,11 @@ function buildLegacyStaticNavItems(detail: CustomizationDetail): AnchorNavItem[]
             ? [
                   {
                       id: CUSTOMIZATION_COMPATIBLE_OPTIONS_ID,
-                      label: 'Compatible options',
+                      label: 'Compatible customizations',
                   },
               ]
             : []),
-        {id: CUSTOMIZATION_COMPARISON_ID, label: 'Compare'},
+        {id: CUSTOMIZATION_COMPARISON_ID, label: 'Comparison'},
         ...(showShowcase
             ? [{id: CUSTOMIZATION_SHOWCASE_ID, label: 'Showcase'}]
             : []),
@@ -372,7 +391,7 @@ async function CustomizationDetailBody({
                 ? [
                       {
                           id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
-                          label: learnCopy?.overview.navLabel || 'Overview',
+                          label: learnCopy?.overview.eyebrow || 'Overview',
                       },
                   ]
                 : []),
