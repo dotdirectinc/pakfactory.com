@@ -7,7 +7,7 @@ import {Button} from '@pakfactory/ui/components/button';
 import {CustomizationCompatibleOptionCard} from '@/components/customization/customization-compatible-option-card';
 import type {CustomizationCompatibleOption} from '@/lib/catalog/types';
 
-const PAGE_SIZE = 16;
+const PAGE_SIZE = 8;
 
 type CustomizationCompatibleOptionsGridProps = {
     options: CustomizationCompatibleOption[];
@@ -39,7 +39,7 @@ export function CustomizationCompatibleOptionsGrid({
                         }
                         className="gap-1 font-semibold text-primary"
                     >
-                        Load more
+                        Show more
                         <ChevronDown className="size-4" aria-hidden />
                     </Button>
                 </div>
