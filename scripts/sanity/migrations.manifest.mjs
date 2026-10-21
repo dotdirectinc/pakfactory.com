@@ -602,6 +602,9 @@ export const TASKS = [
   // PROD-3023. Drive 02-Edited PNGs → product.images, one line per run. Dry-run by default;
   // skips products whose style-folder copies differ and products that already have images.
   { task: 'upload:product-images', pkg: '@pakfactory/studio', why: 'Standard product PNGs from Drive, per line (repeatable)' },
+  // PROD-3010. Same for Inspiration products, one solution per run; --replace also deletes
+  // the replaced image assets nothing else references. Primaries picked by hand are in the script.
+  { task: 'upload:inspiration-images', pkg: '@pakfactory/studio', why: 'Inspiration product PNGs from Drive, per solution (repeatable)' },
   // Destructive, and paired with fill:catalog — the purge is only ever a prelude to a
   // rebuild from Notion + the Miro board. Dry-run by default; refuses to delete
   // referenced documents without --emit-map, which is what makes the rebuild repairable.
