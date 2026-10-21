@@ -5,6 +5,7 @@ import {
     buildReferenceSpecRows,
     buildSustainabilitySpecRows,
     COMPARE_EMPTY_CELL,
+    selectDefaultComparePeers,
     specRowValues,
 } from './compare-matrix';
 import type {CustomizationDetail} from './types';
@@ -248,13 +249,40 @@ describe('buildCompareMatrix', () => {
         );
         assert.deepEqual(
             matrix.rows.map((r) => r.key),
-            ['fiber', 'cost', 'print'],
+            ['fiber'],
         );
         assert.equal(matrix.rows[0]?.valuesById.metallic, 'Virgin fibre core');
         assert.equal(matrix.rows[0]?.valuesById.sbs, '100% Bleached');
-        assert.equal(matrix.rows[1]?.valuesById.metallic, 'Premium');
-        assert.equal(matrix.rows[1]?.valuesById.sbs, undefined);
-        assert.equal(matrix.rows[2]?.valuesById.sbs, 'Excellent');
+    });
+
+    it('keeps a single-column matrix’s stated rows', () => {
+        const only = detail({
+            id: 'solo',
+            title: 'Solo',
+            slug: 'solo',
+            categoryValue: 'materials',
+            declaredProperties: [
+                {
+                    usage: 'stated',
+                    propertySlug: 'fiber',
+                    propertyTitle: 'Fiber',
+                },
+            ],
+            properties: [
+                {
+                    id: 'f',
+                    title: 'A',
+                    slug: 'a',
+                    propertySlug: 'fiber',
+                    facts: [{label: 'x', display: 'A'}],
+                },
+            ],
+        });
+        const matrix = buildCompareMatrix([only, null, null]);
+        assert.deepEqual(
+            matrix.rows.map((r) => r.key),
+            ['fiber'],
+        );
     });
 
     it('omits null slots from columns and leaves missing cells empty', () => {
@@ -318,5 +346,105 @@ describe('hidden stated properties (showOnDetailPage false)', () => {
     it('leaves them out of the compare matrix', () => {
         const matrix = buildCompareMatrix([board('sbs', 'Virgin Fiber'), board('cuk', 'Recycled Fiber')]);
         assert.deepEqual(matrix.rows.map((r) => r.label), ['Print Quality']);
+    });
+});
+
+describe('selectDefaultComparePeers', () => {
+    function option(
+        id: string,
+        title: string,
+        typeSlug: string | undefined,
+        axes: string[],
+    ): CustomizationDetail {
+        return detail({
+            id,
+            title,
+            slug: id,
+            categoryValue: 'materials',
+            ...(typeSlug ? {typeSlug} : {}),
+            declaredProperties: axes.map((slug) => ({
+                usage: 'stated' as const,
+                propertySlug: slug,
+                propertyTitle: slug,
+            })),
+            properties: axes.map((slug) => ({
+                id: `${id}-${slug}`,
+                title: slug,
+                slug,
+                propertySlug: slug,
+                facts: [{label: 'x', display: slug}],
+            })),
+        });
+    }
+
+    it('prefers same-type siblings over earlier alphabetical peers', () => {
+        const abs = option('abs', 'ABS', 'rigid-plastic', [
+            'clarity',
+            'rigidity',
+        ]);
+        const aluminum = option('aluminum', 'Aluminum', 'metal', ['weight']);
+        const foam = option('foam', 'Anti-Static Foam', 'foam', ['firmness']);
+        const pet = option('pet', 'PET / RPET', 'rigid-plastic', [
+            'clarity',
+            'rigidity',
+        ]);
+        const pvc = option('pvc', 'Rigid PVC', 'rigid-plastic', [
+            'clarity',
+            'rigidity',
+        ]);
+
+        const selected = selectDefaultComparePeers(abs, [
+            aluminum,
+            foam,
+            pet,
+            pvc,
+        ]);
+        assert.deepEqual(
+            selected.map((p) => p.id),
+            ['pet', 'pvc'],
+        );
+    });
+
+    it('fills remaining slots with the neighbour that shares the most axes', () => {
+        const abs = option('abs', 'ABS', 'rigid-plastic', [
+            'clarity',
+            'rigidity',
+            'cost',
+        ]);
+        const pet = option('pet', 'PET / RPET', 'rigid-plastic', [
+            'clarity',
+            'rigidity',
+        ]);
+        const metal = option('aluminum', 'Aluminum', 'metal', ['weight']);
+        const nearby = option('nearby', 'Nearby Plastic', 'other-plastic', [
+            'clarity',
+            'cost',
+        ]);
+
+        const selected = selectDefaultComparePeers(abs, [metal, nearby, pet]);
+        assert.deepEqual(
+            selected.map((p) => p.id),
+            ['pet', 'nearby'],
+        );
+    });
+
+    it('ranks the whole category by overlap when the current option has no type', () => {
+        const current = option('abs', 'ABS', undefined, ['clarity', 'cost']);
+        const aluminum = option('aluminum', 'Aluminum', 'metal', ['weight']);
+        const pet = option('pet', 'PET / RPET', 'rigid-plastic', [
+            'clarity',
+            'cost',
+        ]);
+        const foam = option('foam', 'Foam', 'foam', ['clarity']);
+
+        const selected = selectDefaultComparePeers(current, [
+            aluminum,
+            foam,
+            pet,
+        ]);
+        assert.deepEqual(
+            selected.map((p) => p.id),
+            ['pet', 'foam'],
+        );
     });
 });

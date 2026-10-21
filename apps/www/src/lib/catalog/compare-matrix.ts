@@ -170,9 +170,76 @@ function statedRowsByKey(
     return out;
 }
 
+function statedKeySet(detail: CustomizationDetail): Set<string> {
+    return new Set(statedRowsByKey(detail).keys());
+}
+
+function sharedAxisCount(
+    currentKeys: Set<string>,
+    peer: CustomizationDetail,
+): number {
+    let n = 0;
+    for (const key of statedKeySet(peer)) {
+        if (currentKeys.has(key)) n += 1;
+    }
+    return n;
+}
+
+function rankByOverlapThenTitle(
+    current: CustomizationDetail,
+    peers: CustomizationDetail[],
+): CustomizationDetail[] {
+    const currentKeys = statedKeySet(current);
+    return [...peers].sort((a, b) => {
+        const overlap =
+            sharedAxisCount(currentKeys, b) - sharedAxisCount(currentKeys, a);
+        if (overlap !== 0) return overlap;
+        return a.title.localeCompare(b.title);
+    });
+}
+
+/**
+ * Default compare columns: same customization type first, then nearest
+ * same-category neighbours ranked by shared stated-property axes.
+ */
+export function selectDefaultComparePeers(
+    current: CustomizationDetail,
+    peers: CustomizationDetail[],
+    count = 2,
+): CustomizationDetail[] {
+    const unique = peers.filter((peer) => peer.id !== current.id);
+    const typeSlug = current.typeSlug?.trim();
+    if (!typeSlug) {
+        return rankByOverlapThenTitle(current, unique).slice(0, count);
+    }
+
+    const sameType: CustomizationDetail[] = [];
+    const neighbours: CustomizationDetail[] = [];
+    for (const peer of unique) {
+        if (peer.typeSlug?.trim() === typeSlug) {
+            sameType.push(peer);
+        } else {
+            neighbours.push(peer);
+        }
+    }
+
+    const selected: CustomizationDetail[] = [];
+    for (const peer of rankByOverlapThenTitle(current, sameType)) {
+        if (selected.length >= count) return selected;
+        selected.push(peer);
+    }
+    for (const peer of rankByOverlapThenTitle(current, neighbours)) {
+        if (selected.length >= count) return selected;
+        selected.push(peer);
+    }
+    return selected;
+}
+
 /**
  * Side-by-side matrix for filled compare slots (nulls omitted as columns).
  * Row order: current (first) option’s stated properties, then peer-only keys.
+ * With two or more columns, only rows that have a value in at least two
+ * columns stay — a lone dash column is not a comparison.
  */
 export function buildCompareMatrix(
     slots: Array<CustomizationDetail | null>,
@@ -223,7 +290,12 @@ export function buildCompareMatrix(
         return {key, label, valuesById};
     });
 
-    return {columns, rows};
+    const minFilledCells = filled.length >= 2 ? 2 : 1;
+    const denseRows = rows.filter(
+        (row) => Object.keys(row.valuesById).length >= minFilledCells,
+    );
+
+    return {columns, rows: denseRows};
 }
 
 export function compareCellDisplay(

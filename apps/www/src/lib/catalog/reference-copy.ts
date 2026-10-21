@@ -36,9 +36,9 @@ const CATEGORY_EYEBROW: Record<string, string> = {
     'additional-customization': 'Customization Reference',
 };
 
-/** Plural peer noun in learn-first compare body (PDF: “other boards”). */
+/** Plural peer noun when the option has no type title. */
 const COMPARE_PEER_NOUN: Record<string, string> = {
-    materials: 'boards',
+    materials: 'materials',
     finishing: 'finishes',
 };
 
@@ -52,7 +52,16 @@ function singularLabel(label: string): string {
     return trimmed.toLowerCase();
 }
 
-function comparePeerNoun(categoryValue: string): string {
+function pluralizeLabel(label: string): string {
+    const trimmed = label.trim().toLowerCase();
+    if (!trimmed) return 'options';
+    if (/s$/i.test(trimmed)) return trimmed;
+    return `${trimmed}s`;
+}
+
+function comparePeerNoun(categoryValue: string, typeTitle?: string): string {
+    const type = typeTitle?.trim();
+    if (type) return pluralizeLabel(type);
     const key = categoryValue.trim().toLowerCase();
     return COMPARE_PEER_NOUN[key] ?? 'options';
 }
@@ -90,7 +99,7 @@ export function getReferenceCopy(
 export function getLearnFirstSectionCopy(
     detail: Pick<
         CustomizationDetail,
-        'title' | 'categoryValue' | 'categoryLabel'
+        'title' | 'categoryValue' | 'categoryLabel' | 'typeTitle'
     >,
 ): {
     overview: LearnFirstSectionCopy;
@@ -102,7 +111,7 @@ export function getLearnFirstSectionCopy(
     const categoryLabel =
         detail.categoryLabel.trim() || detail.categoryValue.trim() || 'options';
     const title = detail.title.trim() || 'this option';
-    const peers = comparePeerNoun(detail.categoryValue);
+    const peers = comparePeerNoun(detail.categoryValue, detail.typeTitle);
     const selectionHint =
         'Apply carries your selection straight into the product.';
 

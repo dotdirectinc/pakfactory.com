@@ -24,7 +24,7 @@ describe('getLearnFirstSectionCopy (PROD-3112)', () => {
         );
         assert.equal(
             copy.compare.description,
-            'How Color Chipboard (Pure Color Core) stacks up against the other boards in this category — so you can choose the right option, not just this one.',
+            'How Color Chipboard (Pure Color Core) stacks up against the other materials in this category — so you can choose the right option, not just this one.',
         );
         assert.equal(copy.worksWith.eyebrow, 'Works on these product styles');
         assert.equal(
@@ -63,5 +63,18 @@ describe('getLearnFirstSectionCopy (PROD-3112)', () => {
             categoryLabel: 'Printing',
         });
         assert.match(copy.compare.description, /other options in this category/);
+    });
+
+    it('pluralizes the option type for materials compare copy', () => {
+        const copy = getLearnFirstSectionCopy({
+            title: 'Acrylonitrile Butadiene Styrene (ABS)',
+            categoryValue: 'materials',
+            categoryLabel: 'Materials',
+            typeTitle: 'Rigid Plastic',
+        });
+        assert.match(
+            copy.compare.description,
+            /other rigid plastics in this category/,
+        );
     });
 });
