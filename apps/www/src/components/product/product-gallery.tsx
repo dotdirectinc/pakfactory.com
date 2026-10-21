@@ -58,8 +58,17 @@ export const CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH = 1600;
 /** Near-viewport lightbox stage — full asset, no square crop. */
 const GALLERY_LIGHTBOX_SIZES = '(max-width: 640px) 96vw, min(96vw, 56rem)';
 
-/** Prefetch width for lightbox intent hover (`fit=max`, CDN max clamp). */
-const GALLERY_LIGHTBOX_PREFETCH_WIDTH = 1600;
+/**
+ * Prefetch / loader width for lightbox (`fit=max`). Below the global CDN cap
+ * so enlarge requests `w=1200` instead of the 1600 clamp (PROD-3135).
+ */
+const GALLERY_LIGHTBOX_PREFETCH_WIDTH = 1200;
+
+/** Main well crop quality — PDP + customization share this gallery. */
+const GALLERY_WELL_QUALITY = 85;
+
+/** Lightbox quality — matches warmed prefetch URL (PROD-3135). */
+const GALLERY_LIGHTBOX_QUALITY = 90;
 
 const LIGHTBOX_CLOSE_CLASS =
     'absolute top-4 right-4 z-30 inline-flex size-9 cursor-pointer items-center justify-center rounded-full bg-white/80 text-foreground shadow-sm transition-opacity hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -153,6 +162,7 @@ function GalleryWellSlideImage({
             priority={priority}
             loading={priority ? undefined : 'lazy'}
             sizes={sizes}
+            quality={GALLERY_WELL_QUALITY}
             className={cn('object-fill', imageClassName)}
             onLoad={onLoad}
             onError={onError}
@@ -181,6 +191,8 @@ function GalleryLightboxImage({
             applyWatermark
             fill
             sizes={GALLERY_LIGHTBOX_SIZES}
+            quality={GALLERY_LIGHTBOX_QUALITY}
+            maxLoaderWidth={GALLERY_LIGHTBOX_PREFETCH_WIDTH}
             className={cn('object-contain', imageClassName)}
             onLoad={onLoad}
             onError={onError}
@@ -232,7 +244,7 @@ export function ProductGallery({
         const url = sanityImageLoader({
             src,
             width: GALLERY_LIGHTBOX_PREFETCH_WIDTH,
-            quality: 80,
+            quality: GALLERY_LIGHTBOX_QUALITY,
         });
         const img = new window.Image();
         img.src = url;
@@ -353,7 +365,7 @@ export function ProductGallery({
                 const url = sanitySquareImageLoader({
                     src: item.src,
                     width: wellPrefetchWidthRef.current,
-                    quality: 80,
+                    quality: GALLERY_WELL_QUALITY,
                 });
                 const img = new window.Image();
                 prefetches.push(img);

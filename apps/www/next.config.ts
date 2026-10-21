@@ -131,6 +131,8 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Next 16 defaults to [75]; PDP gallery (85) and line hero (90) must be listed.
+    qualities: [75, 85, 90],
     remotePatterns: [
       { protocol: "https", hostname: "cdn.sanity.io" },
       { protocol: "https", hostname: "cdn.shadcnstudio.com" },
