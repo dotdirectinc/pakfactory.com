@@ -3,5 +3,5 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm turbo run build --filter=@pakfactory/admin",
-  "ignoreCommand": "case $VERCEL_GIT_COMMIT_REF in admin) exit 1;; *) exit 0;; esac"
+  "ignoreCommand": "bash \"$(git rev-parse --show-toplevel)/scripts/ci/vercel-ignore-build.sh\" admin"
 }
