@@ -45,6 +45,8 @@ export const RETRIEVED_ATTRIBUTES = [
     'image',
     'imageAlt',
     'parents',
+    // Server-side only (exact-SKU ordering below); not passed to the client.
+    'sku',
 ] as const;
 
 /**
@@ -88,6 +90,28 @@ export type SearchMatch = 'default' | 'loose';
 
 export function parseMatch(raw: string | null | undefined): SearchMatch {
     return (raw ?? '').trim().toLowerCase() === 'loose' ? 'loose' : 'default';
+}
+
+/**
+ * A query shaped like a product SKU (`COR-008`, `cor 008`, `RGD-060-AP2`, or a
+ * prefix of one such as `cor-00`), PROD-3136. Every SKU on `development` is
+ * `AAA-999` or `AAA-999-AA9`.
+ */
+const SKU_QUERY = /^[a-z]{2,5}[- ]\d{1,4}(?:[- ][a-z0-9]{1,5})?$/;
+
+export function isSkuQuery(query: string): boolean {
+    return SKU_QUERY.test(query);
+}
+
+/** `COR-008`, `cor 008` and `cor008` compare equal. */
+const compactSku = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * A SKU query is never loosened: dropping words would turn a mistyped SKU into
+ * hundreds of loosely related products. Otherwise the requested match applies.
+ */
+export function effectiveMatch(query: string, requested: SearchMatch): SearchMatch {
+    return isSkuQuery(query) ? 'default' : requested;
 }
 
 export type SearchHit = {
@@ -136,7 +160,12 @@ export function resolveHref(href: string, blogUrl: string): string {
     return href;
 }
 
-/** Shape Algolia's response into rail groups, in rail order. Hits without a link are dropped. */
+/**
+ * Shape Algolia's response into rail groups, in rail order. Hits without a link
+ * are dropped. For a SKU query the product with exactly that SKU goes first:
+ * Algolia splits `COR-008` at the hyphen, so `COR-008-BR1` matches it equally
+ * and can rank above it (PROD-3136). `position` follows the shown order.
+ */
 export function shapeResponse(
     query: string,
     filter: SearchFilter,
@@ -149,7 +178,12 @@ export function shapeResponse(
     blogUrl: string,
 ): SearchResponse {
     const byGroup = new Map<string, SearchHit[]>();
-    for (const [index, raw] of result.hits.entries()) {
+    let hits = result.hits;
+    if (isSkuQuery(query)) {
+        const exact = (raw: RawHit) => compactSku(str(raw.sku)) === compactSku(query);
+        hits = [...hits.filter(exact), ...hits.filter((raw) => !exact(raw))];
+    }
+    for (const [index, raw] of hits.entries()) {
         const href = str(raw.href);
         const title = str(raw.title);
         if (!href || !title) continue;

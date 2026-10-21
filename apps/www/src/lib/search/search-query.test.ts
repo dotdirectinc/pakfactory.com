@@ -3,6 +3,8 @@ import {test} from 'node:test';
 
 import {
     MAX_QUERY_LENGTH,
+    effectiveMatch,
+    isSkuQuery,
     normalizeQuery,
     parseMatch,
     parseTypeFilter,
@@ -91,4 +93,48 @@ test('topHits: best hits across groups in Algolia rank order', () => {
         ['g1', 'p1', 's1'],
     );
     assert.equal(topHits(data, 10).length, 4);
+});
+
+test('isSkuQuery: SKU shapes and their prefixes, not ordinary words', () => {
+    for (const q of ['cor-008', 'cor 008', 'rgd-060-ap2', 'cor-00', 'cor-1', 'mlr-011']) {
+        assert.equal(isSkuQuery(q), true, q);
+    }
+    for (const q of ['mailer', 'kraft mailer', 'cor', '1-2-3 bottom', 'blue kraft mailer', 'cor008']) {
+        assert.equal(isSkuQuery(q), false, q);
+    }
+});
+
+test('effectiveMatch: a SKU query is never loosened', () => {
+    assert.equal(effectiveMatch('rgd-060-ap3', 'loose'), 'default');
+    assert.equal(effectiveMatch('kraft mailr', 'loose'), 'loose');
+    assert.equal(effectiveMatch('kraft', 'default'), 'default');
+});
+
+test('shapeResponse: the exact SKU goes first, positions follow the shown order', () => {
+    const raw = (id: string, sku: string) => ({
+        objectID: id,
+        type: 'product',
+        group: 'products',
+        title: id,
+        href: `/products/${id}`,
+        sku,
+    });
+    const result = {hits: [raw('variant', 'COR-008-BR1'), raw('base', 'COR-008')]};
+    const ids = (q: string) =>
+        shapeResponse(q, null, result, BLOG).groups[0]!.hits.map((h) => [h.id, h.position]);
+    assert.deepEqual(ids('cor-008'), [
+        ['base', 1],
+        ['variant', 2],
+    ]);
+    assert.deepEqual(ids('cor 008 br1'), [
+        ['variant', 1],
+        ['base', 2],
+    ]);
+    // Not a SKU query: Algolia's order stands, and the SKU never reaches the client.
+    const plain = shapeResponse('trays', null, result, BLOG).groups[0]!.hits;
+    assert.deepEqual(
+        plain.map((h) => h.id),
+        ['variant', 'base'],
+    );
+    assert.equal('sku' in plain[0]!, false);
 });
