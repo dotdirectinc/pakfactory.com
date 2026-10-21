@@ -6,6 +6,7 @@ import { Button } from "@pakfactory/ui/components/button";
 import { Checkbox } from "@pakfactory/ui/components/checkbox";
 import { requestSyncAction } from "@/app/(admin)/spec/actions";
 import { ADMIN_SPEC_SYNC_COPY as COPY } from "@/lib/copy/spec";
+import { watchSyncRun } from "@/lib/spec/sync-watch";
 
 /**
  * Sync Changes, in the Registry's header (PROD-3115): dataset, SKUs and the button in one row. A run
@@ -27,7 +28,10 @@ export function RegistrySyncControl({ canSync, open }: { canSync: boolean; open:
     startTransition(async () => {
       const res = await requestSyncAction("sanity", dataset, includeSku);
       if (!res.ok) setError(res.error);
-      else setIncludeSku(false);
+      else {
+        setIncludeSku(false);
+        watchSyncRun(res.runId);
+      }
       router.refresh();
     });
   };

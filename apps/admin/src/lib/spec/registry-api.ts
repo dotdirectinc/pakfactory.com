@@ -291,6 +291,11 @@ export async function requestSyncRun(kind: SyncKind, dataset: string, includeSku
   return call<SyncRun>("/api/v1/sync-runs", { method: "POST", body });
 }
 
+/** One run, as it is now — the shell's watcher reads it until the run ends. */
+export async function getSyncRun(id: string) {
+  return call<SyncRun>(`/api/v1/sync-runs/${encodeURIComponent(id)}`);
+}
+
 /** Hide a finished run from the panel. The backend keeps the row. */
 export async function dismissSyncRun(id: string) {
   return call<SyncRun>(`/api/v1/sync-runs/${encodeURIComponent(id)}/dismiss`, { method: "POST" });

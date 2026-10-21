@@ -16,6 +16,7 @@ import {
 import { requestSyncAction } from "@/app/(admin)/spec/actions";
 import { DEFAULT_NOTION_FIELD_GROUPS, NOTION_FIELD_GROUPS, type NotionFieldGroup } from "@/lib/spec/notion-fields";
 import { ADMIN_SPEC_NOTION_SYNC_COPY as COPY } from "@/lib/copy/spec";
+import { watchSyncRun } from "@/lib/spec/sync-watch";
 
 type Props = {
   open: boolean;
@@ -52,6 +53,7 @@ export function SpecNotionSyncDialog({ open, onOpenChange, dataset }: Props) {
         toast.error(res.error);
         return;
       }
+      watchSyncRun(res.runId);
       toast.success(COPY.started);
       onOpenChange(false);
       router.push("/spec");

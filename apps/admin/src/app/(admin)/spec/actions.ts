@@ -2,7 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
-import { decideChangeset, dismissSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type NotionFieldGroup, type RelationsOwnerValue } from "@/lib/spec/registry-api";
+import { decideChangeset, dismissSyncRun, getSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type NotionFieldGroup, type RelationsOwnerValue } from "@/lib/spec/registry-api";
 
 export type DecisionResult = { ok: true } | { ok: false; error: string };
 
@@ -43,11 +43,32 @@ export async function requestSyncAction(
   dataset: string,
   includeSku = false,
   notionFields?: readonly NotionFieldGroup[],
-): Promise<DecisionResult> {
+): Promise<{ ok: true; runId: string } | { ok: false; error: string }> {
   const res = await requestSyncRun(kind, dataset, includeSku, notionFields);
   if (!res.ok) return { ok: false, error: res.error };
   revalidatePath("/spec");
-  return { ok: true };
+  return { ok: true, runId: res.data.id };
+}
+
+/** Where a run stands, for the shell's watcher: open, or what it produced once it ended. */
+export type SyncRunStatus =
+  | { open: true }
+  | { open: false; kind: "sanity" | "notion"; failed: boolean; error: string | null; frames: number; items: number };
+
+export async function syncRunStatusAction(id: string): Promise<SyncRunStatus | null> {
+  const res = await getSyncRun(id);
+  if (!res.ok) return null;
+  const run = res.data;
+  if (run.state === "requested" || run.state === "running") return { open: true };
+  const loaded = run.result?.loaded ?? [];
+  return {
+    open: false,
+    kind: run.kind,
+    failed: run.state === "failed",
+    error: run.error,
+    frames: loaded.length,
+    items: loaded.reduce((n, f) => n + (f.items ?? 0), 0),
+  };
 }
 
 /**
