@@ -3,11 +3,7 @@
  */
 
 import type {ProductOfferIndex} from '@/lib/catalog/product-offer-index';
-import type {
-    ProductLibraryItem,
-    ProductLibraryResult,
-    ProductLineRef,
-} from '@/lib/catalog/types';
+import type {ProductLibraryItem, ProductLineRef} from '@/lib/catalog/types';
 
 export type WorksWithProductCard = {
     id: string;
@@ -20,6 +16,30 @@ export type WorksWithProductCard = {
     productLineTitle: string;
 };
 
+/**
+ * What the Works with browser reads of a product — a library item's card fields
+ * (PROD-3121). Kept small so the list is cacheable (Next's data cache stops at
+ * 2 MB; the whole library is ~3.9 MB once mapped).
+ */
+export type WorksWithSourceItem = Pick<
+    ProductLibraryItem,
+    '_id' | 'kind' | 'slug' | 'title' | 'sku' | 'imageUrl' | 'imageAlt' | 'productLine'
+>;
+
+/** A library item reduced to {@link WorksWithSourceItem} — the same values, nothing else. */
+export function toWorksWithSource(item: ProductLibraryItem): WorksWithSourceItem {
+    return {
+        _id: item._id,
+        kind: item.kind,
+        slug: item.slug,
+        title: item.title,
+        sku: item.sku,
+        imageUrl: item.imageUrl,
+        imageAlt: item.imageAlt,
+        productLine: {slug: item.productLine.slug, title: item.productLine.title},
+    };
+}
+
 export type WorksWithOptionRef = {
     id: string;
     category: string;
@@ -27,7 +47,7 @@ export type WorksWithOptionRef = {
     title: string;
 };
 
-function toCard(item: ProductLibraryItem): WorksWithProductCard {
+function toCard(item: WorksWithSourceItem): WorksWithProductCard {
     return {
         id: item._id,
         slug: item.slug,
@@ -46,7 +66,8 @@ function toCard(item: ProductLibraryItem): WorksWithProductCard {
  */
 export function buildWorksWithProducts(input: {
     optionId: string;
-    productLibrary: ProductLibraryResult;
+    /** Library items, or the cached {@link WorksWithSourceItem} list (PROD-3121). */
+    products: readonly WorksWithSourceItem[];
     offerIndex: ProductOfferIndex;
     preferredLines?: ProductLineRef[];
 }): {
@@ -60,7 +81,7 @@ export function buildWorksWithProducts(input: {
         ]),
     );
 
-    const products = input.productLibrary.items
+    const products = input.products
         .filter((item) => {
             if (item.kind !== 'standard') return false;
             const offer = offerByProductId.get(item._id);

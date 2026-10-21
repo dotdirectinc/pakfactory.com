@@ -40,7 +40,7 @@ import type {
 } from '@/lib/catalog/build-works-with-products';
 import {
     getCustomizationDetailPage,
-    listProductLibrary,
+    listWorksWithSources,
     listProductOfferIndex,
 } from '@/lib/catalog/catalog';
 import type {CustomizationDetail, ProductLineRef} from '@/lib/catalog/types';
@@ -282,16 +282,18 @@ async function CustomizationDetailBody({
     category: string;
     handle: string;
 }) {
-    const [page, productLibrary, offerIndex] = await Promise.all([
+    // Card fields only, cached (PROD-3121): the whole library is ~3.9 MB mapped,
+    // too big for Next's data cache, and was refetched on every render.
+    const [page, worksWithSources, offerIndex] = await Promise.all([
         getCustomizationDetailPage(category, handle),
-        listProductLibrary(),
+        listWorksWithSources(),
         listProductOfferIndex(),
     ]);
 
     const pageSections = (page?.sections ?? null) as PageSection[] | null;
     const {products, lines} = buildWorksWithProducts({
         optionId: detail.id,
-        productLibrary,
+        products: worksWithSources,
         offerIndex,
         preferredLines: detail.productLines,
     });
