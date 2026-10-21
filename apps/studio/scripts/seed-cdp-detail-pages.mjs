@@ -1,10 +1,17 @@
 #!/usr/bin/env node
 /**
- * Seed Customization Detail Page templates (PROD-3112).
+ * Seed Customization Detail Page templates (PROD-3112 / PROD-3124).
  *
- * Ensures Default + Learn-first layout docs exist and appends the remaining
- * host-inherited bands when missing:
- *   customizationWorksWith → customizationCompare → customizationShowcase
+ * Ensures Default + Learn-first layout docs exist and inserts the remaining
+ * host-inherited bands when missing, in this order:
+ *   customizationWorksWith
+ *   → customizationCompatibleOptions (PROD-3124)
+ *   → customizationCompare
+ *   → customizationShowcase
+ *
+ * Missing bands are inserted relative to neighbours (after Works with /
+ * before Compare), not blindly appended — so a re-run on already-seeded
+ * templates puts compatible options in the right place.
  *
  * Does not seed overview or benefits (editors / other setup own those).
  * Stable `_key`s so re-runs are idempotent. Creates stub docs when missing.
@@ -70,6 +77,7 @@ const client = createClient({
 })
 
 const WORKS_WITH_KEY = 'cdp-works-with'
+const COMPATIBLE_OPTIONS_KEY = 'cdp-compatible-options'
 const COMPARE_KEY = 'cdp-compare'
 const SHOWCASE_KEY = 'cdp-showcase'
 
@@ -78,6 +86,10 @@ const REMAINING_BANDS = [
   {
     _type: 'customizationWorksWith',
     _key: WORKS_WITH_KEY,
+  },
+  {
+    _type: 'customizationCompatibleOptions',
+    _key: COMPATIBLE_OPTIONS_KEY,
   },
   {
     _type: 'customizationCompare',
@@ -104,19 +116,50 @@ const TARGETS = [
   },
 ]
 
+function bandAlreadyPresent(sections, band) {
+  return sections.some(
+    (s) => s?._key === band._key || s?._type === band._type,
+  )
+}
+
 /**
- * Ensure each remaining band is present (by `_key`). Append missing; leave
- * existing order/chrome alone when the key already exists.
+ * Insert `band` after the previous seeded neighbour, else before the next,
+ * else append. Leaves existing order/chrome alone when the type or `_key`
+ * is already on the template.
  */
+function insertBand(sections, band) {
+  if (bandAlreadyPresent(sections, band)) return false
+
+  const bandIndex = REMAINING_BANDS.findIndex((b) => b._key === band._key)
+  for (let i = bandIndex - 1; i >= 0; i--) {
+    const prev = REMAINING_BANDS[i]
+    const at = sections.findIndex(
+      (s) => s?._key === prev._key || s?._type === prev._type,
+    )
+    if (at >= 0) {
+      sections.splice(at + 1, 0, band)
+      return true
+    }
+  }
+  for (let i = bandIndex + 1; i < REMAINING_BANDS.length; i++) {
+    const next = REMAINING_BANDS[i]
+    const at = sections.findIndex(
+      (s) => s?._key === next._key || s?._type === next._type,
+    )
+    if (at >= 0) {
+      sections.splice(at, 0, band)
+      return true
+    }
+  }
+  sections.push(band)
+  return true
+}
+
 function ensureRemainingBands(existing) {
   const sections = Array.isArray(existing) ? [...existing] : []
-  const keys = new Set(sections.map((s) => s?._key).filter(Boolean))
   let changed = false
   for (const band of REMAINING_BANDS) {
-    if (keys.has(band._key)) continue
-    sections.push(band)
-    keys.add(band._key)
-    changed = true
+    if (insertBand(sections, band)) changed = true
   }
   return {sections, changed}
 }
@@ -168,12 +211,20 @@ async function seed() {
       const added = plan.nextDoc.sections
         .map((s) => s._key)
         .filter((k) => !plan.existingKeys.includes(k))
-      if (added.length) console.log(`           append keys: ${added.join(', ')}`)
+      if (added.length) console.log(`           insert keys: ${added.join(', ')}`)
     }
   }
 
   if (!apply) {
-    console.log('\nDry run — pass --confirm to write.\n')
+    console.log(
+      `\nDry run on dataset=${DATASET} — pass --confirm to write.\n`,
+    )
+    return
+  }
+
+  const unchanged = plans.every((plan) => !plan.changed)
+  if (unchanged) {
+    console.log(`\nNothing to do on dataset=${DATASET}.\n`)
     return
   }
 

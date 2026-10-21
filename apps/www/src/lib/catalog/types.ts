@@ -516,6 +516,12 @@ export type ProductLibraryResult = {
 
 /** Property value fact row for specs / configurator (PROD-1299). */
 export type CustomizationPropertyFact = {
+    /**
+     * Fact-label slug (`caliper`). Column identity. Absent on older fixtures;
+     * the spec table then uses `label`.
+     */
+    key?: string;
+    /** Column header. Human title when `key` is in the fact-label list. */
     label: string;
     display: string;
 };
@@ -578,10 +584,32 @@ export type CustomizationShowcaseTile = {
     linkLabel?: string;
 };
 
+/**
+ * Card-shaped compatible customization on the CDP (PROD-3124).
+ * Distinct from same-type compare peers and from Works-with products.
+ */
+export type CustomizationCompatibleOption = {
+    id: string;
+    title: string;
+    shortName?: string;
+    slug: string;
+    categoryValue: string;
+    categoryLabel: string;
+    typeTitle?: string;
+    shortDescription?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
 /** Full customization option detail (PROD-1299). */
 export type CustomizationDetail = {
     id: string;
     title: string;
+    /**
+     * Customer-facing short label (PROD-3123). Empty falls back to title
+     * for `%shortName%` tokens. Does not replace `title` or glossary copy.
+     */
+    shortName?: string;
     /** Coming soon / discontinued show a badge and a notice (PROD-2605). */
     status?: CatalogLifecycle;
     slug: string;
@@ -595,6 +623,11 @@ export type CustomizationDetail = {
      * Empty when no glossary term is linked — do not fill from shortDescription.
      */
     description?: string;
+    /**
+     * One-line option summary (PROD-3060). Compare-column blurb.
+     * Never copied into `description`.
+     */
+    shortDescription?: string;
     /**
      * Linked glossaryTerm.definition portable text for the CDP hero (PROD-2779).
      * When absent, hero description stays empty so missing content is obvious.
@@ -631,6 +664,12 @@ export type CustomizationDetail = {
     declaredProperties: CustomizationDeclaredProperty[];
     productLines: ProductLineRef[];
     faqs?: ProductFaq[];
+    /**
+     * Other options specified together with this one (PROD-3124).
+     * Both-direction `compatibleCustomizations`; omit when empty so the
+     * section and nav hide.
+     */
+    compatibleOptions?: CustomizationCompatibleOption[];
 };
 
 export type CustomizationDetailResult = {

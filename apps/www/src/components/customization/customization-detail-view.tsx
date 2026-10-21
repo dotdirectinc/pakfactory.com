@@ -1,5 +1,10 @@
 import {Suspense} from 'react';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
+import {CustomizationCompatibleOptions} from '@/components/customization/customization-compatible-options';
+import {
+    CUSTOMIZATION_COMPATIBLE_OPTIONS_ID,
+    hasCompatibleOptions,
+} from '@/components/customization/customization-compatible-options-id';
 import {
     CustomizationComparison,
     CUSTOMIZATION_COMPARISON_ID,
@@ -43,6 +48,10 @@ import {
     listWorksWithMatches,
 } from '@/lib/catalog/catalog';
 import type {CustomizationDetail, ProductLineRef} from '@/lib/catalog/types';
+import {
+    applySectionTokens,
+    sectionTokenContextFromHost,
+} from '@/lib/sections/resolve-section-tokens';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 const CUSTOMIZATION_FAQS_ID = 'customization-faqs';
@@ -52,6 +61,7 @@ const CDP_SECTION_TYPES = new Set([
     'customizationOverviewLearnFirst',
     'customizationBenefitsSpecs',
     'customizationWorksWith',
+    'customizationCompatibleOptions',
     'customizationCompare',
     'customizationShowcase',
 ]);
@@ -83,6 +93,18 @@ function pageSectionNavItems(
                             'Works with',
                     },
                 ];
+            case 'customizationCompatibleOptions': {
+                if (!hasCompatibleOptions(detail)) return [];
+                return [
+                    {
+                        id: CUSTOMIZATION_COMPATIBLE_OPTIONS_ID,
+                        label:
+                            section.heading?.trim() ||
+                            learnCopy?.compatibleOptions.navLabel ||
+                            'Compatible options',
+                    },
+                ];
+            }
             case 'customizationCompare':
                 return [
                     {
@@ -175,6 +197,14 @@ function buildLegacyStaticNavItems(detail: CustomizationDetail): AnchorNavItem[]
                   {
                       id: CUSTOMIZATION_REFERENCE_WORKS_WITH_ID,
                       label: 'Works with',
+                  },
+              ]
+            : []),
+        ...(hasCompatibleOptions(detail)
+            ? [
+                  {
+                      id: CUSTOMIZATION_COMPATIBLE_OPTIONS_ID,
+                      label: 'Compatible options',
                   },
               ]
             : []),
@@ -288,7 +318,18 @@ async function CustomizationDetailBody({
         listWorksWithMatches(detail.id),
     ]);
 
-    const pageSections = (page?.sections ?? null) as PageSection[] | null;
+    const pageSections = page?.sections
+        ? applySectionTokens(
+              page.sections as PageSection[],
+              sectionTokenContextFromHost({
+                  title: detail.title,
+                  h1: detail.title,
+                  shortName: detail.shortName,
+                  descriptionText: detail.description,
+                  slug: detail.slug,
+              }),
+          )
+        : null;
     const {products, lines} = arrangeWorksWith(
         worksWithMatches,
         detail.productLines,
@@ -320,6 +361,10 @@ async function CustomizationDetailBody({
         const learnCopy = learnFirst
             ? getLearnFirstSectionCopy(detail)
             : null;
+        const sectionsWithFaqs = injectCompatibleOptionsSection(
+            applyFaqHostInherit(pageSections, detail),
+            hasCompatibleOptions(detail),
+        );
         const navItems = [
             ...(injectBenefitsSpecs
                 ? [
@@ -329,9 +374,8 @@ async function CustomizationDetailBody({
                       },
                   ]
                 : []),
-            ...pageSectionNavItems(pageSections, detail, learnFirst),
+            ...pageSectionNavItems(sectionsWithFaqs, detail, learnFirst),
         ];
-        const sectionsWithFaqs = applyFaqHostInherit(pageSections, detail);
         const overviewSections = sectionsWithFaqs.filter((s) =>
             OVERVIEW_SECTION_TYPES.has(s._type),
         );
@@ -378,6 +422,37 @@ async function CustomizationDetailBody({
             ]}
         />
     );
+}
+
+/**
+ * Insert the compatible-options band after Works with (before Compare)
+ * when the option has pairs but the template has not been seeded yet.
+ */
+function injectCompatibleOptionsSection(
+    sections: PageSection[],
+    hasData: boolean,
+): PageSection[] {
+    if (!hasData) return sections;
+    if (sections.some((s) => s._type === 'customizationCompatibleOptions')) {
+        return sections;
+    }
+    const synthetic = {
+        _type: 'customizationCompatibleOptions',
+        _key: 'injected-compatible-options',
+    } as PageSection;
+    const afterWorks = sections.findIndex(
+        (s) => s._type === 'customizationWorksWith',
+    );
+    const beforeCompare = sections.findIndex(
+        (s) => s._type === 'customizationCompare',
+    );
+    const at =
+        afterWorks >= 0
+            ? afterWorks + 1
+            : beforeCompare >= 0
+              ? beforeCompare
+              : sections.length;
+    return [...sections.slice(0, at), synthetic, ...sections.slice(at)];
 }
 
 function applyFaqHostInherit(
@@ -453,6 +528,7 @@ function CustomizationDetailLegacyBody({
                     products={worksWith.products}
                 />
             ) : null}
+            <CustomizationCompatibleOptions detail={detail} />
             <CustomizationComparison detail={detail} peers={peers} />
             {showShowcase ? <CustomizationShowcase detail={detail} /> : null}
             {showFaqs ? (

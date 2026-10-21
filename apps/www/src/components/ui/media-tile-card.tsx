@@ -13,6 +13,7 @@ import {
     productMediaRestClass,
     productMediaSelfHoverClass,
 } from '@/lib/ui/product-media-scale';
+import {usePointerPrefetch} from '@/lib/ui/use-pointer-prefetch';
 
 export type MediaTileCardProps = {
     href: string;
@@ -79,6 +80,7 @@ export function MediaTileCard({
     const eyebrowText = eyebrow?.trim().toUpperCase();
     const interactive = onCtaClick != null;
     const markEmpty = emptyMedia === 'mark';
+    const {prefetch, enablePrefetch} = usePointerPrefetch(href);
 
     const shellClassName = cn(
         'group flex h-full w-full flex-col overflow-hidden rounded-2xl outline-none',
@@ -223,7 +225,14 @@ export function MediaTileCard({
     }
 
     return (
-        <Link href={href} className={shellClassName}>
+        <Link
+            href={href}
+            prefetch={prefetch}
+            onPointerEnter={enablePrefetch}
+            onPointerDown={enablePrefetch}
+            onFocus={enablePrefetch}
+            className={shellClassName}
+        >
             <MediaTilePendingBody>
                 {media}
                 {meta}

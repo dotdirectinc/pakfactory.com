@@ -615,6 +615,7 @@ export const TASKS = [
   { task: 'populate:faqs', pkg: '@pakfactory/studio', why: 'replace every FAQ with the Notion FAQ table (repeatable)' },
   { task: 'seed:home-page', pkg: '@pakfactory/studio', why: 'idempotent Home layout seed (PROD-2666); stable seed-hero-*/seed-home-* keys, picks real docs' },
   { task: 'seed:catalog-page-copy', pkg: '@pakfactory/studio', why: 'idempotent Product/Customization Catalog Page hero+SEO+UI copy (PROD-3001)' },
+  { task: 'seed:cdp-detail-pages', pkg: '@pakfactory/studio', why: 'idempotent CDP template bands (PROD-3112 / PROD-3124); inserts Works with → Compatible options → Compare → Showcase' },
   { task: 'seed:finder-general', pkg: '@pakfactory/studio', why: 'surgical General-rail buckets on existing heroFinder; preserves section order' },
   { task: 'seed:help-categories', pkg: '@pakfactory/studio', why: 'create the Help Center categories (create-if-missing)' },
   { task: 'seed:controller-lab', pkg: '@pakfactory/studio', why: 'idempotent Controller Lab QA seed — Materials type + options, append-only on test product' },

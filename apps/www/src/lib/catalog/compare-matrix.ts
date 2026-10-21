@@ -236,6 +236,27 @@ export function selectDefaultComparePeers(
 }
 
 /**
+ * Swap/add menu: same customization type as `current`. Falls back to the
+ * whole category list when the current option has no type.
+ */
+export function selectCompareMenuOptions(
+    current: CustomizationDetail,
+    peers: CustomizationDetail[],
+): CustomizationDetail[] {
+    const byId = new Map<string, CustomizationDetail>();
+    byId.set(current.id, current);
+    for (const peer of peers) {
+        byId.set(peer.id, peer);
+    }
+    const unique = [...byId.values()];
+    const typeSlug = current.typeSlug?.trim();
+    const list = typeSlug
+        ? unique.filter((item) => item.typeSlug?.trim() === typeSlug)
+        : unique;
+    return list.sort((a, b) => a.title.localeCompare(b.title));
+}
+
+/**
  * Side-by-side matrix for filled compare slots (nulls omitted as columns).
  * Row order: current (first) option’s stated properties, then peer-only keys.
  * With two or more columns, only rows that have a value in at least two

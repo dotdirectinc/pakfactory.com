@@ -1,6 +1,5 @@
 'use client';
 
-import {useState} from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
 import {Package} from 'lucide-react';
@@ -13,6 +12,7 @@ import {Icon} from '@/components/ui/icon';
 import {MediaCardFrame} from '@/components/ui/media-card-frame';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {displayProductSku} from '@/lib/catalog/display-sku';
+import {usePointerPrefetch} from '@/lib/ui/use-pointer-prefetch';
 
 export type ProductCapabilityCardData = {
     title: string;
@@ -50,11 +50,7 @@ export function ProductCapabilityCard({
     const pathOnly = data.href.split('?')[0] ?? '';
     const slugFromHref = pathOnly.split('/').filter(Boolean).pop() ?? '';
     const eyebrow = displayProductSku(data.sku, slugFromHref).toUpperCase();
-    const [prefetch, setPrefetch] = useState(false);
-
-    function enablePrefetch() {
-        setPrefetch(true);
-    }
+    const {prefetch, enablePrefetch} = usePointerPrefetch(data.href);
 
     const media = data.imageUrl ? (
         <div className="pointer-events-none absolute inset-0">

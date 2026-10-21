@@ -98,6 +98,7 @@ const CDP_DETAIL_SECTIONS = [
   'customizationOverviewLearnFirst',
   'customizationBenefitsSpecs',
   'customizationWorksWith',
+  'customizationCompatibleOptions',
   'customizationCompare',
   'customizationShowcase',
 ] as const

@@ -1,6 +1,7 @@
 'use client';
 
 import type {PageSectionCustomizationDetailDoc} from '@pakfactory/sanity/queries';
+import {CustomizationCompatibleOptions} from '@/components/customization/customization-compatible-options';
 import {CustomizationComparison} from '@/components/customization/customization-comparison';
 import {useCustomizationDetailHostOptional} from '@/components/customization/customization-detail-host';
 import {CustomizationOverviewLearnFirst} from '@/components/customization/customization-overview-learn-first';
@@ -90,6 +91,40 @@ export function CustomizationWorksWithFromSanity(
             option={worksWith.option}
             lines={worksWith.lines}
             products={worksWith.products}
+            heading={
+                heading.eyebrow || heading.title || heading.description
+                    ? {
+                          ...(heading.eyebrow
+                              ? {eyebrow: heading.eyebrow}
+                              : {}),
+                          ...(heading.title ? {title: heading.title} : {}),
+                          ...(heading.description
+                              ? {description: heading.description}
+                              : {}),
+                      }
+                    : undefined
+            }
+        />
+    );
+}
+
+export function CustomizationCompatibleOptionsFromSanity(
+    section: PageSectionCustomizationDetailDoc,
+) {
+    const host = useHost();
+    if (!host) return null;
+    const {detail, isLearnFirstTemplate} = host;
+    const defaults = isLearnFirstTemplate
+        ? getLearnFirstSectionCopy(detail).compatibleOptions
+        : null;
+    const heading = {
+        eyebrow: section.eyebrow?.trim() || defaults?.eyebrow,
+        title: section.heading?.trim() || defaults?.title,
+        description: section.intro?.trim() || defaults?.description,
+    };
+    return (
+        <CustomizationCompatibleOptions
+            detail={detail}
             heading={
                 heading.eyebrow || heading.title || heading.description
                     ? {

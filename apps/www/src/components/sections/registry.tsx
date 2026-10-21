@@ -28,6 +28,7 @@ import {Benefits} from '@/components/sections/benefits';
 import {CaseStudiesRow} from '@/components/sections/case-studies-row';
 import {
     CustomizationBenefitsSpecsFromSanity,
+    CustomizationCompatibleOptionsFromSanity,
     CustomizationCompareFromSanity,
     CustomizationOverviewLearnFirstFromSanity,
     CustomizationOverviewStandardFromSanity,
@@ -379,6 +380,8 @@ export const SECTION_COMPONENTS: Record<
         CustomizationBenefitsSpecsFromSanity as ComponentType<PageSection>,
     customizationWorksWith:
         CustomizationWorksWithFromSanity as ComponentType<PageSection>,
+    customizationCompatibleOptions:
+        CustomizationCompatibleOptionsFromSanity as ComponentType<PageSection>,
     customizationCompare:
         CustomizationCompareFromSanity as ComponentType<PageSection>,
     customizationShowcase:

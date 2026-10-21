@@ -561,6 +561,7 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     "customizationOverviewLearnFirst",
     "customizationBenefitsSpecs",
     "customizationWorksWith",
+    "customizationCompatibleOptions",
     "customizationCompare",
     "customizationShowcase"
   ] => {
@@ -1134,6 +1135,7 @@ export type PageSectionCustomizationDetailDoc = PageSectionChromeFields & {
         | 'customizationOverviewLearnFirst'
         | 'customizationBenefitsSpecs'
         | 'customizationWorksWith'
+        | 'customizationCompatibleOptions'
         | 'customizationCompare'
         | 'customizationShowcase';
     _key: string;

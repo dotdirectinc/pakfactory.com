@@ -44,6 +44,7 @@ import type {
     PropertyFieldOption,
 } from '@/lib/catalog/map-detail-to-property-fields';
 import {summaryKindForField} from '@/lib/catalog/map-detail-to-property-fields';
+import {specTableColumns} from '@/lib/catalog/property-facts';
 import {isCustomColorSlug} from '@/lib/catalog/swatch-colors';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import type {
@@ -635,19 +636,13 @@ function SpecTableFromOptions({
     onSelect: (id: string) => void;
 }) {
     const segments = options.map((o) => ({id: o.id, label: o.title}));
-    const columns: string[] = [];
-    const seen = new Set<string>();
-    for (const o of options) {
-        for (const fact of o.facts ?? []) {
-            if (seen.has(fact.label)) continue;
-            seen.add(fact.label);
-            columns.push(fact.label);
-        }
-    }
+    const columns = specTableColumns(options.flatMap((o) => o.facts ?? []));
     const rows: Record<string, string[]> = {};
     for (const o of options) {
-        const byLabel = new Map((o.facts ?? []).map((f) => [f.label, f.display]));
-        rows[o.id] = columns.map((c) => byLabel.get(c) ?? '—');
+        const byKey = new Map(
+            (o.facts ?? []).map((f) => [f.key?.trim() || f.label, f.display]),
+        );
+        rows[o.id] = columns.map((c) => byKey.get(c.key) ?? '—');
     }
 
     if (segments.length === 0) return null;
@@ -655,7 +650,7 @@ function SpecTableFromOptions({
     return (
         <SpecTableField
             segments={segments}
-            columns={columns.length > 0 ? columns : ['Value']}
+            columns={columns.length > 0 ? columns.map((c) => c.heading) : ['Value']}
             rows={
                 columns.length > 0
                     ? rows

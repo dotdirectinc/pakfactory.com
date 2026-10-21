@@ -43,6 +43,7 @@ import {SectionHeading} from '@/components/ui/section-heading';
 import {
     buildCompareMatrix,
     CUSTOMIZATION_COMPARISON_ID,
+    selectCompareMenuOptions,
     selectDefaultComparePeers,
 } from '@/lib/catalog/compare-matrix';
 import type {CustomizationDetail} from '@/lib/catalog/types';
@@ -55,8 +56,6 @@ const MD_UP_QUERY = '(min-width: 768px)';
 /** 8px from viewport top — closer under header chrome (z-40 under header z-50). */
 const FLOAT_DOCK_TOP = 'top-2';
 const FLOAT_DOCK_Z = 'z-40';
-/** 8pt spacer matching float dock content (thumb + select). */
-const FLOAT_DOCK_SPACER_CLASS = 'h-20';
 
 function useIsMdUp() {
     const [isMdUp, setIsMdUp] = useState(false);
@@ -128,16 +127,10 @@ export function CustomizationComparison({
         [filledItems],
     );
 
-    const categoryCandidates = useMemo(() => {
-        const byId = new Map<string, CustomizationDetail>();
-        byId.set(detail.id, detail);
-        for (const peer of peers) {
-            byId.set(peer.id, peer);
-        }
-        return [...byId.values()].sort((a, b) =>
-            a.title.localeCompare(b.title),
-        );
-    }, [detail, peers]);
+    const categoryCandidates = useMemo(
+        () => selectCompareMenuOptions(detail, peers),
+        [detail, peers],
+    );
 
     const addCandidates = useMemo(
         () => categoryCandidates.filter((c) => !slotIds.includes(c.id)),
@@ -153,14 +146,13 @@ export function CustomizationComparison({
             (entries) => {
                 const entry = entries[0];
                 if (!entry) return;
-                // Show sticky once ~half the compare hero has scrolled past the
-                // top — not when the hero is still below the fold (ratio 0).
-                setHeroPastViewport(
-                    entry.boundingClientRect.top < 0 &&
-                        entry.intersectionRatio < 0.5,
-                );
+                // Show sticky only after the compare hero has fully left the
+                // top — not while any of it is still on screen, and not while
+                // it is still below the fold.
+                const {top, bottom} = entry.boundingClientRect;
+                setHeroPastViewport(top < 0 && bottom <= 0);
             },
-            {root: null, rootMargin: '0px', threshold: [0, 0.25, 0.5, 0.75, 1]},
+            {root: null, rootMargin: '0px', threshold: [0, 1]},
         );
         heroIo.observe(heroEl);
 
@@ -251,22 +243,15 @@ export function CustomizationComparison({
                         onAdd={addOption}
                     />
 
-                    {showFloatDock ? (
-                        <>
-                            <div
-                                className={FLOAT_DOCK_SPACER_CLASS}
-                                aria-hidden
-                            />
-                            <CompareFloatDock
-                                slots={slots}
-                                addCandidates={addCandidates}
-                                swapCandidates={categoryCandidates}
-                                onReplaceSlot={replaceOtherSlot}
-                                onAdd={addOption}
-                                currentLabel={detail.title}
-                            />
-                        </>
-                    ) : null}
+                    <CompareFloatDock
+                        slots={slots}
+                        addCandidates={addCandidates}
+                        swapCandidates={categoryCandidates}
+                        onReplaceSlot={replaceOtherSlot}
+                        onAdd={addOption}
+                        currentLabel={detail.title}
+                        visible={showFloatDock}
+                    />
 
                     {matrix.rows.length > 0 ? (
                         <CompareSpecMatrix
@@ -346,7 +331,7 @@ function DetailHeroColumn({
 }) {
     const columnClass = cn(
         'flex min-w-0 flex-col gap-4 border-border pb-4 pt-0',
-        slotIndex === 2 && 'hidden md:block',
+        slotIndex === 2 && 'hidden md:flex',
         slotIndex === 0 && 'border-r border-dashed',
         slotIndex === 1 && 'md:border-r md:border-dashed',
     );
@@ -380,16 +365,16 @@ function DetailHeroColumn({
             </div>
             <div className="flex min-w-0 flex-col gap-1 px-4 pb-4 pt-0">
                 {/* Reserved label row so titles share one baseline across columns. */}
-                <div className="flex min-h-5 items-center">
+                <div className="flex h-5 items-center">
                     {locked ? (
                         <p className="text-xs font-medium tracking-wide text-muted-foreground">
                             Current
                         </p>
                     ) : null}
                 </div>
-                <div className="flex min-h-8 min-w-0 items-center">
+                <div className="flex h-8 w-full min-w-0 items-center justify-start overflow-hidden">
                     {locked ? (
-                        <p className="min-w-0 truncate text-base font-semibold leading-none tracking-tight text-foreground">
+                        <p className="block w-full truncate text-left text-base font-semibold leading-none tracking-tight text-foreground">
                             {cap.title}
                         </p>
                     ) : (
@@ -402,9 +387,9 @@ function DetailHeroColumn({
                         />
                     )}
                 </div>
-                {cap.description ? (
+                {cap.shortDescription ? (
                     <p className="text-sm leading-snug text-muted-foreground">
-                        {cap.description}
+                        {cap.shortDescription}
                     </p>
                 ) : null}
             </div>
@@ -419,6 +404,7 @@ function CompareFloatDock({
     onReplaceSlot,
     onAdd,
     currentLabel,
+    visible,
 }: {
     slots: Array<CustomizationDetail | null>;
     addCandidates: CustomizationDetail[];
@@ -426,6 +412,7 @@ function CompareFloatDock({
     onReplaceSlot: (slotIndex: number, next: CustomizationDetail) => void;
     onAdd: (next: CustomizationDetail) => void;
     currentLabel: string;
+    visible: boolean;
 }) {
     const dock = (
         <div
@@ -433,14 +420,20 @@ function CompareFloatDock({
                 'pointer-events-none fixed inset-x-0 flex justify-center px-layout-gutter-outer',
                 FLOAT_DOCK_TOP,
                 FLOAT_DOCK_Z,
+                'transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none motion-reduce:transform-none',
+                visible
+                    ? 'translate-y-0 opacity-100'
+                    : 'pointer-events-none -translate-y-2 opacity-0',
             )}
             role="region"
             aria-label="Compare options"
+            aria-hidden={!visible}
         >
             <div className="w-full max-w-[var(--layout-max)] px-layout-gutter-inner">
                 <div
                     className={cn(
-                        'pointer-events-auto w-full rounded-xl bg-muted py-4 shadow-sm',
+                        'w-full rounded-xl bg-muted py-4 shadow-sm',
+                        visible ? 'pointer-events-auto' : 'pointer-events-none',
                     )}
                 >
                     <div className="grid grid-cols-2 gap-0 md:grid-cols-3">
@@ -685,7 +678,7 @@ function ColumnSwapSelect({
 
     // PROD-2630 — title + chevron beside it (same as sticky float dock).
     const titleTriggerClass =
-        'truncate text-base font-semibold leading-none tracking-tight text-foreground';
+        'truncate text-left text-base font-semibold leading-none tracking-tight text-foreground';
 
     const pick = (next: CustomizationDetail) => {
         onReplaceSlot(slotIndex, next);
@@ -693,8 +686,8 @@ function ColumnSwapSelect({
 
     if (selectOptions.length <= 1) {
         return (
-            <div className="flex h-8 min-w-0 items-center">
-                <p className={titleTriggerClass}>{cap.title}</p>
+            <div className="flex h-8 w-full min-w-0 items-center justify-start">
+                <p className={cn(titleTriggerClass, 'w-full')}>{cap.title}</p>
             </div>
         );
     }
@@ -705,7 +698,7 @@ function ColumnSwapSelect({
                 <button
                     type="button"
                     className={cn(
-                        'flex h-8 w-full min-w-0 items-center justify-start gap-1',
+                        'flex h-8 w-full min-w-0 items-center justify-start gap-1 text-left',
                         'border-0 bg-transparent px-0 shadow-none outline-none',
                         'focus-visible:ring-0',
                         titleTriggerClass,
@@ -713,7 +706,9 @@ function ColumnSwapSelect({
                     aria-label={`Switch option in column ${slotIndex + 1}`}
                     onClick={() => setDrawerOpen(true)}
                 >
-                    <span className="min-w-0 truncate">{cap.title}</span>
+                    <span className="min-w-0 flex-1 truncate text-left">
+                        {cap.title}
+                    </span>
                     <Icon
                         icon={ChevronDown}
                         size="sm"
@@ -738,14 +733,16 @@ function ColumnSwapSelect({
                 <button
                     type="button"
                     className={cn(
-                        'flex h-8 w-full min-w-0 items-center justify-start gap-1',
+                        'flex h-8 w-full min-w-0 items-center justify-start gap-1 text-left',
                         'border-0 bg-transparent px-0 shadow-none outline-none',
                         'focus-visible:ring-0',
                         titleTriggerClass,
                     )}
                     aria-label={`Switch option in column ${slotIndex + 1}`}
                 >
-                    <span className="min-w-0 truncate">{cap.title}</span>
+                    <span className="min-w-0 flex-1 truncate text-left">
+                        {cap.title}
+                    </span>
                     <Icon
                         icon={ChevronDown}
                         size="sm"

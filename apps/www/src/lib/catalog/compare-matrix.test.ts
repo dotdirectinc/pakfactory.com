@@ -5,6 +5,7 @@ import {
     buildReferenceSpecRows,
     buildSustainabilitySpecRows,
     COMPARE_EMPTY_CELL,
+    selectCompareMenuOptions,
     selectDefaultComparePeers,
     specRowValues,
 } from './compare-matrix';
@@ -445,6 +446,51 @@ describe('selectDefaultComparePeers', () => {
         assert.deepEqual(
             selected.map((p) => p.id),
             ['pet', 'foam'],
+        );
+    });
+});
+
+describe('selectCompareMenuOptions', () => {
+    function option(
+        id: string,
+        title: string,
+        typeSlug: string | undefined,
+    ): CustomizationDetail {
+        return detail({
+            id,
+            title,
+            slug: id,
+            categoryValue: 'materials',
+            ...(typeSlug ? {typeSlug} : {}),
+        });
+    }
+
+    it('lists same-type siblings, not other types in the category', () => {
+        const abs = option('abs', 'ABS', 'rigid-plastic');
+        const aluminum = option('aluminum', 'Aluminum', 'metal');
+        const pet = option('pet', 'PET / RPET', 'rigid-plastic');
+        const pvc = option('pvc', 'Rigid PVC', 'rigid-plastic');
+
+        const selected = selectCompareMenuOptions(abs, [
+            aluminum,
+            pet,
+            pvc,
+        ]);
+        assert.deepEqual(
+            selected.map((p) => p.id),
+            ['abs', 'pet', 'pvc'],
+        );
+    });
+
+    it('lists the whole category when the current option has no type', () => {
+        const current = option('abs', 'ABS', undefined);
+        const aluminum = option('aluminum', 'Aluminum', 'metal');
+        const pet = option('pet', 'PET / RPET', 'rigid-plastic');
+
+        const selected = selectCompareMenuOptions(current, [aluminum, pet]);
+        assert.deepEqual(
+            selected.map((p) => p.id),
+            ['abs', 'aluminum', 'pet'],
         );
     });
 });
