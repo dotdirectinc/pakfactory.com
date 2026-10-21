@@ -9,7 +9,6 @@ import {
 } from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
-import {useRouter} from 'next/navigation';
 import {Columns2, Package} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -26,6 +25,7 @@ import {
     mediaDissolveRestHoverOutClass,
     mediaDissolveTransitionClass,
 } from '@/lib/ui/media-dissolve';
+import {usePointerPrefetch} from '@/lib/ui/use-pointer-prefetch';
 import {customizationCategoryHref} from '@/lib/www-routes';
 
 /** Card fields used by the tile (library items are a superset). */
@@ -147,9 +147,8 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
     const href = customizationCategoryHref(item.categoryValue, item.slug);
     const displayTitle = item.shortName?.trim() || item.title;
     const eyebrow = item.typeTitle?.trim().toUpperCase() ?? '';
-    const router = useRouter();
     const [saved, setSaved] = useState(false);
-    const [prefetch, setPrefetch] = useState(false);
+    const {prefetch, enablePrefetch} = usePointerPrefetch(href);
     const [playing, setPlaying] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const prefersReducedMotion = usePrefersReducedMotion();
@@ -172,12 +171,6 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
     function handleBookmark(event: MouseEvent<HTMLButtonElement>) {
         stubBookmarkAction(event);
         setSaved((prev) => !prev);
-    }
-
-    /** Warm the route immediately — don't wait for Link prefetch={true} state. */
-    function enablePrefetch() {
-        void router.prefetch(href);
-        setPrefetch(true);
     }
 
     const startVideo = () => {

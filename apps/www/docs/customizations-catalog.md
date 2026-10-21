@@ -142,7 +142,7 @@ Detail pages at `/customizations/[category]/[handle]` are **section-composed** (
 | Option pick | `customizationOption.template` → that layout (empty → Default id `customizationDetailPage`) |
 | Allowlist | `SECTION_ALLOW.customizationDetail` |
 | Overview types | `customizationOverviewStandard` · `customizationOverviewLearnFirst` |
-| Band types | `customizationBenefitsSpecs` · `customizationWorksWith` · `customizationCompare` · `customizationShowcase` |
+| Band types | `customizationBenefitsSpecs` · `customizationWorksWith` · `customizationCompatibleOptions` · `customizationCompare` · `customizationShowcase` |
 | Host inherit | www `CustomizationDetailHostProvider` fills option media/copy/peers/products into those sections |
 
 Breadcrumb stays route-owned. Until the Default template has CDP sections seeded, www falls back to the hardcoded standard CDP (same UX as before).
@@ -152,14 +152,14 @@ Breadcrumb stays route-owned. Until the Default template has CDP sections seeded
 1. **Default** (`customizationDetailPage`): Overview (standard) → Benefits & specs → … as needed. Publish.
 2. **Learn-first** (`customizationDetailPageLearnFirst`): Overview (learn-first) first, then Benefits & specs (Get to know + Key properties — why copy lives in this band, not the hero). Publish. If the template omits Benefits & specs, www injects that band so why/specs still render.
 3. Point options at the desired template, or leave empty for Default.
-4. **Seed remaining bands** (Works with → Compare → Showcase) onto both template docs — dry-run then write:
+4. **Seed remaining bands** (Works with → Compatible options → Compare → Showcase) onto both template docs — dry-run then write:
 
 ```bash
 pnpm --filter @pakfactory/studio run seed:cdp-detail-pages -- --dataset development
 pnpm --filter @pakfactory/studio run seed:cdp-detail-pages -- --dataset development --confirm
 ```
 
-Stable keys: `cdp-works-with`, `cdp-compare`, `cdp-showcase`. Idempotent (appends missing only). Creates stub Default / Learn-first docs when absent. Overview and benefits are not seeded by this script.
+Stable keys: `cdp-works-with`, `cdp-compatible-options`, `cdp-compare`, `cdp-showcase`. Idempotent (inserts missing only, after Works with / before Compare). Creates stub Default / Learn-first docs when absent. Overview and benefits are not seeded by this script. www still injects Compatible options when the option has pairs and the template omits the type.
 
 ## Out of scope (this ticket)
 

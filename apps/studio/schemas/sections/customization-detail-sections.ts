@@ -5,6 +5,7 @@ import {
   ComposeIcon,
   DocumentsIcon,
   ImageIcon,
+  LinkIcon,
   StackCompactIcon,
 } from '@sanity/icons'
 import {SectionItemPreview} from '../../components/SectionItemPreview'
@@ -18,9 +19,9 @@ import {sectionHeaderFields} from '../../lib/section-header-fields'
  * `customizationDetailPage` document. Overview chrome is which overview
  * `_type` is inserted — not a layout radio on the template document.
  *
- * All six types are chrome-only (D35). Option copy, media, properties,
- * peers, and compatible products are host-inherited on www from the
- * `customizationOption` that renders the page.
+ * All seven types are chrome-only (D35). Option copy, media, properties,
+ * peers, compatible products, and compatible customizations are
+ * host-inherited on www from the `customizationOption` that renders the page.
  */
 
 /** Studio-only note so overview objects are not field-empty. */
@@ -150,6 +151,16 @@ export const customizationWorksWith = cdpSectionType({
   icon: StackCompactIcon,
 })
 
+/** Other customizations that can be specified together with this option. */
+export const customizationCompatibleOptions = cdpSectionType({
+  name: 'customizationCompatibleOptions',
+  title: 'Customization compatible options',
+  description:
+    'Options that can be specified together with this one (both-direction compatibleCustomizations). ' +
+    'Host fills cards from the option. Hidden on www when the list is empty.',
+  icon: LinkIcon,
+})
+
 /** Same-category compare matrix. */
 export const customizationCompare = cdpSectionType({
   name: 'customizationCompare',
@@ -173,6 +184,7 @@ export const customizationDetailSections = [
   customizationOverviewLearnFirst,
   customizationBenefitsSpecs,
   customizationWorksWith,
+  customizationCompatibleOptions,
   customizationCompare,
   customizationShowcase,
 ]

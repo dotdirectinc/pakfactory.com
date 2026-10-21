@@ -924,6 +924,7 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
 const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
   _id,
   title,
+  shortName,
   "slug": slug.current,
   shortDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
@@ -940,6 +941,37 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
 }`;
 
 /**
+ * Other options that can be specified together with this one (PROD-3124).
+ * `compatibleCustomizations` is one flat pair list — read both directions
+ * (Studio inbound: `$selfId in compatibleCustomizations[]._ref`).
+ * Detail-page gate so every card links to a live CDP. Empty on production
+ * until pairs are seeded; www hides the section.
+ */
+const COMPATIBLE_OPTIONS_PROJ = /* groq */ `"compatibleOptions": *[
+  _type == "customizationOption" &&
+  ${HAS_DETAIL_PAGE} &&
+  ${OPTION_ACTIVE} &&
+  defined(slug.current) &&
+  _id != ^._id &&
+  (
+    _id in ^.compatibleCustomizations[]._ref ||
+    ^._id in compatibleCustomizations[]._ref
+  )
+] | order(title asc) {
+  _id,
+  title,
+  shortName,
+  "slug": slug.current,
+  shortDescription,
+  ${OPTION_CARD_IMAGE},
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
+    title,
+    "slug": slug.current
+  }
+}`;
+
+/**
  * Customization detail page (PROD-1299). Same detail-page gate; richer property + copy fields.
  * Same-category peers seed the detail compare band (PROD-1534).
  */
@@ -953,6 +985,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   _id,
   status,
   title,
+  shortName,
   "slug": slug.current,
   shortDescription,
   metaDescription,
@@ -1017,7 +1050,8 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     defined(slug.current) &&
     slug.current != $handle &&
     type->category->slug.current == $category
-  ] | order(title asc) ${CUSTOMIZATION_COMPARE_PEER_PROJ}
+  ] | order(title asc) ${CUSTOMIZATION_COMPARE_PEER_PROJ},
+  ${COMPATIBLE_OPTIONS_PROJ}
 }`;
 
 /**
@@ -1509,6 +1543,8 @@ export type CatalogCustomizationComparePeerDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  /** Customer-facing label. Empty falls back to title for %shortName%. */
+  shortName?: string | null;
   shortDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
@@ -1536,11 +1572,28 @@ export type CatalogShowcaseImageDoc = {
   alt?: string | null;
 };
 
+/** Compatible-option card on the CDP (PROD-3124). */
+export type CatalogCompatibleOptionDoc = {
+  _id: string;
+  title?: string | null;
+  shortName?: string | null;
+  slug?: string | null;
+  shortDescription?: string | null;
+  cardImage?: unknown | null;
+  category?: CatalogCategoryDoc | null;
+  type?: {
+    title?: string | null;
+    slug?: string | null;
+  } | null;
+};
+
 export type CatalogCustomizationDetailDoc = {
   _id: string;
   title: string;
   slug: string | null;
   status?: string | null;
+  /** Customer-facing label. Empty falls back to title for %shortName%. */
+  shortName?: string | null;
   shortDescription?: string | null;
   /** SEO only — never map into customer-facing body copy. */
   metaDescription?: string | null;
@@ -1576,4 +1629,9 @@ export type CatalogCustomizationDetailDoc = {
   showcaseFromSolutions?: (CatalogShowcaseImageDoc | null)[] | null;
   /** Same-category library options for the compare band (PROD-1534). */
   peers?: (CatalogCustomizationComparePeerDoc | null)[] | null;
+  /**
+   * Both-direction `compatibleCustomizations` with a detail page (PROD-3124).
+   * Card-shaped; not a full peer/detail projection.
+   */
+  compatibleOptions?: (CatalogCompatibleOptionDoc | null)[] | null;
 };

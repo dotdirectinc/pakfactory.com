@@ -104,6 +104,7 @@ When implementing a marketing section from Figma (e.g. Industry Solution LP fork
 
 - Feature tiles compose the cores: **ProductCard** / **CustomizationCard** → transactional; product lines / styles / formats → general (`CatalogCard`).
 - Settle scale is shared (`PRODUCT_MEDIA_SCALE` 0.98 → 1.0): general cards settle the **whole tile**; transactional cards settle **media only**. Do not invent a second scale or grow past 1.
+- Route prefetch for tiles that open a detail page is pointer-on only (grid-wide off) — [`ENGINEERING.md`](ENGINEERING.md) § Card → detail navigation.
 
 ### Tooltip
 

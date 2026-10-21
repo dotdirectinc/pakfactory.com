@@ -23,6 +23,7 @@ export const SECTION_ENTITY = {
   customizationOverviewLearnFirst: 'customization',
   customizationBenefitsSpecs: 'customization',
   customizationWorksWith: 'customization',
+  customizationCompatibleOptions: 'customization',
   customizationCompare: 'customization',
   customizationShowcase: 'customization',
   expertiseSequence: 'expertise',

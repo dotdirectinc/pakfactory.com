@@ -155,6 +155,7 @@ export {
     type CatalogAvailableCustomizationDoc,
     type CatalogCategoryDoc,
     type CatalogCustomizationDetailDoc,
+    type CatalogCompatibleOptionDoc,
     type CatalogShowcaseImageDoc,
     type CatalogCustomizationRulesDoc,
     type CatalogRulesOptionDoc,

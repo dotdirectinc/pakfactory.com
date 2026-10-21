@@ -46,7 +46,7 @@ Use **Server Components** by default. Do not add cart or checkout UX unless expl
 - `src/` = `app/`, `components/`, `lib/` only
 - `app/` is routing-only; importable components live under `src/components/`
 - **Known deferred violation:** `app/case-studies/_components/` and `app/case-studies/[slug]/_components/` — remediation deferred per [ADR-005](../../docs/adr/0005-component-organization.md); do not add new `_components/` folders elsewhere
-- **Reuse (ADR-013):** props-only shared UI (`components/ui/`, `@pakfactory/ui`); features own data/URL wiring in feature folders / `lib/` — never fork or cross-import feature controllers. Extract shared cores (e.g. `CatalogCard`) instead of duplicating tiles.
+- **Reuse (ADR-013):** props-only shared UI (`components/ui/`, `@pakfactory/ui`); features own data/URL wiring in feature folders / `lib/` — never fork or cross-import feature controllers. Extract shared cores (e.g. `CatalogCard`) instead of duplicating tiles. Card → detail grids: pointer prefetch (`ENGINEERING.md`), not viewport-prefetch every `Link`.
 - **Do not** reintroduce `components/modules/` on www — put new work in a feature folder (`product/`, `case-study/`, …), `sections/` (Sanity page body), `layout/` (site chrome), or `ui/` (props-only).
 
 ## Composition: chrome vs structured routes vs Sections

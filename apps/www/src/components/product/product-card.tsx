@@ -5,7 +5,6 @@ import type {CatalogLifecycle} from '@/lib/catalog/types';
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
-import {useRouter} from 'next/navigation';
 import {Columns2, Package} from 'lucide-react';
 
 import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
@@ -19,6 +18,7 @@ import {
 } from '@/lib/catalog-card-actions';
 import {displayProductSku} from '@/lib/catalog/display-sku';
 import {useSanityImageSettle} from '@/lib/sanity/use-sanity-image-settle';
+import {usePointerPrefetch} from '@/lib/ui/use-pointer-prefetch';
 import {Badge} from '@pakfactory/ui/components/badge';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -100,20 +100,13 @@ export function ProductCard({
     const pathOnly = data.href.split('?')[0] ?? '';
     const slugFromHref = pathOnly.split('/').filter(Boolean).pop() ?? '';
     const eyebrow = displayProductSku(data.sku, slugFromHref).toUpperCase();
-    const router = useRouter();
     const [saved, setSaved] = useState(false);
-    const [prefetch, setPrefetch] = useState(false);
+    const {prefetch, enablePrefetch} = usePointerPrefetch(data.href);
     const gallery = resolveGallery(data);
 
     function handleBookmark(event: MouseEvent<HTMLButtonElement>) {
         stubBookmarkAction(event);
         setSaved((prev) => !prev);
-    }
-
-    /** Warm the route immediately — don't wait for Link prefetch={true} state. */
-    function enablePrefetch() {
-        void router.prefetch(data.href);
-        setPrefetch(true);
     }
 
     const placeholder = (

@@ -48,7 +48,8 @@ function groupKey(value: CustomizationPropertyValue): string | null {
     return value.propertySlug?.trim() || value.propertyId?.trim() || null;
 }
 
-function inferControl(options: PropertyFieldOption[]): 'swatch' | 'chip' {
+function inferControl(options: PropertyFieldOption[]): PropertyFieldKind {
+    if (options.some((o) => (o.facts?.length ?? 0) > 0)) return 'specTable';
     return options.some(
         (o) =>
             Boolean(o.imageUrl) ||
@@ -70,8 +71,9 @@ function resolveValuesPerItem(
 /**
  * Map a customization Option detail → selectable Property fields.
  * Stated declared Properties are excluded. Control comes from the type’s
- * declared row when set; otherwise image/color still infer swatch vs chip.
- * Skips a field when its only value title matches the option title (echo).
+ * declared row when set; otherwise facts infer spec table, then image/color
+ * infers swatch vs chip. Skips a field when its only value title matches
+ * the option title (echo).
  */
 export function mapDetailToPropertyFields(
     detail: CustomizationDetail,
