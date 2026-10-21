@@ -122,6 +122,7 @@ The dialog never talks to Algolia. It calls two www routes:
 
 `/api/search` details:
 * `q` is normalized (lower-case, single spaces, max 80 characters). Under 2 characters it returns an empty result without calling Algolia. The dialog should send the normalized string so equivalent queries share one CDN entry.
+* **SKU queries** (`COR-008`, `cor 008`, `RGD-060-AP2`, or a prefix like `cor-00`; PROD-3136) are never loosened, so a mistyped SKU returns nothing instead of hundreds of loose matches. The product whose SKU matches exactly goes first: Algolia splits SKUs at the hyphen, so `COR-008-BR1` matches "cor-008" as well as `COR-008` does. `sku` is retrieved for this ordering but not passed to the client.
 * `match=loose` (Basic mode) sets Algolia `removeWordsIfNoResults: allOptional`: when every word together finds nothing, words become optional ("blue kraft mailer" → 211 hits instead of 0). Without it, every word must match (typos and the last word's prefix are still allowed). It is a separate CDN cache entry.
 * `type` is a rail tab (`products`, `solutions`, `customizations`, `guides`, `resources`) or one record type (`product-line`, …). Anything else is ignored. With a filter, the counts cover that filter only, so the dialog keeps its rail counts from the unfiltered query.
 * 30 hits per query, ranked across all groups. A group with a count but no hits in the top 30 (often Customizations next to "mailer") fills when its tab is opened.

@@ -19,6 +19,7 @@ const record = (over: Partial<SiteSearchRecord>): SiteSearchRecord => ({
     group: 'customizations',
     typeRank: 4,
     kind: null,
+    sku: null,
     title: 'X',
     href: '/customizations/printing/x',
     summary: '',

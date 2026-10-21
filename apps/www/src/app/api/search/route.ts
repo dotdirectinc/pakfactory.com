@@ -9,6 +9,7 @@ import {
   HITS_PER_PAGE,
   MIN_QUERY_LENGTH,
   normalizeQuery,
+  effectiveMatch,
   parseMatch,
   parseTypeFilter,
   RETRIEVED_ATTRIBUTES,
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const query = normalizeQuery(url.searchParams.get("q"));
   const filter = parseTypeFilter(url.searchParams.get("type"));
-  const match = parseMatch(url.searchParams.get("match"));
+  const match = effectiveMatch(query, parseMatch(url.searchParams.get("match")));
 
   if (query.length < MIN_QUERY_LENGTH) {
     return json(emptyResponse(query, filter), 200, CACHED);
