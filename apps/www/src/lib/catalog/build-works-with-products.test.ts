@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 
-import {buildWorksWithProducts} from '@/lib/catalog/build-works-with-products';
+import {
+    buildWorksWithProducts,
+    toWorksWithSource,
+} from '@/lib/catalog/build-works-with-products';
 import type {ProductOfferIndex} from '@/lib/catalog/product-offer-index';
 import type {
     ProductLibraryItem,
@@ -72,7 +75,7 @@ describe('buildWorksWithProducts', () => {
 
         const result = buildWorksWithProducts({
             optionId: 'opt.foil',
-            productLibrary: library,
+            products: library.items,
             offerIndex,
             preferredLines: [
                 {slug: 'rigid-boxes', title: 'Rigid Boxes'},
@@ -130,7 +133,7 @@ describe('buildWorksWithProducts', () => {
 
         const result = buildWorksWithProducts({
             optionId: 'opt.foil',
-            productLibrary: library,
+            products: library.items,
             offerIndex,
         });
 
@@ -138,5 +141,32 @@ describe('buildWorksWithProducts', () => {
             result.products.map((p) => p.slug),
             ['box-a'],
         );
+    });
+
+    it('the slim cached list gives exactly what the full library gives (PROD-3121)', () => {
+        const full = [
+            {...item('p1', 'box-a', 'rigid-boxes', 'Rigid Boxes'), imageUrl: 'https://cdn/a.png', imageAlt: 'A box', attrs: {finish: ['matte']}},
+            item('p2', 'box-b', 'mailers', 'Mailers'),
+            item('p3', 'box-c', 'rigid-boxes', 'Rigid Boxes'),
+            item('p4', 'insp', 'mailers', 'Mailers', 'inspiration'),
+        ];
+        const offerIndex: ProductOfferIndex = {
+            entries: full.map((p) => ({
+                productId: p._id,
+                slug: p.slug,
+                kind: p.kind,
+                baseOfferIds: new Set(p._id === 'p2' ? ['opt.other'] : ['opt.foil']),
+                rulesProduct: null,
+            })),
+            hasRules: false,
+            rules: null,
+        };
+        const slim = full.filter((p) => p.kind === 'standard').map(toWorksWithSource);
+        for (const preferredLines of [undefined, [{slug: 'mailers', title: 'Mailers'}]]) {
+            assert.deepEqual(
+                buildWorksWithProducts({optionId: 'opt.foil', products: slim, offerIndex, preferredLines}),
+                buildWorksWithProducts({optionId: 'opt.foil', products: full, offerIndex, preferredLines}),
+            );
+        }
     });
 });

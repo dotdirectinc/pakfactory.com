@@ -66,6 +66,14 @@ import {
     productsOfKind,
 } from '@/lib/catalog/product-kind';
 import {
+    buildWorksWithIndex,
+    toWorksWithSource,
+    type WorksWithIndex,
+    type WorksWithSourceItem,
+} from '@/lib/catalog/build-works-with-products';
+
+type WorksWithCatalog = {sources: WorksWithSourceItem[]; index: WorksWithIndex};
+import {
     filterCuratedRelatedProducts,
     pickRelatedProducts,
     type RelatedProductCandidate,
@@ -546,6 +554,63 @@ export async function listProducts(): Promise<Product[]> {
 /** Faceted products library for `/products` (PROD-1845). */
 export async function listProductLibrary(): Promise<ProductLibraryResult> {
     return readThrough(fetchSanityProductLibrary, getCachedProductLibrary);
+}
+
+/**
+ * Standard products' card fields for the customization page's Works with browser
+ * (PROD-3121). Derived from the same library items, so the cards cannot drift
+ * from it — but small enough to cache (~0.4 MB against the library's ~3.9 MB,
+ * which is over Next's 2 MB limit and so was refetched on every render).
+ */
+async function fetchWorksWithSources(): Promise<WorksWithSourceItem[]> {
+    const library = await fetchSanityProductLibrary();
+    return library.items
+        .filter((item) => item.kind === PRODUCT_LINE_PRODUCT_KIND)
+        .map(toWorksWithSource);
+}
+
+const getCachedWorksWithSources = sanityCache(
+    fetchWorksWithSources,
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}:works-with-sources`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+export async function listWorksWithSources(): Promise<WorksWithSourceItem[]> {
+    return readThrough(fetchWorksWithSources, getCachedWorksWithSources);
+}
+
+/**
+ * Every option's Works with products, resolved once for all customization pages
+ * (PROD-3121). Resolving the offer index takes ~6 s of CPU; it used to run on
+ * every render. Invalidated with the products and customizations tags, the two
+ * the offer index depends on.
+ */
+async function fetchWorksWith(): Promise<WorksWithCatalog> {
+    const [sources, offerIndex] = await Promise.all([
+        listWorksWithSources(),
+        listProductOfferIndex(),
+    ]);
+    return {sources, index: buildWorksWithIndex(sources, offerIndex)};
+}
+
+const getCachedWorksWith = sanityCache(
+    fetchWorksWith,
+    [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}:works-with-index`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG, WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+/** The standard products whose base offer includes `optionId` (unordered). */
+export async function listWorksWithMatches(
+    optionId: string,
+): Promise<WorksWithSourceItem[]> {
+    const {sources, index} = await readThrough(fetchWorksWith, getCachedWorksWith);
+    return (index[optionId] ?? []).map((position) => sources[position]!);
 }
 
 export type {
