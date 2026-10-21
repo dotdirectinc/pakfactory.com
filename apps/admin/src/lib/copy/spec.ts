@@ -355,7 +355,7 @@ export const ADMIN_SPEC_FUTURE_COPY = {
 export const ADMIN_SPEC_HELP_COPY = {
   title: "Spec System help",
   lead:
-    "The Spec System is where the catalog's registry is read and where synced changes are approved. The registry holds every product, customization, rule and property with a permanent ID, shared by the website, Sanity, Notion and requests. Nothing in it changes until someone approves a frame.",
+    "The Spec System is where the catalog's registry is read and where synced changes are approved. The registry holds every product, customization, rule and property with a permanent ID, shared by the website, Sanity, Notion and requests. Names, status and content Sanity owns are copied in automatically; relations change only when someone approves a frame.",
 } as const;
 
 export const ADMIN_SPEC_RECORD_COPY = {
