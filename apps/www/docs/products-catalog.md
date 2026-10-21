@@ -34,6 +34,21 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 
 Active products only (`status == "active"` or unset), ordered by title.
 
+### Customization pages read a slim copy, not the library (PROD-3121)
+
+`listProductLibrary()` is **\~3.9 MB once mapped — over Next's 2 MB data-cache limit**, so every caller refetches it (1.5 s) on every render. Only `/products` and the two compatibility pages (`/customizations/compatibility`, `…/[handle]/compatible`) should call it: their client-side engine filters on properties, MOQ, status, industries, images and style membership.
+
+The customization detail page's **Works with** list reads two cached values instead ([`catalog.ts`](../src/lib/catalog/catalog.ts)):
+
+| Read | What | Size |
+| --- | --- | --- |
+| `listWorksWithSources()` | the 8 card fields of standard products, **derived from the same library items** (`toWorksWithSource`), so they cannot drift | 240 kB |
+| `listWorksWithMatches(optionId)` | one shared index, option id → positions in that list, built by `buildWorksWithIndex` from the rules engine's offer index | 358 kB with the list |
+
+Resolving every product's offer (`listProductOfferIndex()`) costs **5.6–6.1 s of CPU**; the index pays it once per cache period instead of on each render. Both are invalidated by the products and customizations tags; a catalog publish expires them (`expire: 0`), so the first customization page after a publish rebuilds the index. `buildWorksWithProducts` = `buildWorksWithIndex` + `arrangeWorksWith` — the same code as the cached path. Before changing any of it, compare the output for every option (PR #915 has the method: 321 options, 0 differences).
+
+A new catalog read: measure its mapped size; if it can pass 2 MB, cache a slimmer derived value instead (the PROD-3004 related index, this one).
+
 ### What is shown (PROD-2845)
 
 One `status` field decides whether a catalog document gets a page, a listing, and a nav link. Shared GROQ constants live in [`status-gates.ts`](../../../packages/sanity/src/queries/status-gates.ts) (re-exported by `catalog.ts` and `@pakfactory/sanity/queries`); TS mirrors for chrome / mapping live in [`@pakfactory/sanity/catalog-visibility`](../../../packages/sanity/src/catalog-visibility.ts) (`isCatalogTargetVisible`). Do not re-write the whitelist in www.
