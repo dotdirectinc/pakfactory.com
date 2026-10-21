@@ -97,7 +97,8 @@ export default async function SpecHelpPage() {
           </Term>
           <Term name="Sync Notion">
             In your avatar menu (top right), admins only. Compares Notion with Sanity and proposes Sanity changes —
-            frames named <em>Website content · …</em>. Approved ones are written to Sanity; run Sync Changes afterwards to
+            status, parents, product kind and dimension input, and property values Notion adds — in frames named{" "}
+            <em>Website content · …</em>. Website copy and names are edited in Studio, so it does not propose them. Approved ones are written to Sanity; run Sync Changes afterwards to
             carry them into the registry.
           </Term>
           <Term name="Automatic">
@@ -193,15 +194,15 @@ export default async function SpecHelpPage() {
               </tr>
               <tr className="border-b border-border align-top last:border-0">
                 <td className="py-2 pr-3"><div className="font-medium text-foreground">Solution axis</div><div className="text-xs">solution type</div></td>
-                <td className="py-2 pr-3 text-foreground">Notion</td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
                 <td className="py-2 pr-3">Automatic</td>
-                <td className="py-2 pr-3">—<div className="mt-1 text-xs">Proposed by Sync Notion, then copied in from Sanity.</div></td>
+                <td className="py-2 pr-3">—</td>
               </tr>
               <tr className="border-b border-border align-top last:border-0">
                 <td className="py-2 pr-3"><div className="font-medium text-foreground">Website copy</div><div className="text-xs">short name, H1, descriptions, short descriptions, meta descriptions, benefits, MOQ</div></td>
-                <td className="py-2 pr-3 text-foreground">Notion</td>
+                <td className="py-2 pr-3 text-foreground">Studio</td>
                 <td className="py-2 pr-3">Not copied</td>
-                <td className="py-2 pr-3">—<div className="mt-1 text-xs">Sync Notion proposes it; approved rows are written to Sanity.</div></td>
+                <td className="py-2 pr-3">—<div className="mt-1 text-xs">A new record created from Notion starts with Notion's text; after that, edit it in Studio. Sync Notion no longer proposes it.</div></td>
               </tr>
               <tr className="border-b border-border align-top last:border-0">
                 <td className="py-2 pr-3"><div className="font-medium text-foreground">Rules</div><div className="text-xs">decided by / customer selects, depends on, compatible customizations, available customizations, product exceptions</div></td>
