@@ -397,7 +397,10 @@ async function main() {
   console.log(`\n    ${plural(targets.length - upToDate, 'product')} to write · ${upToDate} already up to date · ${plural(hashes.length, 'PNG')} · ${hashes.length - toUpload.length} already in ${DATASET}, ${toUpload.length} to upload`)
   if (args.replace) console.log(`    --replace: ${plural(replaced.length, 'old image asset')} to delete once nothing references it`)
   for (const t of targets) {
-    console.log(`\n    ${t.sku}  ${t.title}${t.draft ? '  (+ draft)' : ''}${t.hasImages ? '  (replaces its images)' : ''}`)
+    const n = imagesFor(t, assetFor)
+    const current = n && [t.published, t.draft].filter(Boolean).every((d) => same(d.images, n))
+    const note = current ? '  (already up to date)' : t.hasImages ? '  (replaces its images)' : ''
+    console.log(`\n    ${t.sku}  ${t.title}${t.draft ? '  (+ draft)' : ''}${note}`)
     t.files.forEach((f, i) => console.log(`      ${i === 0 ? '★' : ' '} ${f.name}\n          alt: ${altFor(t.title, f.parsed)}`))
   }
 
