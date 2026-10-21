@@ -39,7 +39,22 @@ export type SanityImageProps = Omit<ImageProps, "loader"> & {
    * Client only forwards — never samples luminance here.
    */
   watermarkVariant?: "light" | "dark" | null;
+  /**
+   * Cap the width passed to the Sanity / watermark loader (PROD-3135).
+   * Next may still emit larger srcset buckets from `sizes`; the CDN request
+   * stays at this max. Overlay and serve watermark both go through the wrap.
+   */
+  maxLoaderWidth?: number;
 };
+
+function withMaxLoaderWidth(
+  loader: ImageLoader,
+  maxWidth: number | undefined,
+): ImageLoader {
+  if (maxWidth == null || maxWidth <= 0) return loader;
+  return ({ src, width, quality }) =>
+    loader({ src, width: Math.min(width, maxWidth), quality });
+}
 
 function makeServeLoader(
   config: WatermarkConfig,
@@ -72,6 +87,7 @@ export function SanityImage({
   portrait,
   applyWatermark,
   watermarkVariant = null,
+  maxLoaderWidth,
   fill,
   className,
   src,
@@ -89,17 +105,17 @@ export function SanityImage({
       ? sanityPortraitImageLoader
       : sanityImageLoader;
 
+  const chosenLoader = serveMode
+    ? makeServeLoader(config, { square: Boolean(square), cover })
+    : defaultLoader;
+
   const image = (
     <Image
       {...props}
       src={src}
       fill={fill}
       className={className}
-      loader={
-        serveMode
-          ? makeServeLoader(config, { square: Boolean(square), cover })
-          : defaultLoader
-      }
+      loader={withMaxLoaderWidth(chosenLoader, maxLoaderWidth)}
     />
   );
 
