@@ -78,6 +78,18 @@ export function parseTypeFilter(raw: string | null | undefined): SearchFilter {
     return null;
 }
 
+/**
+ * `?match=loose` (Basic search, PROD-2525): when every word together finds
+ * nothing, Algolia retries with the words optional, so "blue kraft mailer"
+ * still returns kraft mailers. Anything else keeps Algolia's default (every
+ * word must match, typos and the last word's prefix allowed).
+ */
+export type SearchMatch = 'default' | 'loose';
+
+export function parseMatch(raw: string | null | undefined): SearchMatch {
+    return (raw ?? '').trim().toLowerCase() === 'loose' ? 'loose' : 'default';
+}
+
 export type SearchHit = {
     id: string;
     type: string;
@@ -177,4 +189,16 @@ export function shapeResponse(
             .filter((group) => byGroup.has(group))
             .map((group) => ({group, hits: byGroup.get(group)!})),
     };
+}
+
+/**
+ * The best `limit` hits across all groups, in Algolia's rank order — Basic
+ * search's suggestions while typing (PROD-2525). `shapeResponse` regroups hits
+ * by tab; `position` keeps the original rank.
+ */
+export function topHits(data: SearchResponse, limit: number): SearchHit[] {
+    return data.groups
+        .flatMap((g) => g.hits)
+        .sort((a, b) => a.position - b.position)
+        .slice(0, limit);
 }

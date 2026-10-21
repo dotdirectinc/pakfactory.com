@@ -4,7 +4,12 @@ import {useEffect, useRef, useState} from 'react';
 
 import {captureEvent} from '@/lib/analytics';
 
-import {MIN_QUERY_LENGTH, normalizeQuery, type SearchResponse} from './search-query';
+import {
+    MIN_QUERY_LENGTH,
+    normalizeQuery,
+    type SearchMatch,
+    type SearchResponse,
+} from './search-query';
 
 /**
  * Debounced `/api/search` for the ⌘K dialog (PROD-3111).
@@ -13,6 +18,8 @@ import {MIN_QUERY_LENGTH, normalizeQuery, type SearchResponse} from './search-qu
  * - sends the normalized query, so equivalent typing shares one CDN entry
  * - aborts the in-flight request when the query changes
  * - a 429 becomes `rate-limited` (the dialog keeps browse content visible)
+ * - `match: 'loose'` (Basic mode) lets Algolia drop words when all of them
+ *   together find nothing
  *
  * Fires `site_search` once per settled query and `site_search_no_results` when
  * it returns nothing — GTM today, PostHog later (`lib/analytics.ts`).
@@ -27,7 +34,11 @@ export type SiteSearchState =
     | {status: 'rate-limited'; query: string; retryAfterSec: number | null}
     | {status: 'error'; query: string};
 
-export function useSiteSearch(rawQuery: string, type: string | null): SiteSearchState {
+export function useSiteSearch(
+    rawQuery: string,
+    type: string | null,
+    match: SearchMatch = 'default',
+): SiteSearchState {
     const query = normalizeQuery(rawQuery);
     const [state, setState] = useState<SiteSearchState>({status: 'idle'});
     const reported = useRef<string | null>(null);
@@ -42,6 +53,7 @@ export function useSiteSearch(rawQuery: string, type: string | null): SiteSearch
             setState({status: 'loading', query});
             const params = new URLSearchParams({q: query});
             if (type) params.set('type', type);
+            if (match !== 'default') params.set('match', match);
             try {
                 const res = await fetch(`/api/search?${params}`, {
                     signal: controller.signal,
@@ -61,7 +73,7 @@ export function useSiteSearch(rawQuery: string, type: string | null): SiteSearch
                 }
                 const data = (await res.json()) as SearchResponse;
                 setState({status: 'ready', query, data});
-                const key = `${query}|${type ?? ''}`;
+                const key = `${query}|${type ?? ''}|${match}`;
                 if (reported.current !== key) {
                     reported.current = key;
                     captureEvent('site_search', {
@@ -83,7 +95,7 @@ export function useSiteSearch(rawQuery: string, type: string | null): SiteSearch
             controller.abort();
             window.clearTimeout(timer);
         };
-    }, [query, type]);
+    }, [query, type, match]);
 
     return state;
 }

@@ -121,6 +121,7 @@ The dialog never talks to Algolia. It calls two www routes:
 
 `/api/search` details:
 * `q` is normalized (lower-case, single spaces, max 80 characters). Under 2 characters it returns an empty result without calling Algolia. The dialog should send the normalized string so equivalent queries share one CDN entry.
+* `match=loose` (Basic mode) sets Algolia `removeWordsIfNoResults: allOptional`: when every word together finds nothing, words become optional ("blue kraft mailer" → 211 hits instead of 0). Without it, every word must match (typos and the last word's prefix are still allowed). It is a separate CDN cache entry.
 * `type` is a rail tab (`products`, `solutions`, `customizations`, `guides`, `resources`) or one record type (`product-line`, …). Anything else is ignored. With a filter, the counts cover that filter only, so the dialog keeps its rail counts from the unfiltered query.
 * 30 hits per query, ranked across all groups. A group with a count but no hits in the top 30 (often Customizations next to "mailer") fills when its tab is opened.
 * Guide links are absolute, on `NEXT_PUBLIC_BLOG_URL` (staging: `staging-blog.pakfactory.com/blog`). Everything else is a www path.
@@ -176,7 +177,21 @@ vercel firewall rules add "site-search rate limit" --condition '{"type":"path","
 * Firewall rule on production, Algolia usage alerts.
 * `pakfactory.com/robots.txt` is served by Magento; add `Disallow: /api/search` there when www serves the apex. The www `robots.txt` already disallows it.
 
-## Dialog (PROD-3111)
+## Modes — Basic (default) and Advanced
+
+`<SiteSearchDialog mode="basic" | "advanced">`, default `basic` (decided 2026-10-21). The tab-rail design below is **Advanced**, paused until a later redesign; it stays in code and runs with `mode="advanced"`. The two share the shell, input, result sections and click tracking (`site-search-shared.tsx`).
+
+**Basic** (`site-search-basic.tsx`): one column, no rail, nothing recommended up front, no `/api/search/idle` request.
+
+| State | Shows |
+| --- | --- |
+| Empty field | The visitor's recent searches (localStorage, ×  to remove one, Clear for all). With none, a one-line hint. |
+| Typing (2+ characters, 250 ms debounce) | Up to 6 loose matches (`match=loose`) in Algolia rank order, typed words in bold, then "See all results for "…"". |
+| Enter, or "See all results" | Every result for the query (up to 30), grouped Products / Solutions / Customizations / Guides / Resources, with "N results for "…"" (or "Top 30 of N"). Editing the query goes back to suggestions. |
+
+Suggestions and all results read the same `/api/search` response, so Enter costs no extra request. A recent search runs straight to all results. Opening a result reports the click and saves the query, as in Advanced. Desktop is a dark palette anchored near the top (720 px wide, as tall as its content up to 640 px); mobile is the same light full-screen sheet with Cancel.
+
+## Dialog — Advanced mode (PROD-3111)
 
 The header search icon and ⌘K / Ctrl+K open one dialog, after the POC (`pakfactory.com-poc` `src/shared/components/search/SiteSearch.jsx`):
 
@@ -202,11 +217,11 @@ The header search icon and ⌘K / Ctrl+K open one dialog, after the POC (`pakfac
 * **Click tracking:** opening a search result posts `{queryID, objectID, position}` to `POST /api/search/click`, which sends an Algolia Insights `clickedObjectIDsAfterSearch` event ("Search result clicked", userToken = hashed IP). Search responses carry `queryID` (`clickAnalytics: true`) and each hit's `position`. The route allows 60 clicks per IP per minute; the edge rule covers it too. Browse picks are not tracked (there is no query). This history is what the follow-up ranks by.
 * **GTM:** `site_search` (`search_term`, `search_filter`, `results_count`) once per settled query, and `site_search_no_results` (`search_term`) when it returns nothing. Both go through `lib/analytics.ts` `captureEvent`, so PostHog can take over later.
 
-Code: `src/components/search/` (provider, trigger, dialog, section) and `src/lib/search/` (`use-site-search.ts`, `use-search-idle.ts`, `search-recents.ts`, `search-browse.ts`, `search-browse-data.ts`, `search-browse-picks.ts`, `user-token.ts`); routes `app/api/search/idle` and `app/api/search/click`.
+Code: `src/components/search/` (provider, trigger, dialog shell, `site-search-basic.tsx`, `site-search-advanced.tsx`, `site-search-shared.tsx`, section) and `src/lib/search/` (`use-site-search.ts`, `use-search-idle.ts`, `search-recents.ts`, `search-browse.ts`, `search-browse-data.ts`, `search-browse-picks.ts`, `user-token.ts`); routes `app/api/search/idle` and `app/api/search/click`.
 
 `/api/search/idle` reads one cached GROQ query (about 150 KB raw, 21 KB response). It used to load the `/products` library for line images, which is about 3.9 MB, over Next's 2 MB data-cache limit, so every CDN miss refetched it from Sanity (fixed in PROD-3111). The header icon goes in through `SiteNav`'s `search` slot (`packages/ui`), from `components/layout/site-nav-request-slot.tsx`.
 
-Smoke tests: `e2e/search/site-search.spec.ts` (desktop and a 390 px phone viewport). They are read-only; run them with `pnpm --filter @pakfactory/www test:e2e e2e/search`.
+Smoke tests: `e2e/search/site-search.spec.ts` (desktop and a 390 px phone viewport) cover Basic mode, the one mounted. Advanced is not covered while paused. They are read-only; run them with `pnpm --filter @pakfactory/www test:e2e e2e/search`.
 
 **Deviations from the POC** (also listed on PROD-2525):
 * counts on the rail

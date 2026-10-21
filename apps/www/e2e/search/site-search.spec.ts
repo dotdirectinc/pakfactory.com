@@ -1,7 +1,8 @@
 import {expect, test, type Page} from '@playwright/test';
 
 /**
- * Site search (PROD-3111) — the header icon / ⌘K dialog, desktop and mobile.
+ * Site search (PROD-3111) — the header icon / ⌘K dialog, desktop and mobile,
+ * in Basic mode (the default since 2026-10-21; Advanced is not mounted).
  * Read-only: it searches and follows a result, never submits anything.
  * Counts and exact hits change with content, so this asserts shape, not numbers.
  */
@@ -28,18 +29,29 @@ async function openFromIcon(page: Page) {
 }
 
 for (const start of ['/', '/products/folding-cartons']) {
-    test(`S1: header icon opens search from ${start}; Esc closes`, async ({page}) => {
+    test(`S1: header icon opens Basic search from ${start}; nothing recommended; Esc closes`, async ({
+        page,
+    }) => {
+        const idle: string[] = [];
+        page.on('request', (req) => {
+            if (req.url().includes('/api/search/idle')) idle.push(req.url());
+        });
         await page.goto(start);
         await openFromIcon(page);
-        // Idle state: curated chips and the product-lines row, before any query.
-        await expect(searchDialog(page).getByRole('button', {name: 'kraft', exact: true})).toBeVisible();
-        await expect(searchDialog(page).getByRole('region', {name: 'Product lines'})).toBeVisible();
+        const dialog = searchDialog(page);
+        await expect(dialog).toHaveAttribute('data-site-search-mode', 'basic');
+        // Basic mode: no rail, no browse picks, no idle request.
+        await expect(dialog.getByRole('navigation', {name: 'Search sections'})).toHaveCount(0);
+        await expect(dialog.getByRole('region', {name: 'Product lines'})).toHaveCount(0);
+        expect(idle).toEqual([]);
         await page.keyboard.press('Escape');
-        await expect(searchDialog(page)).toBeHidden();
+        await expect(dialog).toBeHidden();
     });
 }
 
-test('S2: ⌘K / Ctrl+K opens search; grouped results with rail counts', async ({page}) => {
+test('S2: ⌘K opens search; loose suggestions while typing, all results on Enter', async ({
+    page,
+}) => {
     await page.goto('/');
     await page.getByRole('banner').getByRole('button', {name: 'Search'}).waitFor();
     await page.keyboard.press('ControlOrMeta+K');
@@ -47,14 +59,13 @@ test('S2: ⌘K / Ctrl+K opens search; grouped results with rail counts', async (
     await expect(dialog).toBeVisible();
 
     await search(page, QUERY);
+    const suggestions = dialog.getByRole('region', {name: 'Suggestions'});
+    await expect(suggestions.getByRole('button').first()).toBeVisible();
+    await expect(suggestions.getByRole('button', {name: /^See all results for/})).toBeVisible();
 
+    await dialog.getByRole('searchbox', {name: 'Search'}).press('Enter');
     await expect(dialog.getByRole('region', {name: 'Products'})).toBeVisible();
-    // The Products rail item shows a count once results arrive.
-    await expect(
-        dialog.getByRole('navigation', {name: 'Search sections'}).getByRole('button', {
-            name: /^Products\s+\d+$/,
-        }),
-    ).toBeVisible();
+    await expect(dialog.getByText(/results? for “mailer”/)).toBeVisible();
 });
 
 test('S3: arrow keys + Enter open the highlighted result', async ({page}) => {
@@ -63,6 +74,8 @@ test('S3: arrow keys + Enter open the highlighted result', async ({page}) => {
     await search(page, QUERY);
     const input = searchDialog(page).getByRole('searchbox', {name: 'Search'});
 
+    await input.press('Enter');
+    await expect(searchDialog(page).getByRole('region', {name: 'Products'})).toBeVisible();
     await input.press('ArrowDown');
     await input.press('ArrowDown');
     const highlighted = searchDialog(page).locator('[data-active="true"]');
@@ -94,6 +107,7 @@ test.describe('mobile', () => {
         await expect(dialog.getByRole('button', {name: 'Cancel'})).toBeVisible();
 
         await search(page, QUERY);
+        await dialog.getByRole('searchbox', {name: 'Search'}).press('Enter');
         const firstProduct = dialog
             .getByRole('region', {name: 'Products'})
             .getByRole('button')
@@ -111,27 +125,34 @@ test.describe('mobile', () => {
     });
 });
 
-test('S6: rail tabs show browse picks before any query (no Algolia call)', async ({page}) => {
-    const searches: string[] = [];
-    page.on('request', (req) => {
-        if (req.url().includes('/api/search?')) searches.push(req.url());
-    });
+test('S6: a searched query shows under Recent searches (local); remove and Clear', async ({
+    page,
+}) => {
     await page.goto('/');
+    await page.evaluate(() => window.localStorage.removeItem('www-search-recents-v1'));
     await openFromIcon(page);
     const dialog = searchDialog(page);
-    const rail = dialog.getByRole('navigation', {name: 'Search sections'});
+    const input = dialog.getByRole('searchbox', {name: 'Search'});
 
-    await rail.getByRole('button', {name: 'Products'}).click();
-    await expect(
-        dialog.getByRole('region', {name: 'Products'}).getByRole('button'),
-    ).not.toHaveCount(0);
-    await rail.getByRole('button', {name: 'Customizations'}).click();
-    await expect(
-        dialog.getByRole('region', {name: 'Categories'}).getByRole('button'),
-    ).not.toHaveCount(0);
-    await rail.getByRole('button', {name: 'Resources'}).click();
-    await expect(
-        dialog.getByRole('region', {name: 'Case studies'}).getByRole('button'),
-    ).not.toHaveCount(0);
-    expect(searches, 'browsing tabs makes no search request').toEqual([]);
+    await expect(dialog.getByRole('region', {name: 'Recent searches'})).toHaveCount(0);
+    await search(page, QUERY);
+    await input.press('Enter');
+    await search(page, 'kraft');
+    await input.press('Enter');
+    await input.fill('');
+
+    const recent = dialog.getByRole('region', {name: 'Recent searches'});
+    await expect(recent.getByRole('button', {name: 'kraft', exact: true})).toBeVisible();
+    await expect(recent.getByRole('button', {name: QUERY, exact: true})).toBeVisible();
+
+    // A recent search runs again with all results.
+    await recent.getByRole('button', {name: QUERY, exact: true}).click();
+    await expect(input).toHaveValue(QUERY);
+    await expect(dialog.getByRole('region', {name: 'Products'})).toBeVisible();
+
+    await input.fill('');
+    await recent.getByRole('button', {name: `Remove “kraft” from recent searches`}).click();
+    await expect(recent.getByRole('button', {name: 'kraft', exact: true})).toHaveCount(0);
+    await recent.getByRole('button', {name: 'Clear'}).click();
+    await expect(recent).toHaveCount(0);
 });
