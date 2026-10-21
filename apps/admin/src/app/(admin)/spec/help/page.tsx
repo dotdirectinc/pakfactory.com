@@ -122,6 +122,14 @@ export default async function SpecHelpPage() {
         <dl className="flex flex-col gap-3">
           <Term name="Approve">Applies every included row of the frame at once. It cannot be undone.</Term>
           <Term name="Discard">Drops the frame. Its changes count as decided (they stay quiet until their source changes).</Term>
+          <Term name="Deleted in Sanity">
+            A frame Sync Changes proposes when a record&apos;s document is deleted in Studio. Approving retires the record:
+            its row, id and code are kept and never reused, and nothing can change it again. Exclude a record to keep it
+            live. This frame <strong>cannot be discarded</strong> — that would hide a real deletion. A record that other
+            records still point at (an inspiration product based on it, products in its line) is held, not proposed,
+            until the frame that moves them is approved. If a deleted document comes back, the run reports it and the
+            record stays retired.
+          </Term>
           <Term name="Exclude / Include">
             On sync frames: leaves one record out of the approval — all of its rows together — and approve the rest. An
             excluded change counts as decided too.

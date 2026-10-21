@@ -76,7 +76,7 @@ export default async function SpecChangesetPage({
         <ul className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
           {groupItems(items).map(([label, n]) => (
             <li key={label} className="flex justify-between gap-4 rounded-md border border-border px-3 py-2">
-              <span>{label.replace(/_/g, " ")}</span>
+              <span>{ADMIN_SPEC_COPY.groupLabels[label] ?? label.replace(/_/g, " ")}</span>
               <span className="tabular-nums text-foreground">{n.toLocaleString()}</span>
             </li>
           ))}
@@ -99,6 +99,7 @@ export default async function SpecChangesetPage({
             itemCount={items.length}
             excludedCount={items.filter((i) => i.excluded_at).length}
             writesToSanity={items.some((i) => i.entity_type === "sanity_document")}
+            recordsDeletions={items.some((i) => i.entity_type === "entity_tombstone")}
             canDecide={canApprove(me)}
             blockedBy={blocked}
           />
