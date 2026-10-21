@@ -40,7 +40,11 @@ import {CompareSpecMatrix} from '@/components/ui/compare-spec-matrix';
 import {Icon} from '@/components/ui/icon';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {SectionHeading} from '@/components/ui/section-heading';
-import {buildCompareMatrix, CUSTOMIZATION_COMPARISON_ID} from '@/lib/catalog/compare-matrix';
+import {
+    buildCompareMatrix,
+    CUSTOMIZATION_COMPARISON_ID,
+    selectDefaultComparePeers,
+} from '@/lib/catalog/compare-matrix';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 
 export {CUSTOMIZATION_COMPARISON_ID};
@@ -86,11 +90,8 @@ function seedSlots(
     current: CustomizationDetail,
     peers: CustomizationDetail[],
 ): Array<CustomizationDetail | null> {
-    return [
-        current,
-        peers[0] ?? null,
-        peers[1] ?? null,
-    ];
+    const defaults = selectDefaultComparePeers(current, peers, SLOT_COUNT - 1);
+    return [current, defaults[0] ?? null, defaults[1] ?? null];
 }
 
 /**
