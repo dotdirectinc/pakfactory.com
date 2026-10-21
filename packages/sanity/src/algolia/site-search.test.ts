@@ -33,11 +33,13 @@ const dataset = [
     ["p-off", { status: "not-active" }],
     ["p-styles-off", { productStyle: [{ _ref: "style-off" }] }],
     ["p-noindex", { allowIndex: false }],
+    ["p-tmp", { sku: "tmp-0042" }],
   ].map(([id, extra]) => ({
     _id: id, _type: "product", kind: "standard", title: `Product ${id}`, slug: { current: id },
     productLine: { _ref: "line" }, productStyle: [{ _ref: "style" }],
     properties: [{ property: { _ref: "finish" }, values: [{ _ref: "pv-soft" }] }],
     images: [{ asset: { _ref: "image-a" } }],
+    sku: `SKU-${id}`,
     ...(extra as object),
   })),
   { _id: "drafts.p-ok", _type: "product", kind: "standard", title: "Draft", slug: { current: "p-ok" }, productLine: { _ref: "line" }, productStyle: [{ _ref: "style" }] },
@@ -64,7 +66,7 @@ const run = async (query: string, params: Record<string, unknown> = {}) =>
 test("indexes exactly the documents whose www page exists", async () => {
   const ids = ((await run(`*[${SITE_SEARCH_FILTER}]._id`)) as string[]).sort();
   assert.deepEqual(ids, [
-    "cs", "exp", "line", "line-gone", "o-ok", "p-gone", "p-ok", "post", "pr", "sol", "ss", "style", "style-in-gone",
+    "cs", "exp", "line", "line-gone", "o-ok", "p-gone", "p-ok", "p-tmp", "post", "pr", "sol", "ss", "style", "style-in-gone",
   ]);
 });
 
@@ -97,6 +99,15 @@ test("records carry the www link, group and property-value tags", async () => {
   assert.equal(byId["cs"]!.publishedAtTimestamp, Date.parse(past));
   assert.equal(byId["exp"]!.publishedAtTimestamp, 0);
   for (const row of rows) assert.equal(siteSearchRecordProblem(row), null, row.objectID);
+});
+
+test("products carry their SKU; temporary TMP- codes and other types carry none", async () => {
+  const rows = (await run(SITE_SEARCH_BACKFILL_QUERY)) as SiteSearchRecord[];
+  const sku = Object.fromEntries(rows.map((row) => [row.objectID, row.sku]));
+  assert.equal(sku["p-ok"], "SKU-p-ok");
+  assert.equal(sku["p-tmp"], null);
+  assert.equal(sku["line"], null);
+  assert.equal(sku["post"], null);
 });
 
 test("the Function's query returns null for a document that stopped qualifying", async () => {

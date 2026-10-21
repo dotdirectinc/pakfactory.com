@@ -188,6 +188,7 @@ const IMAGE_SOURCE = /* groq */ `select(
  * fallbacks are sub-queries), the second shapes the record. Field by field:
  *   type / group / typeRank   from SITE_SEARCH_TYPES
  *   kind                      products only: standard | inspiration
+ *   sku                       products only; null for temporary `TMP-` codes (PROD-3136)
  *   href                      the www path — same shapes as apps/www/src/lib/www-routes.ts
  *   parents                   titles of what the document sits under (line, styles,
  *                             solutions, option type + category, client, blog category)
@@ -203,6 +204,9 @@ export const SITE_SEARCH_PROJECTION = /* groq */ `{
   "group": ${selectByType("group")},
   "typeRank": ${selectByType("typeRank")},
   "kind": select(_type == "product" => coalesce(kind, "standard")),
+  "sku": select(
+    _type == "product" && defined(sku) && !string::startsWith(upper(sku), "TMP-") => sku
+  ),
   title,
   "href": select(
     _type in ["product", "productLine"] => "/products/" + slug.current,
@@ -262,7 +266,9 @@ export const SITE_SEARCH_EVENT_FILTER = /* groq */ `_type in ${JSON.stringify(SI
 export const SITE_SEARCH_EVENT_PROJECTION = /* groq */ `{_id, _type, "operation": delta::operation()}`;
 
 export const SITE_SEARCH_SETTINGS = {
-  searchableAttributes: ["title", "tags", "parents", "unordered(summary)"],
+  // A SKU match outranks a title match; a SKU one character off matches nothing (PROD-3136).
+  searchableAttributes: ["sku", "title", "tags", "parents", "unordered(summary)"],
+  disableTypoToleranceOnAttributes: ["sku"],
   attributesForFaceting: ["type", "group", "filterOnly(kind)"],
   customRanking: ["asc(typeRank)", "desc(publishedAtTimestamp)"],
   attributesToSnippet: ["summary:20"],
@@ -281,6 +287,8 @@ export type SiteSearchRecord = {
   group: SiteSearchGroup;
   typeRank: number;
   kind: "standard" | "inspiration" | null;
+  /** Products only; null for other types and for temporary `TMP-` codes. */
+  sku: string | null;
   title: string;
   /** www path, host-free (`/products/…`, `/blog/…`). */
   href: string;

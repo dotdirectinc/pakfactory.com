@@ -45,7 +45,7 @@ Materials are customization options, so they show under Customizations. **Proper
 
 ### Record
 
-`objectID, type, group, typeRank, kind, title, href, summary, image, imageAlt, parents[], tags[], publishedAtTimestamp`
+`objectID, type, group, typeRank, kind, sku, title, href, summary, image, imageAlt, parents[], tags[], publishedAtTimestamp`
 
 * `href` is a host-free www path. Blog posts are on the www origin in production, but on staging they live at `staging-blog.pakfactory.com`. The API resolves that host.
 * `parents` holds the titles of what the document sits under: line, styles, solutions, option type and category, client, blog category.
@@ -53,7 +53,8 @@ Materials are customization options, so they show under Customizations. **Proper
 * Records are about 0.6 KB each. Algolia's limit is 10 KB.
 
 Settings (`SITE_SEARCH_SETTINGS`):
-* searchable attributes: `title`, `tags`, `parents`, `summary`
+* searchable attributes: `sku`, `title`, `tags`, `parents`, `summary`
+* `sku` (products only, PROD-3136) is matched without typos, so an exact SKU finds its product first and a SKU one character off finds nothing by SKU. Temporary `TMP-` codes are left out. The SKU is searchable but not returned to the dialog, so it does not show on results.
 * facets: `type`, `group`, and `kind` (filter only)
 * ties go to `typeRank`, so products come before press releases
 * English plurals and stop words are ignored
