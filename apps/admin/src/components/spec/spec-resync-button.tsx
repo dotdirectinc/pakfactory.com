@@ -7,6 +7,7 @@ import { Button } from "@pakfactory/ui/components/button";
 import { requestSyncAction } from "@/app/(admin)/spec/actions";
 import { ADMIN_SPEC_COPY } from "@/lib/copy/spec";
 import { SpecNotionSyncDialog } from "@/components/spec/spec-notion-sync-dialog";
+import { watchSyncRun } from "@/lib/spec/sync-watch";
 
 type Props = {
   kind: "sanity" | "notion";
@@ -36,6 +37,7 @@ export function SpecResyncButton({ kind, dataset }: Props) {
         toast.error(res.error);
         return;
       }
+      watchSyncRun(res.runId);
       toast.success(ADMIN_SPEC_COPY.resyncStarted);
       router.push("/spec");
       router.refresh();

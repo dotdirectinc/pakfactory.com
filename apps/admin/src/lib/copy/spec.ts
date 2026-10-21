@@ -251,6 +251,13 @@ export const ADMIN_SPEC_SYNC_COPY = {
   kinds: { sanity: "Changes", notion: "Content" },
   states: { requested: "Queued", running: "Running", done: "Done", failed: "Failed" },
   nothingFound: "No differences — nothing to approve.",
+  // The shell's watcher, when a run this tab started ends (2026-10-21).
+  finished: (kind: string, frames: number, items: number) =>
+    `${kind} finished — ${frames} ${frames === 1 ? "frame" : "frames"} to approve (${items} ${items === 1 ? "change" : "changes"}).`,
+  finishedNothing: (kind: string) => `${kind} finished — no differences, nothing to approve.`,
+  finishedFailed: (kind: string) => `${kind} failed.`,
+  finishedView: "Open Registry",
+  finishedNames: { sanity: "Sync Changes", notion: "Sync from Notion" },
   automatic: "Automatic",
   automaticHint: "Started by the system because a catalog record was published in Sanity.",
   skipped: "Skipped — frames were waiting for review. It runs again once they are decided.",
@@ -779,5 +786,5 @@ export const ADMIN_SPEC_NOTION_SYNC_COPY = {
   cancel: "Cancel",
   start: "Start sync",
   starting: "Starting…",
-  started: "Notion sync started — its frames appear in Spec System when it finishes.",
+  started: "Notion sync started — you'll see a message here when it finishes.",
 } as const;

@@ -5,6 +5,7 @@ import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { AdminTopBar } from "@/components/layout/admin-top-bar";
 import { AdminSearchDialog } from "@/components/search/admin-search-dialog";
 import { AdminSearchProvider } from "@/components/search/admin-search-provider";
+import { SyncRunWatcher } from "@/components/layout/sync-run-watcher";
 
 export function AdminShell({
   children,
@@ -32,6 +33,7 @@ export function AdminShell({
           </main>
         </div>
         <AdminSearchDialog />
+        {specAccess ? <SyncRunWatcher /> : null}
         <Toaster richColors closeButton position="bottom-right" />
       </div>
     </AdminSearchProvider>
