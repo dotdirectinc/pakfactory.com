@@ -33,15 +33,14 @@ import {
     getLearnFirstSectionCopy,
     getReferenceCopy,
 } from '@/lib/catalog/reference-copy';
-import {buildWorksWithProducts} from '@/lib/catalog/build-works-with-products';
+import {arrangeWorksWith} from '@/lib/catalog/build-works-with-products';
 import type {
     WorksWithOptionRef,
     WorksWithProductCard,
 } from '@/lib/catalog/build-works-with-products';
 import {
     getCustomizationDetailPage,
-    listWorksWithSources,
-    listProductOfferIndex,
+    listWorksWithMatches,
 } from '@/lib/catalog/catalog';
 import type {CustomizationDetail, ProductLineRef} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -282,21 +281,18 @@ async function CustomizationDetailBody({
     category: string;
     handle: string;
 }) {
-    // Card fields only, cached (PROD-3121): the whole library is ~3.9 MB mapped,
-    // too big for Next's data cache, and was refetched on every render.
-    const [page, worksWithSources, offerIndex] = await Promise.all([
+    // Cached for every customization page (PROD-3121): the whole library is too
+    // big for Next's data cache, and resolving every product's offer is ~6 s of CPU.
+    const [page, worksWithMatches] = await Promise.all([
         getCustomizationDetailPage(category, handle),
-        listWorksWithSources(),
-        listProductOfferIndex(),
+        listWorksWithMatches(detail.id),
     ]);
 
     const pageSections = (page?.sections ?? null) as PageSection[] | null;
-    const {products, lines} = buildWorksWithProducts({
-        optionId: detail.id,
-        products: worksWithSources,
-        offerIndex,
-        preferredLines: detail.productLines,
-    });
+    const {products, lines} = arrangeWorksWith(
+        worksWithMatches,
+        detail.productLines,
+    );
 
     const worksWith: WorksWithPayload = {
         option: {
