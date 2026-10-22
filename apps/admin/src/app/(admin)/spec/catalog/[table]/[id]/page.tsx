@@ -7,7 +7,7 @@ import { getCatalogRecord } from "@/lib/spec/catalog-record";
 import { isTableKey, levelOf } from "@/lib/spec/catalog-table-model";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
 import { SectionSkeleton } from "@/components/ui/page-skeleton";
-import { listRecordSyncChanges } from "@/lib/spec/registry-api";
+import { listRecordSkuHistory, listRecordSyncChanges } from "@/lib/spec/registry-api";
 import { typeidToUuid } from "@/lib/spec/typeid";
 import { fieldChanges } from "@/lib/spec/sync-applied";
 import { LocalTime } from "@pakfactory/ui/components/local-time";
@@ -19,7 +19,8 @@ export const metadata = { title: "Catalog record" };
  * A catalog record (2026-10-08, Richard): every record at every level and status has a page — its
  * images, registry identity, the records above it (as links in its fields) and below it, and every
  * field. Standard products and options also link to their rules view. Below it, the changes
- * Sync Changes applied to it from Sanity (PROD-3119), loaded on their own so the record is not held up.
+ * Sync Changes applied to it from Sanity (PROD-3119), loaded on their own so the record is not held up;
+ * for a product, its SKU history as "old → new" (editors, 2026-10-22).
  */
 export default async function SpecCatalogRecordPage({ params }: { params: Promise<{ table: string; id: string }> }) {
   const { table, id } = await params;
@@ -47,6 +48,17 @@ export default async function SpecCatalogRecordPage({ params }: { params: Promis
       ) : (
         <>
           <SpecRecordView record={res.data!} />
+          {table === "product" || table === "inspiration" ? (
+            <section className="flex flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-base font-semibold text-foreground">{COPY.skuHistoryTitle}</h2>
+                <p className="text-sm text-muted-foreground">{COPY.skuHistoryLead}</p>
+              </div>
+              <Suspense fallback={<SectionSkeleton rows={1} label={COPY.loadingSkuHistory} />}>
+                <SkuHistory registryId={typeidToUuid(res.data!.registry?.entityId)?.uuid ?? null} />
+              </Suspense>
+            </section>
+          ) : null}
           <section className="flex flex-col gap-2">
             <div className="flex flex-col gap-0.5">
               <h2 className="text-base font-semibold text-foreground">{COPY.syncChangesTitle}</h2>
@@ -59,6 +71,26 @@ export default async function SpecCatalogRecordPage({ params }: { params: Promis
         </>
       )}
     </div>
+  );
+}
+
+/** A product's SKUs before this one, newest first: "COR-006-BR1 → FCT-084-BR1". */
+async function SkuHistory({ registryId }: { registryId: string | null }) {
+  if (!registryId) return <p className="text-sm text-muted-foreground">{COPY.syncChangesNoRegistry}</p>;
+  const res = await listRecordSkuHistory(registryId);
+  // A server without the route (before backend #375) has no history to show: say it never changed.
+  if (!res.ok && res.status !== 404) return <p role="alert" className="text-sm text-destructive">{COPY.skuHistoryUnreachable} ({res.error})</p>;
+  const rows = res.ok ? res.data : [];
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">{COPY.skuHistoryNone}</p>;
+  return (
+    <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
+      {rows.map((c) => (
+        <li key={c.from} className="flex flex-col gap-0.5 px-3 py-2 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+          <span className="font-mono text-foreground">{c.to ? `${c.from} → ${c.to}` : <>{c.from} <span className="font-sans text-muted-foreground">{COPY.skuDeleted}</span></>}</span>
+          <span className="shrink-0 text-xs text-muted-foreground"><LocalTime iso={c.at} preset="dateTime" /></span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

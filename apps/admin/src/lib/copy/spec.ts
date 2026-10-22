@@ -392,6 +392,13 @@ export const ADMIN_SPEC_RECORD_COPY = {
   syncChangesNoRegistry: "Not in the registry yet — changes from Sanity show here once it has a registry id.",
   syncChangesUnreachable: "Its changes from Sanity could not be loaded.",
   loadingSyncChanges: "Loading changes from Sanity…",
+  /** A product's SKUs before this one (editors, 2026-10-22): "old → new". */
+  skuHistoryTitle: "SKU history",
+  skuHistoryLead: "A SKU changes only when the product moves to another line or base. Every SKU it gives up is retired for good.",
+  skuHistoryNone: "Its SKU has never changed.",
+  skuHistoryUnreachable: "Its SKU history could not be loaded.",
+  loadingSkuHistory: "Loading SKU history…",
+  skuDeleted: "retired — product deleted",
   added: (v: string) => `Added ${v}`,
   removed: (v: string) => `Removed ${v}`,
   automaticRun: "Automatic sync",
