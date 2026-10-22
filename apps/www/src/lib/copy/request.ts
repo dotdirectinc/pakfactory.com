@@ -28,6 +28,9 @@ export const REQUEST_COPY = {
     no: 'No',
     yes: 'Yes',
     customizationHeading: 'Customization',
+    /** Inspiration PDP — heading when options are already chosen. */
+    customizationPresetHeading:
+        'Customization — preset from this Inspiration',
     /** Compatibility → PDP: clear applied preselects. */
     clearSelection: 'Clear selection',
     /** Shown beside a summary row title when that category was preselected. */

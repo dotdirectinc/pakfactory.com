@@ -4,6 +4,8 @@ import {cn} from '@pakfactory/ui/lib/utils';
 
 import {Icon} from '@/components/ui/icon';
 
+type CarouselNavTone = 'default' | 'onDark';
+
 type CarouselNavButtonsProps = {
     onPrev: () => void;
     onNext: () => void;
@@ -12,9 +14,19 @@ type CarouselNavButtonsProps = {
     prevLabel?: string;
     nextLabel?: string;
     className?: string;
+    /** `onDark` — white circles on a dark overlay (lightbox). */
+    tone?: CarouselNavTone;
 };
 
-function navButtonClass(enabled: boolean) {
+function navButtonClass(enabled: boolean, tone: CarouselNavTone) {
+    if (tone === 'onDark') {
+        return cn(
+            'rounded-full text-foreground hover:text-foreground',
+            enabled
+                ? 'bg-white hover:bg-white/90'
+                : 'bg-white/40 hover:bg-white/40',
+        );
+    }
     return cn(
         'rounded-full text-background',
         'hover:text-background',
@@ -27,6 +39,7 @@ function navButtonClass(enabled: boolean) {
 /**
  * Circular prev/next pair for section carousels (ProductsRow, TestimonialsRow).
  * Enabled = black fill; disabled = muted grey circle (design-system).
+ * `tone="onDark"` inverts to white fill on a dark overlay.
  */
 export function CarouselNavButtons({
     onPrev,
@@ -36,6 +49,7 @@ export function CarouselNavButtons({
     prevLabel = 'Previous',
     nextLabel = 'Next',
     className,
+    tone = 'default',
 }: CarouselNavButtonsProps) {
     return (
         <div className={cn('flex shrink-0 items-center gap-2', className)}>
@@ -45,7 +59,7 @@ export function CarouselNavButtons({
                 size="icon-lg"
                 onClick={onPrev}
                 disabled={!canPrev}
-                className={navButtonClass(canPrev)}
+                className={navButtonClass(canPrev, tone)}
                 aria-label={prevLabel}
             >
                 <Icon icon={ChevronLeft} size="sm" />
@@ -56,7 +70,7 @@ export function CarouselNavButtons({
                 size="icon-lg"
                 onClick={onNext}
                 disabled={!canNext}
-                className={navButtonClass(canNext)}
+                className={navButtonClass(canNext, tone)}
                 aria-label={nextLabel}
             >
                 <Icon icon={ChevronRight} size="sm" />
