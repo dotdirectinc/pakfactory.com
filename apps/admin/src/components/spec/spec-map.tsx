@@ -23,6 +23,8 @@ import {
   Pencil,
   Pin,
   Plus,
+  Eye,
+  EyeOff,
   PinOff,
   Search,
   Box,
@@ -433,9 +435,9 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
   );
   const [status, setStatus] = useState<string>(ALL);
   const [selected, setSelected] = useState<number | null>(null);
-  /** "Show everything" while editing: the hidden records listed to add from (2026-10-22). */
-  const [showHidden, setShowHidden] = useState(false);
-  useEffect(() => setShowHidden(false), [selected]);
+  /** The edit column whose hidden records are listed to add from, if any (Richard, 2026-10-22). */
+  const [hiddenCol, setHiddenCol] = useState<string | null>(null);
+  useEffect(() => setHiddenCol(null), [selected, sessionEditing]);
   const [onlyRelated, setOnlyRelated] = useState(true);
   const [scrollTo, setScrollTo] = useState<number | null>(null);
   const area = useRef<HTMLDivElement>(null);
@@ -1317,7 +1319,6 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     [nodes, select, stream, related, rest],
   );
   const clearSelection = () => {
-    setShowHidden(false);
     setSelected(null);
     setRecord(null);
     setCompatible(new Set());
@@ -1650,6 +1651,17 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     else offerOn(c.id, sel!.id, true, i !== undefined && compatible.has(i));
   };
   const makeCompatible = (c: Choice) => session.put({ kind: "pair", a: sel!.id, b: c.id, compatible: true });
+  /**
+   * What an edit column leaves out, to add from its "Show hidden" list (Richard, 2026-10-22): a product's
+   * options not offered; an option's options not compatible, and its products not offering it.
+   */
+  const hiddenOf = (level: string): { choices: Choice[]; add: (c: Choice) => void; verb: (title: string) => string } | null => {
+    if (!editLayout || !editingHere || !sel) return null;
+    if (sel.level === "product" && level === "customizationOption") return { choices: addChoices, add: addHere, verb: EDIT.offerThis };
+    if (sel.level === "customizationOption" && level === "product") return { choices: addChoices, add: addHere, verb: EDIT.offerThis };
+    if (sel.level === "customizationOption" && level === COMPATIBLE) return { choices: compatChoices, add: makeCompatible, verb: EDIT.makeThisCompatible };
+    return null;
+  };
   const relatedIn = (level: TableKey) =>
     related ? [...related].filter((i) => nodes[i]!.level === level).length : 0;
   const elsewhere = TABLE_GROUPS.filter(
@@ -2071,16 +2083,13 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                 {COPY.relatedIn(relatedByStream.get(g.key)!, g.label)}
               </Button>
             ))}
-            {/* While editing, "Show everything" keeps the edit and lists what the focus hides, to add from
-                (Richard, 2026-10-22); otherwise it clears the focus, as before. */}
             <Button
               size="xs"
-              variant={editingHere && showHidden ? "secondary" : "ghost"}
+              variant="ghost"
               className="ml-auto"
-              aria-pressed={editingHere ? showHidden : undefined}
-              onClick={editingHere ? () => setShowHidden((v) => !v) : clearSelection}
+              onClick={clearSelection}
             >
-              {editingHere && showHidden ? EDIT.hideHidden : COPY.clear}
+              {COPY.clear}
             </Button>
           </div>
         ) : (
@@ -2106,14 +2115,6 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
           ) : null}
           {editNote ? <span className="text-xs text-destructive">{editNote}</span> : null}
         </div>
-      ) : null}
-      {editingHere && showHidden ? (
-        <HiddenRecords
-          sections={sel!.level === "product"
-            ? [{ title: EDIT.hiddenOptions, choices: addChoices, add: addHere, verb: EDIT.offerThis }]
-            : [{ title: EDIT.hiddenProducts, choices: addChoices, add: addHere, verb: EDIT.offerThis },
-               { title: EDIT.hiddenCompatible, choices: compatChoices, add: makeCompatible, verb: EDIT.makeThisCompatible }]}
-        />
       ) : null}
 
       <div ref={row} className="flex min-h-[28rem] flex-1 gap-3" style={boxH ? { height: boxH } : undefined}>
@@ -2237,6 +2238,13 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                   <ColumnHeader
                     key={level}
                     {...head}
+                    action={hiddenOf(level) ? (
+                      <ShowHiddenToggle
+                        open={hiddenCol === level}
+                        count={hiddenOf(level)!.choices.length}
+                        onClick={() => setHiddenCol((c) => (c === level ? null : level))}
+                      />
+                    ) : null}
                     name={level === "product" ? EDIT.offeredOn : level === COMPATIBLE ? EDIT.compatibleWith : COPY.offered}
                     relation={level === "customizationOption" && sel ? COPY.relation(MAP_ENTITY[sel.level] ?? "", COPY.verb.offers) : null}
                     count={
@@ -2387,6 +2395,16 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
             ) : null}
 
             {(columnsMode ? [] : drawn).map((i) => (onMap(i) ? renderCard(i, virtualCols ? view(posOf(i)!) : posOf(i)!) : null))}
+            {hiddenCol && hiddenOf(hiddenCol) ? (
+              <HiddenRecords
+                key={hiddenCol}
+                left={PAD + levels.indexOf(hiddenCol as TableKey) * colW}
+                width={cardW}
+                maxHeight={Math.max(CARD_H * 4, areaH - HEAD_H - 8)}
+                {...hiddenOf(hiddenCol)!}
+                onClose={() => setHiddenCol(null)}
+              />
+            ) : null}
             {/* The focused view's group headings (they fold), and the band the scrolled cards pass under. */}
             {grouped && !from
               ? grouped.heads.map((h) => (
@@ -2617,7 +2635,7 @@ function rail(x: number, y1: number, ticks: number[], off: number): string {
  * A column's header (Richard, 2026-10-14): the relation into it on a small line ("Line has →"), then
  * icon, name and count — no level number, no fold (a column never folds).
  */
-function ColumnHeader({ left, width, icon: Icon, name, title, relation, count }: {
+function ColumnHeader({ left, width, icon: Icon, name, title, relation, count, action }: {
   left: number;
   width: number;
   icon: LucideIcon;
@@ -2625,10 +2643,15 @@ function ColumnHeader({ left, width, icon: Icon, name, title, relation, count }:
   title?: string;
   relation: string | null;
   count: number | string;
+  /** A control on the relation line's right, e.g. an edit column's "Show hidden". */
+  action?: React.ReactNode;
 }) {
   return (
     <div className="absolute z-20 flex flex-col justify-center gap-0.5" style={{ left, top: 6, width, height: HEAD_H - 14 }}>
-      <span className="truncate text-[11px] leading-[14px] text-muted-foreground">{relation ?? "\u00a0"}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="min-w-0 truncate text-[11px] leading-[14px] text-muted-foreground">{relation ?? "\u00a0"}</span>
+        {action ? <span className="ml-auto shrink-0">{action}</span> : null}
+      </div>
       <div className="flex min-w-0 items-center gap-2">
         <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         <ColumnName title={title}>{name}</ColumnName>
@@ -2685,45 +2708,93 @@ function GroupHeading({ label: l, left, width, foldable, onToggle }: { label: Gr
   );
 }
 
+/** An edit column's "Show hidden (N)" switch, on its header (Richard, 2026-10-22). */
+function ShowHiddenToggle({ open, count, onClick }: { open: boolean; count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={open}
+      disabled={!count && !open}
+      onClick={onClick}
+      title={open ? EDIT.hideHidden : EDIT.showHiddenTitle}
+      className={`flex h-[18px] items-center gap-1 rounded-full border px-1.5 text-[11px] leading-none tabular-nums transition-colors disabled:opacity-40 ${open ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground enabled:hover:border-primary enabled:hover:text-foreground"}`}
+    >
+      {open ? <EyeOff className="size-3" aria-hidden /> : <Eye className="size-3" aria-hidden />}
+      {open ? EDIT.hideHidden : EDIT.showHidden}
+      <span className={open ? "" : "text-foreground"}>{count}</span>
+    </button>
+  );
+}
+
 /**
- * "Show everything" while editing rules (Richard, 2026-10-22): every record the focus hides, grouped,
- * each a small card with a + at its top right that offers it (or makes it compatible). Added cards
- * leave the list, since the focus shows them now.
+ * An edit column's hidden records (Richard, 2026-10-22): laid over the column under its header, grouped
+ * like the column, each a small card with a + at its top right that offers it (or makes it compatible).
+ * An added card leaves the list, since the column now shows it; the tray holds it until Submit.
  */
-function HiddenRecords({ sections }: { sections: { title: string; choices: Choice[]; add: (c: Choice) => void; verb: (title: string) => string }[] }) {
+function HiddenRecords({ left, width, maxHeight, choices, add, verb, onClose }: {
+  left: number;
+  width: number;
+  maxHeight: number;
+  choices: Choice[];
+  add: (c: Choice) => void;
+  verb: (title: string) => string;
+  onClose: () => void;
+}) {
   const [q, setQ] = useState("");
   const needle = q.trim().toLowerCase();
+  const shown = needle ? choices.filter((c) => choiceMatches(c, needle)) : choices;
+  const groups = new Map<string, Choice[]>();
+  for (const c of shown) groups.set(c.group, [...(groups.get(c.group) ?? []), c]);
   return (
-    <section className="flex max-h-[24rem] flex-col gap-2 overflow-y-auto rounded-md border border-primary/40 bg-card p-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="text-xs text-muted-foreground">{EDIT.hiddenLead}</p>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={EDIT.hiddenFilter} aria-label={EDIT.hiddenFilter} className="ml-auto h-7 max-w-xs text-xs" />
+    <section
+      aria-label={EDIT.hiddenTitle}
+      className="animate-in fade-in slide-in-from-top-1 absolute z-[16] flex flex-col overflow-hidden rounded-lg border border-primary/50 bg-card shadow-lg duration-150"
+      style={{ left: left - 4, top: HEAD_H - 4, width: width + 8, maxHeight }}
+    >
+      <div className="flex flex-col gap-1.5 border-b border-border bg-muted/40 p-2">
+        <div className="flex items-center gap-2">
+          <EyeOff className="size-3.5 text-muted-foreground" aria-hidden />
+          <span className="text-xs font-semibold">{EDIT.hiddenTitle}</span>
+          <span className="text-xs tabular-nums text-muted-foreground">{needle ? COPY.ofTotal(shown.length, choices.length) : choices.length}</span>
+          <Button size="icon-xs" variant="ghost" className="ml-auto" aria-label={EDIT.hideHidden} title={EDIT.hideHidden} onClick={onClose}>
+            <X />
+          </Button>
+        </div>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") { if (q) setQ(""); else onClose(); } }}
+            placeholder={EDIT.hiddenFilter}
+            aria-label={EDIT.hiddenFilter}
+            className="h-7 bg-card pl-7 text-xs"
+          />
+        </div>
       </div>
-      {sections.map((sec) => {
-        const shown = needle ? sec.choices.filter((c) => choiceMatches(c, needle)) : sec.choices;
-        const groups = new Map<string, Choice[]>();
-        for (const c of shown) groups.set(c.group, [...(groups.get(c.group) ?? []), c]);
-        return (
-          <div key={sec.title} className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{sec.title} · {shown.length}</span>
-            {shown.length ? [...groups].map(([g, cs]) => (
-              <div key={g} className="flex flex-col gap-1">
-                {g ? <span className="text-[11px] text-muted-foreground">{g}</span> : null}
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-1.5">
-                  {cs.map((c) => (
-                    <li key={c.id} className="relative rounded-md border border-border bg-background py-1.5 pr-7 pl-2 text-xs">
-                      <span className="line-clamp-2">{c.title}</span>
-                      <Button size="icon-xs" variant="ghost" className="absolute top-0.5 right-0.5 text-primary" aria-label={sec.verb(c.title)} title={sec.verb(c.title)} onClick={() => sec.add(c)}>
-                        <Plus />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+      <div className="flex-1 overflow-y-auto p-2">
+        {shown.length ? [...groups].sort((a, b) => a[0].localeCompare(b[0])).map(([g, cs]) => (
+          <div key={g} className="mb-2 flex flex-col gap-1 last:mb-0">
+            <span className="truncate px-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{g || EDIT.noGroup} · {cs.length}</span>
+            {cs.sort((a, b) => a.title.localeCompare(b.title)).map((c) => (
+              <div key={c.id} className="group relative rounded-md border border-dashed border-border bg-background py-1.5 pr-8 pl-2 text-xs hover:border-primary/60 hover:bg-primary/5">
+                <span className="line-clamp-2 leading-4">{c.title}</span>
+                {c.keys ? <span className="block truncate font-mono text-[10px] text-muted-foreground">{c.keys}</span> : null}
+                <button
+                  type="button"
+                  aria-label={verb(c.title)}
+                  title={verb(c.title)}
+                  onClick={() => add(c)}
+                  className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full border border-primary/40 bg-card text-primary shadow-xs hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Plus className="size-3.5" />
+                </button>
               </div>
-            )) : <p className="text-xs text-muted-foreground">{EDIT.hiddenNone}</p>}
+            ))}
           </div>
-        );
-      })}
+        )) : <p className="px-0.5 py-2 text-xs text-muted-foreground">{EDIT.hiddenNone}</p>}
+      </div>
     </section>
   );
 }

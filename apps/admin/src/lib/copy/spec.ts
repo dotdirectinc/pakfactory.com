@@ -676,13 +676,12 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   mapEdit: "Edit rules",
   addOptionHere: "Offer more options — type, then Enter or Tab…",
   addProductHere: "Offer on more products — name or SKU, then Enter or Tab…",
-  /** "Show everything" while editing (2026-10-22): what the focus hides, each with a + to add. */
-  hideHidden: "Hide the rest",
-  hiddenLead: "Everything the focus hides. + adds it; your edits stay in the tray until you submit.",
+  /** An edit column's "Show hidden" list (2026-10-22): what the column leaves out, each with a + to add. */
+  showHidden: "Show hidden",
+  showHiddenTitle: "List what this column leaves out, to add from",
+  hideHidden: "Hide",
+  hiddenTitle: "Hidden — + to add",
   hiddenFilter: "Filter by name, code or SKU…",
-  hiddenOptions: "Options not offered",
-  hiddenProducts: "Standard products not offering it",
-  hiddenCompatible: "Options not compatible with it",
   hiddenNone: "Nothing hidden.",
   offerThis: (title: string) => `Offer ${title}`,
   makeThisCompatible: (title: string) => `Make compatible with ${title}`,
