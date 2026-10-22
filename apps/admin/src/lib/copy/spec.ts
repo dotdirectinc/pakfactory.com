@@ -488,7 +488,8 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
   overrode: (what: string) => `Overrode Studio's value — ${what}. Kept here so it can be put back.`,
   compare: "Compare",
   before: "Sanity now",
-  after: "Notion",
+  /** The column of what approving writes: Notion's value for a Notion frame; otherwise the frame's own (a rule edit, a registration — 2026-10-22). */
+  after: (source: string) => (source === "notion-sync" ? "Notion" : "After approval"),
   formattingOnly: "Same words — only the formatting changes.",
   listToParagraphs: "Same words — only the formatting changes: bulleted list → paragraphs.",
   paragraphsToList: "Same words — only the formatting changes: paragraphs → bulleted list.",

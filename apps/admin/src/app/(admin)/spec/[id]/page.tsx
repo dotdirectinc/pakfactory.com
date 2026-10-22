@@ -86,7 +86,7 @@ export default async function SpecChangesetPage({
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium text-foreground">{ADMIN_SPEC_COPY.everyChange}</h2>
         <p className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.everyChangeLead}</p>
-        <SpecItemList items={items} exclusion={cs.excludable && canApprove(me) ? { changesetId: cs.id } : null} />
+        <SpecItemList items={items} source={cs.source} exclusion={cs.excludable && canApprove(me) ? { changesetId: cs.id } : null} />
       </section>
 
       {cs.state === "draft" ? (
