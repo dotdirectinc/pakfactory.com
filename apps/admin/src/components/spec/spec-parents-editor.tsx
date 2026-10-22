@@ -325,7 +325,7 @@ function ParentSelect({ value, choices, placeholder, onChange }: { value: string
 /** A row in the Catalog structure section's own style. */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid gap-1 border-t border-border bg-primary/5 px-3 py-2 first:border-t-0 sm:grid-cols-[14rem_1fr] sm:gap-4">
+    <div className="grid gap-1 border-t border-border bg-primary/5 px-3 py-2 first:border-t-0 @md:grid-cols-[minmax(8rem,14rem)_1fr] @md:gap-4">
       <dt className="pt-1.5 text-muted-foreground">{label}</dt>
       <dd className="flex min-w-0 flex-col gap-1.5">{children}</dd>
     </div>

@@ -189,7 +189,9 @@ function RecordSectionView({ sec, Section, onSelect }: { sec: RecordSection; Sec
   const moving = structure && Boolean(m?.editing);
   const fields = moving ? sec.fields.filter((f) => !PARENT_FIELDS.has(f.key)) : sec.fields;
   return (
-    <section className="flex flex-col gap-2">
+    // A container: the rows go two-column by the table's own width, not the window's — in the Map's side
+    // panel the window is wide but the table is not (2026-10-22).
+    <section className="@container flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Section className="text-base font-semibold text-foreground">{sec.title}</Section>
         {structure ? <MoveButton /> : null}
@@ -197,7 +199,7 @@ function RecordSectionView({ sec, Section, onSelect }: { sec: RecordSection; Sec
       <dl className={`overflow-hidden rounded-md border bg-card text-sm ${moving ? "border-primary/50 ring-1 ring-primary/30" : "border-border"}`}>
         {structure ? <MoveFieldRows /> : null}
         {fields.map((f) => (
-          <div key={f.key} className="grid gap-1 border-t border-border px-3 py-2 first:border-t-0 even:bg-muted/50 sm:grid-cols-[14rem_1fr] sm:gap-4">
+          <div key={f.key} className="grid gap-1 border-t border-border px-3 py-2 first:border-t-0 even:bg-muted/50 @md:grid-cols-[minmax(8rem,14rem)_1fr] @md:gap-4">
             <dt className="text-muted-foreground">{f.label}</dt>
             <dd className="min-w-0 break-words text-foreground">
               {f.groups.length ? (
