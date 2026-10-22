@@ -66,7 +66,7 @@ const QUERY = /* groq */ `{
     _type in ["product", "customizationOption", "customizationType", "customizationCategory", "productLine", "productStyle", "solution", "solutionStyle"] &&
     !(_id in path("drafts.**")) &&
     defined(entityCode)
-  ]{ _id, entityId, entityCode }
+  ]{ _id, entityId, entityCode, sku }
 }`;
 
 export type SourceProduct = SummaryProduct & {
@@ -83,7 +83,8 @@ export type SourceProduct = SummaryProduct & {
 };
 
 /** The registry's identity of a document, as the catalog fill copies it into Sanity (PROD-2628). */
-export type RegistryIdentity = { entityId: string; entityCode: string };
+/** `sku`: a product's or inspiration product's own reference — shown before the code (2026-10-22). */
+export type RegistryIdentity = { entityId: string; entityCode: string; sku?: string };
 
 export type Inspiration = { _id: string; title?: string; basedOn: string; preselected: string[]; solutionIds?: string[] };
 /** A line, style or solution: what a move points at (PROD-3007). */
@@ -167,7 +168,7 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
   for (const p of result.products) names.set(p._id, p.title ?? p._id);
   for (const x of [...(result.inspirations ?? []), ...(result.lines ?? []), ...(result.styles ?? []), ...(result.solutions ?? []), ...(result.solutionStyles ?? [])]) names.set(x._id, x.title ?? x._id);
   const inactive = new Set(result.rules.options.filter((o) => o.status !== "active").map((o) => o._id));
-  const identities = new Map((result.identity ?? []).map(({ _id, entityId, entityCode }) => [_id, { entityId, entityCode }]));
+  const identities = new Map((result.identity ?? []).map(({ _id, entityId, entityCode, sku }) => [_id, { entityId, entityCode, ...(sku ? { sku } : {}) }]));
   const bySanity = new Map<string, string>();
   for (const [id, x] of identities) {
     const u = typeidToUuid(x.entityId)?.uuid;

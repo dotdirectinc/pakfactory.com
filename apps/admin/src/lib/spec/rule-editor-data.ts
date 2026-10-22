@@ -6,7 +6,8 @@ import type { TableKey } from "./catalog-table-model";
  * pickers, from the same Sanity read the rules pages use. Only ACTIVE options take part in the rules
  * (the storefront's own filter), so a not-active option or one in a not-active type has no editor.
  */
-export type Choice = { id: string; title: string; group: string };
+/** `keys`: more text a search matches — an option's registry code, a product's SKU and code (2026-10-22). */
+export type Choice = { id: string; title: string; group: string; keys?: string };
 export type RuleEditorData =
   | { kind: "product"; productId: string; offers: Choice[]; exceptions: (Choice & { mode: "add" | "remove"; reason: string })[];
       offerChoices: Choice[]; exceptionChoices: Choice[] }
@@ -21,9 +22,12 @@ export async function getRuleEditorData(key: TableKey, id: string): Promise<Load
   }
   const res = await loadRulesSource();
   if (!res.ok) return res;
-  const { catalog, products, name } = res.data;
+  const { catalog, products, name, identity } = res.data;
   const typeOf = new Map(catalog.types.map((t) => [t._id, t]));
-  const optionChoice = (o: { _id: string; typeId: string }): Choice => ({ id: o._id, title: name(o._id), group: name(o.typeId) });
+  const optionChoice = (o: { _id: string; typeId: string }): Choice => {
+    const code = identity(o._id)?.entityCode;
+    return { id: o._id, title: name(o._id), group: name(o.typeId), ...(code ? { keys: code } : {}) };
+  };
   const byTitle = (a: Choice, b: Choice) => a.group.localeCompare(b.group) || a.title.localeCompare(b.title);
 
   if (key === "product") {
@@ -56,8 +60,9 @@ export async function getRuleEditorData(key: TableKey, id: string): Promise<Load
 
   const t = typeOf.get(id);
   if (!t) return { ok: true, data: { kind: "none", reason: "This type is not part of the rules (not active, or not decided either way)." } };
-  const typeChoice = (tid: string): Choice => ({ id: tid, title: name(tid), group: "Types" });
-  const catChoice = (cid: string): Choice => ({ id: cid, title: name(cid), group: "Categories" });
+  const withCode = (id: string) => { const code = identity(id)?.entityCode; return code ? { keys: code } : {}; };
+  const typeChoice = (tid: string): Choice => ({ id: tid, title: name(tid), group: "Types", ...withCode(tid) });
+  const catChoice = (cid: string): Choice => ({ id: cid, title: name(cid), group: "Categories", ...withCode(cid) });
   const cats = new Set((catalog.categories ?? []).map((c) => c._id));
   return { ok: true, data: {
     kind: "type", typeId: id, decidedBy: t.availabilityDecidedBy, customerSelects: t.customerSelects === "many" ? "many" : "one",

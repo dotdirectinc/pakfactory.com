@@ -22,6 +22,7 @@ import {
   Move,
   Pencil,
   Pin,
+  Plus,
   PinOff,
   Search,
   Box,
@@ -54,7 +55,8 @@ import type { ProductOptionState } from "@/lib/spec/product-view";
 type OfferKind = ProductOptionState | "removed";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
 import { RuleEditBar, RuleEditPanel, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
-import { Picker } from "@/components/spec/spec-rule-editor";
+import { choiceMatches, Picker } from "@/components/spec/spec-rule-editor";
+import type { Choice } from "@/lib/spec/rule-editor-data";
 import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT, ADMIN_SPEC_RULE_EDIT_COPY as EDIT_FOLD } from "@/lib/copy/spec";
 import { describeEdit, editKey, isMove, mapEdit } from "@/lib/spec/rule-edits";
 import {
@@ -397,6 +399,9 @@ const MOVE_CHILD: Partial<Record<TableKey, TableKey[]>> = {
   customizationCategory: ["customizationType"], solution: ["inspiration", "solutionStyle"],
 };
 
+/** The references a search matches on a card: its registry code and, for a product, its SKU (2026-10-22). */
+const refsOf = (n: { code: string | null; sku?: string }) => [n.code, n.sku].filter(Boolean).join(" ").toLowerCase();
+
 export function SpecMap({ data, focus = null }: { data: SpecMapData; focus?: { level: string; id: string } | null }) {
   return (
     <RuleEditSessionProvider>
@@ -428,6 +433,9 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
   );
   const [status, setStatus] = useState<string>(ALL);
   const [selected, setSelected] = useState<number | null>(null);
+  /** "Show everything" while editing: the hidden records listed to add from (2026-10-22). */
+  const [showHidden, setShowHidden] = useState(false);
+  useEffect(() => setShowHidden(false), [selected]);
   const [onlyRelated, setOnlyRelated] = useState(true);
   const [scrollTo, setScrollTo] = useState<number | null>(null);
   const area = useRef<HTMLDivElement>(null);
@@ -1010,7 +1018,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
         const x = PAD + levels.indexOf(c.level) * colW;
         const needle = (colQ[c.key] ?? "").trim().toLowerCase();
         const hit = (i: number) => !needle || nodes[i]!.title.toLowerCase().includes(needle)
-          || (nodes[i]!.code ?? "").toLowerCase().includes(needle) || c.groupOf(i).toLowerCase().includes(needle);
+          || refsOf(nodes[i]!).includes(needle) || c.groupOf(i).toLowerCase().includes(needle);
         for (const i of c.items) f.pos.delete(i);
         const groups = new Map<string, number[]>();
         for (const i of c.items.filter(hit)) groups.set(c.groupOf(i), [...(groups.get(c.groupOf(i)) ?? []), i]);
@@ -1040,7 +1048,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     const matches = (i: number) =>
       !needle ||
       nodes[i]!.title.toLowerCase().includes(needle) ||
-      (nodes[i]!.code ?? "").toLowerCase().includes(needle);
+      refsOf(nodes[i]!).includes(needle);
     const typeOf = (i: number) => parentsOf[i]?.[0];
     const offer: OfferLayout = { x, filterY: HEAD_H, groups: [], types: [], rails: [] };
     let y = HEAD_H + FILTER_H;
@@ -1309,6 +1317,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     [nodes, select, stream, related, rest],
   );
   const clearSelection = () => {
+    setShowHidden(false);
     setSelected(null);
     setRecord(null);
     setCompatible(new Set());
@@ -1368,7 +1377,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
       .filter(
         ({ n }) =>
           n.title.toLowerCase().includes(needle) ||
-          (n.code ?? "").toLowerCase().includes(needle),
+          refsOf(n).includes(needle),
       )
       .slice(0, 8);
   }, [q, nodes]);
@@ -1617,14 +1626,30 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                 parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "",
                 session.meta?.decidedBy[session.meta.optionType[n.id] ?? ""] === "customization" ? EDIT.asException : "",
               ].filter(Boolean).join(" · "),
+              keys: n.code ?? "",
             }]
           : []);
     }
     const standard = new Set(session.meta?.standard ?? []);
     const offering = after?.products ?? compatible;
     return nodes.flatMap((n, i) =>
-      n.level === "product" && standard.has(n.id) && !offering.has(i) ? [{ id: n.id, title: n.title, group: n.code ?? "" }] : []);
+      n.level === "product" && standard.has(n.id) && !offering.has(i) ? [{ id: n.id, title: n.title, group: n.sku ?? n.code ?? "", keys: [n.sku, n.code].filter(Boolean).join(" ") }] : []);
   }, [editingHere, sel, nodes, after, offers, compatible, parentsOf, session.meta]);
+  /** Options an option in focus can be made compatible with: every option the rules know, Not active ones included. */
+  const compatChoices = useMemo(() => {
+    if (!editingHere || sel?.level !== "customizationOption") return [];
+    return nodes.flatMap((n, i) =>
+      n.level === "customizationOption" && i !== selected && !compatOptionsShown.has(i) && Boolean(session.meta?.optionType[n.id])
+        ? [{ id: n.id, title: n.title, group: parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "", keys: n.code ?? "" }]
+        : []);
+  }, [editingHere, sel, nodes, selected, compatOptionsShown, session.meta, parentsOf]);
+  /** Offer what a picker or a hidden card names: an option on the product in focus, or the option in focus on a product. */
+  const addHere = (c: Choice) => {
+    const i = indexOf.get(`${sel!.level === "product" ? "customizationOption" : "product"}:${c.id}`);
+    if (sel!.level === "product") offerOn(sel!.id, c.id, true, i !== undefined && offers.has(i));
+    else offerOn(c.id, sel!.id, true, i !== undefined && compatible.has(i));
+  };
+  const makeCompatible = (c: Choice) => session.put({ kind: "pair", a: sel!.id, b: c.id, compatible: true });
   const relatedIn = (level: TableKey) =>
     related ? [...related].filter((i) => nodes[i]!.level === level).length : 0;
   const elsewhere = TABLE_GROUPS.filter(
@@ -1740,7 +1765,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                           <span className="text-foreground/80">{COPY.via(derivedFrom.get(i)!.map((j) => nodes[j]!.title))} · </span>
                         ) : null}
                         {/* A value under its property heading: the property is not repeated. */}
-                        {[n.code, productFocus && n.level === "productValue" ? null : n.sub].filter(Boolean).join(" · ") || "—"}
+                        {[n.sku ?? n.code, productFocus && n.level === "productValue" ? null : n.sub].filter(Boolean).join(" · ") || "—"}
                       </span>
                     </span>
                     {dot ? (
@@ -1875,7 +1900,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {LEVEL_INFO.get(n.level)?.label}
-                      {n.code ? ` · ${n.code}` : ""}
+                      {n.sku ?? n.code ? ` · ${n.sku ?? n.code}` : ""}
                     </span>
                   </button>
                 </li>
@@ -2046,13 +2071,16 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                 {COPY.relatedIn(relatedByStream.get(g.key)!, g.label)}
               </Button>
             ))}
+            {/* While editing, "Show everything" keeps the edit and lists what the focus hides, to add from
+                (Richard, 2026-10-22); otherwise it clears the focus, as before. */}
             <Button
               size="xs"
-              variant="ghost"
+              variant={editingHere && showHidden ? "secondary" : "ghost"}
               className="ml-auto"
-              onClick={clearSelection}
+              aria-pressed={editingHere ? showHidden : undefined}
+              onClick={editingHere ? () => setShowHidden((v) => !v) : clearSelection}
             >
-              {COPY.clear}
+              {editingHere && showHidden ? EDIT.hideHidden : COPY.clear}
             </Button>
           </div>
         ) : (
@@ -2066,26 +2094,26 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
             className="max-w-sm"
             choices={addChoices}
             placeholder={sel!.level === "product" ? EDIT.addOptionHere : EDIT.addProductHere}
-            onPick={(c) => {
-              const i = indexOf.get(`${sel!.level === "product" ? "customizationOption" : "product"}:${c.id}`);
-              if (sel!.level === "product") offerOn(sel!.id, c.id, true, i !== undefined && offers.has(i));
-              else offerOn(c.id, sel!.id, true, i !== undefined && compatible.has(i));
-            }}
+            onPick={addHere}
           />
           {sel!.level === "customizationOption" ? (
             <Picker
               className="max-w-sm"
-              choices={nodes.flatMap((n, i) =>
-                // Options the rules know (session.meta): every published option, Not active ones included.
-                n.level === "customizationOption" && i !== selected && !compatOptionsShown.has(i) && Boolean(session.meta?.optionType[n.id])
-                  ? [{ id: n.id, title: n.title, group: parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "" }]
-                  : [])}
+              choices={compatChoices}
               placeholder={EDIT.makeCompatible}
-              onPick={(c) => session.put({ kind: "pair", a: sel!.id, b: c.id, compatible: true })}
+              onPick={makeCompatible}
             />
           ) : null}
           {editNote ? <span className="text-xs text-destructive">{editNote}</span> : null}
         </div>
+      ) : null}
+      {editingHere && showHidden ? (
+        <HiddenRecords
+          sections={sel!.level === "product"
+            ? [{ title: EDIT.hiddenOptions, choices: addChoices, add: addHere, verb: EDIT.offerThis }]
+            : [{ title: EDIT.hiddenProducts, choices: addChoices, add: addHere, verb: EDIT.offerThis },
+               { title: EDIT.hiddenCompatible, choices: compatChoices, add: makeCompatible, verb: EDIT.makeThisCompatible }]}
+        />
       ) : null}
 
       <div ref={row} className="flex min-h-[28rem] flex-1 gap-3" style={boxH ? { height: boxH } : undefined}>
@@ -2532,7 +2560,8 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                 <Icon className="size-4 shrink-0 text-muted-foreground" />
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium text-foreground">{n.title}</span>
-                  {n.code ? <span className="truncate font-mono text-[11px] text-muted-foreground">{n.code}</span> : null}
+                  {/* One reference fits on a card: a product's SKU, else the registry code (2026-10-22). */}
+                  {n.sku ? <span className="truncate font-mono text-[11px] font-semibold text-foreground/80">{n.sku}</span> : n.code ? <span className="truncate font-mono text-[11px] text-muted-foreground">{n.code}</span> : null}
                 </span>
               </div>
             );
@@ -2653,5 +2682,48 @@ function GroupHeading({ label: l, left, width, foldable, onToggle }: { label: Gr
       {l.folded ? <span className="text-[11px] tabular-nums text-muted-foreground">{l.count}</span> : null}
       {l.folded && l.changed ? <span className="size-1.5 shrink-0 rounded-full bg-blue-600" aria-label={EDIT_FOLD.changed} /> : null}
     </button>
+  );
+}
+
+/**
+ * "Show everything" while editing rules (Richard, 2026-10-22): every record the focus hides, grouped,
+ * each a small card with a + at its top right that offers it (or makes it compatible). Added cards
+ * leave the list, since the focus shows them now.
+ */
+function HiddenRecords({ sections }: { sections: { title: string; choices: Choice[]; add: (c: Choice) => void; verb: (title: string) => string }[] }) {
+  const [q, setQ] = useState("");
+  const needle = q.trim().toLowerCase();
+  return (
+    <section className="flex max-h-[24rem] flex-col gap-2 overflow-y-auto rounded-md border border-primary/40 bg-card p-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-xs text-muted-foreground">{EDIT.hiddenLead}</p>
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={EDIT.hiddenFilter} aria-label={EDIT.hiddenFilter} className="ml-auto h-7 max-w-xs text-xs" />
+      </div>
+      {sections.map((sec) => {
+        const shown = needle ? sec.choices.filter((c) => choiceMatches(c, needle)) : sec.choices;
+        const groups = new Map<string, Choice[]>();
+        for (const c of shown) groups.set(c.group, [...(groups.get(c.group) ?? []), c]);
+        return (
+          <div key={sec.title} className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{sec.title} · {shown.length}</span>
+            {shown.length ? [...groups].map(([g, cs]) => (
+              <div key={g} className="flex flex-col gap-1">
+                {g ? <span className="text-[11px] text-muted-foreground">{g}</span> : null}
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-1.5">
+                  {cs.map((c) => (
+                    <li key={c.id} className="relative rounded-md border border-border bg-background py-1.5 pr-7 pl-2 text-xs">
+                      <span className="line-clamp-2">{c.title}</span>
+                      <Button size="icon-xs" variant="ghost" className="absolute top-0.5 right-0.5 text-primary" aria-label={sec.verb(c.title)} title={sec.verb(c.title)} onClick={() => sec.add(c)}>
+                        <Plus />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )) : <p className="text-xs text-muted-foreground">{EDIT.hiddenNone}</p>}
+          </div>
+        );
+      })}
+    </section>
   );
 }

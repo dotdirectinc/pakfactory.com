@@ -85,7 +85,7 @@ export function SpecRecordView({
             <Title className="text-xl font-semibold tracking-tight text-foreground">{r.title}</Title>
             {r.status ? <Badge variant={r.status === "active" ? "secondary" : "outline"}>{r.status}</Badge> : null}
           </div>
-          <SpecRegistryId registry={r.registry} />
+          <SpecRegistryId registry={r.registry} sku={r.sku} />
           {/* The way to the Map (2026-10-15): the Catalog reads and compares, the Map edits and relates. Not on the Map itself. */}
           {onSelect ? null : (
             <Button asChild size="sm" className="w-fit" title={COPY.showOnMapTitle}>

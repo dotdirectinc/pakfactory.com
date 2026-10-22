@@ -36,6 +36,8 @@ export type MapNode = {
   id: string;
   title: string;
   code: string | null;
+  /** A product's or inspiration product's SKU: shown before the code, and searched (2026-10-22). */
+  sku?: string;
   status: string | null;
   /** A property value's property, shown under its name. */
   sub?: string;
@@ -53,7 +55,7 @@ export type SpecMapData = {
 };
 
 const P = `!(_id in path("drafts.**")) && !(_id in path("versions.**"))`;
-const CARD = `_id, title, status, entityCode`;
+const CARD = `_id, title, status, entityCode, sku`;
 
 const MAP_QUERY = /* groq */ `{
   "productLine": *[_type == "productLine" && ${P}]{ ${CARD} },
@@ -76,7 +78,7 @@ const MAP_QUERY = /* groq */ `{
   "values": *[_type == "propertyValue" && ${P}]{ ${CARD}, "property": property->title, "propertyId": property._ref }
 }`;
 
-type Card = { _id: string; title?: string; status?: string; entityCode?: string };
+type Card = { _id: string; title?: string; status?: string; entityCode?: string; sku?: string };
 type Raw = {
   productLine: Card[];
   productStyle: (Card & { up: (string | null)[] })[];
@@ -97,7 +99,8 @@ export function buildSpecMap(raw: Raw, dataset: string): SpecMapData {
   const at = new Map<string, number>();
   const add = (level: TableKey, c: Card, sub?: string) => {
     at.set(`${level}:${c._id}`, nodes.length);
-    nodes.push({ level, id: c._id, title: c.title ?? c._id, code: c.entityCode ?? null, status: c.status ?? null, ...(sub ? { sub } : {}) });
+    const sku = (level === "product" || level === "inspiration") && typeof c.sku === "string" && c.sku.trim() ? c.sku.trim() : null;
+    nodes.push({ level, id: c._id, title: c.title ?? c._id, code: c.entityCode ?? null, ...(sku ? { sku } : {}), status: c.status ?? null, ...(sub ? { sub } : {}) });
   };
   const edges: [number, number][] = [];
   const links: [number, number][] = [];
@@ -182,7 +185,7 @@ export function buildSpecMap(raw: Raw, dataset: string): SpecMapData {
   return { dataset, nodes, edges, links, stated };
 }
 
-export const getSpecMap = cachedSpec("spec-map-v5" /* v5: defined-level arrows; Properties columns + `stated` (2026-10-14) */, async (): Promise<Loaded<SpecMapData>> => {
+export const getSpecMap = cachedSpec("spec-map-v6" /* v6: product SKUs (2026-10-22); v5: defined-level arrows; Properties columns + `stated` (2026-10-14) */, async (): Promise<Loaded<SpecMapData>> => {
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
   const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: false, perspective: "published" }); // not the CDN: it lags a write, and the refill after an approved move would cache the old record (2026-10-15)
