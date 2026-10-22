@@ -422,7 +422,7 @@ export function RuleEditPanel({ details, onClose }: { details: React.ReactNode; 
   const s = useRuleEditSession()!;
   const [tab, setTab] = useState<"changes" | "details">("changes");
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex flex-col gap-2 border-b border-border px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-foreground">{s.edits.length ? COPY.pending(s.edits.length) : COPY.panelTitle}</span>
@@ -440,7 +440,8 @@ export function RuleEditPanel({ details, onClose }: { details: React.ReactNode; 
           ))}
         </div>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+      {/* min-w-0: a wide row must wrap, not widen the panel into a sideways scroll (2026-10-22). */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
         {tab === "details" ? details : s.edits.length ? (
           <>
             <PendingTray />
