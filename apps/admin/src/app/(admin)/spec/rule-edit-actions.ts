@@ -37,7 +37,22 @@ export type Preview = Impact & {
    * codes it would reissue. Its refusals are in `errors`.
    */
   structure: { sentences: string[]; codes: { id: string; name: string; code: string }[]; documents: number } | null;
+  /**
+   * Products the moves take to another line or base without an accepted new SKU (backend 20261022200000),
+   * by Sanity id: each needs one before the set can be submitted.
+   */
+  skusNeeded: { id: string; name: string; sku: string; why: string }[];
 };
+
+/** New SKUs the person typed, by product Sanity id → registry id for the backend. */
+function skusToRegistry(skus: Record<string, string>, src: RulesSource) {
+  const out: Record<string, string> = {};
+  for (const [id, sku] of Object.entries(skus)) {
+    const u = typeidToUuid(src.identity(id)?.entityId)?.uuid;
+    if (u && sku.trim()) out[u] = sku.trim();
+  }
+  return out;
+}
 
 /** Sanity ids → registry ids (each document's entityId TypeID), for the backend. */
 function toRegistry(edits: RuleEditDraft[], src: RulesSource) {
@@ -73,7 +88,7 @@ function toRegistry(edits: RuleEditDraft[], src: RulesSource) {
  * The impact check: the storefront's own engine before and after, per standard product; and, for
  * the record in focus, what it offers (or who offers it) once the edits apply.
  */
-export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus | null): Promise<Loaded<Preview>> {
+export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus | null, skus: Record<string, string> = {}): Promise<Loaded<Preview>> {
   if (!(await canEdit())) return { ok: false, error: "Editing rules needs an approver or admin grant." };
   const res = await loadRulesSource();
   if (!res.ok) return res;
@@ -82,11 +97,12 @@ export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus
   const ids = new Set([...impact.products.flatMap((p) => [...p.gained, ...p.lost])]);
   // Moves: the server checks them (PROD-3006 has the rules and knows what hangs under each record).
   let structure: Preview["structure"] = null;
+  let skusNeeded: Preview["skusNeeded"] = [];
   if (edits.some(isMove)) {
     const body = toRegistry(edits, res.data);
     if (body.missing.length) impact.errors.push(`Not registered yet: ${body.missing.join(", ")}.`);
     else {
-      const r = await checkRuleEdits({ dataset, edits: body.rules, moves: body.moves });
+      const r = await checkRuleEdits({ dataset, edits: body.rules, moves: body.moves, skus: skusToRegistry(skus, res.data) });
       if (r.ok) {
         const codes = r.data.codes.map((c) => {
           const id = res.data.fromRegistry(c.id);
@@ -96,7 +112,13 @@ export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus
       } else if (r.status === 404) {
         impact.errors.push("This server cannot check moves yet (it needs the rule-edits check route). Nothing can be submitted.");
       } else {
-        for (const e of r.errors ?? [r.error]) if (!impact.errors.includes(e)) impact.errors.push(e);
+        // A product needing a new SKU is asked for in the SKU box, not listed as an error.
+        skusNeeded = (r.skusNeeded ?? []).map((x) => {
+          const id = res.data.fromRegistry(x.productId);
+          return { id: id ?? x.productId, name: id ? name(id) : x.name, sku: x.sku, why: x.why };
+        });
+        const asked = new Set((r.skusNeeded ?? []).map((x) => `${x.name} (${x.sku}) ${x.why}.`));
+        for (const e of r.errors ?? [r.error]) if (!asked.has(e) && !impact.errors.includes(e)) impact.errors.push(e);
       }
     }
   }
@@ -105,6 +127,7 @@ export async function previewRuleEdits(edits: RuleEditDraft[], focus?: RuleFocus
     data: {
       ...impact,
       structure,
+      skusNeeded,
       names: Object.fromEntries([...ids].map((id) => [id, name(id)])),
       // Effect-first ("offers Flocking again — drops the remove exception"); see computeImpact.
       focus: focus ? focusAfter(catalog, products, edits, focus) : null,
@@ -138,7 +161,7 @@ export async function loadRuleMeta(): Promise<Loaded<{ canEdit: boolean; meta: R
 export type SubmitResult = { ok: true; data: RuleEditResult } | { ok: false; error: string; errors?: string[] };
 
 /** Submit (a frame for approval) or Submit & approve. Refused if the impact check has blocking errors. */
-export async function submitRuleEditsAction(edits: RuleEditDraft[], opts: { approve: boolean; note?: string }): Promise<SubmitResult> {
+export async function submitRuleEditsAction(edits: RuleEditDraft[], opts: { approve: boolean; note?: string; skus?: Record<string, string> }): Promise<SubmitResult> {
   if (!(await canEdit())) return { ok: false, error: "Editing rules needs an approver or admin grant." };
   const res = await loadRulesSource();
   if (!res.ok) return res;
@@ -150,7 +173,7 @@ export async function submitRuleEditsAction(edits: RuleEditDraft[], opts: { appr
   if (body.missing.length) return { ok: false, error: `Not registered yet: ${body.missing.join(", ")}.` };
 
   const r = await submitRuleEdits({
-    dataset, edits: body.rules, ...(body.moves.length ? { moves: body.moves } : {}), approve: opts.approve, note: opts.note,
+    dataset, edits: body.rules, ...(body.moves.length ? { moves: body.moves, skus: skusToRegistry(opts.skus ?? {}, res.data) } : {}), approve: opts.approve, note: opts.note,
     impact: {
       totals: impact.totals,
       warnings: impact.warnings.map((w) => w.text),
