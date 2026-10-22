@@ -80,6 +80,7 @@ function overviewLayoutFields() {
       title: 'Show CTA',
       type: 'boolean',
       group: SECTION_GROUPS.layout,
+      fieldset: 'overviewRail',
       initialValue: true,
       description:
         'Apply to a product. Turn off on knowledge-only layouts so this option is not added to a request.',
@@ -89,6 +90,7 @@ function overviewLayoutFields() {
       title: 'Show Bookmark',
       type: 'boolean',
       group: SECTION_GROUPS.layout,
+      fieldset: 'overviewRail',
       initialValue: true,
       description: 'Bookmark control on the overview rail.',
     }),
@@ -97,6 +99,7 @@ function overviewLayoutFields() {
       title: 'Configuration',
       type: 'string',
       group: SECTION_GROUPS.layout,
+      fieldset: 'overviewRail',
       initialValue: 'properties',
       description:
         'One source for the rail selector. Selectable properties are declared on the type. Achieves lists the customer-facing options this technical option delivers.',
@@ -110,6 +113,14 @@ function overviewLayoutFields() {
     }),
   ]
 }
+
+const OVERVIEW_RAIL_FIELDSETS = [
+  {
+    name: 'overviewRail',
+    title: 'Overview rail',
+    options: {collapsible: true, collapsed: false},
+  },
+]
 
 function cdpSectionType(args: {
   name: string
@@ -126,6 +137,7 @@ function cdpSectionType(args: {
     type: 'object',
     icon,
     groups: sectionFieldGroups(),
+    ...(chrome === 'none' ? {fieldsets: OVERVIEW_RAIL_FIELDSETS} : {}),
     fields: (chrome === 'full'
       ? sectionHeaderFields()
       : [overviewHostNote, ...overviewLayoutFields()]) as FieldDefinition[],

@@ -2,6 +2,10 @@
 
 import {parseCompatibilityQuery} from '@/lib/catalog/compatibility-query';
 import {
+    ACHIEVED_BY_PROPERTY_KEY,
+    resolveAchievedByTechniqueIds,
+} from '@/lib/catalog/achieved-by-property';
+import {
     patchPropertySelections,
     seedFromCustomizations,
     type CustomizationBuilderState,
@@ -130,6 +134,41 @@ export function applyCompatibilityQuery(
                     : undefined) ??
                 matched.find((opt) => opt.category === prop.category);
             if (!option || invalidOptionIds.has(option.id)) continue;
+            if (prop.propertyKey === ACHIEVED_BY_PROPERTY_KEY) {
+                const techniqueIds = resolveAchievedByTechniqueIds(
+                    option.achievedBy,
+                    prop.valueSlugs,
+                );
+                if (!techniqueIds.length) continue;
+                const techniques = option.achievedBy ?? [];
+                const summaries = techniqueIds.flatMap((id) => {
+                    const technique = techniques.find((item) => item.id === id);
+                    if (!technique) return [];
+                    return [
+                        {
+                            kind: 'chip' as const,
+                            label: technique.title,
+                            omitFromSummary: false,
+                            ...(technique.imageUrl
+                                ? {imageUrl: technique.imageUrl}
+                                : {}),
+                        },
+                    ];
+                });
+                next = patchPropertySelections(
+                    next,
+                    option.id,
+                    {
+                        ...(next.propertySelections?.[option.id] ?? {}),
+                        [ACHIEVED_BY_PROPERTY_KEY]: techniqueIds,
+                    },
+                    [
+                        ...(next.propertySelectionSummaries?.[option.id] ?? []),
+                        ...summaries,
+                    ],
+                );
+                continue;
+            }
             next = patchPropertySelections(
                 next,
                 option.id,

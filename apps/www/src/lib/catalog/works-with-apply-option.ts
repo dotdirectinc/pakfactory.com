@@ -4,6 +4,8 @@ import type {AchievedByOption} from '@/lib/catalog/types';
 export type WorksWithApplyOption = {
     category: string;
     slug: string;
+    /** Technical option on an Achieves rail (AQ Coating when Gloss is selected). */
+    achievedBySlug?: string;
 };
 
 /**
@@ -26,7 +28,12 @@ export function resolveWorksWithApplyOption(args: {
         const category = selected?.categorySlug?.trim();
         const slug = selected?.slug?.trim();
         if (!category || !slug) return null;
-        return {category, slug};
+        const achievedBySlug = args.pageOption.slug.trim();
+        return {
+            category,
+            slug,
+            ...(achievedBySlug ? {achievedBySlug} : {}),
+        };
     }
     const category = args.pageOption.category.trim();
     const slug = args.pageOption.slug.trim();

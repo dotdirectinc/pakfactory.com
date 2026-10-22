@@ -43,7 +43,7 @@ describe('resolveWorksWithApplyOption', () => {
         );
     });
 
-    it('uses the selected Achieves target when source is achieves', () => {
+    it('uses the selected Achieves target and the page option as achievedBy', () => {
         assert.deepEqual(
             resolveWorksWithApplyOption({
                 showCta: true,
@@ -52,7 +52,11 @@ describe('resolveWorksWithApplyOption', () => {
                 achieves,
                 selectedAchievesId: 'opt-gloss',
             }),
-            {category: 'finishing', slug: 'gloss'},
+            {
+                category: 'finishing',
+                slug: 'gloss',
+                achievedBySlug: 'aq-coating',
+            },
         );
     });
 

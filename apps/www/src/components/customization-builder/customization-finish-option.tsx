@@ -20,9 +20,9 @@ import type {
     PropertyControllerValue,
     UiDescriptor,
 } from '@pakfactory/ui/components/customization/types';
+import {ACHIEVED_BY_PROPERTY_KEY} from '@/lib/catalog/achieved-by-property';
 
-/** Reserved propertySelections key for reverse `achieves` technique pick. */
-export const ACHIEVED_BY_PROPERTY_KEY = 'achievedBy';
+export {ACHIEVED_BY_PROPERTY_KEY};
 
 type SelectionDetailProps = {
     option: BuilderOption | undefined;
