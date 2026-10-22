@@ -345,7 +345,7 @@ export function Picker({ choices, placeholder, onPick, className = "max-w-sm" }:
           missed it on the Map and on the record page). */}
       <Plus className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-primary" aria-hidden />
       <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Escape" && setQ("")} placeholder={placeholder} aria-label={placeholder}
-        className="h-8 border-primary/50 bg-background pl-8 shadow-xs placeholder:font-medium placeholder:text-foreground/70 hover:border-primary" />
+        className="h-8 border-primary bg-background pl-8 shadow-xs placeholder:font-medium placeholder:text-foreground/80 hover:bg-primary/5" />
       {hits.length ? (
         <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-border bg-popover text-sm shadow-md">
           {hits.map((c) => (

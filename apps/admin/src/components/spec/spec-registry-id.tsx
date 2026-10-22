@@ -15,7 +15,7 @@ export function SpecRegistryId({ registry }: { registry?: RegistryIdentity }) {
   return (
     <dl className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs">
       <dt className="text-muted-foreground">{COPY.registryId}</dt>
-      <dd className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <dd className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
         <CopyValue value={registry.entityCode} className="font-semibold text-foreground" />
         <CopyValue value={registry.entityId} className="text-muted-foreground" />
       </dd>
@@ -35,8 +35,9 @@ function CopyValue({ value, className }: { value: string; className: string }) {
     }
   };
   return (
-    <span className="inline-flex items-baseline gap-1">
-      <code className={`select-all font-mono ${className}`}>{value}</code>
+    <span className="inline-flex min-w-0 flex-wrap items-baseline gap-1">
+      {/* break-all: the id is one long token, and must wrap in a narrow panel (2026-10-22). */}
+      <code className={`select-all break-all font-mono ${className}`}>{value}</code>
       <button type="button" onClick={copy} className="text-muted-foreground hover:text-foreground hover:underline">
         {copied ? COPY.copied : COPY.copy}
       </button>
