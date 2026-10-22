@@ -2076,7 +2076,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
             <Picker
               className="max-w-sm"
               choices={nodes.flatMap((n, i) =>
-                // Active options only: the rules (session.meta) know no others.
+                // Options the rules know (session.meta): every published option, Not active ones included.
                 n.level === "customizationOption" && i !== selected && !compatOptionsShown.has(i) && Boolean(session.meta?.optionType[n.id])
                   ? [{ id: n.id, title: n.title, group: parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "" }]
                   : [])}

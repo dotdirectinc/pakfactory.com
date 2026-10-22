@@ -77,8 +77,8 @@ export const SPECS: Record<TableKey, TableSpec> = {
   customizationOption: {
     type: "customizationOption", image: PRIMARY_IMAGE, parent: "type",
     defaults: ["entityCode", "status", "type", "configuratorRole", "valueCount", "hasPage"],
-    // Only active options are in the rules, so only they have a rules view (hasRulesPage).
-    rules: (d) => (d.status === "active" ? `/spec/customizations/${encodeURIComponent(d._id)}` : null),
+    // Every option has a rules view, whatever its status: Not active only hides it on the site (2026-10-22).
+    rules: (d) => `/spec/customizations/${encodeURIComponent(d._id)}`,
   },
   solution: { type: "solution", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "solutionType"] },
   solutionStyle: { type: "solutionStyle", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "solution"], parent: "solution" },

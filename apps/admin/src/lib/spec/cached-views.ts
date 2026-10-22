@@ -58,7 +58,7 @@ export const getProductRows = cachedSpec(
 
 /** `null` data = no standard product with this id (the page 404s). */
 export const getProductView = cachedSpec(
-  "product-view-v2", // v2: derived partners carry ids (2026-10-14)
+  "product-view-v3", // v3: rows carry `active` (2026-10-22); v2: derived partners carry ids (2026-10-14)
   async (id: string): Promise<Loaded<ProductView | null>> => {
     const res = await loadRulesSource();
     if (!res.ok) return res;

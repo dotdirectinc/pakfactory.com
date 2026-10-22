@@ -972,7 +972,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
  * flat reference, which is a requirement of one. Large (every compatible pair), so www caches
  * it server-side and never sends it to the browser whole.
  */
-export const CATALOG_CUSTOMIZATION_RULES_QUERY = /* groq */ `{
+const rulesQuery = (optionFilter: string) => /* groq */ `{
   "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{
     _id,
     title,
@@ -983,14 +983,24 @@ export const CATALOG_CUSTOMIZATION_RULES_QUERY = /* groq */ `{
   },
   "options": *[
     _type == "customizationOption" &&
-    !(_id in path("drafts.**")) &&
-    ${OPTION_ACTIVE}
+    !(_id in path("drafts.**"))${optionFilter}
   ]{
     ${OPTION_FIELDS},
     "typeId": type._ref,
     "compatibleCustomizations": coalesce(compatibleCustomizations[]._ref, [])
   }
 }`;
+
+/** The storefront's rules catalog: active options only (see `rulesQuery`). */
+export const CATALOG_CUSTOMIZATION_RULES_QUERY = rulesQuery(` &&
+    ${OPTION_ACTIVE}`);
+
+/**
+ * The same rules catalog with EVERY option, Not active ones included (each with its effective
+ * `status`). For admin's Spec System: Not active only hides an option on the site, and its
+ * offers and pairs still need to be seen and edited (2026-10-22). Never for www.
+ */
+export const CATALOG_CUSTOMIZATION_RULES_ALL_OPTIONS_QUERY = rulesQuery("");
 
 /**
  * Option by id for builder Property controllers — no detail-page gate (configurable
