@@ -103,6 +103,7 @@ function TypeBlock({ type }: { type: ProductTypeBlock }) {
             </Link>
             {o.state !== "derived" && <Badge variant="secondary">{COPY.state[o.state]}</Badge>}
             {o.reference && <span className="text-xs text-muted-foreground">({COPY.referenceNote})</span>}
+            {!o.active && <span className="text-xs text-muted-foreground">({COPY.notActiveNote})</span>}
             {o.because.length > 0 && (
               <span className="text-xs text-muted-foreground">
                 {COPY.because}{" "}

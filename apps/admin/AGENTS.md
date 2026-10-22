@@ -235,7 +235,7 @@ sudo journalctl -u pakfactory-api -n 200 | grep -A5 "failed to resolve an attach
 
 ## Spec System — current rules
 
-`/spec/rules` shows the customization rules **as they are now** (PROD-2560): read from Sanity with the storefront's own query (`CATALOG_CUSTOMIZATION_RULES_QUERY`) and computed by the shared package (`@pakfactory/sanity/customization-rules/summary` → `summarizeRules`). Sanity is the source of truth for V1 (option A, 2026-09-18), so admin never computes rules itself and never stores the summary — it is recomputed on each load (60 s CDN revalidate).
+`/spec/rules` shows the customization rules **as they are now** (PROD-2560): read from Sanity with the storefront's rules query, widened to every option (`CATALOG_CUSTOMIZATION_RULES_ALL_OPTIONS_QUERY`: Not active only hides an option on the site, so its offers and pairs still show and can be edited, 2026-10-22; only "Configure as a customer" leaves Not active options out), and computed by the shared package (`@pakfactory/sanity/customization-rules/summary` → `summarizeRules`). Sanity is the source of truth for V1 (option A, 2026-09-18), so admin never computes rules itself and never stores the summary — it is recomputed on each load (60 s CDN revalidate).
 
 | Tab | Shows |
 |---|---|

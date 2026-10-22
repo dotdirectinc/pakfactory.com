@@ -4,6 +4,7 @@ import { evaluate, parse } from "groq-js";
 import {
   CATALOG_CUSTOMIZATION_DETAIL_QUERY,
   CATALOG_CUSTOMIZATION_LIBRARY_QUERY,
+  CATALOG_CUSTOMIZATION_RULES_ALL_OPTIONS_QUERY,
   CATALOG_CUSTOMIZATION_RULES_QUERY,
   CATALOG_OPTION_BY_ID_QUERY,
   CATALOG_PRODUCT_BY_SLUG_QUERY,
@@ -144,4 +145,10 @@ test("R1 option → type → category: the configurator and rules drop them too"
     ),
   );
   assert.deepEqual(byId, { "o-on": "active", "o-type-off": "not-active", "o-cat-off": "not-active" });
+});
+
+test("admin's all-options rules catalog keeps Not active options, each with its effective status", async () => {
+  const rules = (await run(CATALOG_CUSTOMIZATION_RULES_ALL_OPTIONS_QUERY, custom)) as { options: { _id: string; status: string }[] };
+  const byId = Object.fromEntries(rules.options.map((o) => [o._id, o.status]));
+  assert.deepEqual(byId, { "o-on": "active", "o-unset": "active", "o-type-off": "not-active", "o-cat-off": "not-active" });
 });

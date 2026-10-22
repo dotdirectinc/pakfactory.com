@@ -74,13 +74,13 @@ export async function loadMapCompatible(
     const res = await getCustomizationView(id);
     if (!res.ok) return res;
     const src = await loadRulesSource();
-    // Active options only — the rules (and the record's own editor) leave inactive ones out, so a pair
-    // naming one is inert; listing it would read as a loss the moment anything is previewed (2026-10-14).
-    const active = new Set(src.ok ? src.data.catalog.options.map((o) => o._id) : []);
+    // Options the catalog knows, Not active ones included (2026-10-22): Not active only hides an option
+    // on the site, so its pairs are still rules. A pair naming a deleted option is left out.
+    const known = new Set(src.ok ? src.data.catalog.options.map((o) => o._id) : []);
     const compatibleOptions = src.ok
       ? [...new Set(src.data.catalog.options.flatMap((o) =>
           o._id === id ? (o.compatibleCustomizations ?? []) : (o.compatibleCustomizations ?? []).includes(id) ? [o._id] : []))]
-          .filter((x) => x !== id && active.has(x))
+          .filter((x) => x !== id && known.has(x))
       : [];
     return { ok: true, data: { products: (res.data?.offering ?? []).map((p) => p.id), options: [], exceptions: [], compatibleOptions } };
   }

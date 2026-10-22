@@ -42,7 +42,7 @@ export async function getRuleEditorData(key: TableKey, id: string): Promise<Load
 
   if (key === "customizationOption") {
     const o = catalog.options.find((x) => x._id === id);
-    if (!o) return { ok: true, data: { kind: "none", reason: "Not active (or its type or category is not active) — only active options take part in the rules." } };
+    if (!o) return { ok: true, data: { kind: "none", reason: "Not in the rules: no published option with this id." } };
     const partners = new Set<string>([...(o.compatibleCustomizations ?? [])]);
     for (const other of catalog.options) if ((other.compatibleCustomizations ?? []).includes(id)) partners.add(other._id);
     partners.delete(id);

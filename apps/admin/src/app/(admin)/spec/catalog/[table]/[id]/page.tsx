@@ -18,7 +18,7 @@ export const metadata = { title: "Catalog record" };
 /**
  * A catalog record (2026-10-08, Richard): every record at every level and status has a page — its
  * images, registry identity, the records above it (as links in its fields) and below it, and every
- * field. Standard products and active options also link to their rules view. Below it, the changes
+ * field. Standard products and options also link to their rules view. Below it, the changes
  * Sync Changes applied to it from Sanity (PROD-3119), loaded on their own so the record is not held up.
  */
 export default async function SpecCatalogRecordPage({ params }: { params: Promise<{ table: string; id: string }> }) {

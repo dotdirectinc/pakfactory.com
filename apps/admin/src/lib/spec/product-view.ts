@@ -28,6 +28,8 @@ export type ProductOptionRow = {
   because: { typeTitle: string; partners: string[]; partnerIds: string[] }[];
   /** Reference options are information, never a customer's pick. */
   reference: boolean;
+  /** False for a Not active option: offered by the rules, hidden on the site. */
+  active: boolean;
 };
 
 export type RemovedOptionRow = {
@@ -142,6 +144,7 @@ export function buildProductView(source: RulesSource, product: SourceProduct): P
           partnerIds: reason.partners,
         })),
         reference: optionById.get(id)?.configuratorRole === "reference",
+        active: source.isActive(id),
       };
     });
     const removed: RemovedOptionRow[] = catalog.options
@@ -230,7 +233,10 @@ function dimensionsFor(product: SourceProduct): UiDescriptor | null {
 }
 
 export function catalogSnapshot(source: RulesSource): CatalogSnapshot {
-  const { catalog, name } = source;
+  const { name } = source;
+  // Active options only: this plays the customer, and the site never shows a Not active one. A
+  // product's offer of one is then an unknown id, which the configurator ignores.
+  const catalog = { ...source.catalog, options: source.catalog.options.filter((o) => source.isActive(o._id)) };
   const ids = catalog.options.map((o) => o._id);
   const token = new Map(ids.map((id, n) => [id, n.toString(36)]));
   const tok = (id: string) => token.get(id) ?? id;

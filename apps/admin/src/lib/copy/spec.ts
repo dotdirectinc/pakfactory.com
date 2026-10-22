@@ -155,6 +155,7 @@ export const ADMIN_SPEC_PRODUCTS_COPY = {
   removedBecause: (names: string) => `no partner in ${names}`,
   removedByException: "removed by an exception",
   referenceNote: "reference only",
+  notActiveNote: "Not active — hidden on the site",
   configureLead:
     "Pick as a customer would. Options narrow exactly as on the storefront — the same code runs both. Nothing here is saved.",
   reset: "Clear picks",

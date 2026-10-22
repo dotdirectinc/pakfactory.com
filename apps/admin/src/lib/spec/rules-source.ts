@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { createClient } from "next-sanity";
-import { CATALOG_CUSTOMIZATION_RULES_QUERY } from "@pakfactory/sanity/queries";
+import { CATALOG_CUSTOMIZATION_RULES_ALL_OPTIONS_QUERY } from "@pakfactory/sanity/queries";
 import type { ProductDimensionRangeMm } from "@pakfactory/sanity/resolve-product-dims";
 import {
   summarizeRules,
@@ -18,7 +18,8 @@ import { typeidToUuid } from "@/lib/spec/typeid";
  *
  * Sanity is the source of truth for V1 (option A, 2026-09-18). This reads the same documents
  * with the storefront's own rules query and hands them to the shared package; no page computes
- * a rule itself. Memoised per request, so a page that needs the summary and one product's
+ * a rule itself. One difference: it reads Not active options too. Not active only hides an option
+ * on the site; its offers and pairs are still rules to see and edit (2026-10-22). Memoised per request, so a page that needs the summary and one product's
  * resolution fetches once.
  */
 
@@ -31,7 +32,7 @@ import { typeidToUuid } from "@/lib/spec/typeid";
 export const RULES_DATASET = process.env.ADMIN_SPEC_RULES_DATASET?.trim() || "development";
 
 const QUERY = /* groq */ `{
-  "rules": ${CATALOG_CUSTOMIZATION_RULES_QUERY},
+  "rules": ${CATALOG_CUSTOMIZATION_RULES_ALL_OPTIONS_QUERY},
   "categories": *[_type == "customizationCategory" && !(_id in path("drafts.**"))]{ _id, title },
   "products": *[_type == "product" && kind == "standard" && !(_id in path("drafts.**"))] | order(title asc) {
     _id,
@@ -108,6 +109,11 @@ export type RulesSource = {
   index: ReturnType<typeof buildCompatibilityIndex>;
   /** id → display name, for types, options, categories, products, lines, styles and solutions. */
   name: (id: string) => string;
+  /**
+   * Whether an option is active on the site (its own status, and its Type's and Category's). The
+   * catalog holds Not active options too; only what imitates the storefront leaves them out.
+   */
+  isActive: (optionId: string) => boolean;
   /** id → registry id and code; undefined for a document the registry has not registered. */
   identity: (id: string) => RegistryIdentity | undefined;
   /** Registry uuid → the Sanity id of its document (the server answers in registry ids). */
@@ -117,7 +123,7 @@ export type RulesSource = {
 export type Loaded<T> = { ok: true; data: T } | { ok: false; error: string };
 
 type QueryResult = {
-  rules: SummaryCatalog;
+  rules: Omit<SummaryCatalog, "options"> & { options: (SummaryCatalog["options"][number] & { status?: string })[] };
   categories: { _id: string; title?: string }[];
   products: SourceProduct[];
   identity: ({ _id: string } & RegistryIdentity)[];
@@ -160,6 +166,7 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
   // Products too: the rule-edit checks and the impact name them (PROD-2962).
   for (const p of result.products) names.set(p._id, p.title ?? p._id);
   for (const x of [...(result.inspirations ?? []), ...(result.lines ?? []), ...(result.styles ?? []), ...(result.solutions ?? []), ...(result.solutionStyles ?? [])]) names.set(x._id, x.title ?? x._id);
+  const inactive = new Set(result.rules.options.filter((o) => o.status !== "active").map((o) => o._id));
   const identities = new Map((result.identity ?? []).map(({ _id, entityId, entityCode }) => [_id, { entityId, entityCode }]));
   const bySanity = new Map<string, string>();
   for (const [id, x] of identities) {
@@ -182,6 +189,7 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
       graph: buildDependencyGraph(catalog),
       index: buildCompatibilityIndex(catalog.options),
       name: (id) => names.get(id) ?? id,
+      isActive: (id) => !inactive.has(id),
       identity: (id) => identities.get(id),
       fromRegistry: (uuid) => bySanity.get(uuid),
     },

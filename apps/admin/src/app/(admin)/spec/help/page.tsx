@@ -319,6 +319,10 @@ export default async function SpecHelpPage() {
           <em>Discontinued</em>; customization options only <em>Active</em> or <em>Not active</em>. A product's status
           from Notion comes only from its <strong>Sanity Status</strong> column.
         </p>
+        <p>
+          A <em>Not active</em> customization option keeps its rules. Its offers and compatible options still show
+          here, and you can still edit them; the site only hides the option.
+        </p>
       </Section>
 
       <Section id="codes" title="Registry IDs and codes">
