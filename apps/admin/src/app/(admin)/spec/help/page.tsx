@@ -124,7 +124,9 @@ export default async function SpecHelpPage() {
           <Term name="Discard">Drops the frame. Its changes count as decided (they stay quiet until their source changes).</Term>
           <Term name="Deleted in Sanity">
             A frame Sync Changes proposes when a record&apos;s document is deleted in Studio. Approving retires the record:
-            its row, id and code are kept and never reused, and nothing can change it again. Exclude a record to keep it
+            its row, id and code are kept and never reused, and nothing can change it again. Its status reads
+            retired (a product, line or style <em>Discontinued</em>; a solution, option, type or category <em>Not
+            active</em>), and it drops out of every catalogue list and the spec API. Exclude a record to keep it
             live. This frame <strong>cannot be discarded</strong> — that would hide a real deletion. A record that other
             records still point at (an inspiration product based on it, products in its line) is held, not proposed,
             until the frame that moves them is approved. If a deleted document comes back, the run reports it and the
