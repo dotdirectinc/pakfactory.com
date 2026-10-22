@@ -334,6 +334,7 @@ PROD-3096 / PROD-3119 (2026-10-20). Sync Changes applies names, status and conte
 
 - **Sync history** ([`/spec/syncs`](src/app/(admin)/spec/syncs/page.tsx), [`spec-sync-history.tsx`](src/components/spec/spec-sync-history.tsx)): each Sync Changes run says "N changes from Sanity applied automatically", any that could not apply, and its Content line (differences by kind). **Show the changes** (`?applied=<run>`) loads that run's list only when opened (`GET /api/v1/sync-runs/:id/applied`); the history list itself carries counts only.
 - **A record's page** ([`catalog/[table]/[id]`](src/app/(admin)/spec/catalog/[table]/[id]/page.tsx)): "Changes from Sanity" under the record, newest first, each with its run (automatic, or who started it) and time — from the audit trail (`GET /api/v1/records/:id/sync-changes`, registry id). Loaded in its own `Suspense`, so the record renders first.
+- **A product's SKU history** (editors, 2026-10-22; backend #375): standard and inspiration product pages have "SKU history" above it — each SKU the product gave up, `COR-006-BR1 → FCT-084-BR1`, or "retired — product deleted" (`GET /api/v1/records/:id/sku-history`, from `product_sku_retired`). A server without the route reads as no history.
 - Wording in [`lib/spec/sync-applied.ts`](src/lib/spec/sync-applied.ts) (tested): "Removed White", "Slug: old → new", facts as "label value".
 
 ### Sync from Notion picks its fields; a finished sync says so (2026-10-21)

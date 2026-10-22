@@ -418,6 +418,16 @@ export type RecordSyncChange = {
 };
 
 /** One record's changes from Sync Changes, newest first (50). `registryId` is the record's registry uuid. */
+/**
+ * One SKU a product gave up (backend #375, 20261022200000): `from → to` when a line or base move replaced
+ * it, `to` null when the product was deleted. Retired SKUs are never reused.
+ */
+export type SkuChange = { from: string; to: string | null; reason: "replaced" | "deleted"; at: string };
+
+export async function listRecordSkuHistory(registryId: string) {
+  return call<SkuChange[]>(`/api/v1/records/${encodeURIComponent(registryId)}/sku-history`);
+}
+
 export async function listRecordSyncChanges(registryId: string) {
   return call<RecordSyncChange[]>(`/api/v1/records/${encodeURIComponent(registryId)}/sync-changes`);
 }
