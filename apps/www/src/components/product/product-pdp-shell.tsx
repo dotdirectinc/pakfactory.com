@@ -42,16 +42,9 @@ function ProductOverviewChrome({
                 />
                 <div>
                     <div className="flex items-center justify-between gap-4">
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                            <p className="min-w-0 truncate text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                                {displaySku}
-                            </p>
-                            {product.kind === 'inspiration' ? (
-                                <Badge variant="default" className="shrink-0">
-                                    Inspiration
-                                </Badge>
-                            ) : null}
-                        </div>
+                        <p className="min-w-0 truncate text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                            {displaySku}
+                        </p>
                         <StatusBadge
                             status={product.status}
                             className="shrink-0"
@@ -60,6 +53,13 @@ function ProductOverviewChrome({
                     <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
                         {product.title}
                     </h1>
+                    {product.kind === 'inspiration' ? (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <Badge variant="default" className="shrink-0">
+                                Inspiration
+                            </Badge>
+                        </div>
+                    ) : null}
                     {product.description ? (
                         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
                             {product.description}

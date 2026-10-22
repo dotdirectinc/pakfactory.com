@@ -251,7 +251,9 @@ export function CustomizationEntry({
         <div>
             <div className="flex items-baseline justify-between gap-4">
                 <h2 className="text-base font-semibold text-brand-blue">
-                    {REQUEST_COPY.customizationHeading}
+                    {preset
+                        ? REQUEST_COPY.customizationPresetHeading
+                        : REQUEST_COPY.customizationHeading}
                 </h2>
                 {showClearSelection ? (
                     <Button
