@@ -69,7 +69,8 @@ export default async function SpecChangesetPage({
         </p>
       </div>
 
-      {cs.source === "spec-edit" ? <SpecEditSummary summary={cs.summary ?? {}} /> : null}
+      {/* A Register frame that fills standard offers explains the fill the same way (2026-10-22). */}
+      {cs.source === "spec-edit" || cs.summary?.standardOffers ? <SpecEditSummary summary={cs.summary ?? {}} /> : null}
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium text-foreground">{ADMIN_SPEC_COPY.itemsHeading}</h2>
