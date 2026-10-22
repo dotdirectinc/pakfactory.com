@@ -22,6 +22,8 @@ import {
   Move,
   Pencil,
   Pin,
+  Eye,
+  EyeOff,
   PinOff,
   Search,
   Box,
@@ -55,6 +57,7 @@ type OfferKind = ProductOptionState | "removed";
 import { SpecRecordView } from "@/components/spec/spec-record-view";
 import { RuleEditBar, RuleEditPanel, RuleEditSessionProvider, useRuleEditSession } from "@/components/spec/rule-edit-session";
 import { Picker } from "@/components/spec/spec-rule-editor";
+import type { Choice } from "@/lib/spec/rule-editor-data";
 import { ADMIN_SPEC_RULE_EDIT_COPY as EDIT, ADMIN_SPEC_RULE_EDIT_COPY as EDIT_FOLD } from "@/lib/copy/spec";
 import { describeEdit, editKey, isMove, mapEdit } from "@/lib/spec/rule-edits";
 import {
@@ -162,6 +165,8 @@ type OfferLayout = {
   groups: OfferGroup[];
   types: GroupLabel[];
   rails: { state: OfferKind; y1: number; ticks: number[] }[];
+  /** "Show hidden": the heading of the options not offered, when listed. */
+  hidden?: { y: number; shown: number; total: number };
 };
 /** A group heading: in edit mode it folds (2026-10-14); folded, it says how many cards and whether one changed. */
 type GroupLabel = { key: string; title: string; y: number; count?: number; folded?: boolean; changed?: boolean };
@@ -397,6 +402,9 @@ const MOVE_CHILD: Partial<Record<TableKey, TableKey[]>> = {
   customizationCategory: ["customizationType"], solution: ["inspiration", "solutionStyle"],
 };
 
+/** The references a search matches on a card: its registry code and, for a product, its SKU (2026-10-22). */
+const refsOf = (n: { code: string | null; sku?: string }) => [n.code, n.sku].filter(Boolean).join(" ").toLowerCase();
+
 export function SpecMap({ data, focus = null }: { data: SpecMapData; focus?: { level: string; id: string } | null }) {
   return (
     <RuleEditSessionProvider>
@@ -428,6 +436,14 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
   );
   const [status, setStatus] = useState<string>(ALL);
   const [selected, setSelected] = useState<number | null>(null);
+  /** The edit column whose hidden records are listed to add from, if any (Richard, 2026-10-22). */
+  const [hiddenCol, setHiddenCol] = useState<string | null>(null);
+  /** The offer kinds that were open before "Show hidden" folded them. */
+  const foldedKinds = useRef<Set<OfferKind> | null>(null);
+  useEffect(() => {
+    setHiddenCol(null);
+    if (foldedKinds.current) { setOpenGroups(foldedKinds.current); foldedKinds.current = null; }
+  }, [selected, sessionEditing]);
   const [onlyRelated, setOnlyRelated] = useState(true);
   const [scrollTo, setScrollTo] = useState<number | null>(null);
   const area = useRef<HTMLDivElement>(null);
@@ -931,6 +947,27 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
       ),
     [levels, collapsed, byLevel, statusOk, parentsOf, colW],
   );
+  /**
+   * What an edit column leaves out (Richard, 2026-10-22): a product's options not offered; an option's
+   * options not compatible, and its standard products not offering it. "Show hidden" puts them back in
+   * the column, dashed, each with a + to add it.
+   */
+  const hiddenFor = useCallback((col: string): number[] => {
+    if (!editLayout || !session.canEdit || selected === null) return [];
+    const standard = new Set(session.meta?.standard ?? []);
+    return nodes.flatMap((n, i) => {
+      if (i === selected || !statusOk(i)) return [];
+      if (selLevel === "product" && col === "customizationOption")
+        return n.level === "customizationOption" && !shownOffers.has(i) ? [i] : [];
+      if (selLevel === "customizationOption" && col === COMPATIBLE)
+        return n.level === "customizationOption" && !compatOptionsShown.has(i) && Boolean(session.meta?.optionType[n.id]) ? [i] : [];
+      if (selLevel === "customizationOption" && col === "product")
+        return n.level === "product" && standard.has(n.id) && !compatibleShown.has(i) ? [i] : [];
+      return [];
+    });
+  }, [editLayout, session.canEdit, session.meta, selected, selLevel, nodes, statusOk, shownOffers, compatOptionsShown, compatibleShown]);
+  const hiddenShown = useMemo(() => new Set(hiddenCol ? hiddenFor(hiddenCol) : []), [hiddenCol, hiddenFor]);
+
   /** Related cards only, every level open, gathered at the top (Eric, 2026-10-09). */
   const focus = useMemo(() => {
     if (!focusing) return null;
@@ -991,12 +1028,14 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
         {
           key: "compatible", level: COMPATIBLE,
           items: [...compatOptionsShown].filter(statusOk),
+          hidden: hiddenCol === COMPATIBLE ? [...hiddenShown] : [],
           groupOf: (i: number) => titleOf(parentsOf[i]?.[0]),
           placeholder: EDIT.filterCompatible,
         },
         {
           key: "product", level: "product" as TableKey,
           items: [...compatibleShown].filter((i) => nodes[i]!.level === "product" && statusOk(i)),
+          hidden: hiddenCol === "product" ? [...hiddenShown] : [],
           groupOf: (i: number) => {
             const style = parentsOf[i]?.[0];
             const line = style === undefined ? undefined : parentsOf[style]?.[0];
@@ -1010,16 +1049,16 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
         const x = PAD + levels.indexOf(c.level) * colW;
         const needle = (colQ[c.key] ?? "").trim().toLowerCase();
         const hit = (i: number) => !needle || nodes[i]!.title.toLowerCase().includes(needle)
-          || (nodes[i]!.code ?? "").toLowerCase().includes(needle) || c.groupOf(i).toLowerCase().includes(needle);
+          || refsOf(nodes[i]!).includes(needle) || c.groupOf(i).toLowerCase().includes(needle);
         for (const i of c.items) f.pos.delete(i);
         const groups = new Map<string, number[]>();
-        for (const i of c.items.filter(hit)) groups.set(c.groupOf(i), [...(groups.get(c.groupOf(i)) ?? []), i]);
+        for (const i of [...c.items, ...c.hidden].filter(hit)) groups.set(c.groupOf(i), [...(groups.get(c.groupOf(i)) ?? []), i]);
         const labels: GroupLabel[] = [];
         let y = HEAD_H + FILTER_H;
         for (const [g, cards] of [...groups].sort((a, b) => a[0].localeCompare(b[0]))) {
           const groupKey = `${c.key}:${g}`;
           const isFolded = !needle && folded.has(groupKey);
-          labels.push({ key: groupKey, title: g || EDIT.noGroup, y, count: cards.length, folded: isFolded, changed: cards.some((i) => touched.has(i)) });
+          labels.push({ key: groupKey, title: g || EDIT.noGroup, y, count: cards.filter((i) => !hiddenShown.has(i)).length, folded: isFolded, changed: cards.some((i) => touched.has(i)) });
           y += TYPE_H;
           if (isFolded) continue;
           for (const i of cards.sort((a, b) => nodes[a]!.title.localeCompare(nodes[b]!.title))) {
@@ -1028,7 +1067,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
           }
         }
         height = Math.max(height, y);
-        return { key: c.key, x, filterY: HEAD_H, labels, placeholder: c.placeholder, shown: [...groups.values()].flat().length, total: c.items.length };
+        return { key: c.key, x, filterY: HEAD_H, labels, placeholder: c.placeholder, shown: [...groups.values()].flat().filter((i) => !hiddenShown.has(i)).length, total: c.items.length };
       });
       return { ...f, height, offer: null, editCols, grouped, propRails };
     }
@@ -1040,18 +1079,39 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     const matches = (i: number) =>
       !needle ||
       nodes[i]!.title.toLowerCase().includes(needle) ||
-      (nodes[i]!.code ?? "").toLowerCase().includes(needle);
+      refsOf(nodes[i]!).includes(needle);
     const typeOf = (i: number) => parentsOf[i]?.[0];
     const offer: OfferLayout = { x, filterY: HEAD_H, groups: [], types: [], rails: [] };
     let y = HEAD_H + FILTER_H;
+    // "Show hidden": the options not offered, by type, first under the filter (Richard, 2026-10-22).
+    if (hiddenCol === "customizationOption") {
+      const hit = [...hiddenShown].filter(matches);
+      offer.hidden = { y, shown: hit.length, total: hiddenShown.size };
+      y += GROUP_ROW;
+      const byType = new Map<number, number[]>();
+      for (const i of hit) byType.set(typeOf(i) ?? -1, [...(byType.get(typeOf(i) ?? -1) ?? []), i]);
+      for (const [t, cards] of [...byType].sort((a, b) => (parentsOf[a[0]]?.[0] ?? -1) - (parentsOf[b[0]]?.[0] ?? -1) || a[0] - b[0])) {
+        const typeKey = `hidden:${t}`;
+        const isFolded = !needle && folded.has(typeKey);
+        offer.types.push({ key: typeKey, title: t >= 0 ? nodes[t]!.title : COPY.otherType, y, count: cards.length, folded: isFolded, changed: cards.some((i) => touched.has(i)) });
+        y += TYPE_H;
+        if (isFolded) continue;
+        for (const i of cards.sort((a, b) => nodes[a]!.title.localeCompare(nodes[b]!.title))) {
+          f.pos.set(i, { x: x + INDENT, y });
+          y += ROW_H;
+        }
+      }
+      y += GROUP_GAP;
+    }
     for (const state of OFFER_ORDER) {
       if (!offerKinds.has(state)) continue;
       const all = [...shownOffers]
         .filter(([i, k]) => k === state && statusOk(i))
         .map(([i]) => i);
       const hit = all.filter(matches);
-      // Filtering opens every group with a match and closes the rest.
-      const open = hit.length > 0 && (needle ? true : openGroups.has(state));
+      // Filtering opens every group with a match and closes the rest — except while the hidden options are
+      // listed above: the kinds stay folded unless opened by hand, so the filter works on the hidden ones.
+      const open = hit.length > 0 && (needle && hiddenCol !== "customizationOption" ? true : openGroups.has(state));
       offer.groups.push({ state, y, shown: hit.length, total: all.length, open });
       const y1 = y + GROUP_H;
       y += GROUP_ROW;
@@ -1121,6 +1181,8 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     colQ,
     folded,
     touched,
+    hiddenCol,
+    hiddenShown,
   ]);
 
   const targetOf = (i: number) =>
@@ -1368,7 +1430,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
       .filter(
         ({ n }) =>
           n.title.toLowerCase().includes(needle) ||
-          (n.code ?? "").toLowerCase().includes(needle),
+          refsOf(n).includes(needle),
       )
       .slice(0, 8);
   }, [q, nodes]);
@@ -1617,14 +1679,30 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                 parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "",
                 session.meta?.decidedBy[session.meta.optionType[n.id] ?? ""] === "customization" ? EDIT.asException : "",
               ].filter(Boolean).join(" · "),
+              keys: n.code ?? "",
             }]
           : []);
     }
     const standard = new Set(session.meta?.standard ?? []);
     const offering = after?.products ?? compatible;
     return nodes.flatMap((n, i) =>
-      n.level === "product" && standard.has(n.id) && !offering.has(i) ? [{ id: n.id, title: n.title, group: n.code ?? "" }] : []);
+      n.level === "product" && standard.has(n.id) && !offering.has(i) ? [{ id: n.id, title: n.title, group: n.sku ?? n.code ?? "", keys: [n.sku, n.code].filter(Boolean).join(" ") }] : []);
   }, [editingHere, sel, nodes, after, offers, compatible, parentsOf, session.meta]);
+  /** Options an option in focus can be made compatible with: every option the rules know, Not active ones included. */
+  const compatChoices = useMemo(() => {
+    if (!editingHere || sel?.level !== "customizationOption") return [];
+    return nodes.flatMap((n, i) =>
+      n.level === "customizationOption" && i !== selected && !compatOptionsShown.has(i) && Boolean(session.meta?.optionType[n.id])
+        ? [{ id: n.id, title: n.title, group: parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "", keys: n.code ?? "" }]
+        : []);
+  }, [editingHere, sel, nodes, selected, compatOptionsShown, session.meta, parentsOf]);
+  /** Offer what a picker or a hidden card names: an option on the product in focus, or the option in focus on a product. */
+  const addHere = (c: Choice) => {
+    const i = indexOf.get(`${sel!.level === "product" ? "customizationOption" : "product"}:${c.id}`);
+    if (sel!.level === "product") offerOn(sel!.id, c.id, true, i !== undefined && offers.has(i));
+    else offerOn(c.id, sel!.id, true, i !== undefined && compatible.has(i));
+  };
+  const makeCompatible = (c: Choice) => session.put({ kind: "pair", a: sel!.id, b: c.id, compatible: true });
   const relatedIn = (level: TableKey) =>
     related ? [...related].filter((i) => nodes[i]!.level === level).length : 0;
   const elsewhere = TABLE_GROUPS.filter(
@@ -1646,7 +1724,9 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                 ? i === trace ? "outline-2 outline-offset-2 outline-blue-600" : "outline-2 outline-offset-1 outline-blue-500/70"
                 : "";
               // Hung under a heading in its own column: an offered option, or a value under its property.
-              const indented = Boolean(offer) || (productFocus && n.level === "productValue");
+              // Listed by "Show hidden": not offered / not compatible yet, + adds it (Richard, 2026-10-22).
+              const hiddenCard = hiddenShown.has(i);
+              const indented = Boolean(offer) || (productFocus && n.level === "productValue") || (hiddenCard && n.level === "customizationOption" && sel?.level === "product");
               const gone = isGone(i);
               // A related card from a collapsed level (property values) has no resting place: once the
               // others have moved it rises into its own column from below, row by row (Eric, 2026-10-09).
@@ -1709,6 +1789,8 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                             ? "border-dashed border-red-500 opacity-70"
                             : change?.kind === "change"
                               ? "border-amber-500 ring-1 ring-amber-500/50"
+                              : hiddenCard
+                                ? pending.length ? "border-dashed border-green-600 bg-green-50/60 dark:bg-green-950/30" : "border-dashed border-muted-foreground/40 bg-muted/40 text-muted-foreground"
                               : compatibleShown.has(i)
                           ? "border-foreground/60 ring-1 ring-foreground/40"
                           : potential?.has(i)
@@ -1740,7 +1822,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                           <span className="text-foreground/80">{COPY.via(derivedFrom.get(i)!.map((j) => nodes[j]!.title))} · </span>
                         ) : null}
                         {/* A value under its property heading: the property is not repeated. */}
-                        {[n.code, productFocus && n.level === "productValue" ? null : n.sub].filter(Boolean).join(" · ") || "—"}
+                        {[n.sku ?? n.code, productFocus && n.level === "productValue" ? null : n.sub].filter(Boolean).join(" · ") || "—"}
                       </span>
                     </span>
                     {dot ? (
@@ -1750,6 +1832,16 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                       />
                     ) : null}
                   </button>
+                  {/* The map's own corner actions: + to add, and undo once it is in the tray (2026-10-22). */}
+                  {hiddenCard && !gone ? (
+                    pending.length ? (
+                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => pending.forEach((e) => session.remove(editKey(e)))} />
+                    ) : n.level === "customizationOption" && sel?.level === "customizationOption" ? (
+                      <CardAction icon={CirclePlus} label={EDIT.makeThisCompatible(n.title)} onClick={() => makeCompatible({ id: n.id, title: n.title, group: "" })} />
+                    ) : (
+                      <CardAction icon={CirclePlus} label={EDIT.offerThis(n.title)} onClick={() => addHere({ id: n.id, title: n.title, group: "" })} />
+                    )
+                  ) : null}
                   {/* Pin a card's links so they stay marked while the columns scroll. */}
                   {focus && !from && !gone && i !== selected && (pinned === i || (hovered === i && pinned === null)) ? (
                     <button
@@ -1793,7 +1885,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                         onClick={() => session.put({ kind: "pair", a: sel!.id, b: n.id, compatible: false })} />
                     ) : null
                   ) : null}
-                  {target && !gone ? (
+                  {target && !gone && !hiddenCard ? (
                     // One meaning per icon (2026-10-14): ↺ only undoes your own pending change; ⊖ stops
                     // offering; ⊕ offers again. Each makes exactly the edit its label says, or refuses.
                     target.direct ? (
@@ -1875,7 +1967,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {LEVEL_INFO.get(n.level)?.label}
-                      {n.code ? ` · ${n.code}` : ""}
+                      {n.sku ?? n.code ? ` · ${n.sku ?? n.code}` : ""}
                     </span>
                   </button>
                 </li>
@@ -2066,22 +2158,14 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
             className="max-w-sm"
             choices={addChoices}
             placeholder={sel!.level === "product" ? EDIT.addOptionHere : EDIT.addProductHere}
-            onPick={(c) => {
-              const i = indexOf.get(`${sel!.level === "product" ? "customizationOption" : "product"}:${c.id}`);
-              if (sel!.level === "product") offerOn(sel!.id, c.id, true, i !== undefined && offers.has(i));
-              else offerOn(c.id, sel!.id, true, i !== undefined && compatible.has(i));
-            }}
+            onPick={addHere}
           />
           {sel!.level === "customizationOption" ? (
             <Picker
               className="max-w-sm"
-              choices={nodes.flatMap((n, i) =>
-                // Options the rules know (session.meta): every published option, Not active ones included.
-                n.level === "customizationOption" && i !== selected && !compatOptionsShown.has(i) && Boolean(session.meta?.optionType[n.id])
-                  ? [{ id: n.id, title: n.title, group: parentsOf[i]?.[0] !== undefined ? nodes[parentsOf[i]![0]!]!.title : "" }]
-                  : [])}
+              choices={compatChoices}
               placeholder={EDIT.makeCompatible}
-              onPick={(c) => session.put({ kind: "pair", a: sel!.id, b: c.id, compatible: true })}
+              onPick={makeCompatible}
             />
           ) : null}
           {editNote ? <span className="text-xs text-destructive">{editNote}</span> : null}
@@ -2209,6 +2293,21 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                   <ColumnHeader
                     key={level}
                     {...head}
+                    action={editingHere && editLayout && (level === "customizationOption" ? selLevel === "product" : selLevel === "customizationOption") ? (
+                      <ShowHiddenToggle
+                        open={hiddenCol === level}
+                        count={hiddenFor(level).length}
+                        onClick={() => {
+                          const on = hiddenCol !== level;
+                          setHiddenCol(on ? level : null);
+                          // A product's kinds fold while its hidden options are listed first, and reopen after.
+                          if (level === "customizationOption") {
+                            if (on) { foldedKinds.current = openGroups; setOpenGroups(new Set()); }
+                            else if (foldedKinds.current) { setOpenGroups(foldedKinds.current); foldedKinds.current = null; }
+                          }
+                        }}
+                      />
+                    ) : null}
                     name={level === "product" ? EDIT.offeredOn : level === COMPATIBLE ? EDIT.compatibleWith : COPY.offered}
                     relation={level === "customizationOption" && sel ? COPY.relation(MAP_ENTITY[sel.level] ?? "", COPY.verb.offers) : null}
                     count={
@@ -2320,7 +2419,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                   <button
                     key={g.state}
                     type="button"
-                    disabled={!g.total || Boolean(offerQ.trim())}
+                    disabled={!g.total || (Boolean(offerQ.trim()) && hiddenCol !== "customizationOption")}
                     aria-expanded={g.open}
                     onClick={() =>
                       setOpenGroups((s) => {
@@ -2352,6 +2451,18 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                     </span>
                   </button>
                 ))}
+                {offerUi.hidden ? (
+                  <div
+                    className="absolute z-[13] flex items-center gap-2 rounded-md border border-dashed border-primary/50 bg-card px-2.5 text-xs font-semibold text-foreground"
+                    style={{ left: offerUi.x, top: offerUi.hidden.y - offAt(offerUi.x), width: cardW, height: GROUP_H }}
+                  >
+                    <EyeOff className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                    <span className="truncate">{EDIT.notOffered}</span>
+                    <span className="ml-auto shrink-0 font-normal tabular-nums text-muted-foreground">
+                      {offerQ.trim() ? COPY.ofTotal(offerUi.hidden.shown, offerUi.hidden.total) : offerUi.hidden.total}
+                    </span>
+                  </div>
+                ) : null}
                 {offerUi.types.map((t) => (
                   <GroupHeading key={t.key} label={{ ...t, y: t.y - offAt(offerUi.x) }} left={offerUi.x + INDENT} width={cardW - INDENT} foldable={editLayout} onToggle={() => toggleFold(t.key)} />
                 ))}
@@ -2532,7 +2643,8 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                 <Icon className="size-4 shrink-0 text-muted-foreground" />
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium text-foreground">{n.title}</span>
-                  {n.code ? <span className="truncate font-mono text-[11px] text-muted-foreground">{n.code}</span> : null}
+                  {/* One reference fits on a card: a product's SKU, else the registry code (2026-10-22). */}
+                  {n.sku ? <span className="truncate font-mono text-[11px] font-semibold text-foreground/80">{n.sku}</span> : n.code ? <span className="truncate font-mono text-[11px] text-muted-foreground">{n.code}</span> : null}
                 </span>
               </div>
             );
@@ -2588,7 +2700,7 @@ function rail(x: number, y1: number, ticks: number[], off: number): string {
  * A column's header (Richard, 2026-10-14): the relation into it on a small line ("Line has →"), then
  * icon, name and count — no level number, no fold (a column never folds).
  */
-function ColumnHeader({ left, width, icon: Icon, name, title, relation, count }: {
+function ColumnHeader({ left, width, icon: Icon, name, title, relation, count, action }: {
   left: number;
   width: number;
   icon: LucideIcon;
@@ -2596,10 +2708,15 @@ function ColumnHeader({ left, width, icon: Icon, name, title, relation, count }:
   title?: string;
   relation: string | null;
   count: number | string;
+  /** A control on the relation line's right, e.g. an edit column's "Show hidden". */
+  action?: React.ReactNode;
 }) {
   return (
     <div className="absolute z-20 flex flex-col justify-center gap-0.5" style={{ left, top: 6, width, height: HEAD_H - 14 }}>
-      <span className="truncate text-[11px] leading-[14px] text-muted-foreground">{relation ?? "\u00a0"}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="min-w-0 truncate text-[11px] leading-[14px] text-muted-foreground">{relation ?? "\u00a0"}</span>
+        {action ? <span className="ml-auto shrink-0">{action}</span> : null}
+      </div>
       <div className="flex min-w-0 items-center gap-2">
         <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         <ColumnName title={title}>{name}</ColumnName>
@@ -2655,3 +2772,22 @@ function GroupHeading({ label: l, left, width, foldable, onToggle }: { label: Gr
     </button>
   );
 }
+
+/** An edit column's "Show hidden (N)" switch, on its header (Richard, 2026-10-22). */
+function ShowHiddenToggle({ open, count, onClick }: { open: boolean; count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={open}
+      disabled={!count && !open}
+      onClick={onClick}
+      title={open ? EDIT.hideHidden : EDIT.showHiddenTitle}
+      className={`flex h-[18px] items-center gap-1 rounded-full border px-1.5 text-[11px] leading-none tabular-nums transition-colors disabled:opacity-40 ${open ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground enabled:hover:border-primary enabled:hover:text-foreground"}`}
+    >
+      {open ? <EyeOff className="size-3" aria-hidden /> : <Eye className="size-3" aria-hidden />}
+      {open ? EDIT.hideHidden : EDIT.showHidden}
+      <span className={open ? "" : "text-foreground"}>{count}</span>
+    </button>
+  );
+}
+

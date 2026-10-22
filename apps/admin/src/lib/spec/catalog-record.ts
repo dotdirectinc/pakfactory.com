@@ -29,6 +29,8 @@ export type CatalogRecord = {
   title: string;
   status: string | null;
   registry?: RegistryIdentity;
+  /** A product's or inspiration product's SKU: shown before its registry code (2026-10-22). */
+  sku?: string;
   images: string[];
   rulesHref: string | null;
   /** Its fields, in sections (record-sections.ts). */
@@ -146,6 +148,7 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
         title: String(doc.title ?? id),
         status: typeof doc.status === "string" ? doc.status : null,
         ...(entityId && entityCode ? { registry: { entityId, entityCode } } : {}),
+        ...((key === "product" || key === "inspiration") && typeof doc.sku === "string" && doc.sku.trim() ? { sku: doc.sku.trim() } : {}),
         images: (doc._images ?? []).filter((u): u is string => Boolean(u)),
         rulesHref: spec.rules ? spec.rules(doc) : null,
         sections: recordSections(doc, refs),
@@ -159,4 +162,4 @@ async function fetchRecord(key: TableKey, id: string): Promise<Loaded<CatalogRec
 }
 
 // v2: fields in sections, with reference groups (2026-10-14).
-export const getCatalogRecord = cachedSpec("catalog-record-v3" /* v3: children carry their table (PROD-3007) */, fetchRecord);
+export const getCatalogRecord = cachedSpec("catalog-record-v4" /* v4: a product's SKU (2026-10-22) */, fetchRecord);

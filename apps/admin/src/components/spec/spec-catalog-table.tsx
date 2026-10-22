@@ -71,6 +71,9 @@ function moveTo(list: string[], key: string, target: string) {
   return next;
 }
 
+/** Searched whatever columns are shown: how people name a record. */
+const ALWAYS_SEARCHED = ["title", "sku", "entityCode"];
+
 /**
  * A read-only, Notion-like table of one record type (PROD-2926). Toolbar: search, Filter (status,
  * parent — shown as removable chips), Columns (show/hide and drag to reorder). Each header has a
@@ -122,7 +125,8 @@ export function SpecCatalogTable({ table }: { table: CatalogTable }) {
       (r) =>
         (!status || r.cells.status === status) &&
         (!parent || (table.parent && split(r.cells[table.parent]).includes(parent))) &&
-        (!needle || visible.some((k) => String(r.cells[k] ?? "").toLowerCase().includes(needle))),
+        // The name, SKU and registry code always match, shown or not (2026-10-22); other columns when shown.
+        (!needle || [...new Set([...ALWAYS_SEARCHED, ...visible])].some((k) => String(r.cells[k] ?? "").toLowerCase().includes(needle))),
     );
     if (sort) out = [...out].sort((a, b) => sort.dir * compare(a, b, sort.key));
     return out;

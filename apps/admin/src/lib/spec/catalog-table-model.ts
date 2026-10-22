@@ -68,7 +68,8 @@ export const SPECS: Record<TableKey, TableSpec> = {
   productStyle: { type: "productStyle", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "productLine"], parent: "productLine" },
   product: {
     type: "product", filter: `kind != "inspiration"`, image: PRIMARY_IMAGE, parent: "productLine",
-    defaults: ["entityCode", "status", "productLine", "productStyle", "rulesListed", "rulesDerived", "rulesExceptions", "moq", "leadTimeBusinessDaysMin", "leadTimeBusinessDaysMax"],
+    // SKU first: the number people quote (2026-10-22); the registry code beside it.
+    defaults: ["sku", "entityCode", "status", "productLine", "productStyle", "rulesListed", "rulesDerived", "rulesExceptions", "moq", "leadTimeBusinessDaysMin", "leadTimeBusinessDaysMax"],
     // Every standard product has a rules view, whatever its status (the product view reads them all).
     rules: (d) => `/spec/products/${encodeURIComponent(d._id)}`,
   },
@@ -84,7 +85,7 @@ export const SPECS: Record<TableKey, TableSpec> = {
   solutionStyle: { type: "solutionStyle", image: PRIMARY_IMAGE, defaults: ["entityCode", "status", "solution"], parent: "solution" },
   inspiration: {
     type: "product", filter: `kind == "inspiration"`, image: PRIMARY_IMAGE, parent: "solutions",
-    defaults: ["entityCode", "status", "basedOn", "solutions"],
+    defaults: ["sku", "entityCode", "status", "basedOn", "solutions"],
   },
   // One row per property value (properties are one shared vocabulary): the values of every property
   // the stream uses, with how many of its records use each. The loader adds the usage fields.

@@ -1,7 +1,7 @@
 "use client";
 
 import { InlineLoading } from "@/components/ui/page-skeleton";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
@@ -158,7 +158,7 @@ function Fields({ data, editing, pending }: { data: EditableData; editing: boole
                   <button type="button" aria-label={COPY.remove(newExc.option.title)} onClick={() => setNewExc((x) => ({ ...x, option: null }))}><X className="size-3" /></button>
                 </Badge>
               ) : (
-                <Picker choices={data.exceptionChoices} placeholder={COPY.exceptionOption} onPick={(c) => setNewExc((x) => ({ ...x, option: c }))} />
+                <Picker multi={false} choices={data.exceptionChoices} placeholder={COPY.exceptionOption} onPick={(c) => setNewExc((x) => ({ ...x, option: c }))} />
               )}
               <Input value={newExc.reason} onChange={(e) => setNewExc((x) => ({ ...x, reason: e.target.value }))} placeholder={COPY.reason} aria-label={COPY.reason} className="h-8 max-w-sm flex-1" />
               <Button size="sm" variant="outline" disabled={!newExc.option || !newExc.reason.trim()}
@@ -331,32 +331,72 @@ function Groups({ groups, onRemove, onRemoveGroup, adder }: { groups: Choice[][]
   );
 }
 
-/** A search box over grouped choices. */
-export function Picker({ choices, placeholder, onPick, className = "max-w-sm" }: { choices: Choice[]; placeholder: string; onPick: (c: Choice) => void; className?: string }) {
+/** A choice matches a search on its name, its group, or its codes (SKU, registry code — 2026-10-22). */
+export const choiceMatches = (c: Choice, needle: string) =>
+  c.title.toLowerCase().includes(needle) || c.group.toLowerCase().includes(needle) || (c.keys ?? "").toLowerCase().includes(needle);
+
+/**
+ * A search box over grouped choices that adds as you go, like tagging people in a post (Richard,
+ * 2026-10-22): pick with a click, Enter or Tab and the box stays focused for the next; ↑/↓ move through
+ * the matches; "Add all" adds every match at once (type "Paperboard" for all 14 boards). `multi={false}`
+ * for a picker that takes one choice (an exception's option).
+ */
+export function Picker({ choices, placeholder, onPick, className = "max-w-sm", multi = true }: { choices: Choice[]; placeholder: string; onPick: (c: Choice) => void; className?: string; multi?: boolean }) {
   const [q, setQ] = useState("");
-  const hits = useMemo(() => {
+  const [at, setAt] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const matches = useMemo(() => {
     const n = q.trim().toLowerCase();
     if (n.length < 2) return [];
-    return choices.filter((c) => c.title.toLowerCase().includes(n) || c.group.toLowerCase().includes(n)).slice(0, 12);
+    return choices.filter((c) => choiceMatches(c, n));
   }, [q, choices]);
+  const hits = matches.slice(0, 50);
+  const all = multi && matches.length > 1;
+  // Row 0 is "Add all" when shown; the matches follow.
+  const rows = (all ? 1 : 0) + hits.length;
+  const pick = (row: number) => {
+    if (all && row === 0) matches.forEach(onPick);
+    else { const c = hits[row - (all ? 1 : 0)]; if (c) onPick(c); }
+    setQ("");
+    setAt(0);
+    input.current?.focus();
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") { setQ(""); return; }
+    if (!rows) return; // Tab with nothing typed moves on as usual.
+    if (e.key === "ArrowDown") { e.preventDefault(); setAt((x) => Math.min(x + 1, rows - 1)); }
+    if (e.key === "ArrowUp") { e.preventDefault(); setAt((x) => Math.max(x - 1, 0)); }
+    if (e.key === "Enter" || (e.key === "Tab" && !e.shiftKey)) { e.preventDefault(); pick(at); }
+  };
+  const row = (i: number) => `flex w-full items-baseline gap-2 px-3 py-1.5 text-left hover:bg-muted ${i === at ? "bg-muted" : ""}`;
   return (
     <div className={`relative w-full ${className}`}>
       {/* An "add" field, not a filter: it has to stand out from the grey page around it (2026-10-22, Crystal
           missed it on the Map and on the record page). */}
       <Plus className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-primary" aria-hidden />
-      <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Escape" && setQ("")} placeholder={placeholder} aria-label={placeholder}
+      <Input ref={input} value={q} onChange={(e) => { setQ(e.target.value); setAt(0); }} onKeyDown={onKeyDown} placeholder={placeholder} aria-label={placeholder}
         className="h-8 border-primary bg-background pl-8 shadow-xs placeholder:font-medium placeholder:text-foreground/80 hover:bg-primary/5" />
-      {hits.length ? (
-        <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-border bg-popover text-sm shadow-md">
-          {hits.map((c) => (
+      {rows ? (
+        <ul className="absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-border bg-popover text-sm shadow-md">
+          {all ? (
+            <li>
+              {/* mousedown, not click: the input keeps focus, so the next search can be typed at once. */}
+              <button type="button" className={`${row(0)} border-b border-border font-medium text-primary`} onMouseDown={(e) => { e.preventDefault(); pick(0); }}>
+                <Plus className="size-3 shrink-0" />
+                {COPY.addAll(matches.length, q.trim())}
+              </button>
+            </li>
+          ) : null}
+          {hits.map((c, i) => (
             <li key={c.id}>
-              <button type="button" className="flex w-full items-baseline gap-2 px-3 py-1.5 text-left hover:bg-muted" onClick={() => { onPick(c); setQ(""); }}>
+              <button type="button" className={row(i + (all ? 1 : 0))} onMouseDown={(e) => { e.preventDefault(); pick(i + (all ? 1 : 0)); }}>
                 <Plus className="size-3 shrink-0 text-muted-foreground" />
                 <span className="truncate">{c.title}</span>
                 <span className="ml-auto shrink-0 text-xs text-muted-foreground">{c.group}</span>
               </button>
             </li>
           ))}
+          {matches.length > hits.length ? <li className="px-3 py-1.5 text-xs text-muted-foreground">{COPY.moreMatches(matches.length - hits.length)}</li> : null}
         </ul>
       ) : null}
     </div>
