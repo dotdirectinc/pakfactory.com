@@ -86,6 +86,7 @@ export function CustomizationOverviewStandard({
                     featuredVideoUrl={detail.featuredVideoUrl}
                     wellSizes={CUSTOMIZATION_GALLERY_WELL_SIZES}
                     wellPrefetchWidth={CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH}
+                    wellMaxLoaderWidth={CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH}
                 />
                 <div>
                     <div className="flex items-center justify-between gap-4">
