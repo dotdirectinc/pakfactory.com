@@ -80,7 +80,7 @@ async function accessToken(): Promise<string | null> {
 async function call<T>(
   path: string,
   init?: { method?: string; body?: unknown },
-): Promise<{ ok: true; data: T; page?: { has_more: boolean } } | { ok: false; status: number; error: string; code?: string; errors?: string[] }> {
+): Promise<{ ok: true; data: T; page?: { has_more: boolean } } | { ok: false; status: number; error: string; code?: string; errors?: string[]; skusNeeded?: SkuNeeded[] }> {
   const started = performance.now();
   const token = await accessToken();
   const tokenMs = Math.round(performance.now() - started);
@@ -106,7 +106,7 @@ async function call<T>(
   // PROD-3116: each registry call's time (token lookup + request), in the server logs.
   console.info(`[timing] api ${init?.method ?? "GET"} ${path.split("?")[0]} ${res.status} ${Math.round(performance.now() - started)}ms (token ${tokenMs})`);
   const body = (await res.json().catch(() => null)) as
-    | { data?: T; page?: { has_more: boolean }; error?: string | { code?: string; message?: string; errors?: string[] }; code?: string }
+    | { data?: T; page?: { has_more: boolean }; error?: string | { code?: string; message?: string; errors?: string[]; skusNeeded?: SkuNeeded[] }; code?: string }
     | null;
 
   if (!res.ok) {
@@ -118,6 +118,7 @@ async function call<T>(
       error: (typeof err === "string" ? err : err?.message) ?? `Registry API returned ${res.status}.`,
       code: typeof err === "object" && err ? err.code : body?.code,
       ...(typeof err === "object" && err?.errors ? { errors: err.errors } : {}),
+      ...(typeof err === "object" && err?.skusNeeded?.length ? { skusNeeded: err.skusNeeded } : {}),
     };
   }
   return { ok: true, data: (body?.data ?? body) as T, page: body?.page };
@@ -439,6 +440,12 @@ export type RegistryRuleEdit =
   | { kind: "offer"; productId: string; optionId: string; offered: boolean }
   | { kind: "exception"; productId: string; optionId: string; mode: "add" | "remove"; reason: string | null };
 
+/**
+ * A product the moves take to another line or base, which needs a new SKU (backend 20261022200000):
+ * registry product id, its name and current SKU, and why the set was refused for it.
+ */
+export type SkuNeeded = { productId: string; name: string; sku: string; why: string };
+
 /** A structure move as the backend takes it (PROD-3006): registry ids. */
 export type RegistryMove =
   | { kind: "productPlacement"; productId: string; lineId: string; styleIds: string[] }
@@ -459,13 +466,13 @@ export type RuleEditResult = {
 };
 
 /** One frame from a set of rule edits and moves; `approve` = Submit & approve. */
-export async function submitRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; moves?: RegistryMove[]; approve: boolean; note?: string; impact?: unknown }) {
+export async function submitRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; moves?: RegistryMove[]; skus?: Record<string, string>; approve: boolean; note?: string; impact?: unknown }) {
   return call<RuleEditResult>("/api/v1/rule-edits", { method: "POST", body });
 }
 
 /** The server's check of a set (PROD-3007): what it would refuse, its sentences and the codes it would reissue. Creates nothing. */
 export type RuleEditCheck = { dry_run: true; sentences: string[]; items: number; codes: { id: string; code: string }[]; documents: number };
-export async function checkRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; moves: RegistryMove[] }) {
+export async function checkRuleEdits(body: { dataset: string; edits: RegistryRuleEdit[]; moves: RegistryMove[]; skus?: Record<string, string> }) {
   return call<RuleEditCheck>("/api/v1/rule-edits/check", { method: "POST", body });
 }
 

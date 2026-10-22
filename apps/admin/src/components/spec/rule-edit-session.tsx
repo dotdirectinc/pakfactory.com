@@ -54,6 +54,14 @@ type Session = {
   /** Edits that change nothing must be kept on purpose (2026-10-14). */
   keepNoEffect: boolean;
   setKeepNoEffect: (b: boolean) => void;
+  /**
+   * New SKUs for products the moves take to another line or base (backend 20261022200000), by product
+   * Sanity id; `skuAsk` is every product the server has asked about for these edits, so its input stays
+   * while the SKU is being typed and after it is accepted.
+   */
+  skus: Record<string, string>;
+  setSku: (productId: string, sku: string) => void;
+  skuAsk: { id: string; name: string; sku: string }[];
   /** After a submit, until the views have re-read the rules: edit controls stay disabled. */
   refreshing: boolean;
   /** Called by a view once it has re-read the rules after a submit. */
@@ -85,6 +93,9 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [version, setVersion] = useState(0);
   const [keepNoEffect, setKeepNoEffect] = useState(false);
+  const [skus, setSkus] = useState<Record<string, string>>({});
+  const [skuAsk, setSkuAsk] = useState<Session["skuAsk"]>([]);
+  const setSku = useCallback((productId: string, sku: string) => setSkus((m) => ({ ...m, [productId]: sku })), []);
   const [refreshing, setRefreshing] = useState(false);
   const markFresh = useCallback(() => setRefreshing(false), []);
   const refresh = useCallback(() => { setRefreshing(true); setVersion((v) => v + 1); }, []);
@@ -111,7 +122,7 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
     });
   }, []);
   const remove = useCallback((key: string) => setByKey((m) => { const x = new Map(m); x.delete(key); return x; }), []);
-  const clear = useCallback(() => { setByKey(new Map()); setAck(false); setNote(""); setSubmitError(null); setEditing(false); setMoving(false); }, []);
+  const clear = useCallback(() => { setByKey(new Map()); setAck(false); setNote(""); setSubmitError(null); setEditing(false); setMoving(false); setSkus({}); setSkuAsk([]); }, []);
   const setOffered = useCallback((productId: string, optionId: string, want: boolean, offeredNow: boolean) => {
     setResult(null);
     // Back to what the rules say today: drop whatever edit changed it.
@@ -134,30 +145,40 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
   // The impact check: debounced, re-run on any change to the edits or the focus.
   const editsKey = JSON.stringify(edits);
   const focusKey = focus ? `${focus.level}:${focus.id}` : "";
+  const skusKey = JSON.stringify(skus);
   useEffect(() => {
     setAck(false);
     setKeepNoEffect(false);
+    setSkuAsk([]);
   }, [editsKey]);
   useEffect(() => {
     if (!edits.length) { setPreview(null); setPreviewError(null); return; }
     const t = window.setTimeout(() => startCheck(async () => {
-      const r = await previewRuleEdits(edits, focus);
-      if (r.ok) { setPreview(r.data); setPreviewError(null); } else setPreviewError(r.error);
+      const r = await previewRuleEdits(edits, focus, skus);
+      if (r.ok) {
+        setPreview(r.data);
+        setPreviewError(null);
+        if (r.data.skusNeeded.length) {
+          setSkuAsk((have) => [...have, ...r.data.skusNeeded.filter((x) => !have.some((h) => h.id === x.id)).map(({ id, name, sku }) => ({ id, name, sku }))]);
+        }
+      } else setPreviewError(r.error);
     }), 350);
     return () => window.clearTimeout(t);
-  }, [editsKey, focusKey]); // keyed by content, not identity
+  }, [editsKey, focusKey, skusKey]); // keyed by content, not identity
 
   // A preview for an older set of edits is not this set's: never offer to submit on it.
   const settled = preview !== null && preview.sentences.length === edits.length && !checking;
-  const ready = edits.length > 0 && settled && preview!.errors.length === 0 && (preview!.warnings.length === 0 || ack)
+  const ready = edits.length > 0 && settled && preview!.errors.length === 0 && preview!.skusNeeded.length === 0 && (preview!.warnings.length === 0 || ack)
     && (preview!.noEffect.length === 0 || keepNoEffect) && !submitting;
 
   const submit = useCallback((approve: boolean) => startSubmit(async () => {
     setSubmitError(null);
-    const r = await submitRuleEditsAction(edits, { approve, note: note.trim() || undefined });
+    const r = await submitRuleEditsAction(edits, { approve, note: note.trim() || undefined, skus });
     if (r.ok) {
       setResult(r);
       setByKey(new Map());
+      setSkus({});
+      setSkuAsk([]);
       setNote("");
       setEditing(false);
       setMoving(false);
@@ -165,12 +186,12 @@ export function RuleEditSessionProvider({ children }: { children: React.ReactNod
       setRefreshing(true);
       setVersion((v) => v + 1);
     } else setSubmitError({ error: r.error, errors: r.errors });
-  }), [edits, note]);
+  }), [edits, note, skus]);
 
   const value: Session = {
     edits, put, remove, setOffered, clear, editing, setEditing, moving, setMoving, canEdit, meta, names, addNames, focus, setFocus,
     preview, checking, previewError, ack, setAck, note, setNote, submit, submitting, submitError, result, version, ready,
-    keepNoEffect, setKeepNoEffect, refreshing, markFresh, refresh,
+    keepNoEffect, setKeepNoEffect, skus, setSku, skuAsk, refreshing, markFresh, refresh,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -231,6 +252,7 @@ export function ImpactBox() {
         <>
           {p.errors.map((e) => <p key={e} role="alert" className="text-destructive">✕ {e}</p>)}
           <NoEffectBox />
+          <SkusBox />
           <MovesBox />
           <p>{p.totals.products ? COPY.totals(p.totals) : COPY.noProductChange}</p>
           {p.products.length ? (
@@ -253,6 +275,37 @@ export function ImpactBox() {
           ) : null}
         </>
       )}
+    </div>
+  );
+}
+
+/** A new SKU for each product the moves take to another line or base (backend 20261022200000). */
+function SkusBox() {
+  const s = useRuleEditSession()!;
+  if (!s.skuAsk.length) return null;
+  const why = new Map((s.preview?.skusNeeded ?? []).map((x) => [x.id, x.why]));
+  return (
+    <div className="flex flex-col gap-1.5 rounded-md border border-border p-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{COPY.skus}</span>
+      <p className="text-xs text-muted-foreground">{COPY.skusLead}</p>
+      <ul className="flex flex-col gap-2">
+        {s.skuAsk.map((x) => {
+          const problem = s.skus[x.id]?.trim() ? why.get(x.id) : undefined;
+          return (
+            <li key={x.id} className="flex flex-col gap-1">
+              <label className="text-xs" htmlFor={`sku-${x.id}`}>{COPY.skuFor(x.name, x.sku)}</label>
+              <Input
+                id={`sku-${x.id}`}
+                value={s.skus[x.id] ?? ""}
+                onChange={(ev) => s.setSku(x.id, ev.target.value)}
+                aria-invalid={Boolean(problem)}
+                className={`h-7 font-mono text-xs ${why.has(x.id) ? "border-destructive" : ""}`}
+              />
+              {problem ? <p role="alert" className="text-xs text-destructive">{problem}</p> : null}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

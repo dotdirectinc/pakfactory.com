@@ -617,6 +617,10 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   noProductChange: "No standard product's offer changes.",
   /** Moves (PROD-3007): what the server says each does, and the codes it reissues. */
   moves: "Moves",
+  /** New SKUs (backend 20261022200000): a product moving line or base takes a new SKU; the old one is retired for good. */
+  skus: "New SKUs",
+  skusLead: "A product that moves to another line or base takes a new SKU. Its current SKU is retired for good: no product can ever use it again.",
+  skuFor: (name: string, sku: string) => `New SKU for ${name} (now ${sku})`,
   movesNoOffer: "A product's line, styles and solutions are not part of the customization rules: these moves change no product's offer.",
   codes: (n: number) => `${n} ${n === 1 ? "code is" : "codes are"} reissued under the new parent (the registry id never changes; the old code still finds the record):`,
   documents: (n: number) => `${n} Sanity ${n === 1 ? "document is" : "documents are"} written on approval.`,
