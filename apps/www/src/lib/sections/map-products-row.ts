@@ -30,6 +30,13 @@ export function mapProductsRow(section: PageSectionProductsRowDoc): {
             ...(item.sku?.trim() ? {sku: item.sku.trim()} : {}),
             imageSrc: item.imageSrc ?? null,
             imageAlt: item.imageAlt?.trim() || title,
+            ...(item.hoverImageSrc?.trim()
+                ? {
+                      hoverImageSrc: item.hoverImageSrc.trim(),
+                      hoverImageAlt:
+                          item.hoverImageAlt?.trim() || title,
+                  }
+                : {}),
         });
     }
 

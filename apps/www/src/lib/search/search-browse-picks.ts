@@ -19,6 +19,8 @@ export type BrowseItem = {
     href: string;
     image: string | null;
     imageAlt: string;
+    /** Product `images[1]` when the browse pick is a product (PROD-3130). */
+    hoverImage?: string | null;
     summary: string;
 };
 
@@ -45,6 +47,7 @@ export function toBrowseItem(record: SiteSearchRecord, blogUrl: string): BrowseI
         href: resolveHref(record.href, blogUrl),
         image: record.image ?? null,
         imageAlt: record.imageAlt ?? '',
+        ...(record.hoverImage ? {hoverImage: record.hoverImage} : {}),
         summary: record.summary ?? '',
     };
 }

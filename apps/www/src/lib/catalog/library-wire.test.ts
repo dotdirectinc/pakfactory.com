@@ -62,7 +62,10 @@ const productLibrary: ProductLibraryResult = {
                 {slug: 'food', title: 'Food'},
             ],
             attrs: {closure: ['magnet'], sustainability: ['recyclable']},
-            images: [{src: 'https://cdn.sanity.io/images/x/y/b2.png'}],
+            images: [
+                {src: 'https://cdn.sanity.io/images/x/y/b.png', alt: 'A different alt'},
+                {src: 'https://cdn.sanity.io/images/x/y/b2.png'},
+            ],
         }),
         // Absent alt, reuses refs from the rows above.
         product({

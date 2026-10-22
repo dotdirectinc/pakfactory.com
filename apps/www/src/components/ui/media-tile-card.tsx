@@ -9,6 +9,11 @@ import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 
 import {Icon} from '@/components/ui/icon';
 import {SanityImage} from '@/components/ui/sanity-image';
+import {pickCardHoverStill} from '@/lib/catalog/card-hover-still';
+import {
+    mediaDissolveHoverInClass,
+    mediaDissolveRestHoverOutClass,
+} from '@/lib/ui/media-dissolve';
 import {
     productMediaRestClass,
     productMediaSelfHoverClass,
@@ -37,6 +42,9 @@ export type MediaTileCardProps = {
     onCtaClick?: (event: MouseEvent<HTMLButtonElement>) => void;
     imageSrc?: string | null;
     imageAlt?: string;
+    /** Sanity `images[1]` — related-product rows (PROD-3130). */
+    hoverImageSrc?: string | null;
+    hoverImageAlt?: string;
     className?: string;
     /**
      * Empty media well when `imageSrc` is missing.
@@ -69,6 +77,8 @@ export function MediaTileCard({
     onCtaClick,
     imageSrc,
     imageAlt,
+    hoverImageSrc,
+    hoverImageAlt,
     className,
     emptyMedia = 'package',
     surface = 'default',
@@ -81,6 +91,10 @@ export function MediaTileCard({
     const interactive = onCtaClick != null;
     const markEmpty = emptyMedia === 'mark';
     const {prefetch, enablePrefetch} = usePointerPrefetch(href);
+    const hover = pickCardHoverStill(imageSrc, {
+        src: hoverImageSrc,
+        alt: hoverImageAlt,
+    });
 
     const shellClassName = cn(
         'group flex h-full w-full flex-col overflow-hidden rounded-2xl outline-none',
@@ -107,14 +121,32 @@ export function MediaTileCard({
             )}
         >
             {imageSrc ? (
-                <SanityImage
-                    src={imageSrc}
-                    alt={imageAlt ?? title}
-                    square
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover"
-                />
+                <>
+                    <SanityImage
+                        src={imageSrc}
+                        alt={imageAlt ?? title}
+                        square
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className={cn(
+                            'object-cover',
+                            hover && mediaDissolveRestHoverOutClass,
+                        )}
+                    />
+                    {hover ? (
+                        <SanityImage
+                            src={hover.src}
+                            alt={hover.alt ?? title}
+                            square
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                            className={cn(
+                                'object-cover',
+                                mediaDissolveHoverInClass,
+                            )}
+                        />
+                    ) : null}
+                </>
             ) : markEmpty ? (
                 <span className="flex size-full items-center justify-center text-muted-foreground/40">
                     <PakFactoryMarkIcon size={40} className="-rotate-15" />

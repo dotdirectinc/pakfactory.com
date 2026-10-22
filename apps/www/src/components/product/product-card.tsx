@@ -17,7 +17,12 @@ import {
     stubCompareAction,
 } from '@/lib/catalog-card-actions';
 import {displayProductSku} from '@/lib/catalog/display-sku';
+import {pickCardHoverStill} from '@/lib/catalog/card-hover-still';
 import {useSanityImageSettle} from '@/lib/sanity/use-sanity-image-settle';
+import {
+    mediaDissolveHoverInClass,
+    mediaDissolveRestHoverOutClass,
+} from '@/lib/ui/media-dissolve';
 import {usePointerPrefetch} from '@/lib/ui/use-pointer-prefetch';
 import {Badge} from '@pakfactory/ui/components/badge';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -41,7 +46,7 @@ export type ProductCardData = {
     eyebrowLabel?: string;
     imageUrl?: string | null;
     imageAlt?: string;
-    /** Extra gallery frames; hero is images[0] or imageUrl. */
+    /** Resting still at [0]; hover still at [1] when distinct (PROD-3130). */
     images?: ProductCardImage[];
     moq?: number | string;
     leadTime?: string;
@@ -103,6 +108,7 @@ export function ProductCard({
     const [saved, setSaved] = useState(false);
     const {prefetch, enablePrefetch} = usePointerPrefetch(data.href);
     const gallery = resolveGallery(data);
+    const hover = pickCardHoverStill(gallery[0]?.src, gallery[1]);
 
     function handleBookmark(event: MouseEvent<HTMLButtonElement>) {
         stubBookmarkAction(event);
@@ -125,6 +131,11 @@ export function ProductCard({
             alt={hero.alt ?? data.title}
             applyWatermark={applyWatermark}
             priority={priority}
+            hover={
+                hover
+                    ? {src: hover.src, alt: hover.alt ?? data.title}
+                    : null
+            }
         />
     ) : (
         <div className="pointer-events-none absolute inset-0">
@@ -232,11 +243,13 @@ function ProductCardSettlingImage({
     alt,
     applyWatermark,
     priority,
+    hover,
 }: {
     src: string;
     alt: string;
     applyWatermark: boolean;
     priority: boolean;
+    hover?: {src: string; alt: string} | null;
 }) {
     const {onLoad, onError, imageClassName} = useSanityImageSettle(src);
 
@@ -250,10 +263,25 @@ function ProductCardSettlingImage({
                 priority={priority}
                 square
                 sizes={PRODUCT_CARD_IMAGE_SIZES}
-                className={cn('object-cover', imageClassName)}
+                className={cn(
+                    'object-cover',
+                    imageClassName,
+                    hover && mediaDissolveRestHoverOutClass,
+                )}
                 onLoad={onLoad}
                 onError={onError}
             />
+            {hover ? (
+                <SanityImage
+                    src={hover.src}
+                    alt={hover.alt}
+                    applyWatermark={applyWatermark}
+                    fill
+                    square
+                    sizes={PRODUCT_CARD_IMAGE_SIZES}
+                    className={cn('object-cover', mediaDissolveHoverInClass)}
+                />
+            ) : null}
         </div>
     );
 }

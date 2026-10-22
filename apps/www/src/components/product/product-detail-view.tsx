@@ -18,6 +18,7 @@ import {ProductSpecs} from '@/components/product/product-specs';
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {listRelatedProductSiblings} from '@/lib/catalog/catalog';
+import {pickCardHoverStill} from '@/lib/catalog/card-hover-still';
 import {displayProductSku} from '@/lib/catalog/display-sku';
 import {primaryProductStill} from '@/lib/catalog/map-sanity';
 import {
@@ -80,12 +81,19 @@ function toProductsRowInheritItem(
     product: Product,
 ): PageSectionProductsRowItemDoc {
     const hero = primaryProductStill(product.media);
+    const hover = pickCardHoverStill(hero?.src, product.hoverImage);
     return {
         title: product.title,
         slug: product.slug,
         sku: product.sku,
         imageSrc: hero?.src ?? null,
         imageAlt: hero?.alt ?? product.title,
+        ...(hover
+            ? {
+                  hoverImageSrc: hover.src,
+                  hoverImageAlt: hover.alt ?? product.title,
+              }
+            : {}),
     };
 }
 

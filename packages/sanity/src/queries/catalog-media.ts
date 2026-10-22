@@ -120,6 +120,14 @@ export const CATALOG_IMAGE_SRC = /* groq */ `coalesce(
   media[0].asset->url
 )`;
 
+/** Second product still URL (`images[1]`) — card hover (PROD-3130). Never lifestyle. */
+export const SECOND_PRODUCT_IMAGE_SRC = /* groq */ `images[1].asset->url`;
+
+export const SECOND_PRODUCT_IMAGE_ALT = /* groq */ `coalesce(
+  images[1].alt,
+  images[1].asset->altText
+)`;
+
 /** Card / section `imageAlt` from primary product still (legacy coalesce). */
 export const CATALOG_IMAGE_ALT = /* groq */ `coalesce(
   images[primary == true][0].alt,

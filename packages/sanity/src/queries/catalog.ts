@@ -19,6 +19,8 @@ import {
   FEATURED_IMAGE_FROM_CATALOG,
   OPTION_MEDIA_FIELDS,
   PRIMARY_PRODUCT_IMAGE_GROQ,
+  SECOND_PRODUCT_IMAGE_ALT,
+  SECOND_PRODUCT_IMAGE_SRC,
 } from './catalog-media';
 import {
   OPTION_ACTIVE,
@@ -468,6 +470,8 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   ${PRODUCT_EFFECTIVE_STATUS},
   moq,
   ${FEATURED_IMAGE_FROM_CATALOG},
+  "hoverImageSrc": ${SECOND_PRODUCT_IMAGE_SRC},
+  "hoverImageAlt": ${SECOND_PRODUCT_IMAGE_ALT},
   // Dereference, then filter — never \`*[_id == coalesce(^…)]\`: with an expression
   // instead of a literal id Sanity scans the whole dataset once per product
   // (~10 s per lookup on 1,243 products; 30 s for this query). Same rows, 1–1.5 s.
@@ -1377,6 +1381,9 @@ export type CatalogProductDoc = {
   lifestyleVideos?: unknown[] | null;
   /** Primary still alias (GROQ coalesce from images / legacy featuredImage). */
   featuredImage?: unknown | null;
+  /** Lightweight `images[1]` URL for library / row cards (PROD-3130). */
+  hoverImageSrc?: string | null;
+  hoverImageAlt?: string | null;
   /** Gallery extras — images[] when set, else legacy media[]. */
   media?: unknown[] | null;
   productLine: CatalogLineRefDoc | null;

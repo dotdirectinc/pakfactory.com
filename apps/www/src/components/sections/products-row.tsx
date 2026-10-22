@@ -22,6 +22,8 @@ export type ProductsRowItem = {
     sku?: string;
     imageSrc?: string | null;
     imageAlt?: string;
+    hoverImageSrc?: string | null;
+    hoverImageAlt?: string;
 };
 
 type ProductsRowProps = {
@@ -105,6 +107,8 @@ export function ProductsRow({
                                 ctaLabel={null}
                                 imageSrc={product.imageSrc}
                                 imageAlt={product.imageAlt}
+                                hoverImageSrc={product.hoverImageSrc}
+                                hoverImageAlt={product.hoverImageAlt}
                                 surface={shell.cardSurface}
                             />
                         </CarouselItem>

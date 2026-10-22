@@ -44,6 +44,7 @@ export const RETRIEVED_ATTRIBUTES = [
     'summary',
     'image',
     'imageAlt',
+    'hoverImage',
     'parents',
     // Server-side only (exact-SKU ordering below); not passed to the client.
     'sku',
@@ -124,6 +125,8 @@ export type SearchHit = {
     summary: string;
     image: string | null;
     imageAlt: string;
+    /** Product `images[1]` when indexed (PROD-3130). */
+    hoverImage?: string | null;
     parents: string[];
     /** 1-based rank in Algolia's response, for click events. */
     position: number;
@@ -197,6 +200,9 @@ export function shapeResponse(
             summary: str(raw.summary),
             image: str(raw.image) || null,
             imageAlt: str(raw.imageAlt),
+            ...(str(raw.hoverImage)
+                ? {hoverImage: str(raw.hoverImage)}
+                : {}),
             parents: Array.isArray(raw.parents)
                 ? raw.parents.filter((p): p is string => typeof p === 'string')
                 : [],

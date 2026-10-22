@@ -228,6 +228,7 @@ export const SITE_SEARCH_PROJECTION = /* groq */ `{
   ), ""),
   "image": _image.asset->url,
   "imageAlt": coalesce(_image.alt, _image.asset->altText, ""),
+  "hoverImage": select(_type == "product" => images[1].asset->url),
   "parents": array::unique(array::compact(select(
     _type == "product" => [productLine->title, ...productStyle[]->title, ...solutions[]->title],
     _type == "productStyle" => [productLine->title],
@@ -295,6 +296,8 @@ export type SiteSearchRecord = {
   summary: string;
   image: string | null;
   imageAlt: string;
+  /** Product `images[1]` URL when present (PROD-3130). Other types: null. */
+  hoverImage: string | null;
   parents: string[];
   tags: string[];
   publishedAtTimestamp: number;

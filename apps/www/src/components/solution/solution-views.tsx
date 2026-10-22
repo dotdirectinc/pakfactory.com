@@ -16,6 +16,7 @@ import {SolutionCatalogPageChrome} from '@/components/solution/solution-catalog-
 import {SolutionHero} from '@/components/solution/solution-hero';
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import {CatalogCard} from '@/components/ui/catalog-card';
+import {cardGalleryStills} from '@/lib/catalog/card-hover-still';
 import {primaryProductStill} from '@/lib/catalog/map-sanity';
 import type {Product} from '@/lib/catalog/types';
 import type {
@@ -37,16 +38,11 @@ const PRODUCT_GRID_CLASS =
     'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
 
 function toProductCardData(product: Product): ProductCardData {
-    const images = product.media
-        .filter(
-            (item): item is {src: string; alt: string} =>
-                Boolean(item.src) && item.kind !== 'lifestyle',
-        )
-        .map((item) => ({
-            src: item.src as string,
-            alt: item.alt || product.title,
-        }));
     const primary = primaryProductStill(product.media);
+    const images = cardGalleryStills(
+        {src: primary?.src, alt: primary?.alt ?? product.title},
+        product.hoverImage,
+    );
     return {
         title: product.title,
         href: productHref(product.slug),
@@ -55,7 +51,7 @@ function toProductCardData(product: Product): ProductCardData {
             product.productStyle?.title ?? product.productLine?.title,
         imageUrl: primary?.src ?? null,
         imageAlt: primary?.alt ?? product.title,
-        images: images.length > 0 ? images : undefined,
+        ...(images ? {images} : {}),
         moq: product.moq,
         ...(product.status ? {status: product.status} : {}),
     };

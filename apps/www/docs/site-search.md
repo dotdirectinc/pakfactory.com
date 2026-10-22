@@ -50,11 +50,12 @@ Materials are customization options, so they show under Customizations. **Proper
 
 ### Record
 
-`objectID, type, group, typeRank, kind, sku, title, href, summary, image, imageAlt, parents[], tags[], publishedAtTimestamp`
+`objectID, type, group, typeRank, kind, sku, title, href, summary, image, imageAlt, hoverImage, parents[], tags[], publishedAtTimestamp`
 
 * `href` is a host-free www path. Blog posts are on the www origin in production, but on staging they live at `staging-blog.pakfactory.com`. The API resolves that host.
 * `parents` holds the titles of what the document sits under: line, styles, solutions, option type and category, client, blog category.
 * `image`: lines, styles and solutions have no images of their own, so they borrow the first child's image. Products and options without an image get none, which matches www.
+* `hoverImage`: products only — Sanity `images[1]` for the ⌘K product-grid swap (PROD-3130). Null on every other type and on products with one still. After this field lands, reindex (`gen:site-search-fn`, blueprint deploy, backfill `--confirm`); old records simply do not swap.
 * Records are about 0.6 KB each. Algolia's limit is 10 KB.
 
 Settings (`SITE_SEARCH_SETTINGS`):

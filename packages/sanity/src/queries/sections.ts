@@ -22,6 +22,8 @@ import {
   CATALOG_IMAGE_ALT,
   CATALOG_IMAGE_SRC,
   CATALOG_VIDEO_SRC,
+  SECOND_PRODUCT_IMAGE_ALT,
+  SECOND_PRODUCT_IMAGE_SRC,
 } from './catalog-media';
 
 export {FEATURED_VIDEO_URL_FIELD};
@@ -512,7 +514,9 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
       "slug": slug.current,
       sku,
       "imageSrc": ${CATALOG_IMAGE_SRC},
-      "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title)
+      "imageAlt": coalesce(${CATALOG_IMAGE_ALT}, title),
+      "hoverImageSrc": ${SECOND_PRODUCT_IMAGE_SRC},
+      "hoverImageAlt": ${SECOND_PRODUCT_IMAGE_ALT}
     }
   },
   _type == "bundlesRow" => {
@@ -938,6 +942,8 @@ export type PageSectionProductsRowItemDoc = {
     sku?: string | null;
     imageSrc?: string | null;
     imageAlt?: string | null;
+    hoverImageSrc?: string | null;
+    hoverImageAlt?: string | null;
 };
 
 export type PageSectionProductsRowDoc = PageSectionChromeFields & {
