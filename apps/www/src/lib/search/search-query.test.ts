@@ -44,7 +44,7 @@ test('shapeResponse groups hits in rail order, keeps counts, drops unlinked hits
             nbHits: 4,
             hits: [
                 {objectID: 'g', type: 'guide', group: 'guides', title: 'Kraft', href: '/blog/kraft'},
-                {objectID: 'p', type: 'product', group: 'products', title: 'Mailer', href: '/products/mailer', parents: ['Line', 3]},
+                {objectID: 'p', type: 'product', group: 'products', title: 'Mailer', href: '/products/mailer', parents: ['Line', 3], hoverImage: 'https://cdn.example/side.png'},
                 {objectID: 'x', type: 'product', group: 'products', title: 'No link'},
                 {objectID: 's', type: 'solution', group: 'solutions', title: 'Cosmetics', href: '/solutions/cosmetics', kind: ''},
             ],
@@ -56,6 +56,7 @@ test('shapeResponse groups hits in rail order, keeps counts, drops unlinked hits
     assert.deepEqual(out.groups.map((g) => g.group), ['products', 'solutions', 'guides']);
     assert.deepEqual(out.groups[0]!.hits.map((h) => h.id), ['p']);
     assert.deepEqual(out.groups[0]!.hits[0]!.parents, ['Line']);
+    assert.equal(out.groups[0]!.hits[0]!.hoverImage, 'https://cdn.example/side.png');
     assert.equal(out.groups[1]!.hits[0]!.kind, null);
     assert.equal(out.groups[2]!.hits[0]!.href, `${BLOG}/kraft`);
     assert.equal(out.total, 4);

@@ -8,6 +8,11 @@ import {cn} from '@pakfactory/ui/lib/utils';
 import {Icon} from '@/components/ui/icon';
 import {MediaCardFrame} from '@/components/ui/media-card-frame';
 import {SanityImage} from '@/components/ui/sanity-image';
+import {pickCardHoverStill} from '@/lib/catalog/card-hover-still';
+import {
+    mediaDissolveHoverInClass,
+    mediaDissolveRestHoverOutClass,
+} from '@/lib/ui/media-dissolve';
 
 export type CustomizationCatalogCardProps = {
     /** Detail page; omit when the option has none — the title renders as plain text (PROD-2758). */
@@ -17,6 +22,9 @@ export type CustomizationCatalogCardProps = {
     eyebrow?: string;
     imageSrc?: string | null;
     imageAlt?: string;
+    /** Sanity `images[1]` — product-line inspiration cards (PROD-3130). */
+    hoverImageSrc?: string | null;
+    hoverImageAlt?: string;
     className?: string;
     onCloserLook: () => void;
     /**
@@ -53,11 +61,17 @@ export function CustomizationCatalogCard({
     eyebrow,
     imageSrc,
     imageAlt,
+    hoverImageSrc,
+    hoverImageAlt,
     className,
     onCloserLook,
     mediaClickTarget = 'container',
     surface = 'default',
 }: CustomizationCatalogCardProps) {
+    const hover = pickCardHoverStill(imageSrc, {
+        src: hoverImageSrc,
+        alt: hoverImageAlt,
+    });
     const closerLookLabel = `Take a closer look at ${title}`;
     const heading = (
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground">
@@ -68,15 +82,34 @@ export function CustomizationCatalogCard({
     const media = (
         <div className="pointer-events-none absolute inset-0">
             {imageSrc ? (
-                <SanityImage
-                    src={imageSrc}
-                    alt={imageAlt ?? title}
-                    applyWatermark
-                    fill
-                    square
-                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
-                    className="object-cover"
-                />
+                <>
+                    <SanityImage
+                        src={imageSrc}
+                        alt={imageAlt ?? title}
+                        applyWatermark
+                        fill
+                        square
+                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                        className={cn(
+                            'object-cover',
+                            hover && mediaDissolveRestHoverOutClass,
+                        )}
+                    />
+                    {hover ? (
+                        <SanityImage
+                            src={hover.src}
+                            alt={hover.alt ?? title}
+                            applyWatermark
+                            fill
+                            square
+                            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                            className={cn(
+                                'object-cover',
+                                mediaDissolveHoverInClass,
+                            )}
+                        />
+                    ) : null}
+                </>
             ) : (
                 <span className="flex size-full items-center justify-center">
                     <Icon

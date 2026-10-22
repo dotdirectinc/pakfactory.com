@@ -30,22 +30,33 @@ type ProductGalleryProps = {
     /** Playable MP4/MOV for feature (index 0); YouTube / missing → still only. */
     featuredVideoUrl?: string | null;
     /**
-     * Feature-well `sizes` for Next/Sanity CDN. PDP defaults under-report for
-     * speed; customization detail passes a larger slot so the hero is sharp.
+     * Feature-well `sizes` for Next/Sanity CDN. PDP reports the desktop well
+     * (~800px) so a 1× monitor does not download 384. Customization detail
+     * passes a wider slot.
      */
     wellSizes?: string;
-    /** Idle prefetch width matching {@link wellSizes} × ~2 DPR (clamped by loader). */
+    /** Idle prefetch width. PDP matches {@link GALLERY_WELL_MAX_WIDTH}. */
     wellPrefetchWidth?: number;
+    /**
+     * Cap the well CDN width. PDP stays at 800 so retina does not jump to
+     * 1600. Customization passes its own prefetch width.
+     */
+    wellMaxLoaderWidth?: number;
 };
 
 /**
- * Feature well (PDP default): under-report so 2× DPR lands near ~720–800, not
- * full-viewport 1080–1920 (PROD-3102).
+ * PDP feature well (PROD-3148). The square is ~700–800 CSS px. Reporting
+ * 360px made a 1× monitor select the 384 step and look soft, while retina
+ * (×2) selected 750. Desktop now reports 800px. Below `lg` the hint stays
+ * `50vw` so phones do not download a larger crop.
  */
-const GALLERY_WELL_SIZES = '(max-width: 1024px) 50vw, 360px';
+const GALLERY_WELL_SIZES = '(max-width: 1023px) 50vw, 800px';
 
-/** Prefetch width ≈ 360 CSS × 2 DPR / common Next bucket for {@link GALLERY_WELL_SIZES}. */
-const GALLERY_WELL_PREFETCH_WIDTH = 750;
+/** CDN ceiling for the PDP well. Retina stays here instead of 1600. */
+const GALLERY_WELL_MAX_WIDTH = 800;
+
+/** Prefetch matches {@link GALLERY_WELL_MAX_WIDTH} so warmed slides are the file the well shows. */
+const GALLERY_WELL_PREFETCH_WIDTH = GALLERY_WELL_MAX_WIDTH;
 
 /**
  * Customization detail hero: ~3/5 of content column ≈ 720–800 CSS; 2× DPR →
@@ -140,6 +151,7 @@ function GalleryWellSlideImage({
     priority,
     lqip,
     sizes,
+    maxLoaderWidth,
     onReady,
 }: {
     src: string;
@@ -147,6 +159,7 @@ function GalleryWellSlideImage({
     priority: boolean;
     lqip?: string;
     sizes: string;
+    maxLoaderWidth?: number;
     onReady: () => void;
 }) {
     const {onLoad, onError, imageClassName} = useSanityImageSettle(src, {
@@ -163,6 +176,7 @@ function GalleryWellSlideImage({
             loading={priority ? undefined : 'lazy'}
             sizes={sizes}
             quality={GALLERY_WELL_QUALITY}
+            maxLoaderWidth={maxLoaderWidth}
             className={cn('object-fill', imageClassName)}
             onLoad={onLoad}
             onError={onError}
@@ -209,6 +223,7 @@ export function ProductGallery({
     featuredVideoUrl,
     wellSizes = GALLERY_WELL_SIZES,
     wellPrefetchWidth = GALLERY_WELL_PREFETCH_WIDTH,
+    wellMaxLoaderWidth = GALLERY_WELL_MAX_WIDTH,
 }: ProductGalleryProps) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [visibleIndex, setVisibleIndex] = useState(0);
@@ -521,6 +536,7 @@ export function ProductGallery({
                                     priority={index === 0}
                                     lqip={item.lqip}
                                     sizes={wellSizes}
+                                    maxLoaderWidth={wellMaxLoaderWidth}
                                     onReady={() => markReady(index)}
                                 />
                             ) : (

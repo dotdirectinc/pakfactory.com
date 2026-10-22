@@ -25,6 +25,7 @@ const record = (over: Partial<SiteSearchRecord>): SiteSearchRecord => ({
     summary: '',
     image: null,
     imageAlt: '',
+    hoverImage: null,
     parents: ['Ink', 'Printing'],
     tags: [],
     publishedAtTimestamp: 0,

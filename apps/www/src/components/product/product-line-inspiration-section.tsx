@@ -220,6 +220,14 @@ export function ProductLineInspirationSection({
                                                                 media?.alt ??
                                                                 item.title
                                                             }
+                                                            hoverImageSrc={
+                                                                item.hoverImage
+                                                                    ?.src
+                                                            }
+                                                            hoverImageAlt={
+                                                                item.hoverImage
+                                                                    ?.alt
+                                                            }
                                                             surface="elevated"
                                                             onCloserLook={() =>
                                                                 setPreview(

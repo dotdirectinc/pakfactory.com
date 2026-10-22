@@ -5,7 +5,12 @@ import {ArrowUpRight, Boxes, Clock, Search, X} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {SanityImage} from '@/components/ui/sanity-image';
+import {pickCardHoverStill} from '@/lib/catalog/card-hover-still';
 import {isSanityCdnUrl} from '@/lib/sanity/image';
+import {
+    mediaDissolveHoverInClass,
+    mediaDissolveRestHoverOutClass,
+} from '@/lib/ui/media-dissolve';
 
 /**
  * One section of the ⌘K dialog body (PROD-3111). Classes are copied from the
@@ -32,6 +37,8 @@ export type SearchNavItem = {
     query?: string;
     image?: string | null;
     imageAlt?: string;
+    /** Product `images[1]` — product grid thumbs only (PROD-3130). */
+    hoverImage?: string | null;
     summary?: string;
     label?: string;
     /** `list` rows: a recent search (clock icon, removable) or "see all" (search icon). */
@@ -103,23 +110,46 @@ export const POC_RADIUS = {lg: 'rounded-[16px]', xl: 'rounded-[20px]', '2xl': 'r
 function Thumb({
     src,
     alt,
+    hoverSrc,
     sizes,
     dark,
 }: {
     src?: string | null;
     alt?: string;
+    hoverSrc?: string | null;
     sizes: string;
     dark: boolean;
 }) {
+    const hover =
+        src && hoverSrc && isSanityCdnUrl(hoverSrc)
+            ? pickCardHoverStill(src, {src: hoverSrc})
+            : null;
     if (src && isSanityCdnUrl(src)) {
         return (
-            <SanityImage
-                src={src}
-                alt={alt ?? ''}
-                fill
-                sizes={sizes}
-                className="bg-[var(--product-image-bg)] object-cover"
-            />
+            <>
+                <SanityImage
+                    src={src}
+                    alt={alt ?? ''}
+                    fill
+                    sizes={sizes}
+                    className={cn(
+                        'bg-[var(--product-image-bg)] object-cover',
+                        hover && mediaDissolveRestHoverOutClass,
+                    )}
+                />
+                {hover ? (
+                    <SanityImage
+                        src={hover.src}
+                        alt=""
+                        fill
+                        sizes={sizes}
+                        className={cn(
+                            'bg-[var(--product-image-bg)] object-cover',
+                            mediaDissolveHoverInClass,
+                        )}
+                    />
+                ) : null}
+            </>
         );
     }
     return (
@@ -364,6 +394,7 @@ export function SiteSearchSection({
                                 <Thumb
                                     src={item.image}
                                     alt={item.imageAlt}
+                                    hoverSrc={item.hoverImage}
                                     sizes="(min-width: 768px) 180px, 45vw"
                                     dark={dark}
                                 />

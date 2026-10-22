@@ -60,6 +60,7 @@ function browseItem(item: BrowseItem): SearchNavItem {
         href: item.href,
         image: item.image,
         imageAlt: item.imageAlt,
+        ...(item.hoverImage ? {hoverImage: item.hoverImage} : {}),
         summary: item.summary,
         label: TYPE_LABELS[item.type],
     };

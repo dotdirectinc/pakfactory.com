@@ -223,6 +223,11 @@ export type Product = {
      */
     media: CatalogMedia[];
     /**
+     * Sanity `images[1]` when it differs from the resting still (PROD-3130).
+     * Cards hover onto this; lifestyle stills are never stored here.
+     */
+    hoverImage?: {src: string; alt: string};
+    /**
      * Hover-play video URL from Sanity `featuredVideo` (product-line hero marquee).
      */
     featuredVideoUrl?: string | null;

@@ -45,6 +45,10 @@ import type {
     ProductPropertyValue,
     ProductStyleRef,
 } from '@/lib/catalog/types';
+import {
+    cardGalleryStills,
+    pickCardHoverStill,
+} from '@/lib/catalog/card-hover-still';
 import type {RelatedProductCandidate} from '@/lib/catalog/related-products';
 import {hasDetailPage, isConfigurable, toLifecycle} from '@/lib/catalog/types';
 import {solutionHref, WWW_ROUTES} from '@/lib/www-routes';
@@ -739,6 +743,25 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
             Boolean(section?._key && section?._type),
     );
 
+    const media = productGallerySlides(
+        doc.featuredImage,
+        doc.images?.length ? doc.images : doc.media,
+        doc.title,
+        doc.lifestyleImages,
+    );
+    const restStill = primaryProductStill(media);
+    const secondFromImages =
+        Array.isArray(doc.images) && doc.images.length > 1
+            ? catalogMediaFromImage(doc.images[1], doc.title)
+            : null;
+    const hoverImage = pickCardHoverStill(
+        restStill?.src,
+        secondFromImages ?? {
+            src: doc.hoverImageSrc,
+            alt: doc.hoverImageAlt,
+        },
+    );
+
     return {
         title: doc.title,
         slug,
@@ -748,12 +771,15 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         status: toLifecycle(doc.status),
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
-        media: productGallerySlides(
-            doc.featuredImage,
-            doc.images?.length ? doc.images : doc.media,
-            doc.title,
-            doc.lifestyleImages,
-        ),
+        media,
+        ...(hoverImage
+            ? {
+                  hoverImage: {
+                      src: hoverImage.src,
+                      alt: hoverImage.alt ?? doc.title,
+                  },
+              }
+            : {}),
         ...(doc.featuredVideoUrl?.trim()
             ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
             : {}),
@@ -829,16 +855,11 @@ export function mapSanityProductLibraryItem(
     const product = mapSanityProduct(doc);
     if (!product) return null;
 
-    const images = product.media
-        .filter(
-            (item): item is {src: string; alt: string; kind?: 'product' | 'lifestyle'} =>
-                Boolean(item.src) && item.kind !== 'lifestyle',
-        )
-        .map((item) => ({
-            src: item.src as string,
-            alt: item.alt || product.title,
-        }));
     const primary = primaryProductStill(product.media);
+    const images = cardGalleryStills(
+        {src: primary?.src, alt: primary?.alt ?? product.title},
+        product.hoverImage,
+    );
 
     const attrs: Record<string, string[]> = {};
     const propertyTitles: Record<string, string> = {};
@@ -896,7 +917,7 @@ export function mapSanityProductLibraryItem(
             imageUrl: primary?.src ?? null,
             imageAlt: primary?.alt ?? product.title,
             ...(product.status && product.status !== 'active' ? {status: product.status} : {}),
-            images: images.length > 0 ? images : undefined,
+            ...(images ? {images} : {}),
             ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
             industries,
             attrs,

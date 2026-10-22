@@ -226,6 +226,9 @@ export function CustomizationOverviewLearnFirst({
                         wellPrefetchWidth={
                             CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH
                         }
+                        wellMaxLoaderWidth={
+                            CUSTOMIZATION_GALLERY_WELL_PREFETCH_WIDTH
+                        }
                     />
 
                     <div className="flex min-w-0 flex-col gap-8">
