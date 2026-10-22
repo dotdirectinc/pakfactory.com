@@ -67,8 +67,8 @@ function formattingOnly(before: unknown, after: unknown): string | null {
   return a ? SANITY.listToParagraphs : SANITY.paragraphsToList;
 }
 
-/** Before → Notion, field by field, for a Sanity-bound item. */
-function SanityCompare({ item }: { item: ChangesetItem }) {
+/** Sanity now → what approving writes, field by field, for a Sanity-bound item. */
+function SanityCompare({ item, source }: { item: ChangesetItem; source: string }) {
   const set = (item.payload.set ?? {}) as Record<string, unknown>;
   const before = (item.payload.before ?? {}) as Record<string, unknown>;
   const labels = (item.payload.labels ?? {}) as Record<string, string>;
@@ -88,7 +88,7 @@ function SanityCompare({ item }: { item: ChangesetItem }) {
                 <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-sm text-foreground">{plain(before[f], true, labels) || "—"}</p>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">{SANITY.after}</span>
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">{SANITY.after(source)}</span>
                 <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-sm text-foreground">{plain(set[f], true, labels) || "—"}</p>
               </div>
             </div>
@@ -114,9 +114,11 @@ type ListProps = {
   items: ChangesetItem[];
   /** Set on a pending sync frame the viewer may decide: rows offer Exclude / Include. */
   exclusion?: { changesetId: string } | null;
+  /** The frame's source: names the column of what a Sanity-bound row writes. */
+  source: string;
 };
 
-export function SpecItemList({ items, exclusion = null }: ListProps) {
+export function SpecItemList({ items, exclusion = null, source }: ListProps) {
   const [query, setQuery] = useState("");
   const [busy, startToggle] = useTransition();
   const [toggleError, setToggleError] = useState<string | null>(null);
@@ -207,7 +209,7 @@ export function SpecItemList({ items, exclusion = null }: ListProps) {
                   {SANITY.overrode(r.item.overrode.map((o) => `${o.field}: ${plain(o.was, true, (r.item.payload.labels ?? {}) as Record<string, string>) || "—"}`).join("; "))}
                 </span>
               ) : null}
-              {r.item.entity_type === "sanity_document" ? <SanityCompare item={r.item} /> : null}
+              {r.item.entity_type === "sanity_document" ? <SanityCompare item={r.item} source={source} /> : null}
             </li>
           ))}
         </ol>
