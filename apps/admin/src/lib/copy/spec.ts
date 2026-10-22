@@ -681,7 +681,6 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   showHiddenTitle: "Also show what this column leaves out, each with a + to add",
   hideHidden: "Hide",
   notOffered: "Not offered — + to offer",
-  hiddenAdded: "Added — in the tray until you submit",
   offerThis: (title: string) => `Offer ${title}`,
   makeThisCompatible: (title: string) => `Make compatible with ${title}`,
   removeHere: (title: string) => `Stop offering ${title}`,

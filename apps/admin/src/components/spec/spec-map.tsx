@@ -22,13 +22,11 @@ import {
   Move,
   Pencil,
   Pin,
-  Plus,
   Eye,
   EyeOff,
   PinOff,
   Search,
   Box,
-  Check,
   Tag,
   Undo2,
   X,
@@ -1834,25 +1832,14 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                       />
                     ) : null}
                   </button>
+                  {/* The map's own corner actions: + to add, and undo once it is in the tray (2026-10-22). */}
                   {hiddenCard && !gone ? (
                     pending.length ? (
-                      <span className="absolute -right-2 -top-2 z-[1] flex size-5 items-center justify-center rounded-full border border-green-600 bg-green-600 text-white shadow-xs" title={EDIT.hiddenAdded}>
-                        <Check className="size-3.5" />
-                      </span>
+                      <CardAction icon={Undo2} label={EDIT.undoPending(n.title)} onClick={() => pending.forEach((e) => session.remove(editKey(e)))} />
+                    ) : n.level === "customizationOption" && sel?.level === "customizationOption" ? (
+                      <CardAction icon={CirclePlus} label={EDIT.makeThisCompatible(n.title)} onClick={() => makeCompatible({ id: n.id, title: n.title, group: "" })} />
                     ) : (
-                      <button
-                        type="button"
-                        aria-label={n.level === "customizationOption" && sel?.level === "customizationOption" ? EDIT.makeThisCompatible(n.title) : EDIT.offerThis(n.title)}
-                        title={n.level === "customizationOption" && sel?.level === "customizationOption" ? EDIT.makeThisCompatible(n.title) : EDIT.offerThis(n.title)}
-                        onClick={() => {
-                          const c = { id: n.id, title: n.title, group: "" };
-                          if (n.level === "customizationOption" && sel?.level === "customizationOption") makeCompatible(c);
-                          else addHere(c);
-                        }}
-                        className="absolute -right-2 -top-2 z-[1] flex size-5 items-center justify-center rounded-full border border-primary bg-card text-primary shadow-xs hover:bg-primary hover:text-primary-foreground"
-                      >
-                        <Plus className="size-3.5" />
-                      </button>
+                      <CardAction icon={CirclePlus} label={EDIT.offerThis(n.title)} onClick={() => addHere({ id: n.id, title: n.title, group: "" })} />
                     )
                   ) : null}
                   {/* Pin a card's links so they stay marked while the columns scroll. */}
@@ -1898,7 +1885,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                         onClick={() => session.put({ kind: "pair", a: sel!.id, b: n.id, compatible: false })} />
                     ) : null
                   ) : null}
-                  {target && !gone ? (
+                  {target && !gone && !hiddenCard ? (
                     // One meaning per icon (2026-10-14): ↺ only undoes your own pending change; ⊖ stops
                     // offering; ⊕ offers again. Each makes exactly the edit its label says, or refuses.
                     target.direct ? (
