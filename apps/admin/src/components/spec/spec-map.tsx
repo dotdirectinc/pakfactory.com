@@ -440,7 +440,12 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
   const [selected, setSelected] = useState<number | null>(null);
   /** The edit column whose hidden records are listed to add from, if any (Richard, 2026-10-22). */
   const [hiddenCol, setHiddenCol] = useState<string | null>(null);
-  useEffect(() => setHiddenCol(null), [selected, sessionEditing]);
+  /** The offer kinds that were open before "Show hidden" folded them. */
+  const foldedKinds = useRef<Set<OfferKind> | null>(null);
+  useEffect(() => {
+    setHiddenCol(null);
+    if (foldedKinds.current) { setOpenGroups(foldedKinds.current); foldedKinds.current = null; }
+  }, [selected, sessionEditing]);
   const [onlyRelated, setOnlyRelated] = useState(true);
   const [scrollTo, setScrollTo] = useState<number | null>(null);
   const area = useRef<HTMLDivElement>(null);
@@ -1080,14 +1085,35 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
     const typeOf = (i: number) => parentsOf[i]?.[0];
     const offer: OfferLayout = { x, filterY: HEAD_H, groups: [], types: [], rails: [] };
     let y = HEAD_H + FILTER_H;
+    // "Show hidden": the options not offered, by type, first under the filter (Richard, 2026-10-22).
+    if (hiddenCol === "customizationOption") {
+      const hit = [...hiddenShown].filter(matches);
+      offer.hidden = { y, shown: hit.length, total: hiddenShown.size };
+      y += GROUP_ROW;
+      const byType = new Map<number, number[]>();
+      for (const i of hit) byType.set(typeOf(i) ?? -1, [...(byType.get(typeOf(i) ?? -1) ?? []), i]);
+      for (const [t, cards] of [...byType].sort((a, b) => (parentsOf[a[0]]?.[0] ?? -1) - (parentsOf[b[0]]?.[0] ?? -1) || a[0] - b[0])) {
+        const typeKey = `hidden:${t}`;
+        const isFolded = !needle && folded.has(typeKey);
+        offer.types.push({ key: typeKey, title: t >= 0 ? nodes[t]!.title : COPY.otherType, y, count: cards.length, folded: isFolded, changed: cards.some((i) => touched.has(i)) });
+        y += TYPE_H;
+        if (isFolded) continue;
+        for (const i of cards.sort((a, b) => nodes[a]!.title.localeCompare(nodes[b]!.title))) {
+          f.pos.set(i, { x: x + INDENT, y });
+          y += ROW_H;
+        }
+      }
+      y += GROUP_GAP;
+    }
     for (const state of OFFER_ORDER) {
       if (!offerKinds.has(state)) continue;
       const all = [...shownOffers]
         .filter(([i, k]) => k === state && statusOk(i))
         .map(([i]) => i);
       const hit = all.filter(matches);
-      // Filtering opens every group with a match and closes the rest.
-      const open = hit.length > 0 && (needle ? true : openGroups.has(state));
+      // Filtering opens every group with a match and closes the rest — except while the hidden options are
+      // listed above: the kinds stay folded unless opened by hand, so the filter works on the hidden ones.
+      const open = hit.length > 0 && (needle && hiddenCol !== "customizationOption" ? true : openGroups.has(state));
       offer.groups.push({ state, y, shown: hit.length, total: all.length, open });
       const y1 = y + GROUP_H;
       y += GROUP_ROW;
@@ -1129,26 +1155,6 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
         }
       }
       offer.rails.push({ state, y1, ticks });
-      y += GROUP_GAP;
-    }
-    // "Show hidden": the options not offered, by type, under their own heading (Richard, 2026-10-22).
-    if (hiddenCol === "customizationOption") {
-      const hit = [...hiddenShown].filter(matches);
-      offer.hidden = { y, shown: hit.length, total: hiddenShown.size };
-      y += GROUP_ROW;
-      const byType = new Map<number, number[]>();
-      for (const i of hit) byType.set(typeOf(i) ?? -1, [...(byType.get(typeOf(i) ?? -1) ?? []), i]);
-      for (const [t, cards] of [...byType].sort((a, b) => (parentsOf[a[0]]?.[0] ?? -1) - (parentsOf[b[0]]?.[0] ?? -1) || a[0] - b[0])) {
-        const typeKey = `hidden:${t}`;
-        const isFolded = !needle && folded.has(typeKey);
-        offer.types.push({ key: typeKey, title: t >= 0 ? nodes[t]!.title : COPY.otherType, y, count: cards.length, folded: isFolded, changed: cards.some((i) => touched.has(i)) });
-        y += TYPE_H;
-        if (isFolded) continue;
-        for (const i of cards.sort((a, b) => nodes[a]!.title.localeCompare(nodes[b]!.title))) {
-          f.pos.set(i, { x: x + INDENT, y });
-          y += ROW_H;
-        }
-      }
       y += GROUP_GAP;
     }
     return { ...f, height: Math.max(f.height, y, propBottom), offer, editCols: null, grouped, propRails };
@@ -2304,7 +2310,15 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                       <ShowHiddenToggle
                         open={hiddenCol === level}
                         count={hiddenFor(level).length}
-                        onClick={() => setHiddenCol((c) => (c === level ? null : level))}
+                        onClick={() => {
+                          const on = hiddenCol !== level;
+                          setHiddenCol(on ? level : null);
+                          // A product's kinds fold while its hidden options are listed first, and reopen after.
+                          if (level === "customizationOption") {
+                            if (on) { foldedKinds.current = openGroups; setOpenGroups(new Set()); }
+                            else if (foldedKinds.current) { setOpenGroups(foldedKinds.current); foldedKinds.current = null; }
+                          }
+                        }}
                       />
                     ) : null}
                     name={level === "product" ? EDIT.offeredOn : level === COMPATIBLE ? EDIT.compatibleWith : COPY.offered}
@@ -2418,7 +2432,7 @@ function SpecMapView({ data, focus: openOn }: { data: SpecMapData; focus: { leve
                   <button
                     key={g.state}
                     type="button"
-                    disabled={!g.total || Boolean(offerQ.trim())}
+                    disabled={!g.total || (Boolean(offerQ.trim()) && hiddenCol !== "customizationOption")}
                     aria-expanded={g.open}
                     onClick={() =>
                       setOpenGroups((s) => {
