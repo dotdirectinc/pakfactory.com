@@ -30,4 +30,25 @@ describe('compatibilityProductHref', () => {
             '/products/custom-angled-cuff-ring-boxes',
         );
     });
+
+    it('serializes Achieves apply as finish plus achievedBy technique slug', () => {
+        assert.equal(
+            compatibilityProductHref('chipboard-dividers-partitions', {
+                category: 'finishing',
+                slug: 'gloss',
+                achievedBySlug: 'aq-coating-aqueous',
+            }),
+            '/products/chipboard-dividers-partitions?finishing=gloss&finishing.achievedBy=aq-coating-aqueous',
+        );
+    });
+
+    it('omits achievedBy when Apply is the page option (properties source)', () => {
+        assert.equal(
+            compatibilityProductHref('custom-angled-cuff-ring-boxes', {
+                category: 'materials',
+                slug: 'kraft-chipboard',
+            }),
+            '/products/custom-angled-cuff-ring-boxes?materials=kraft-chipboard',
+        );
+    });
 });

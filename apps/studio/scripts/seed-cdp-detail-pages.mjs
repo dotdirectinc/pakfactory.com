@@ -15,7 +15,9 @@
  *
  * Default + Learn-first: does not seed overview or benefits (editors / other
  * setup own those). Knowledge + Achieves stubs get an overview when missing
- * (PROD-3127 / PROD-3128). Knowledge omits Works with.
+ * (PROD-3127 / PROD-3128). Re-runs patch rail chrome on those overviews
+ * (`showCta`, `showBookmark`, `configurationSource`) without rewriting `_type`.
+ * Knowledge omits Works with.
  *
  * Stable `_key`s so re-runs are idempotent. Creates stub docs when missing.
  * Re-runs retitle existing docs to the canonical Studio labels.
@@ -202,11 +204,27 @@ function bandsForTarget(target) {
     : REMAINING_BANDS.filter((band) => band._type !== 'customizationWorksWith')
 }
 
+const OVERVIEW_CHROME_KEYS = ['showCta', 'showBookmark', 'configurationSource']
+
 function ensureOverview(sections, overview) {
   if (!overview) return false
-  if (sections.some((s) => OVERVIEW_TYPES.has(s?._type))) return false
-  sections.unshift(overview)
-  return true
+  const at = sections.findIndex((s) => OVERVIEW_TYPES.has(s?._type))
+  if (at < 0) {
+    sections.unshift(overview)
+    return true
+  }
+  const current = sections[at]
+  let changed = false
+  const next = {...current}
+  for (const key of OVERVIEW_CHROME_KEYS) {
+    if (overview[key] === undefined) continue
+    if (current[key] !== overview[key]) {
+      next[key] = overview[key]
+      changed = true
+    }
+  }
+  if (changed) sections[at] = next
+  return changed
 }
 
 function ensureRemainingBands(existing, target) {
