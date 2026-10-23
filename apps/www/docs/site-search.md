@@ -195,7 +195,7 @@ vercel firewall rules add "site-search rate limit" --condition '{"type":"path","
 | State | Shows |
 | --- | --- |
 | Empty field | The visitor's recent searches (localStorage, ×  to remove one, Clear for all). With none, a one-line hint. |
-| Typing (2+ characters, 250 ms debounce) | Up to 6 loose matches (`match=loose`) in Algolia rank order, typed words in bold, then "See all results for "…"". |
+| Typing (2+ characters, 250 ms debounce) | Up to 6 loose matches (`match=loose`) in Algolia rank order, typed words in bold (a 1-character word such as `1` or `&` only where it stands alone, PROD-3149), then "See all results for "…"". |
 | Enter, or "See all results" | Every result for the query (up to 30), grouped Products / Solutions / Customizations / Guides / Resources, with "N results for "…"" (or "Top 30 of N"). Editing the query goes back to suggestions. |
 
 Suggestions and all results read the same `/api/search` response, so Enter costs no extra request. A recent search runs straight to all results. Opening a result reports the click and saves the query, as in Advanced. Desktop is a dark palette anchored near the top (720 px wide, as tall as its content up to 640 px); mobile is the same light full-screen sheet with Cancel.
