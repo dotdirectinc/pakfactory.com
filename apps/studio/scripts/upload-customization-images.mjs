@@ -123,12 +123,16 @@ const DEMO_DONE = new Map([
 
 /**
  * First image picked on the Customization Image Review, 21 Oct
- * (https://claude.ai/artifact/ND2EAL74UbatoEYJwYH8Xd). Option title → 02-Edited file name.
+ * (https://claude.ai/artifact/ND2EAL74UbatoEYJwYH8Xd), and the Add-on Image Review, 23 Oct
+ * (https://claude.ai/artifact/BFCoGyufbbXyGYUUTm94Hg). Option title → 02-Edited file name.
  */
 const PRIMARY_PICK = {
   'Specialty Corrugated Board': 'material_specialty-corrugated-board_holographic.png',
   'Coated Sticker Paper': 'material_coated-sticker-paper_gloss.png',
   'Recyclable PE Pouch Material': 'material_recyclable-pe-pouch-material_white.png',
+  'Plastic Handle': 'add-on_plastic-handle_rigid-box.png',
+  'Child-Resistant Zipper (Pouches)': 'add-on_child-resistant-zipper-pouches_slider-lock.png',
+  'Hang Hole': 'add-on_hang-hole_kraft.png',
 }
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
