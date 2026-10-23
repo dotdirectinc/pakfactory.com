@@ -34,16 +34,39 @@ The point is not friction on every Jira call. It is that a forward move is a cla
 PROD uses a different workflow per issue type, and the same ID means different
 statuses (verified 2026-10-01 with `getTransitionsForJiraIssue`):
 
-| Issue type | BA Acceptance | Request For Approval | In Progress |
+| Issue type | BA Acceptance | Request For Approval | Into work |
 |---|---|---|---|
-| Story / Bug | `4` | `41` | `51` |
-| Task | `15` | `7` | `4` |
-| Sub-task | `11` | — (no RFA) | `2` |
+| Story / Bug | `4` | `41` | `51` (In Progress) |
+| Task | `15` | `7` | `4` (In Progress) |
+| Sub-task | **no such status** — see below | — (no RFA) | `8` (Developing) |
 
 `4` is BA Acceptance on a Story but **In Progress** on a Task. **Never hardcode an
 ID.** Call `getTransitionsForJiraIssue` on the ticket and pick the transition by
 `name` immediately before `transitionJiraIssue`. All PROD transitions are global
-(reachable from any status), including a status to itself.
+(reachable from any status), including a status to itself. Treat the IDs above as a
+sanity check on what that call returns, never as a substitute for making it.
+
+### Sub-tasks run a different workflow, not a renamed one
+
+A PROD Sub-task has **no "BA Acceptance" and no "In Progress" status at all**. Its
+transitions (observed 2026-10-14/16/19, used again 2026-10-21): Defining `2`,
+Done `3`, Won't Do `4`, Designing `5`, Drafting Copy `6`, Producing Assets `7`,
+**Developing `8`**, Uploading Content `9`, Testing/Validating `10`,
+**Awaiting Approval `11`**, To Do `12`, Ready for Development `13`.
+
+So, for a sub-task:
+
+- The ungated into-work move is **Developing** (`8`).
+- The BA hand-back is **Awaiting Approval** (`11`). Propose that status directly in
+  the gate block rather than asking the user which one to use.
+- The keyed-PR merge automation targets BA Acceptance, **which does not exist here —
+  so merging a sub-task's PR moves nothing.** Check the status afterwards instead of
+  assuming it moved, and say so plainly rather than reporting a transition that did
+  not happen. See `jira-ticket-pr-mapping.mdc`.
+
+Corrected 2026-10-22. This table previously recorded Sub-task BA Acceptance = `11`
+and In Progress = `2`. The `11` was right by coincidence and wrong by name; `2` is
+**Defining**, not In Progress.
 
 ## Mandatory gate
 
