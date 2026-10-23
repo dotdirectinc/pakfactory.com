@@ -40,6 +40,8 @@ export type SearchNavItem = {
     /** Product `images[1]` — product grid thumbs only (PROD-3130). */
     hoverImage?: string | null;
     summary?: string;
+    /** Product SKU (PROD-3154): beside the title in `list` rows, under it on `grid` cards. */
+    sku?: string;
     label?: string;
     /** `list` rows: a recent search (clock icon, removable) or "see all" (search icon). */
     icon?: 'recent' | 'search';
@@ -303,6 +305,20 @@ export function SiteSearchSection({
                                             dark={dark}
                                         />
                                     </span>
+                                    {item.sku ? (
+                                        <span
+                                            className={cn(
+                                                'shrink-0 text-xs tabular-nums',
+                                                dark ? 'text-white/55' : 'text-muted-foreground',
+                                            )}
+                                        >
+                                            <Highlighted
+                                                text={item.sku}
+                                                query={highlight}
+                                                dark={dark}
+                                            />
+                                        </span>
+                                    ) : null}
                                     {item.label ? (
                                         <span
                                             className={cn(
@@ -408,6 +424,16 @@ export function SiteSearchSection({
                                 >
                                     {item.title}
                                 </span>
+                                {item.sku ? (
+                                    <span
+                                        className={cn(
+                                            'mt-0.5 block text-[11px] tabular-nums',
+                                            dark ? 'text-white/55' : 'text-muted-foreground',
+                                        )}
+                                    >
+                                        {item.sku}
+                                    </span>
+                                ) : null}
                             </span>
                         </button>
                     ))}

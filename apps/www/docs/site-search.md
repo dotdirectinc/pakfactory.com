@@ -9,6 +9,7 @@ The ⌘K search dialog on www. One ticket per part:
 | Dialog + header trigger (now Advanced mode) | PROD-3111 | built |
 | Basic mode, the default: recents, loose suggestions, all results on Enter | PROD-2525 (#912) | built 2026-10-21 |
 | Find products by SKU | PROD-3136 (#918, #922) | built 2026-10-21; Function redeployed, `development` backfilled |
+| Show the SKU on results | PROD-3154 | built 2026-10-23; www only, no reindex |
 | Rank Advanced browse picks by clicks | PROD-3122 | backlog (Advanced only) |
 
 After changing the record or settings in `packages/sanity/src/algolia/site-search.ts`: run `gen:site-search-fn`, merge, redeploy the Functions stack (`npx sanity blueprints deploy` from the repo root; it re-uploads all four Functions, all pinned to one dataset), then run the backfill with `--confirm`. Searches are CDN-cached for up to ~70 minutes, so re-test with a query nobody has run since the change.
@@ -60,7 +61,7 @@ Materials are customization options, so they show under Customizations. **Proper
 
 Settings (`SITE_SEARCH_SETTINGS`):
 * searchable attributes: `sku`, `title`, `tags`, `parents`, `summary`
-* `sku` (products only, PROD-3136) is matched without typos, so an exact SKU finds its product first and a SKU one character off finds nothing by SKU. Temporary `TMP-` codes are left out. The SKU is searchable but not returned to the dialog, so it does not show on results.
+* `sku` (products only, PROD-3136) is matched without typos, so an exact SKU finds its product first and a SKU one character off finds nothing by SKU. Temporary `TMP-` codes are left out. The SKU is also returned to the dialog and shown on product results (PROD-3154): beside the title in Basic suggestions, with the typed query in bold, and under the title on the all-results product cards.
 * facets: `type`, `group`, and `kind` (filter only)
 * ties go to `typeRank`, so products come before press releases
 * English plurals and stop words are ignored
@@ -128,7 +129,7 @@ The dialog never talks to Algolia. It calls two www routes:
 
 `/api/search` details:
 * `q` is normalized (lower-case, single spaces, max 80 characters). Under 2 characters it returns an empty result without calling Algolia. The dialog should send the normalized string so equivalent queries share one CDN entry.
-* **SKU queries** (`COR-008`, `cor 008`, `RGD-060-AP2`, or a prefix like `cor-00`; PROD-3136) are never loosened, so a mistyped SKU returns nothing instead of hundreds of loose matches. The product whose SKU matches exactly goes first: Algolia splits SKUs at the hyphen, so `COR-008-BR1` matches "cor-008" as well as `COR-008` does. `sku` is retrieved for this ordering but not passed to the client.
+* **SKU queries** (`COR-008`, `cor 008`, `RGD-060-AP2`, or a prefix like `cor-00`; PROD-3136) are never loosened, so a mistyped SKU returns nothing instead of hundreds of loose matches. The product whose SKU matches exactly goes first: Algolia splits SKUs at the hyphen, so `COR-008-BR1` matches "cor-008" as well as `COR-008` does. `sku` is retrieved for this ordering and, since PROD-3154, passed to the client for display.
 * `match=loose` (Basic mode) sets Algolia `removeWordsIfNoResults: allOptional`: when every word together finds nothing, words become optional ("blue kraft mailer" → 211 hits instead of 0). Without it, every word must match (typos and the last word's prefix are still allowed). It is a separate CDN cache entry.
 * `type` is a rail tab (`products`, `solutions`, `customizations`, `guides`, `resources`) or one record type (`product-line`, …). Anything else is ignored. With a filter, the counts cover that filter only, so the dialog keeps its rail counts from the unfiltered query.
 * 30 hits per query, ranked across all groups. A group with a count but no hits in the top 30 (often Customizations next to "mailer") fills when its tab is opened.
