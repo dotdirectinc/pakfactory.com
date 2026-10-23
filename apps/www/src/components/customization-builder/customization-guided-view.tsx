@@ -56,6 +56,9 @@ type CustomizationGuidedViewProps = {
     onNext: () => void;
     onSkip: () => void;
     onDone: () => void;
+    layout?: 'columns' | 'stack';
+    showRail?: boolean;
+    onDetailOpenChange?: (open: boolean) => void;
 };
 
 export function CustomizationGuidedView({
@@ -86,6 +89,9 @@ export function CustomizationGuidedView({
     onNext,
     onSkip,
     onDone,
+    layout = 'columns',
+    showRail = true,
+    onDetailOpenChange,
 }: CustomizationGuidedViewProps) {
     const stepIndex = Math.max(
         0,
@@ -130,17 +136,28 @@ export function CustomizationGuidedView({
             onPrintingConsultation={onPrintingConsultation}
             draftId={draftId}
             onCustomColorReferenceChange={onCustomColorReferenceChange}
-            footer={
-                <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="lg"
-                        disabled={isFirst}
-                        onClick={onBack}
-                    >
-                        {CUSTOMIZATION_BUILDER_COPY.back}
-                    </Button>
+            layout={layout}
+            showRail={showRail}
+            onDetailOpenChange={onDetailOpenChange}
+            footer={({detailOpen}) => (
+                <div
+                    className={
+                        layout === 'stack' && detailOpen
+                            ? 'flex shrink-0 items-center justify-end gap-3 border-t border-border px-4 py-3'
+                            : 'flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-3'
+                    }
+                >
+                    {layout === 'stack' && detailOpen ? null : (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            disabled={isFirst}
+                            onClick={onBack}
+                        >
+                            {CUSTOMIZATION_BUILDER_COPY.back}
+                        </Button>
+                    )}
                     <div className="flex items-center gap-3">
                         <Button
                             type="button"
@@ -148,7 +165,9 @@ export function CustomizationGuidedView({
                             className="px-0"
                             onClick={onSkip}
                         >
-                            {CUSTOMIZATION_BUILDER_COPY.skip}
+                            {layout === 'stack'
+                                ? CUSTOMIZATION_BUILDER_COPY.skipStep
+                                : CUSTOMIZATION_BUILDER_COPY.skip}
                         </Button>
                         {isLast ? (
                             <Button
@@ -171,7 +190,7 @@ export function CustomizationGuidedView({
                         )}
                     </div>
                 </div>
-            }
+            )}
         />
     );
 }

@@ -7,10 +7,14 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     stepOf: 'Step {current} of {total}',
     back: 'Back',
     next: 'Next',
+    previousOption: 'Previous option',
+    nextOption: 'Next option',
     skipNotSure: 'Need consultation',
     /** Detail panel when Need consultation is selected. */
     notSureHelper:
         'A specialist will recommend options when they review your request.',
+    /** Shown under the consultation description when the buyer has an assignment. */
+    talkToSpecialist: 'Talk to {name}',
     /**
      * Sub-line under the Need consultation option in the type list / print gate.
      * Distinct from {@link specialistToAdvise} (summary value when skipped).
@@ -49,6 +53,10 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     additionalNotePlaceholder:
         'Specific {category} details for your specialist…',
     skip: 'Skip, let a specialist advise',
+    /** Guided stacked drawer — short enough to sit beside Next. */
+    skipStep: 'Skip this step',
+    /** Guided stacked list header. `{label}` is the category name. */
+    stepMenu: '{label} · {current} of {total}',
     /** PROD-2629 / ADR-017 — reverse of Sanity `achieves` (candidates, not a recipe). */
     achievedByHelper:
         'This finish can be achieved by these techniques, learn more about them:',

@@ -47,6 +47,8 @@ type CustomizationWorkspaceViewProps = {
         propertyKey: string,
         image: CustomColorReferenceImage | null,
     ) => void;
+    layout?: 'columns' | 'stack';
+    showRail?: boolean;
 };
 
 export function CustomizationWorkspaceView({
@@ -72,6 +74,8 @@ export function CustomizationWorkspaceView({
     onPrintingConsultation,
     draftId,
     onCustomColorReferenceChange,
+    layout = 'columns',
+    showRail = true,
 }: CustomizationWorkspaceViewProps) {
     return (
         <BuilderThreeColumn
@@ -97,6 +101,8 @@ export function CustomizationWorkspaceView({
             onPrintingConsultation={onPrintingConsultation}
             draftId={draftId}
             onCustomColorReferenceChange={onCustomColorReferenceChange}
+            layout={layout}
+            showRail={showRail}
         />
     );
 }

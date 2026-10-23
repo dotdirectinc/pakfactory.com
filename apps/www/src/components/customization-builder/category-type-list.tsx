@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Check, Search} from 'lucide-react';
+import {Check, ChevronRight, Search} from 'lucide-react';
 import {HighlightItem} from '@pakfactory/ui/components/highlight-item';
 import {Input} from '@pakfactory/ui/components/input';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -27,7 +27,11 @@ type CategoryTypeListProps = {
     categoryLabel?: string;
     /** Override nav chrome (e.g. when nested under Printed Side gate). */
     className?: string;
+    /** Stacked list: trailing chevron so a tap reads as “open spec”. */
+    showOpenHint?: boolean;
 };
+
+const SEARCH_MIN_OPTIONS = 8;
 
 function optionMatchesQuery(option: BuilderOption, query: string): boolean {
     if (!query) return true;
@@ -51,10 +55,11 @@ export function CategoryTypeList({
     onSelectOption,
     categoryLabel,
     className,
+    showOpenHint = false,
 }: CategoryTypeListProps) {
     const [search, setSearch] = useState('');
     const query = search.trim().toLowerCase();
-    const showSearch = kind === 'selection';
+    const showSearch = kind === 'selection' && options.length >= SEARCH_MIN_OPTIONS;
 
     const filteredOptions =
         !showSearch || !query
@@ -110,14 +115,23 @@ export function CategoryTypeList({
                                   key={item.id}
                                   selected={active}
                                   onClick={() => onSelectType(item.id)}
+                                  className="flex w-full min-w-0 items-center gap-3"
                               >
-                                  <span className="text-sm font-medium">
-                                      {item.title}
+                                  <span className="min-w-0 flex-1">
+                                      <span className="text-sm font-medium">
+                                          {item.title}
+                                      </span>
+                                      {item.description ? (
+                                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                              {item.description}
+                                          </p>
+                                      ) : null}
                                   </span>
-                                  {item.description ? (
-                                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                                          {item.description}
-                                      </p>
+                                  {showOpenHint ? (
+                                      <ChevronRight
+                                          className="size-4 shrink-0 text-muted-foreground"
+                                          aria-hidden
+                                      />
                                   ) : null}
                               </HighlightItem>
                           );
@@ -185,7 +199,7 @@ export function CategoryTypeList({
                                                             )
                                                         }
                                                         className={cn(
-                                                            'flex w-full items-start gap-3',
+                                                            'flex w-full min-w-0 items-start gap-3',
                                                             disabled &&
                                                                 'opacity-50 hover:bg-transparent',
                                                         )}
@@ -208,8 +222,23 @@ export function CategoryTypeList({
                                                             ) : null}
                                                         </span>
                                                         <span className="min-w-0 flex-1">
-                                                            <span className="block truncate text-sm font-medium">
-                                                                {option.title}
+                                                            <span className="flex items-center gap-2">
+                                                                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                                                                    {option.title}
+                                                                </span>
+                                                                {picked ? (
+                                                                    <span
+                                                                        className="flex size-4 shrink-0 items-center justify-center rounded-full bg-brand-forest text-white"
+                                                                        aria-hidden
+                                                                    >
+                                                                        <Check
+                                                                            className="size-2.5"
+                                                                            strokeWidth={
+                                                                                3
+                                                                            }
+                                                                        />
+                                                                    </span>
+                                                                ) : null}
                                                             </span>
                                                             {blurb ? (
                                                                 <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
@@ -224,18 +253,12 @@ export function CategoryTypeList({
                                                                 </span>
                                                             ) : null}
                                                         </span>
-                                                        {picked ? (
-                                                            <span
-                                                                className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-brand-forest text-white"
+                                                        {showOpenHint &&
+                                                        !disabled ? (
+                                                            <ChevronRight
+                                                                className="mt-4 size-4 shrink-0 text-muted-foreground"
                                                                 aria-hidden
-                                                            >
-                                                                <Check
-                                                                    className="size-2.5"
-                                                                    strokeWidth={
-                                                                        3
-                                                                    }
-                                                                />
-                                                            </span>
+                                                            />
                                                         ) : null}
                                                     </HighlightItem>
                                                 </li>
@@ -255,7 +278,7 @@ export function CategoryTypeList({
                     <HighlightItem
                         selected={consultationSelected}
                         onClick={onSelectConsultation}
-                        className="w-full"
+                        className="w-full min-w-0"
                     >
                         <span
                             className={

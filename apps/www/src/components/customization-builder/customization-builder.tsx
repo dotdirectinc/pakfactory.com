@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState} from 'react';
+import {X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {
     Dialog,
@@ -9,9 +10,19 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@pakfactory/ui/components/dialog';
+import {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from '@pakfactory/ui/components/sheet';
 import {CustomizationGuidedView} from '@/components/customization-builder/customization-guided-view';
 import {CustomizationWorkspaceView} from '@/components/customization-builder/customization-workspace-view';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import {GuidedStepMenu} from '@/components/customization-builder/guided-step-menu';
+import {Icon} from '@/components/ui/icon';
 import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import type {CatalogOptionLike} from '@/lib/customization-builder';
@@ -25,6 +36,7 @@ import {
     getAnswer,
     isBuilderConfigured,
     isPrintingCategoryStep,
+    isStepReady,
     markGuidedComplete,
     patchAnswer,
     patchCustomColorReference,
@@ -96,6 +108,23 @@ function restoreTypeId(
 ): string | null {
     // Dimensions: never preselect External/Internal from answer alone.
     return lastPick(step, state)?.typeId || null;
+}
+
+/** Below the `lg` dialog layout (1024px): full-height drawer instead of the three-column popup. */
+function useBelowLg() {
+    const [below, setBelow] = useState(() =>
+        typeof window !== 'undefined'
+            ? window.matchMedia('(max-width: 1023px)').matches
+            : false,
+    );
+    useEffect(() => {
+        const mq = window.matchMedia('(max-width: 1023px)');
+        const onChange = () => setBelow(mq.matches);
+        onChange();
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
+    return below;
 }
 
 function restoreOptionId(
@@ -181,12 +210,40 @@ export function CustomizationBuilder({
     const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
     /** Highest rail index unlocked by Next/Skip commit (guided only). */
     const [guidedMaxIndex, setGuidedMaxIndex] = useState(0);
+    const guidedStepIndex = Math.max(
+        0,
+        steps.findIndex((step) => step.key === activeKey),
+    );
+    const activeStep = steps[guidedStepIndex];
+    const activeReady = activeStep
+        ? isStepReady(value, activeStep, dimensionAxisIds, printableSides)
+        : false;
+    /**
+     * Next/Skip commit, or the step on screen when it is ready. A rail click
+     * can open that following category without pressing Next.
+     */
+    const guidedReachableIndex = Math.max(
+        guidedMaxIndex,
+        activeReady ? guidedStepIndex + 1 : guidedStepIndex,
+    );
+    const [stackDetailOpen, setStackDetailOpen] = useState(false);
+    const belowLg = useBelowLg();
+
+    useEffect(() => {
+        if (!open) setStackDetailOpen(false);
+    }, [open]);
 
     function selectCategory(key: BuilderStepKey) {
         const step = steps.find((item) => item.key === key);
         setActiveKey(key);
         setActiveTypeId(restoreTypeId(step, value));
         setActiveOptionId(restoreOptionId(step, value));
+    }
+
+    function selectReachedCategory(key: BuilderStepKey) {
+        const index = steps.findIndex((item) => item.key === key);
+        if (mode === 'guided' && index > guidedReachableIndex) return;
+        selectCategory(key);
     }
 
     function selectConsultation() {
@@ -437,16 +494,148 @@ export function CustomizationBuilder({
             ? CUSTOMIZATION_BUILDER_COPY.guidedIntro
             : CUSTOMIZATION_BUILDER_COPY.workspaceIntro;
 
-    const guidedStepIndex = Math.max(
-        0,
-        steps.findIndex((step) => step.key === activeKey),
-    );
     const dialogTitle =
         mode === 'guided' && steps.length > 0
             ? `${CUSTOMIZATION_BUILDER_COPY.title} – ${CUSTOMIZATION_BUILDER_COPY.stepOf
                   .replace('{current}', String(guidedStepIndex + 1))
                   .replace('{total}', String(steps.length))}`
             : CUSTOMIZATION_BUILDER_COPY.title;
+    const activeStepLabel =
+        steps.find((item) => item.key === activeKey)?.label ?? steps[0]?.label;
+    const stacked = belowLg;
+    const descriptionText = productTitle
+        ? `${productTitle}. ${description}`
+        : description;
+
+    const body =
+        mode === 'guided' ? (
+            <CustomizationGuidedView
+                steps={steps}
+                activeKey={activeKey}
+                activeTypeId={activeTypeId}
+                activeOptionId={activeOptionId}
+                disabledOptionIds={disabledOptionIds}
+                state={value}
+                maxReachableIndex={guidedReachableIndex}
+                dimensionInput={dimensionInput}
+                dimensionRange={dimensionRange}
+                dimensionAxisIds={dimensionAxisIds}
+                printableSides={printableSides}
+                onSelectStep={selectCategory}
+                onSelectConsultation={selectConsultation}
+                onSelectType={selectType}
+                onSelectOption={selectOption}
+                onAnswerChange={handleAnswerChange}
+                onClearCategory={handleClearCategory}
+                onEntryNoteChange={handleEntryNoteChange}
+                onPropertySelectionsChange={handlePropertySelectionsChange}
+                onPrintedSideChange={handlePrintedSideChange}
+                onPrintingConsultation={handlePrintingConsultation}
+                draftId={draftId}
+                onCustomColorReferenceChange={handleCustomColorReferenceChange}
+                onBack={goBack}
+                onNext={goNext}
+                onSkip={handleSkip}
+                onDone={() => finishGuided()}
+                layout={stacked ? 'stack' : 'columns'}
+                showRail={!stacked}
+                onDetailOpenChange={setStackDetailOpen}
+            />
+        ) : (
+            <CustomizationWorkspaceView
+                steps={steps}
+                activeKey={activeKey}
+                activeTypeId={activeTypeId}
+                activeOptionId={activeOptionId}
+                disabledOptionIds={disabledOptionIds}
+                state={value}
+                dimensionInput={dimensionInput}
+                dimensionRange={dimensionRange}
+                dimensionAxisIds={dimensionAxisIds}
+                printableSides={printableSides}
+                onSelectStep={selectCategory}
+                onSelectConsultation={selectConsultation}
+                onSelectType={selectType}
+                onSelectOption={selectOption}
+                onAnswerChange={handleAnswerChange}
+                onClearCategory={handleClearCategory}
+                onEntryNoteChange={handleEntryNoteChange}
+                onPropertySelectionsChange={handlePropertySelectionsChange}
+                onPrintingConsultation={handlePrintingConsultation}
+                onPrintedSideChange={handlePrintedSideChange}
+                draftId={draftId}
+                onCustomColorReferenceChange={handleCustomColorReferenceChange}
+                layout={stacked ? 'stack' : 'columns'}
+            />
+        );
+
+    const workspaceFooter =
+        mode === 'workspace' ? (
+            <div className="flex shrink-0 justify-end border-t border-border px-6 py-4">
+                <Button type="button" size="lg" onClick={handleSave}>
+                    {CUSTOMIZATION_BUILDER_COPY.save}
+                </Button>
+            </div>
+        ) : null;
+
+    if (belowLg) {
+        return (
+            <Sheet open={open} onOpenChange={onOpenChange}>
+                <SheetContent
+                    side="bottom"
+                    showCloseButton={false}
+                    className="inset-0 flex h-dvh w-full max-w-none flex-col gap-0 rounded-none border-0 bg-background p-0"
+                >
+                    {mode === 'guided' && stackDetailOpen ? (
+                        <>
+                            <SheetTitle className="sr-only">
+                                {activeStepLabel ??
+                                    CUSTOMIZATION_BUILDER_COPY.title}
+                            </SheetTitle>
+                            <SheetDescription className="sr-only">
+                                {descriptionText}
+                            </SheetDescription>
+                        </>
+                    ) : (
+                        <SheetHeader className="shrink-0 gap-1 border-b border-border px-7 py-4 pr-12 text-left">
+                            {mode === 'guided' ? (
+                                <>
+                                    <SheetTitle className="sr-only">
+                                        {activeStepLabel ?? dialogTitle}
+                                    </SheetTitle>
+                                    <GuidedStepMenu
+                                        steps={steps}
+                                        activeKey={activeKey}
+                                        maxReachableIndex={guidedReachableIndex}
+                                        state={value}
+                                        printableSides={printableSides}
+                                        onSelect={selectReachedCategory}
+                                    />
+                                </>
+                            ) : (
+                                <SheetTitle className="text-lg font-semibold tracking-tight">
+                                    {dialogTitle}
+                                </SheetTitle>
+                            )}
+                            <SheetDescription className="sr-only">
+                                {descriptionText}
+                            </SheetDescription>
+                        </SheetHeader>
+                    )}
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        {body}
+                    </div>
+                    {workspaceFooter}
+                    <SheetClose className="absolute top-4 right-4 z-10 flex size-8 cursor-pointer items-center justify-center rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden">
+                        <Icon icon={X} size="sm" />
+                        <span className="sr-only">
+                            {CUSTOMIZATION_BUILDER_COPY.close}
+                        </span>
+                    </SheetClose>
+                </SheetContent>
+            </Sheet>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -456,86 +645,15 @@ export function CustomizationBuilder({
                         {dialogTitle}
                     </DialogTitle>
                     <DialogDescription className="sr-only">
-                        {productTitle
-                            ? `${productTitle}. ${description}`
-                            : description}
+                        {descriptionText}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    {mode === 'guided' ? (
-                        <CustomizationGuidedView
-                            steps={steps}
-                            activeKey={activeKey}
-                            activeTypeId={activeTypeId}
-                            activeOptionId={activeOptionId}
-                            disabledOptionIds={disabledOptionIds}
-                            state={value}
-                            maxReachableIndex={guidedMaxIndex}
-                            dimensionInput={dimensionInput}
-                            dimensionRange={dimensionRange}
-                            dimensionAxisIds={dimensionAxisIds}
-                            printableSides={printableSides}
-                            onSelectStep={selectCategory}
-                            onSelectConsultation={selectConsultation}
-                            onSelectType={selectType}
-                            onSelectOption={selectOption}
-                            onAnswerChange={handleAnswerChange}
-                            onClearCategory={handleClearCategory}
-                            onEntryNoteChange={handleEntryNoteChange}
-                            onPropertySelectionsChange={
-                                handlePropertySelectionsChange
-                            }
-                            onPrintedSideChange={handlePrintedSideChange}
-                            onPrintingConsultation={handlePrintingConsultation}
-                            draftId={draftId}
-                            onCustomColorReferenceChange={
-                                handleCustomColorReferenceChange
-                            }
-                            onBack={goBack}
-                            onNext={goNext}
-                            onSkip={handleSkip}
-                            onDone={() => finishGuided()}
-                        />
-                    ) : (
-                        <CustomizationWorkspaceView
-                            steps={steps}
-                            activeKey={activeKey}
-                            activeTypeId={activeTypeId}
-                            activeOptionId={activeOptionId}
-                            disabledOptionIds={disabledOptionIds}
-                            state={value}
-                            dimensionInput={dimensionInput}
-                            dimensionRange={dimensionRange}
-                            dimensionAxisIds={dimensionAxisIds}
-                            printableSides={printableSides}
-                            onSelectStep={selectCategory}
-                            onSelectConsultation={selectConsultation}
-                            onSelectType={selectType}
-                            onSelectOption={selectOption}
-                            onAnswerChange={handleAnswerChange}
-                            onClearCategory={handleClearCategory}
-                            onEntryNoteChange={handleEntryNoteChange}
-                            onPropertySelectionsChange={
-                                handlePropertySelectionsChange
-                            }
-                            onPrintedSideChange={handlePrintedSideChange}
-                            onPrintingConsultation={handlePrintingConsultation}
-                            draftId={draftId}
-                            onCustomColorReferenceChange={
-                                handleCustomColorReferenceChange
-                            }
-                        />
-                    )}
+                    {body}
                 </div>
 
-                {mode === 'workspace' ? (
-                    <div className="flex shrink-0 justify-end border-t border-border px-6 py-4">
-                        <Button type="button" size="lg" onClick={handleSave}>
-                            {CUSTOMIZATION_BUILDER_COPY.save}
-                        </Button>
-                    </div>
-                ) : null}
+                {workspaceFooter}
             </DialogContent>
         </Dialog>
     );

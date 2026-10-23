@@ -40,6 +40,7 @@ type SelectionDetailProps = {
         propertyKey: string,
         image: CustomColorReferenceImage | null,
     ) => void;
+    compact?: boolean;
 };
 
 function techniqueLearnMoreHref(item: NonNullable<BuilderOption['achievedBy']>[number]): string | undefined {
@@ -103,6 +104,7 @@ function AchievedByDetail({
     onEntryNoteChange,
     propertySelections,
     onPropertySelectionsChange,
+    compact = false,
 }: {
     option: BuilderOption;
     entryNote: string;
@@ -112,6 +114,7 @@ function AchievedByDetail({
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) => void;
+    compact?: boolean;
 }) {
     const selection = propertySelections ?? {};
     const selectedId =
@@ -167,6 +170,7 @@ function AchievedByDetail({
                     description={option.description}
                     shortDescription={option.shortDescription}
                     imageUrl={option.imageUrl}
+                    compact={compact}
                 />
 
                 <div className="mt-8 flex flex-col gap-2">
@@ -215,6 +219,7 @@ export function CustomizationFinishOption(props: SelectionDetailProps) {
                 onEntryNoteChange={props.onEntryNoteChange}
                 propertySelections={props.propertySelections}
                 onPropertySelectionsChange={props.onPropertySelectionsChange}
+                compact={props.compact}
             />
         );
     }

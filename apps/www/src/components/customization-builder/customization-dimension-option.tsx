@@ -18,6 +18,7 @@ import {
     type LengthUnit,
 } from '@pakfactory/utilities/length-units';
 import {resolveProductDims} from '@pakfactory/sanity/resolve-product-dims';
+import {ConsultationSpecialistRow} from '@/components/customization-builder/consultation-specialist-row';
 import {AdditionalNoteField} from '@/components/customization-builder/ui/additional-note-field';
 import {OptionDetailHeader} from '@/components/customization-builder/ui/option-detail-header';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
@@ -40,6 +41,7 @@ type CustomizationDimensionOptionProps = {
     onEntryNoteChange: (note: string) => void;
     dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
+    compact?: boolean;
 };
 
 export function CustomizationDimensionOption({
@@ -50,6 +52,7 @@ export function CustomizationDimensionOption({
     onEntryNoteChange,
     dimensionInput,
     dimensionRange,
+    compact = false,
 }: CustomizationDimensionOptionProps) {
     const notSure = answer.status === 'not-sure';
     const resolved = resolveProductDims(
@@ -74,7 +77,11 @@ export function CustomizationDimensionOption({
                 <OptionDetailHeader
                     title={CUSTOMIZATION_BUILDER_COPY.skipNotSure}
                     description={CUSTOMIZATION_BUILDER_COPY.notSureHelper}
-                />
+                    showMedia={false}
+                    compact={compact}
+                >
+                    <ConsultationSpecialistRow />
+                </OptionDetailHeader>
             </div>
         );
     }
@@ -153,6 +160,7 @@ export function CustomizationDimensionOption({
             <OptionDetailHeader
                 title={faceTitle}
                 description={enterDimensionInputCopy(axisIds)}
+                compact={compact}
             />
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">

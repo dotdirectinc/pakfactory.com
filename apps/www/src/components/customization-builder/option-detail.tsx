@@ -8,6 +8,7 @@ import {
     OptionPropertyControllers,
     type PropertySelectionMap,
 } from '@/components/customization/option-property-controllers';
+import {ConsultationSpecialistRow} from '@/components/customization-builder/consultation-specialist-row';
 import {AdditionalNoteField} from '@/components/customization-builder/ui/additional-note-field';
 import {OptionDetailHeader} from '@/components/customization-builder/ui/option-detail-header';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
@@ -44,6 +45,7 @@ type OptionDetailProps = {
         propertyKey: string,
         image: CustomColorReferenceImage | null,
     ) => void;
+    compact?: boolean;
 };
 
 function DetailFade({children}: {children: ReactNode}) {
@@ -84,6 +86,7 @@ export function OptionDetail({
     draftId,
     customColorReferences,
     onCustomColorReferenceChange,
+    compact = false,
 }: OptionDetailProps) {
     const [fields, setFields] = useState<PropertyFieldDescriptor[]>([]);
     const [loadingFields, setLoadingFields] = useState(false);
@@ -145,7 +148,11 @@ export function OptionDetail({
                     <OptionDetailHeader
                         title={CUSTOMIZATION_BUILDER_COPY.skipNotSure}
                         description={CUSTOMIZATION_BUILDER_COPY.notSureHelper}
-                    />
+                        showMedia={false}
+                        compact={compact}
+                    >
+                        <ConsultationSpecialistRow />
+                    </OptionDetailHeader>
                 </div>
             </DetailFade>
         );
@@ -179,6 +186,7 @@ export function OptionDetail({
                     description={option.description}
                     shortDescription={option.shortDescription}
                     imageUrl={option.imageUrl}
+                    compact={compact}
                 >
                     {afterDescription}
                 </OptionDetailHeader>

@@ -3,10 +3,12 @@ import {describe, it} from 'node:test';
 import {
     formatPrintedSideSummary,
     isPrintedSideComplete,
+    isPrintingStepReady,
     parseBuilderState,
     patchPrintedSide,
     wantsAnyPrint,
 } from '@/lib/customization-builder/state';
+import type {StepAnswer} from '@/lib/customization-builder/types';
 import {
     resolvePrintableSides,
     shouldShowPrintedSideGate,
@@ -117,5 +119,54 @@ describe('printedSides gate helpers', () => {
             formatPrintedSideSummary(state, outsideInside),
             'Outside only',
         );
+    });
+});
+
+describe('isPrintingStepReady', () => {
+    const outsideInside = [
+        {slug: 'outside', title: 'Outside'},
+        {slug: 'inside', title: 'Inside'},
+    ];
+    const method: StepAnswer = {
+        status: 'set',
+        selections: [
+            {typeId: 'method', optionId: 'flexo', label: 'Flexo'},
+        ],
+    };
+
+    it('is ready when one side is Yes and a method is picked', () => {
+        let state = patchPrintedSide(
+            parseBuilderState({}),
+            {outside: 'yes'},
+            outsideInside,
+        );
+        assert.equal(isPrintingStepReady(state, method, outsideInside), true);
+        assert.equal(isPrintingStepReady(state, {status: 'unset'}, outsideInside), false);
+
+        state = patchPrintedSide(
+            parseBuilderState({}),
+            {inside: 'yes'},
+            outsideInside,
+        );
+        assert.equal(isPrintingStepReady(state, method, outsideInside), true);
+    });
+
+    it('is ready for every side No, and for consultation', () => {
+        const none = patchPrintedSide(
+            parseBuilderState({}),
+            {outside: 'no', inside: 'no'},
+            outsideInside,
+        );
+        assert.equal(isPrintingStepReady(none, {status: 'unset'}, outsideInside), true);
+        assert.equal(
+            isPrintingStepReady(parseBuilderState({}), {status: 'not-sure'}, outsideInside),
+            true,
+        );
+    });
+
+    it('with no printable sides, a method is required', () => {
+        const state = parseBuilderState({});
+        assert.equal(isPrintingStepReady(state, {status: 'unset'}, []), false);
+        assert.equal(isPrintingStepReady(state, method, []), true);
     });
 });

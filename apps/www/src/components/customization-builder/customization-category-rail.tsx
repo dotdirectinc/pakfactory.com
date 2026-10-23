@@ -30,6 +30,8 @@ type CustomizationCategoryRailProps = {
     printableSides?: PrintableSide[];
     onSelect: (key: BuilderStepKey) => void;
     onClearCategory?: (key: BuilderStepKey) => void;
+    /** Always a vertical list (drawer). Desktop keeps the existing rail. */
+    stacked?: boolean;
 };
 
 export function CustomizationCategoryRail({
@@ -42,10 +44,15 @@ export function CustomizationCategoryRail({
     printableSides = [],
     onSelect,
     onClearCategory,
+    stacked = false,
 }: CustomizationCategoryRailProps) {
     return (
         <nav
-            className="flex flex-row gap-1 overflow-x-auto px-2 py-3 lg:flex-col lg:overflow-visible"
+            className={
+                stacked
+                    ? 'flex flex-col gap-1 overflow-visible px-2 py-3'
+                    : 'flex flex-row gap-1 overflow-x-auto px-2 py-3 lg:flex-col lg:overflow-visible'
+            }
             aria-label={CUSTOMIZATION_BUILDER_COPY.navLabel}
         >
             {steps.map((item, index) => {
@@ -88,7 +95,11 @@ export function CustomizationCategoryRail({
                 return (
                     <div
                         key={item.key}
-                        className="relative shrink-0 lg:w-full"
+                        className={
+                            stacked
+                                ? 'relative w-full'
+                                : 'relative shrink-0 lg:w-full'
+                        }
                     >
                         <HighlightItem
                             selected={active}

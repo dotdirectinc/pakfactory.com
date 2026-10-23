@@ -141,7 +141,8 @@ function parsePrintSideValue(value: unknown): PrintSideValue {
 
 /**
  * Printing step ready when: gate consultation, all No (None), or any Yes
- * with method / consultation answer. Gate hidden → methods-only readiness.
+ * with a method. The other side may stay unanswered. Gate hidden →
+ * methods-only readiness.
  */
 export function isPrintingStepReady(
     state: CustomizationBuilderState,
@@ -149,8 +150,10 @@ export function isPrintingStepReady(
     sides: PrintableSide[] = [],
 ): boolean {
     if (answer?.status === 'not-sure') return true;
-    if (!isPrintedSideComplete(state, sides)) return false;
-    if (!wantsAnyPrint(state, sides)) return true;
+    if (!shouldShowPrintedSideGate(sides)) return isAnswerReady(answer);
+    if (!wantsAnyPrint(state, sides)) {
+        return isPrintedSideComplete(state, sides);
+    }
     return isAnswerReady(answer);
 }
 
