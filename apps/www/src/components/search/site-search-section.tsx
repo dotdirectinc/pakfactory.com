@@ -7,6 +7,7 @@ import {cn} from '@pakfactory/ui/lib/utils';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {pickCardHoverStill} from '@/lib/catalog/card-hover-still';
 import {isSanityCdnUrl} from '@/lib/sanity/image';
+import {highlightParts} from '@/lib/search/search-highlight';
 import {
     mediaDissolveHoverInClass,
     mediaDissolveRestHoverOutClass,
@@ -76,30 +77,20 @@ type SectionProps = {
     highlight?: string;
 };
 
-function escapeRegExp(value: string) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/** Bold the typed words inside a title (client-side; the API returns no highlights). */
+/** Bold the typed words inside a title; which words is `highlightParts` (PROD-3149). */
 function Highlighted({text, query, dark}: {text: string; query?: string; dark: boolean}) {
-    const words = (query ?? '')
-        .split(' ')
-        .filter((w) => w.length >= 2)
-        .map(escapeRegExp);
-    if (!words.length) return <>{text}</>;
-    const parts = text.split(new RegExp(`(${words.join('|')})`, 'gi'));
     return (
         <>
-            {parts.map((part, i) =>
-                i % 2 === 1 ? (
+            {highlightParts(text, query).map((part, i) =>
+                part.match ? (
                     <strong
                         key={i}
                         className={cn('font-semibold', dark ? 'text-white' : 'text-foreground')}
                     >
-                        {part}
+                        {part.text}
                     </strong>
                 ) : (
-                    <Fragment key={i}>{part}</Fragment>
+                    <Fragment key={i}>{part.text}</Fragment>
                 ),
             )}
         </>
