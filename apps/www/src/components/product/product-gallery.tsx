@@ -573,9 +573,9 @@ function GalleryLightbox({
                     aria-describedby={undefined}
                     onOpenAutoFocus={(event) => {
                         event.preventDefault();
-                        const close = event.currentTarget.querySelector(
-                            '[aria-label="Close"]',
-                        );
+                        const stage = event.currentTarget;
+                        if (!(stage instanceof HTMLElement)) return;
+                        const close = stage.querySelector('[aria-label="Close"]');
                         if (close instanceof HTMLElement) close.focus();
                     }}
                     onPointerDown={(event) => {
