@@ -28,6 +28,7 @@
     "fill:catalog": "node scripts/fill-catalog-from-review.mjs",
     "upload:product-images": "node scripts/upload-standard-product-images.mjs",
     "upload:inspiration-images": "node scripts/upload-inspiration-product-images.mjs",
+    "upload:customization-images": "node scripts/upload-customization-images.mjs",
     "cleanup:blogsettings-defaults": "node scripts/unset-legacy-blogsettings-defaults.mjs",
     "cleanup:sitemap-hints": "node scripts/unset-sitemap-hint-fields.mjs",
     "cleanup:ai-crawler-fields": "node scripts/unset-ai-crawler-fields.mjs",
