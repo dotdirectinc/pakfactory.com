@@ -46,7 +46,7 @@ export const RETRIEVED_ATTRIBUTES = [
     'imageAlt',
     'hoverImage',
     'parents',
-    // Server-side only (exact-SKU ordering below); not passed to the client.
+    // Products only: exact-SKU ordering below, and shown beside the title (PROD-3154).
     'sku',
 ] as const;
 
@@ -128,6 +128,8 @@ export type SearchHit = {
     /** Product `images[1]` when indexed (PROD-3130). */
     hoverImage?: string | null;
     parents: string[];
+    /** Products with a SKU only (PROD-3154), so a SKU match can be seen in the results. */
+    sku?: string;
     /** 1-based rank in Algolia's response, for click events. */
     position: number;
 };
@@ -203,6 +205,7 @@ export function shapeResponse(
             ...(str(raw.hoverImage)
                 ? {hoverImage: str(raw.hoverImage)}
                 : {}),
+            ...(str(raw.sku) ? {sku: str(raw.sku)} : {}),
             parents: Array.isArray(raw.parents)
                 ? raw.parents.filter((p): p is string => typeof p === 'string')
                 : [],

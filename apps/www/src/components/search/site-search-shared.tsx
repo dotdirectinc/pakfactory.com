@@ -31,6 +31,7 @@ export function hitToItem(hit: SearchHit, queryID: string | null): SearchNavItem
         imageAlt: hit.imageAlt,
         ...(hit.hoverImage ? {hoverImage: hit.hoverImage} : {}),
         summary: hit.summary,
+        ...(hit.sku ? {sku: hit.sku} : {}),
         label: TYPE_LABELS[hit.type],
         track: queryID ? {queryID, objectID: hit.id, position: hit.position} : undefined,
     };

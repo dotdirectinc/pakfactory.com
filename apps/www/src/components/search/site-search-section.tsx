@@ -7,6 +7,7 @@ import {cn} from '@pakfactory/ui/lib/utils';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {pickCardHoverStill} from '@/lib/catalog/card-hover-still';
 import {isSanityCdnUrl} from '@/lib/sanity/image';
+import {highlightParts} from '@/lib/search/search-highlight';
 import {
     mediaDissolveHoverInClass,
     mediaDissolveRestHoverOutClass,
@@ -40,6 +41,8 @@ export type SearchNavItem = {
     /** Product `images[1]` — product grid thumbs only (PROD-3130). */
     hoverImage?: string | null;
     summary?: string;
+    /** Product SKU (PROD-3154): beside the title in `list` rows, under it on `grid` cards. */
+    sku?: string;
     label?: string;
     /** `list` rows: a recent search (clock icon, removable) or "see all" (search icon). */
     icon?: 'recent' | 'search';
@@ -74,30 +77,20 @@ type SectionProps = {
     highlight?: string;
 };
 
-function escapeRegExp(value: string) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/** Bold the typed words inside a title (client-side; the API returns no highlights). */
+/** Bold the typed words inside a title; which words is `highlightParts` (PROD-3149). */
 function Highlighted({text, query, dark}: {text: string; query?: string; dark: boolean}) {
-    const words = (query ?? '')
-        .split(' ')
-        .filter((w) => w.length >= 2)
-        .map(escapeRegExp);
-    if (!words.length) return <>{text}</>;
-    const parts = text.split(new RegExp(`(${words.join('|')})`, 'gi'));
     return (
         <>
-            {parts.map((part, i) =>
-                i % 2 === 1 ? (
+            {highlightParts(text, query).map((part, i) =>
+                part.match ? (
                     <strong
                         key={i}
                         className={cn('font-semibold', dark ? 'text-white' : 'text-foreground')}
                     >
-                        {part}
+                        {part.text}
                     </strong>
                 ) : (
-                    <Fragment key={i}>{part}</Fragment>
+                    <Fragment key={i}>{part.text}</Fragment>
                 ),
             )}
         </>
@@ -303,6 +296,20 @@ export function SiteSearchSection({
                                             dark={dark}
                                         />
                                     </span>
+                                    {item.sku ? (
+                                        <span
+                                            className={cn(
+                                                'shrink-0 text-xs tabular-nums',
+                                                dark ? 'text-white/55' : 'text-muted-foreground',
+                                            )}
+                                        >
+                                            <Highlighted
+                                                text={item.sku}
+                                                query={highlight}
+                                                dark={dark}
+                                            />
+                                        </span>
+                                    ) : null}
                                     {item.label ? (
                                         <span
                                             className={cn(
@@ -408,6 +415,16 @@ export function SiteSearchSection({
                                 >
                                     {item.title}
                                 </span>
+                                {item.sku ? (
+                                    <span
+                                        className={cn(
+                                            'mt-0.5 block text-[11px] tabular-nums',
+                                            dark ? 'text-white/55' : 'text-muted-foreground',
+                                        )}
+                                    >
+                                        {item.sku}
+                                    </span>
+                                ) : null}
                             </span>
                         </button>
                     ))}
