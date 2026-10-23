@@ -8,6 +8,7 @@ import {
   getDevBypassSession,
   isAdminDevBypassEnabled,
 } from "@/lib/auth/dev-bypass";
+import { isInternalEmail } from "@/lib/auth/internal-domain";
 import { isSupabaseConfigured } from "@/lib/auth/supabase-configured";
 import { startTiming } from "@/lib/perf/timing";
 
@@ -52,7 +53,11 @@ export async function requireInternalUser(
 const loadSession = cache(async (): Promise<{ user: User | null; account: InternalAccount | null }> => {
   const t = startTiming("requireInternalUser");
   const user = await t.step("getUser", getUser());
-  const account = user?.email ? await t.step("account", getInternalAccountAdapter().getByEmail(user.email)) : null;
+  // The domain is re-checked here, not only at sign-in, so a session that predates the
+  // rule (or slipped past it) is refused on its next request (internal-domain.ts).
+  const account = isInternalEmail(user?.email)
+    ? await t.step("account", getInternalAccountAdapter().getByEmail(user!.email!))
+    : null;
   t.done();
   return { user, account };
 });

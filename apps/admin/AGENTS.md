@@ -70,10 +70,10 @@ Without `ADMIN_DEV_BYPASS=true`, use real Supabase login: set `ADMIN_INTERNAL_AC
 
 ## Sign-in
 
-Google is the sign-in path. **One thing is checked: an enabled `internal_user` row** (PROD-2512 / ADR-0016 D3). The row is what a person provisions, and it is the only thing that makes someone staff.
+Google is the sign-in path. **Two things are checked, both required: an `@dotdirect.ca` address AND an enabled `internal_user` row** (decided 2026-10-23, reversing PROD-2512's row-only rule). The row is what a person provisions; the domain keeps a mis-provisioned row (a customer address typed into `internal_user`) from admitting a non-employee, since www customers share the same Supabase auth.
 
-- **No email-domain check.** Staff hold addresses on `dotdirect.ca` and `pakfactory.com`; a domain test refused real colleagues or had to grow a list that drifts from the rows that grant access. The old `internal-domain.ts` constant is gone.
-- **No `hd` hint.** Google's hosted-domain hint takes one domain, so either value would hide the other domain's accounts. The authorize request sends `prompt=select_account` instead, so a personal Google session gets the account chooser rather than a silent sign-in.
+- **One domain: `dotdirect.ca`.** `pakfactory.com` addresses are refused even with a row; staff sign in with their dotdirect.ca account. The constant and `isInternalEmail` live in [`src/lib/auth/internal-domain.ts`](src/lib/auth/internal-domain.ts) and are used by the callback, the password action, `requireInternalUser` (so an older session is refused on its next request) and the Google button.
+- **`hd=dotdirect.ca` hint, plus `prompt=select_account`.** `hd` only filters Google's account picker; it is not a control, because the callback re-checks the domain. `select_account` still shows the chooser to someone with several Google sessions.
 - **Roles** (`packages/domain` `InternalRole`): `sales` (scoped to a Zoho id; sees assigned requests) and `staff` (no RFQ scope; request views are empty). Spec-registry permissions are registry grants, not this role (ADR-0016 D4).
 - **Sessions:** admin and the customer site share one Supabase project but keep **host-only** cookies (`packages/supabase/src/server.ts` sets no cookie `domain`), so the two sign-ins stay separate per host. Separation is not authorization: every staff decision checks the row server-side.
 
@@ -85,7 +85,7 @@ Unset, or anything but exactly `true`, and `/login` is Google-only. Set `true` t
 
 - **Server-side, not `NEXT_PUBLIC_`.** The page reads it and passes a boolean down; flipping it needs a redeploy, not a rebuild. Logic: [`src/lib/auth/password-login.ts`](src/lib/auth/password-login.ts).
 - **The flag closes the server action, not just the form.** `signInInternal` re-checks it before touching Supabase — a server action is a POST endpoint whether or not a form renders.
-- **The password path still requires an `internal_user` row.** www customers live in the *same* Supabase auth project, so without that check any buyer's password would open admin. Like the callback, it does not check the email domain; the row is the gate.
+- **The password path still requires an `internal_user` row.** www customers live in the *same* Supabase auth project, so without that check any buyer's password would open admin. Like the callback, it also requires an `@dotdirect.ca` address.
 - There is deliberately **no forgot-password or sign-up link** in either mode. Those pointed into the customer app (`lib/www-links.ts`, deleted) and are how staff ended up in the buyer flows. `NEXT_PUBLIC_WWW_URL` is not read by admin.
 
 ## Shell chrome

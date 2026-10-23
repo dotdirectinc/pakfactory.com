@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@pakfactory/supabase/server";
 import { safeNext } from "@pakfactory/supabase/session";
 import { getInternalAccountAdapter } from "@/lib/adapters";
+import { isInternalEmail } from "@/lib/auth/internal-domain";
 
 /**
  * OAuth return, and the ONLY place an admin session is established.
@@ -15,14 +16,10 @@ import { getInternalAccountAdapter } from "@/lib/adapters";
  * password path never had that gap: `signInInternal` checks membership and signs
  * out before returning. This closes it for OAuth.
  *
- * ONE check: an enabled `internal_user` row (PROD-2512 / ADR-0016 D3). That row
- * is what a person provisions, and it is the only thing that makes someone staff.
- *
- * The email-domain check that used to sit beside it is gone, deliberately. Staff
- * hold addresses on more than one domain (`dotdirect.ca` and `pakfactory.com`),
- * and a domain test either refused real colleagues or had to grow a list that
- * would drift from the rows that actually grant access. A domain was only ever
- * "could be staff"; the row is "is staff", so the row is the gate.
+ * TWO checks, both required (decided 2026-10-23; see internal-domain.ts):
+ * an `@dotdirect.ca` address AND an enabled `internal_user` row. PROD-2512 had
+ * dropped the domain check so `pakfactory.com` addresses could sign in; that was
+ * reversed, and staff sign in with their dotdirect.ca account.
  *
  * Every Google account in the project can reach this callback — customers of the
  * www app share the same Supabase auth (ADR-0016 D1). That is safe because a
@@ -53,11 +50,11 @@ export async function GET(request: Request) {
 
   const email = data.user?.email?.trim().toLowerCase() ?? "";
 
-  // One generic message for every refusal: saying "no account for this address"
-  // would confirm which addresses are staff. A real colleague is told to contact
+  // One generic message for every refusal: saying "wrong domain" or "no account
+  // for this address" would confirm which addresses are staff. A real colleague is told to contact
   // their manager either way.
   const allowed =
-    email.length > 0 &&
+    isInternalEmail(email) &&
     Boolean(await getInternalAccountAdapter().getByEmail(email));
 
   if (!allowed) {

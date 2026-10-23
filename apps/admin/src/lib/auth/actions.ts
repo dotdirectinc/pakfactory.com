@@ -5,6 +5,7 @@ import { createClient } from "@pakfactory/supabase/server";
 import { safeNext } from "@pakfactory/supabase/session";
 import { getInternalAccountAdapter } from "@/lib/adapters";
 import { isAdminDevBypassEnabled } from "@/lib/auth/dev-bypass";
+import { isInternalEmail } from "@/lib/auth/internal-domain";
 import { isAdminPasswordLoginEnabled } from "@/lib/auth/password-login";
 
 export interface ActionState {
@@ -32,8 +33,8 @@ const emailOf = (form: FormData) =>
  * cookie survives the refusal — the same property `/auth/callback` maintains for
  * the OAuth path.
  *
- * Neither this action nor the callback checks the email domain (PROD-2512 /
- * ADR-0016): the `internal_user` row is the gate on both paths.
+ * Both this action and the callback require an `@dotdirect.ca` address AND an
+ * `internal_user` row (decided 2026-10-23; see internal-domain.ts).
  */
 export async function signInInternal(
   _prev: ActionState,
@@ -57,7 +58,9 @@ export async function signInInternal(
     return { error: "Email or password is incorrect." };
   }
 
-  const account = await getInternalAccountAdapter().getByEmail(email);
+  const account = isInternalEmail(email)
+    ? await getInternalAccountAdapter().getByEmail(email)
+    : null;
   if (!account) {
     await supabase.auth.signOut();
     return {
