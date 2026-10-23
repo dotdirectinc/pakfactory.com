@@ -131,11 +131,14 @@ test('shapeResponse: the exact SKU goes first, positions follow the shown order'
         ['variant', 1],
         ['base', 2],
     ]);
-    // Not a SKU query: Algolia's order stands, and the SKU never reaches the client.
+    // Not a SKU query: Algolia's order stands. The SKU reaches the client (PROD-3154).
     const plain = shapeResponse('trays', null, result, BLOG).groups[0]!.hits;
     assert.deepEqual(
         plain.map((h) => h.id),
         ['variant', 'base'],
     );
-    assert.equal('sku' in plain[0]!, false);
+    assert.equal(plain[0]!.sku, 'COR-008-BR1');
+    // A hit without a SKU carries no `sku` key.
+    const noSku = shapeResponse('trays', null, {hits: [raw('style', '')]}, BLOG).groups[0]!.hits;
+    assert.equal('sku' in noSku[0]!, false);
 });
