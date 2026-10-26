@@ -177,10 +177,10 @@ function RowPanel({ title, count, rows, empty, basisCount, editable, onToggle }:
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RowFilter>("proposed");
-  const [open, setOpen] = useState<Set<string>>(new Set());
+  // A group's own open / closed click wins; until then a search, or a short list, starts it open.
+  const [open, setOpen] = useState<Map<string, boolean>>(new Map());
   const groups = groupRows(visibleRows(rows, filter, query));
-  // A search, or a short list, opens every group: the rows are what was asked for.
-  const allOpen = !!query.trim() || groups.length <= 3;
+  const openByDefault = !!query.trim() || groups.length <= 3;
 
   return (
     <div className="flex min-w-0 flex-col gap-2 rounded-md border border-border p-3">
@@ -204,13 +204,13 @@ function RowPanel({ title, count, rows, empty, basisCount, editable, onToggle }:
           <div className="flex max-h-[28rem] flex-col overflow-y-auto">
             {groups.length === 0 ? <p className="py-2 text-sm text-muted-foreground">{COPY.noRows}</p> : null}
             {groups.map((g) => {
-              const isOpen = allOpen || open.has(g.group);
+              const isOpen = open.get(g.group) ?? openByDefault;
               return (
                 <div key={g.group} className="border-b border-border last:border-b-0">
                   <button
                     type="button"
                     aria-expanded={isOpen}
-                    onClick={() => setOpen((o) => { const n = new Set(o); if (n.has(g.group)) n.delete(g.group); else n.add(g.group); return n; })}
+                    onClick={() => setOpen((o) => new Map(o).set(g.group, !isOpen))}
                     className="flex w-full items-center justify-between gap-2 py-1.5 text-left text-sm text-foreground"
                   >
                     <span className="truncate">{isOpen ? "▾" : "▸"} {g.group}</span>
@@ -237,7 +237,7 @@ function Row({ row, basisCount, editable, onToggle }: { row: FrameRow; basisCoun
     <li className="flex items-start gap-2 py-0.5 pl-4 text-sm">
       <Checkbox id={id} checked={row.selected} disabled={!editable} onCheckedChange={(v) => onToggle(row.id, v === true)} className="mt-0.5" />
       <label htmlFor={id} className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-        <span className={row.selected ? "text-foreground" : "text-muted-foreground line-through decoration-muted-foreground/50"}>{row.label}</span>
+        <span className={row.selected ? "min-w-0 text-foreground" : "min-w-0 text-muted-foreground line-through decoration-muted-foreground/50"}>{row.label}</span>
         {row.standard ? <Badge variant="secondary" className="px-1.5 py-0 text-[11px]">{COPY.standard(row.share, basisCount)}</Badge> : null}
         {row.studio ? <Badge variant="outline" className="px-1.5 py-0 text-[11px]">{COPY.studio}</Badge> : null}
         {row.saving ? <span className="text-xs text-muted-foreground">{COPY.saving}</span>

@@ -65,7 +65,8 @@ export default async function SpecChangesetPage({
   const sentences = Array.isArray(cs.summary?.sentences) ? (cs.summary.sentences as string[]) : [];
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+    // An option frame's two side-by-side tables get the wider page (PROD-3167).
+    <div className={`mx-auto flex w-full ${optionEditor ? "max-w-7xl" : "max-w-5xl"} flex-col gap-5`}>
       <div className="flex flex-col gap-2">
         <Link href="/spec" className="text-sm text-muted-foreground hover:underline">
           ← {ADMIN_SPEC_COPY.listTitle}
