@@ -4,7 +4,9 @@ import { SpecFrameImpactNow } from "@/components/spec/spec-frame-impact-now";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
-import { approvedFrames, getChangesetDetail } from "@/lib/spec/registry-api";
+import { approvedFrames, getChangesetDetail, getOptionCandidates, getOptionEdits } from "@/lib/spec/registry-api";
+import { SpecOptionFrameEditor } from "@/components/spec/spec-option-frame-editor";
+import type { ProposalRow } from "@/lib/spec/option-frame-rows";
 import { blockedBy, dependsOn } from "@/lib/spec/prerequisites";
 import { canApprove, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecDecisionBar } from "@/components/spec/spec-decision-bar";
@@ -53,9 +55,18 @@ export default async function SpecChangesetPage({
     : cs.state === "draft" && cs.source === "notion-sync" && me.capabilities.includes("catalog.sync.notion") ? ("notion" as const)
     : null;
   const resyncDataset = typeof cs.summary?.dataset === "string" ? cs.summary.dataset : "development";
+  // A new option's Register frame is edited on the frame (PROD-3167): its shared edit state and the rows
+  // that could be added, read together.
+  const optionRules = cs.summary?.optionRules as { offeredOn: ProposalRow[]; compatibleWith: ProposalRow[] } | undefined;
+  const [optionEdits, optionCandidates] = optionRules
+    ? await Promise.all([getOptionEdits(cs.id), getOptionCandidates(cs.id)])
+    : [null, null];
+  const optionEditor = optionRules && optionEdits?.ok && optionCandidates?.ok ? { edits: optionEdits.data, candidates: optionCandidates.data } : null;
+  const sentences = Array.isArray(cs.summary?.sentences) ? (cs.summary.sentences as string[]) : [];
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+    // An option frame's two side-by-side tables get the wider page (PROD-3167).
+    <div className={`mx-auto flex w-full ${optionEditor ? "max-w-7xl" : "max-w-5xl"} flex-col gap-5`}>
       <div className="flex flex-col gap-2">
         <Link href="/spec" className="text-sm text-muted-foreground hover:underline">
           ← {ADMIN_SPEC_COPY.listTitle}
@@ -71,8 +82,27 @@ export default async function SpecChangesetPage({
 
       {/* A Register frame that fills standard offers explains the fill the same way (2026-10-22), and a
           new option's Register frame its proposed rules, each standard / from Studio (PROD-3166). */}
-      {cs.source === "spec-edit" || cs.summary?.standardOffers || cs.summary?.optionRules ? <SpecEditSummary summary={cs.summary ?? {}} /> : null}
+      {optionRules && optionEditor ? (
+        <SpecOptionFrameEditor
+          changesetId={cs.id}
+          rules={optionRules}
+          sentences={sentences}
+          basisCount={Number(/its (\d+) other Active/.exec(sentences[0] ?? "")?.[1] ?? 0)}
+          registers={items.some((i) => i.entity_type === "allowable_value")}
+          initial={optionEditor.edits}
+          candidates={optionEditor.candidates}
+          canEdit={canApprove(me)}
+          blockedBy={blocked}
+        />
+      ) : optionRules && !optionEditor ? (
+        <p role="alert" className="text-sm text-destructive">
+          {(optionEdits && !optionEdits.ok ? optionEdits.error : null) ?? (optionCandidates && !optionCandidates.ok ? optionCandidates.error : null)}
+        </p>
+      ) : null}
+      {cs.source === "spec-edit" || cs.summary?.standardOffers || (optionRules && !optionEditor) ? <SpecEditSummary summary={cs.summary ?? {}} /> : null}
 
+      {/* A pending option frame's items are rebuilt from the edits at approval: the editor above is the list. */}
+      {optionEditor && cs.state === "draft" ? null : (<>
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium text-foreground">{ADMIN_SPEC_COPY.itemsHeading}</h2>
         <ul className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
@@ -90,13 +120,14 @@ export default async function SpecChangesetPage({
         <p className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.everyChangeLead}</p>
         <SpecItemList items={items} source={cs.source} exclusion={cs.excludable && canApprove(me) ? { changesetId: cs.id } : null} />
       </section>
+      </>)}
 
       {cs.state === "draft" ? (
         <>
           {cs.source === "spec-edit" ? <SpecFrameImpactNow items={items} summary={cs.summary ?? {}} /> : null}
           {cs.source === "spec-edit" ? <SpecFrameOverrides changesetId={cs.id} /> : null}
           {resyncKind ? <SpecResyncButton kind={resyncKind} dataset={resyncDataset} /> : null}
-          <SpecDecisionBar
+          {optionEditor ? null : <SpecDecisionBar
             changesetId={cs.id}
             itemCount={items.length}
             excludedCount={items.filter((i) => i.excluded_at).length}
@@ -104,7 +135,7 @@ export default async function SpecChangesetPage({
             recordsDeletions={items.some((i) => i.entity_type === "entity_tombstone")}
             canDecide={canApprove(me)}
             blockedBy={blocked}
-          />
+          />}
         </>
       ) : (
         <p className="text-sm text-muted-foreground">

@@ -21,6 +21,10 @@ type Props = {
   canDecide: boolean;
   /** Frames that must be approved before this one. Empty when it is ready. */
   blockedBy: string[];
+  /** An option's Register frame (PROD-3167): approved with the edit revision on screen. */
+  revision?: number;
+  /** Called when a decision is refused — e.g. someone changed the frame — so the view refreshes. */
+  onRefused?: () => void;
 };
 
 /**
@@ -29,7 +33,7 @@ type Props = {
  * afterwards — a changeset is applied or discarded as a whole, and the reverse of
  * an approval is a new changeset, not a button.
  */
-export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, writesToSanity = false, recordsDeletions = false, canDecide, blockedBy }: Props) {
+export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, writesToSanity = false, recordsDeletions = false, canDecide, blockedBy, revision, onRefused }: Props) {
   const included = itemCount - excludedCount;
   const canDiscard = !recordsDeletions;
   const [pending, startTransition] = useTransition();
@@ -81,11 +85,12 @@ export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, wri
     setError(null);
     setIsDeciding(decision);
     startTransition(async () => {
-      const res = await decideFrameAction(changesetId, decision);
+      const res = await decideFrameAction(changesetId, decision, decision === "approve" ? revision : undefined);
       setIsDeciding(null);
       setConfirming(null);
       if (!res.ok) {
         setError(res.error);
+        onRefused?.();
         return;
       }
       router.refresh();
