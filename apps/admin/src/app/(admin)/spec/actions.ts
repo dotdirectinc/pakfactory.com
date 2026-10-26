@@ -2,7 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
-import { decideChangeset, dismissSyncRun, getSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type NotionFieldGroup, type RelationsOwnerValue } from "@/lib/spec/registry-api";
+import { decideChangeset, dismissSyncRun, getOptionCandidates, getOptionEdits, saveOptionEdit, type OptionCandidates, type OptionEditKind, type OptionEditState, getSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type NotionFieldGroup, type RelationsOwnerValue } from "@/lib/spec/registry-api";
 
 export type DecisionResult = { ok: true } | { ok: false; error: string };
 
@@ -21,8 +21,9 @@ export type DecisionResult = { ok: true } | { ok: false; error: string };
 export async function decideFrameAction(
   id: string,
   decision: "approve" | "discard",
+  revision?: number,
 ): Promise<DecisionResult> {
-  const res = await decideChangeset(id, decision);
+  const res = await decideChangeset(id, decision, revision);
   if (!res.ok) return { ok: false, error: res.error };
 
   // Both the list and this frame change: an approved frame leaves the pending list.
@@ -96,4 +97,25 @@ export async function setExclusionAction(changesetId: string, document: string, 
   if (!res.ok) return { ok: false, error: res.error };
   revalidatePath(`/spec/${changesetId}`);
   return { ok: true };
+}
+
+/** An option Register frame's shared edit state (PROD-3167), read by the page every 3 s while it is open. */
+export async function optionEditStateAction(changesetId: string): Promise<{ ok: true; data: OptionEditState } | { ok: false; error: string }> {
+  const res = await getOptionEdits(changesetId);
+  return res.ok ? { ok: true, data: res.data } : { ok: false, error: res.error };
+}
+
+/** Every row that could be added to an option Register frame — read once when it opens. */
+export async function optionCandidatesAction(changesetId: string): Promise<{ ok: true; data: OptionCandidates } | { ok: false; error: string }> {
+  const res = await getOptionCandidates(changesetId);
+  return res.ok ? { ok: true, data: res.data } : { ok: false, error: res.error };
+}
+
+/** Save one tick / untick (and its reason) on an option Register frame, as the signed-in person. */
+export async function saveOptionEditAction(
+  changesetId: string,
+  edit: { kind: OptionEditKind; target: string; selected: boolean; reason?: string | null },
+): Promise<{ ok: true; revision: number | null } | { ok: false; error: string }> {
+  const res = await saveOptionEdit(changesetId, edit);
+  return res.ok ? { ok: true, revision: res.data.revision } : { ok: false, error: res.error };
 }

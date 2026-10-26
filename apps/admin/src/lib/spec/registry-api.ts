@@ -203,11 +203,48 @@ export async function getChangesetDetail(id: string) {
   return call<ChangesetDetail>(`/api/v1/changesets/${encodeURIComponent(id)}`);
 }
 
-export async function decideChangeset(id: string, decision: "approve" | "discard") {
+export async function decideChangeset(id: string, decision: "approve" | "discard", revision?: number) {
+  // An option's Register frame is approved with the edit revision the approver saw (PROD-3167).
   return call<ChangesetSummary>(
     `/api/v1/changesets/${encodeURIComponent(id)}/${decision}`,
-    { method: "POST" },
+    { method: "POST", ...(revision !== undefined ? { body: { revision } } : {}) },
   );
+}
+
+// ── Editing an option's Register frame (PROD-3167) ───────────────────────────
+
+export type OptionEditKind = "offer" | "pair";
+
+/** The frame's shared edit state — polled every 3 s by every open copy. */
+export type OptionEditState = {
+  state: string;
+  approvedBy: string | null;
+  /** The pending frame that replaced this one after a Sync Changes. */
+  replacedBy: string | null;
+  revision: number;
+  editedBy: string | null;
+  editedAt: string | null;
+  /** The edits were made on a proposal a re-sync has since changed. */
+  proposalUpdated: boolean;
+  edits: { kind: OptionEditKind; target: string; selected: boolean; reason: string | null; by: string | null; at: string }[];
+  /** Products whose offers leave a type the option depends on with no compatible option (warning only). */
+  gaps: { product: string; group: number; targets: string }[];
+};
+
+export type OptionCandidate = { id: string; label: string; group: string };
+export type OptionCandidates = { offersDecided: boolean; offers: OptionCandidate[]; pairs: OptionCandidate[] };
+
+export async function getOptionEdits(changesetId: string) {
+  return call<OptionEditState>(`/api/v1/changesets/${encodeURIComponent(changesetId)}/option-edits`);
+}
+
+export async function getOptionCandidates(changesetId: string) {
+  return call<OptionCandidates>(`/api/v1/changesets/${encodeURIComponent(changesetId)}/option-candidates`);
+}
+
+/** Save one tick or untick; `reason` only when it is being set (null clears it). */
+export async function saveOptionEdit(changesetId: string, edit: { kind: OptionEditKind; target: string; selected: boolean; reason?: string | null }) {
+  return call<{ revision: number | null }>(`/api/v1/changesets/${encodeURIComponent(changesetId)}/option-edits`, { method: "POST", body: edit });
 }
 
 // ── Catalog sync (PROD-2751) ─────────────────────────────────────────────────
