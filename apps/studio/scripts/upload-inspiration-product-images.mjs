@@ -517,7 +517,7 @@ async function main() {
   if (!targets.length) { console.log('\n    Nothing to write.\n'); return }
 
   // Media tag document (created only if no editor has used the tag yet).
-  let tag = await client.fetch(`*[_type == "media.tag" && name.current == $name][0]{ _id }`, { name: MEDIA_TAG })
+  let tag = await client.fetch(`*[_type == "media.tag" && name.current == $name] | order(_createdAt asc)[0]{ _id }`, { name: MEDIA_TAG })
   tag ??= await client.create({ _type: 'media.tag', name: { _type: 'slug', current: MEDIA_TAG } })
 
   const fileByHash = new Map(targets.flatMap((t) => t.files.map((f) => [f.hash, f])))
