@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Checkbox } from "@pakfactory/ui/components/checkbox";
@@ -59,7 +60,9 @@ export function SpecOptionFrameEditor({ changesetId, rules, sentences, basisCoun
   const apply = useCallback((next: OptionEditState) => {
     setEdit(next);
     setPending((p) => settlePending(p, next.revision));
-    if (next.replacedBy) router.replace(`/spec/${next.replacedBy}`);
+    // Replaced by a Sync Changes: go to the new frame and nothing else — a refresh of this URL in the same
+    // tick can cancel the navigation and strand the page on the superseded frame (seen in QA 2026-10-26).
+    if (next.replacedBy) { wasDraft.current = false; router.replace(`/spec/${next.replacedBy}`); return; }
     // Someone approved or discarded it: the server page shows the decided frame.
     if (wasDraft.current && next.state !== "draft") { setJustDecided(true); router.refresh(); }
     wasDraft.current = next.state === "draft";
@@ -131,7 +134,12 @@ export function SpecOptionFrameEditor({ changesetId, rules, sentences, basisCoun
       </div>
 
       {notes.map((n) => <p key={n} className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground">{n}</p>)}
-      {edit.replacedBy ? <p className="text-sm text-muted-foreground">{COPY.replaced}</p> : null}
+      {edit.replacedBy ? (
+        <p className="text-sm text-muted-foreground">
+          {COPY.replaced}{" "}
+          <Link href={`/spec/${edit.replacedBy}`} className="font-medium text-foreground underline underline-offset-2">{COPY.openReplacement}</Link>
+        </p>
+      ) : null}
       {edit.proposalUpdated && draft ? <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">{COPY.proposalUpdated}</p> : null}
       {decided ? <p ref={decidedRef} tabIndex={-1} className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">{decided}</p> : null}
       {/* Always rendered, so a refused click is read out the moment its message lands. */}

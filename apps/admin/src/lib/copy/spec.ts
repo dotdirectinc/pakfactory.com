@@ -856,6 +856,7 @@ export const ADMIN_SPEC_OPTION_EDIT_COPY = {
   approvedBy: (who: string) => `Approved by ${who}. This frame is closed.`,
   discardedBy: (who: string) => `Discarded by ${who}. This frame is closed.`,
   replaced: "This frame was replaced by a newer Sync Changes — opening the new one…",
+  openReplacement: "Open the new frame",
   saveFailed: (error: string) => `Not saved: ${error}`,
   readOnly: "You can view this frame; editing needs approval rights.",
 } as const;
