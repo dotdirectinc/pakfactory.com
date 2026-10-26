@@ -260,6 +260,8 @@ export const ADMIN_SPEC_SYNC_COPY = {
   // A content sync is an admin's tool (account menu); its runs still show here, named neutrally.
   kinds: { sanity: "Changes", notion: "Content" },
   states: { requested: "Queued", running: "Running", done: "Done", failed: "Failed" },
+  // A run reads Sanity only after an approval's writes land, or it would propose undoing them (2026-10-26).
+  waitingOnWrites: (n: number) => `Waiting for an approval's Sanity writes to finish (${n.toLocaleString()} left) — starts right after.`,
   nothingFound: "No differences — nothing to approve.",
   // The shell's watcher, when a run this tab started ends (2026-10-21).
   finished: (kind: string, frames: number, items: number) =>
