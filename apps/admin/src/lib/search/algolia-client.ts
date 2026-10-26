@@ -16,15 +16,13 @@ export function getAlgoliaAppId(): string {
 }
 
 /**
- * Search-only key preferred. Falls back to write key for local/ops scripts —
- * never sent to the client.
+ * Search-only key. Never the write key: this client serves admin request
+ * handlers, so a leak through it must not be able to change or delete
+ * indices. With no search key set, search reports itself unconfigured and
+ * returns empty results. The write key is for `scripts/algolia-*` only.
  */
 export function getAlgoliaServerSearchKey(): string {
-  return (
-    readEnv("ALGOLIA_SEARCH_KEY") ||
-    readEnv("NEXT_PUBLIC_ALGOLIA_API_KEY") ||
-    readEnv("ALGOLIA_WRITE_KEY")
-  );
+  return readEnv("ALGOLIA_SEARCH_KEY") || readEnv("NEXT_PUBLIC_ALGOLIA_API_KEY");
 }
 
 export function isAlgoliaSearchConfigured(): boolean {
