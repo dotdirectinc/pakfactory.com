@@ -277,6 +277,8 @@ export type SyncRun = {
   error: string | null;
   /** Hidden from the panel by a person; the run itself is kept (2026-10-06). */
   dismissed_at?: string | null;
+  /** Queued behind an approval still being written to Sanity: writes left (2026-10-26). Absent otherwise. */
+  waiting_on_writes?: number;
   result: {
     documents?: number;
     proposed?: { frame: string; items: number }[];

@@ -137,6 +137,7 @@ function SyncRunRow({ r, showDrift }: { r: SyncRun; showDrift: boolean }) {
         {r.trigger === "automatic" ? <Badge variant="outline" title={SYNC.automaticHint}>{SYNC.automatic}</Badge> : null}
         <LocalTime iso={r.requested_at} className="text-xs text-muted-foreground" />
       </div>
+      {r.state === "requested" && r.waiting_on_writes ? <p className="text-xs text-muted-foreground">{SYNC.waitingOnWrites(r.waiting_on_writes)}</p> : null}
       {r.state === "done" && r.result?.skipped ? <p className="text-xs text-muted-foreground">{SYNC.skipped}</p> : null}
       {r.state === "done" && !r.result?.skipped ? (
         loaded.length === 0 ? (
