@@ -2,9 +2,11 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
+import { ADMIN_SPEC_COPY } from "@/lib/copy/spec";
 import { decideChangeset, dismissSyncRun, getOptionCandidates, getOptionEdits, saveOptionEdit, type OptionCandidates, type OptionEditKind, type OptionEditState, getSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type NotionFieldGroup, type RelationsOwnerValue } from "@/lib/spec/registry-api";
 
-export type DecisionResult = { ok: true } | { ok: false; error: string };
+/** `stillRunning`: the gateway gave up on an approve that the server may yet finish (QA 2026-10-26). */
+export type DecisionResult = { ok: true } | { ok: false; error: string; stillRunning?: boolean };
 
 /**
  * Decide a frame, as the signed-in person.
@@ -24,7 +26,15 @@ export async function decideFrameAction(
   revision?: number,
 ): Promise<DecisionResult> {
   const res = await decideChangeset(id, decision, revision);
-  if (!res.ok) return { ok: false, error: res.error };
+  if (!res.ok) {
+    // nginx cuts the request at 30 s, but the server keeps going and can approve minutes later. Saying
+    // "failed" would invite a second Approve, so the page says it may still go through and re-checks.
+    if (decision === "approve" && (res.status === 502 || res.status === 503 || res.status === 504)) {
+      revalidatePath(`/spec/${id}`);
+      return { ok: false, error: ADMIN_SPEC_COPY.approveStillRunning, stillRunning: true };
+    }
+    return { ok: false, error: res.error };
+  }
 
   // Both the list and this frame change: an approved frame leaves the pending list.
   // An approved frame may have changed the rules (a Spec System edit is pushed to Sanity at once): the

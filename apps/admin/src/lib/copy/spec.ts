@@ -18,6 +18,8 @@ export const ADMIN_SPEC_COPY = {
   approve: "Approve frame",
   discard: "Discard",
   approving: "Approving…",
+  approveStillRunning:
+    "The approval is taking longer than expected and may still go through. Don't approve again — this page shows the outcome when it lands; if nothing changes, reload in a few minutes.",
   discarding: "Discarding…",
   discardConfirm:
     "Discard this frame? It cannot be undone, and reloading it means re-running the generator.",
