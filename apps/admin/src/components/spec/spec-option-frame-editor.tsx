@@ -51,13 +51,17 @@ export function SpecOptionFrameEditor({ changesetId, rules, sentences, basisCoun
   const draft = edit.state === "draft";
   const editable = draft && canEdit;
   const wasDraft = useRef(draft);
+  // Set when someone else's decision closes the frame under this page, so focus can follow it.
+  const [justDecided, setJustDecided] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const decidedRef = useRef<HTMLParagraphElement>(null);
 
   const apply = useCallback((next: OptionEditState) => {
     setEdit(next);
     setPending((p) => settlePending(p, next.revision));
     if (next.replacedBy) router.replace(`/spec/${next.replacedBy}`);
     // Someone approved or discarded it: the server page shows the decided frame.
-    if (wasDraft.current && next.state !== "draft") router.refresh();
+    if (wasDraft.current && next.state !== "draft") { setJustDecided(true); router.refresh(); }
     wasDraft.current = next.state === "draft";
   }, [router]);
 
@@ -96,10 +100,26 @@ export function SpecOptionFrameEditor({ changesetId, rules, sentences, basisCoun
   const labelOf = useMemo(() => new Map(offers.map((r) => [r.id, r.label])), [offers]);
   const chosenOffers = offers.filter((r) => r.selected).length;
   const chosenPairs = pairs.filter((r) => r.selected).length;
+  const decided = edit.state === "approved" && edit.approvedBy ? COPY.approvedBy(edit.approvedBy)
+    : edit.state === "discarded" && edit.discardedBy ? COPY.discardedBy(edit.discardedBy) : null;
+  // One polite announcement area that is always on the page: a screen reader misses a live region that
+  // appears with its text already in it, which is how "Approved by …" used to arrive.
+  const announcement = decided ?? (edit.replacedBy ? COPY.replaced : edit.proposalUpdated && draft ? COPY.proposalUpdated : "");
+
+  // The frame closed while this page had focus on a row: the rows turn read-only and drop focus to the
+  // page, so it moves to the line that says who decided.
+  useEffect(() => {
+    if (!justDecided || !decided) return;
+    const active = document.activeElement;
+    if (!active || active === document.body || sectionRef.current?.contains(active)) decidedRef.current?.focus();
+    setJustDecided(false);
+  }, [justDecided, decided]);
+
   const notes = sentences.filter((s) => s.startsWith("⚠") || s.startsWith("Picks made in Studio") || s.startsWith("No standard set"));
 
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-border p-4">
+    <section ref={sectionRef} className="flex flex-col gap-4 rounded-md border border-border p-4">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</div>
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-medium text-foreground">{COPY.heading}</h2>
         {sentences[0] ? <p className="text-sm text-foreground">{sentences[0]}</p> : null}
@@ -111,10 +131,11 @@ export function SpecOptionFrameEditor({ changesetId, rules, sentences, basisCoun
       </div>
 
       {notes.map((n) => <p key={n} className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground">{n}</p>)}
-      {edit.replacedBy ? <p role="status" className="text-sm text-muted-foreground">{COPY.replaced}</p> : null}
-      {edit.proposalUpdated && draft ? <p role="status" className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">{COPY.proposalUpdated}</p> : null}
-      {edit.state === "approved" && edit.approvedBy ? <p role="status" className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm font-medium text-foreground">{COPY.approvedBy(edit.approvedBy)}</p> : null}
-      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+      {edit.replacedBy ? <p className="text-sm text-muted-foreground">{COPY.replaced}</p> : null}
+      {edit.proposalUpdated && draft ? <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">{COPY.proposalUpdated}</p> : null}
+      {decided ? <p ref={decidedRef} tabIndex={-1} className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">{decided}</p> : null}
+      {/* Always rendered, so a refused click is read out the moment its message lands. */}
+      <p role="alert" className={error ? "text-sm text-destructive" : "sr-only"}>{error ?? ""}</p>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <RowPanel
@@ -238,13 +259,19 @@ function Row({ row, basisCount, editable, onToggle }: { row: FrameRow; basisCoun
       <Checkbox id={id} checked={row.selected} disabled={!editable} onCheckedChange={(v) => onToggle(row.id, v === true)} className="mt-0.5" />
       <label htmlFor={id} className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
         <span className={row.selected ? "min-w-0 text-foreground" : "min-w-0 text-muted-foreground line-through decoration-muted-foreground/50"}>{row.label}</span>
-        {row.standard ? <Badge variant="secondary" className="px-1.5 py-0 text-[11px]">{COPY.standard(row.share, basisCount)}</Badge> : null}
-        {row.studio ? <Badge variant="outline" className="px-1.5 py-0 text-[11px]">{COPY.studio}</Badge> : null}
+        {row.standard ? <><Sep /><Badge variant="secondary" className="px-1.5 py-0 text-[11px]">{COPY.standard(row.share, basisCount)}</Badge></> : null}
+        {row.studio ? <><Sep /><Badge variant="outline" className="px-1.5 py-0 text-[11px]">{COPY.studio}</Badge></> : null}
+        {row.saving || row.edit ? <Sep /> : null}
         {row.saving ? <span className="text-xs text-muted-foreground">{COPY.saving}</span>
           : row.edit ? <span className="text-xs text-muted-foreground">{row.edit.selected ? COPY.added(row.edit.by) : COPY.removed(row.edit.by)}</span> : null}
       </label>
     </li>
   );
+}
+
+/** A spoken pause between a row's label and its badges ("…Partitions, standard 8/8"); invisible on screen. */
+function Sep() {
+  return <span className="sr-only">, </span>;
 }
 
 function Differences({ offers, pairs, editable, onReason }: {

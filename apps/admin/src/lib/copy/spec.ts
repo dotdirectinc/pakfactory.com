@@ -854,6 +854,7 @@ export const ADMIN_SPEC_OPTION_EDIT_COPY = {
   editedBy: (who: string, at: string) => `Last edit by ${who}, ${at}.`,
   proposalUpdated: "Proposal updated since these edits — a Sync Changes changed the standard set or Studio's picks. Your edits are kept on top; review before approving.",
   approvedBy: (who: string) => `Approved by ${who}. This frame is closed.`,
+  discardedBy: (who: string) => `Discarded by ${who}. This frame is closed.`,
   replaced: "This frame was replaced by a newer Sync Changes — opening the new one…",
   saveFailed: (error: string) => `Not saved: ${error}`,
   readOnly: "You can view this frame; editing needs approval rights.",
