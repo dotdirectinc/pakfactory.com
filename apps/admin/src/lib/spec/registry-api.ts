@@ -219,6 +219,8 @@ export type OptionEditKind = "offer" | "pair";
 export type OptionEditState = {
   state: string;
   approvedBy: string | null;
+  /** Who discarded it, when it was discarded (2026-10-26). */
+  discardedBy?: string | null;
   /** The pending frame that replaced this one after a Sync Changes. */
   replacedBy: string | null;
   revision: number;
