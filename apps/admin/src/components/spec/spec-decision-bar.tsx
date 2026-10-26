@@ -40,6 +40,8 @@ export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, wri
   const [isDeciding, setIsDeciding] = useState<null | "approve" | "discard">(null);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<null | "approve" | "discard">(null);
+  // An approve the gateway gave up on may still land: no second Approve until the page shows the outcome.
+  const [stillRunning, setStillRunning] = useState(false);
   const router = useRouter();
 
   if (!canDecide) {
@@ -90,6 +92,10 @@ export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, wri
       setConfirming(null);
       if (!res.ok) {
         setError(res.error);
+        if ("stillRunning" in res && res.stillRunning) {
+          setStillRunning(true);
+          router.refresh();
+        }
         onRefused?.();
         return;
       }
@@ -127,7 +133,7 @@ export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, wri
           </>
         ) : (
           <>
-            <Button size="sm" disabled={pending || (included === 0 && !recordsDeletions)} onClick={() => setConfirming("approve")}>
+            <Button size="sm" disabled={pending || stillRunning || (included === 0 && !recordsDeletions)} onClick={() => setConfirming("approve")}>
               {excludedCount > 0 ? `${ADMIN_SPEC_COPY.approve} (${included.toLocaleString()} of ${itemCount.toLocaleString()})` : ADMIN_SPEC_COPY.approve}
             </Button>
             {included === 0 ? (
@@ -147,7 +153,7 @@ export function SpecDecisionBar({ changesetId, itemCount, excludedCount = 0, wri
       </div>
       {recordsDeletions ? <p className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.deletionNoDiscard}</p> : null}
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className={stillRunning ? "text-sm text-foreground" : "text-sm text-destructive"}>
           {error}
         </p>
       ) : null}
