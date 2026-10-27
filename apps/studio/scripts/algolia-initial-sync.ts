@@ -57,8 +57,23 @@ const dataset = args.dataset;
 const { ALGOLIA_APP_ID = "", ALGOLIA_WRITE_KEY = "" } = env;
 
 // The dataset comes from --dataset, never from the CLI client's env-derived default.
-const sanityClient = getCliClient({ dataset });
+// `getCliClient({ dataset })` does NOT honour that option: it still returned the
+// Studio's configured dataset (`development`), so a "production" backfill wrote
+// development's posts into `posts` (PROD-3202, 2026-10-27). Set it with withConfig,
+// read published documents only, and check below that the client agrees.
+const sanityClient = getCliClient().withConfig({
+  dataset,
+  perspective: "published",
+  apiVersion: "2025-01-01",
+  useCdn: false,
+});
 const projectId = sanityClient.config().projectId ?? "";
+
+const clientDataset = sanityClient.config().dataset;
+if (clientDataset !== dataset) {
+  console.error(`\n✖ Sanity client is on dataset "${clientDataset}", not "${dataset}" — refusing to run.\n`);
+  process.exit(1);
+}
 
 function resolveImageUrl(assetRef?: string | null): string | null {
   if (!assetRef || !isImageAssetId(assetRef) || !projectId) {
@@ -74,7 +89,9 @@ function resolveImageUrl(assetRef?: string | null): string | null {
 
 async function initialSync() {
   const indexName = algoliaPostIndexName(dataset);
-  console.log(`dataset=${dataset} index=${indexName} mode=${describeMode({ confirm: args.confirm, dataset })}`);
+  console.log(
+    `dataset=${dataset} (client reads ${clientDataset}, published) index=${indexName} mode=${describeMode({ confirm: args.confirm, dataset })}`,
+  );
 
   const posts = await sanityClient.fetch<AlgoliaPostSource[]>(ALGOLIA_INITIAL_SYNC_QUERY);
   const algoliaDocuments = posts.map((post) => toAlgoliaRecord(post, resolveImageUrl));
