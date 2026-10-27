@@ -181,6 +181,12 @@ The `/topics` index uses a **hybrid layout**: the taxonomy grid renders **only**
 
 **Presentation:** Blog workspace → **Presentation** → `/topics`. Location resolver maps singleton id `blogTopicsPage` → `/topics` (see [`presentation/locations.ts`](../../apps/studio/presentation/locations.ts) + [`blog-page-singletons.ts`](../../apps/studio/lib/blog-page-singletons.ts)). Page fetches use `getPreviewableSanityClient()` for draft overlays on title, description, and page sections.
 
+## Post dates
+
+Post dates are the publisher's date, shown in Toronto time: [`formatPostDate`](./src/lib/post-format.ts) formats with `timeZone: "America/Toronto"`. Never call `toLocaleDateString()` without a zone; on Vercel that is UTC, and a post published after 8 PM Toronto time showed the next day (PROD-3105). Cards and the post header both use `formatPostDate`.
+
+After www-new-release merges into staging, `formatPostDate` switches to the shared `formatDateTime(iso, "shortDate")` from `@pakfactory/utilities/date-time` (PROD-3107).
+
 ## Components and files
 
 Agent practice summary (RSC / state / placement checklist): **[`ENGINEERING.md`](../../ENGINEERING.md)**. Detail below stays binding for blog.
