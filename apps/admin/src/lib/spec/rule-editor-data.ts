@@ -11,7 +11,9 @@ export type Choice = { id: string; title: string; group: string; keys?: string }
 export type RuleEditorData =
   | { kind: "product"; productId: string; offers: Choice[]; exceptions: (Choice & { mode: "add" | "remove"; reason: string })[];
       offerChoices: Choice[]; exceptionChoices: Choice[] }
-  | { kind: "option"; optionId: string; typeId: string; typeSelects: "one" | "many"; compatible: Choice[]; choices: Choice[] }
+  | { kind: "option"; optionId: string; typeId: string; typeSelects: "one" | "many"; compatible: Choice[]; choices: Choice[];
+      /** Products listing it, and products naming it in an exception — what Clear availability removes (PROD-3203). */
+      offeredBy: Choice[]; exceptionsOn: (Choice & { mode: "add" | "remove" })[] }
   | { kind: "type"; typeId: string; decidedBy: "product" | "customization"; customerSelects: "one" | "many";
       groups: Choice[][]; choices: Choice[] }
   | { kind: "none"; reason: string };
@@ -51,8 +53,11 @@ export async function getRuleEditorData(key: TableKey, id: string): Promise<Load
     for (const other of catalog.options) if ((other.compatibleCustomizations ?? []).includes(id)) partners.add(other._id);
     partners.delete(id);
     const t = typeOf.get(o.typeId);
+    const productChoice = (pid: string): Choice => { const code = identity(pid)?.entityCode; return { id: pid, title: name(pid), group: "Products", ...(code ? { keys: code } : {}) }; };
+    const offeredBy = products.filter((p) => (p.availableCustomizations ?? []).some((a) => a.optionId === id)).map((p) => productChoice(p._id)).sort(byTitle);
+    const exceptionsOn = products.flatMap((p) => (p.customizationExceptions ?? []).filter((e) => e.optionId === id).map((e) => ({ ...productChoice(p._id), mode: e.mode })));
     return { ok: true, data: {
-      kind: "option", optionId: id, typeId: o.typeId, typeSelects: t?.customerSelects === "many" ? "many" : "one",
+      kind: "option", optionId: id, typeId: o.typeId, typeSelects: t?.customerSelects === "many" ? "many" : "one", offeredBy, exceptionsOn,
       compatible: [...partners].map((pid) => catalog.options.find((x) => x._id === pid)).filter(Boolean).map((x) => optionChoice(x!)).sort(byTitle),
       choices: catalog.options.filter((x) => x._id !== id && !partners.has(x._id)).map(optionChoice).sort(byTitle),
     } };

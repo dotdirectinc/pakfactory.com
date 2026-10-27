@@ -513,7 +513,8 @@ export type RuleEditResult = {
   state: "draft" | "approved";
   sentences: string[];
   items: number;
-  written: { applied: number; stale: number; failed: number } | null;
+  /** `deferred`: a frame of more than 25 documents is written by the worker, not during the request (PROD-3203). */
+  written: { applied: number; stale: number; failed: number; deferred?: number } | null;
 };
 
 /** One frame from a set of rule edits and moves; `approve` = Submit & approve. */
