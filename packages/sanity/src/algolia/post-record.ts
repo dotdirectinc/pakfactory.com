@@ -6,6 +6,34 @@
 
 export const ALGOLIA_INDEX_NAME = "posts";
 
+/**
+ * One Algolia index family per Sanity dataset (PROD-3202). Production keeps the
+ * original names (`posts`, `posts_publishedAt_desc`, …) so the live blog does not
+ * change; development gets `posts_development`, `posts_development_publishedAt_desc`, …
+ *
+ * Before this, every dataset shared `posts`: the sync Function ran for both datasets,
+ * built image URLs with whichever dataset it was deployed with (`development`), and an
+ * edit in development could overwrite the production record of the same `_id`.
+ */
+export const ALGOLIA_DATASETS = ["production", "development"] as const;
+export type AlgoliaDataset = (typeof ALGOLIA_DATASETS)[number];
+
+export function isAlgoliaDataset(dataset: string | null | undefined): dataset is AlgoliaDataset {
+  return (ALGOLIA_DATASETS as readonly string[]).includes(dataset ?? "");
+}
+
+/** Primary posts index for a dataset: `posts` for production, `posts_<dataset>` otherwise. */
+export function algoliaPostIndexName(dataset: AlgoliaDataset): string {
+  return dataset === "production" ? ALGOLIA_INDEX_NAME : `${ALGOLIA_INDEX_NAME}_${dataset}`;
+}
+
+const ALGOLIA_REPLICA_SUFFIXES = ["publishedAt_desc", "publishedAt_asc", "title_asc"] as const;
+type AlgoliaReplicaSuffix = (typeof ALGOLIA_REPLICA_SUFFIXES)[number];
+
+function algoliaReplicaName(dataset: AlgoliaDataset, suffix: AlgoliaReplicaSuffix): string {
+  return `${algoliaPostIndexName(dataset)}_${suffix}`;
+}
+
 export const ALGOLIA_POST_FILTER =
   '_type == "post" && defined(slug.current) && !(_id in path("drafts.**")) && allowIndex != false';
 
@@ -76,6 +104,16 @@ export const ALGOLIA_INDEX_SETTINGS = {
   ],
 } as const;
 
+/** `ALGOLIA_INDEX_SETTINGS` with the replica list named for `dataset`. */
+export function algoliaIndexSettings(dataset: AlgoliaDataset) {
+  return {
+    searchableAttributes: [...ALGOLIA_INDEX_SETTINGS.searchableAttributes],
+    attributesForFaceting: [...ALGOLIA_INDEX_SETTINGS.attributesForFaceting],
+    customRanking: [...ALGOLIA_INDEX_SETTINGS.customRanking],
+    replicas: ALGOLIA_REPLICA_SUFFIXES.map((suffix) => algoliaReplicaName(dataset, suffix)),
+  };
+}
+
 /**
  * Sort → Algolia index map. `relevance` is kept for typeahead
  * (`algolia-suggest.ts`). Search listing sorts (`newest` / `updated` /
@@ -92,6 +130,19 @@ export const ALGOLIA_SORT_INDEX: Record<
   updated: ALGOLIA_INDEX_NAME,
   popular: ALGOLIA_INDEX_NAME,
 };
+
+/** `ALGOLIA_SORT_INDEX` for `dataset` (production returns the same names). */
+export function algoliaSortIndex(
+  dataset: AlgoliaDataset,
+): Record<keyof typeof ALGOLIA_SORT_INDEX, string> {
+  const primary = algoliaPostIndexName(dataset);
+  return {
+    relevance: primary,
+    newest: algoliaReplicaName(dataset, "publishedAt_desc"),
+    updated: primary,
+    popular: primary,
+  };
+}
 
 export const ALGOLIA_REPLICA_SETTINGS: Record<
   string,
@@ -137,6 +188,18 @@ export const ALGOLIA_REPLICA_SETTINGS: Record<
     ],
   },
 };
+
+/** `ALGOLIA_REPLICA_SETTINGS` keyed by `dataset`'s replica names. */
+export function algoliaReplicaSettings(
+  dataset: AlgoliaDataset,
+): Record<string, { ranking: string[] }> {
+  return Object.fromEntries(
+    ALGOLIA_REPLICA_SUFFIXES.map((suffix) => [
+      algoliaReplicaName(dataset, suffix),
+      ALGOLIA_REPLICA_SETTINGS[`${ALGOLIA_INDEX_NAME}_${suffix}`]!,
+    ]),
+  );
+}
 
 export const ALGOLIA_MAX_CONTENT_CHARS = 8000;
 

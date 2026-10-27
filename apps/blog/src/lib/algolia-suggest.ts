@@ -1,7 +1,9 @@
 "use client";
 
 import {
-  ALGOLIA_SORT_INDEX,
+  algoliaSortIndex,
+  isAlgoliaDataset,
+  type AlgoliaDataset,
   type AlgoliaPostRecord,
 } from "@pakfactory/sanity/algolia/post-record";
 import { categoryHref, postDetailHref, tagHref } from "@/lib/blog-post-url";
@@ -51,10 +53,22 @@ const EMPTY_COUNTS: Record<SearchSuggestTab, number> = {
 
 let algoliaClient: ReturnType<typeof liteClient> | null = null;
 
+/**
+ * Each Sanity dataset has its own Algolia index (PROD-3202), so the dataset
+ * picks the index. Read with a static `process.env.NEXT_PUBLIC_*` access: this
+ * module runs in the browser, and Next.js only inlines static reads (the
+ * computed-key `getSanityDataset()` would come back empty here).
+ */
+function algoliaDataset(): AlgoliaDataset | null {
+  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET?.trim();
+  return isAlgoliaDataset(dataset) ? dataset : null;
+}
+
 export function isAlgoliaSuggestEnabled(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_ALGOLIA_APP_ID &&
-      process.env.NEXT_PUBLIC_ALGOLIA_API_KEY,
+      process.env.NEXT_PUBLIC_ALGOLIA_API_KEY &&
+      algoliaDataset(),
   );
 }
 
@@ -197,11 +211,12 @@ export async function fetchSearchSuggestBundle(
   }
 
   const client = getAlgoliaClient();
-  if (!client) {
+  const dataset = algoliaDataset();
+  if (!client || !dataset) {
     return { items: [], counts: { ...EMPTY_COUNTS } };
   }
 
-  const indexName = ALGOLIA_SORT_INDEX.relevance;
+  const indexName = algoliaSortIndex(dataset).relevance;
   const postHitsPerPage = Math.max(postLimit, ALL_POST_LIMIT, DEDUPE_SCAN_LIMIT);
 
   try {

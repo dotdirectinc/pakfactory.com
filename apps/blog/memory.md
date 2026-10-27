@@ -513,12 +513,18 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 
 **Env (root `.env.example`):** `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_API_KEY` (search key, blog app — **typeahead only**); `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (Function + scripts only — never `NEXT_PUBLIC_`, never under `apps/blog`).
 
-**Human deploy order** (Algolia index for typeahead / sync):
-1. Create Algolia app + index `posts`; set env in root `.env`, Vercel blog project, and Function env (`SANITY_PROJECT_ID`, `SANITY_DATASET` from Studio).
-2. `npx sanity blueprints deploy`
-3. `cd apps/studio && npx sanity exec scripts/algolia-configure-index.ts --with-user-token`
-4. `npx sanity exec scripts/algolia-initial-sync.ts --with-user-token`
-5. Test: `npx sanity functions test algolia-document-sync --document-id <post-id> --dataset development --with-user-token`
+**One index family per Sanity dataset (PROD-3202, 2026-10-27).** Production keeps `posts` (+ replicas `posts_publishedAt_desc`, `posts_publishedAt_asc`, `posts_title_asc`); development uses `posts_development` (+ `posts_development_*`). Names come from `algoliaPostIndexName(dataset)` in `post-record.ts`.
+
+- **Function:** one `algolia-document-sync`, deliberately **not** pinned to a dataset. It reads the dataset from the event (`context.clientOptions.dataset`), writes that dataset's index, and builds image URLs for that dataset. Datasets other than `production`/`development` are skipped. Do **not** put `SANITY_DATASET` back in its blueprint env: a deploy-time value came from the deployer's `.env.local` (`development`), so every production record linked images under `/development/`, and any image not copied to dev 404'd in the typeahead.
+- **Blog:** `algolia-suggest.ts` picks the index from `NEXT_PUBLIC_SANITY_DATASET`, read **statically** (client component; a computed-key read is not inlined). Production project → `production` → `posts`; Preview/staging → `development` → `posts_development`. An unknown dataset disables the typeahead rather than querying the wrong index.
+- **Scripts:** `--dataset` is required (no env fallback), `--confirm` writes, production also needs `--yes-production`.
+
+**Human deploy order** (per dataset):
+1. Algolia app + keys in root `.env.local` (`ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY`) and the blog Vercel project (`NEXT_PUBLIC_ALGOLIA_*`).
+2. `cd apps/studio && npx sanity exec scripts/algolia-configure-index.ts -- --dataset <development|production> --confirm [--yes-production]`
+3. `npx sanity exec scripts/algolia-initial-sync.ts --with-user-token -- --dataset <development|production> --confirm [--yes-production]`
+4. Deploy the Function from the trunk whose `sanity.blueprint.ts` carries **every** Function (`npx sanity blueprints deploy`). A blueprint deploy replaces the whole stack, so deploying a trunk that lacks a Function removes it.
+5. Test: edit a post in each dataset and check `npx sanity functions logs algolia-document-sync` for `Synced … to <index>` with an image URL under that dataset.
 
 **Agents:** implement schema/code only; never run backfill, blueprint deploy, or patch Sanity documents.
 
