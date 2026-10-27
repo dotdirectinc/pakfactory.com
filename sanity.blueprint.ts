@@ -59,8 +59,10 @@ export default defineBlueprint({
           "ALGOLIA_APP_ID and ALGOLIA_WRITE_KEY env variables are required to sync documents to Algolia",
         ALGOLIA_APP_ID,
         ALGOLIA_WRITE_KEY,
-        SANITY_PROJECT_ID,
-        SANITY_DATASET,
+        // No SANITY_DATASET here on purpose (PROD-3202): this Function runs for every
+        // dataset and takes the dataset from the event (`context.clientOptions`), so
+        // each dataset writes its own index. A deploy-time value baked in whatever
+        // the deployer's .env.local said and broke production image URLs.
       },
     }),
     // ADR-018 — content corpus for admin search (products / customizations / case studies).
