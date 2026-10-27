@@ -10,6 +10,21 @@ import {
 } from "@sanity/asset-utils";
 
 export const ALGOLIA_INDEX_NAME = "posts";
+
+/**
+ * Index per dataset (PROD-3202) — mirror of `algoliaPostIndexName` in
+ * packages/sanity/src/algolia/post-record.ts. Production keeps `posts`.
+ */
+export const ALGOLIA_DATASETS = ["production", "development"] as const;
+export type AlgoliaDataset = (typeof ALGOLIA_DATASETS)[number];
+
+export function isAlgoliaDataset(dataset: string | null | undefined): dataset is AlgoliaDataset {
+  return (ALGOLIA_DATASETS as readonly string[]).includes(dataset ?? "");
+}
+
+export function algoliaPostIndexName(dataset: AlgoliaDataset): string {
+  return dataset === "production" ? ALGOLIA_INDEX_NAME : `${ALGOLIA_INDEX_NAME}_${dataset}`;
+}
 export const ALGOLIA_MAX_CONTENT_CHARS = 8000;
 
 /** Hard budget for the serialized record — safely under Algolia's 10,000-byte API limit. */
