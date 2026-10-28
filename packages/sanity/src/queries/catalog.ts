@@ -114,6 +114,21 @@ const TYPE_PROJ = /* groq */ `{
  * Technical options (Lamination, Surface Coating, …) that can deliver this
  * customer-facing option — candidates, not a recipe.
  */
+/**
+ * PROD-3206: `customizationOption.glossaryTerm` became `reference[]`, so the
+ * definition is read from the primary concept — `glossaryTerm[0]`.
+ *
+ * The `coalesce(..., glossaryTerm->definition)` half is TRANSITIONAL and reads
+ * the old single-reference shape. It is here because the code and the data are
+ * deployed by different people on different schedules: production is batched,
+ * and the migration that wraps those 243 values in an array is run by hand.
+ * Without the fallback, whichever lands first opens a window where the detail
+ * page hero renders nothing on every customization page.
+ *
+ * DELETE the fallback once every dataset has been migrated. It is six call
+ * sites, all of this shape, and leaving it is only harmless until someone
+ * reads it as the intended pattern.
+ */
 const ACHIEVED_BY_CARD_FIELDS = /* groq */ `
   _id,
   title,
@@ -122,7 +137,7 @@ const ACHIEVED_BY_CARD_FIELDS = /* groq */ `
   "categorySlug": type->category->slug.current,
   appearsIn,
   shortDescription,
-  "glossaryPlain": pt::text(glossaryTerm[0]->definition),
+  "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
   "benefitsPlain": pt::text(benefits.body),
   ${OPTION_MEDIA_FIELDS}
 `;
@@ -159,7 +174,7 @@ const OPTION_FIELDS = /* groq */ `
   appearsIn,
   shortDescription,
   metaDescription,
-  "glossaryPlain": pt::text(glossaryTerm[0]->definition),
+  "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
   "benefitsPlain": pt::text(benefits.body),
   ${OPTION_MEDIA_FIELDS},
   "type": type->${TYPE_PROJ},
@@ -947,7 +962,7 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
   shortName,
   "slug": slug.current,
   shortDescription,
-  "glossaryPlain": pt::text(glossaryTerm[0]->definition),
+  "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
   "benefitsPlain": pt::text(benefits.body),
   ${OPTION_MEDIA_FIELDS},
   "category": type->category->${CATEGORY_PROJ},
@@ -1009,8 +1024,8 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   "slug": slug.current,
   shortDescription,
   metaDescription,
-  "glossaryPlain": pt::text(glossaryTerm[0]->definition),
-  "glossaryDefinition": glossaryTerm[0]->definition,
+  "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
+  "glossaryDefinition": coalesce(glossaryTerm[0]->definition, glossaryTerm->definition),
   "benefitsTitle": benefits.title,
   "benefitsPlain": pt::text(benefits.body),
   "benefitsBody": benefits.body,
@@ -1119,7 +1134,7 @@ export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
   title,
   "slug": slug.current,
   shortDescription,
-  "glossaryPlain": pt::text(glossaryTerm[0]->definition),
+  "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
   "benefitsPlain": pt::text(benefits.body),
   ${OPTION_MEDIA_FIELDS},
   "category": type->category->${CATEGORY_PROJ},
