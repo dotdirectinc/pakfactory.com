@@ -59,6 +59,7 @@
     "migrate:unset-verified-deprecations": "node scripts/migrate-unset-verified-deprecations.mjs",
     "migrate:split-customization-role": "node scripts/migrate-split-customization-role.mjs",
     "migrate:appears-in": "node scripts/migrate-appears-in.mjs",
+    "migrate:glossary-term-array": "node scripts/migrate-glossary-term-array.mjs",
     "migrate:customization-status": "node scripts/migrate-customization-status.mjs",
     "migrate:status-unification": "node scripts/migrate-status-unification.mjs",
     "migrate:finder-fs-default-rail": "node scripts/migrate-finder-fullscreen-default-rail.mjs",

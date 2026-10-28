@@ -551,6 +551,22 @@ export const MIGRATIONS = [
     probe: `count(*[_type == "solutionStyle" && _id in path("drafts.**") && defined(entityId) &&
         !defined(*[_id == string::split(^._id, "drafts.")[1]][0])]) == 0`,
   },
+  {
+    id: '20261028-glossary-term-array',
+    ticket: 'PROD-3206',
+    title: 'Wrap customizationOption.glossaryTerm into an array',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:glossary-term-array',
+    script: 'apps/studio/scripts/migrate-glossary-term-array.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: nothing carries a glossaryTerm that is not an
+    // array. `glossaryTerm[0]._ref` is undefined on a bare reference object, so a
+    // document this has not reached counts. Stays true forever — the field does not
+    // go back to a single reference, and an option that later clears the field is
+    // excluded by `defined(glossaryTerm)` rather than failing the probe.
+    probe: `count(*[_type == "customizationOption" && defined(glossaryTerm) &&
+      !defined(glossaryTerm[0]._ref)]) == 0`,
+  },
 ]
 
 /**
