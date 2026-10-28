@@ -658,6 +658,10 @@ export const TASKS = [
   // PROD-3206. The twelve sections the glossary index is split by. createIfNotExists on a
   // title-derived id, so a re-run never undoes a rename the content team made in the Studio.
   { task: 'seed:glossary-groups', pkg: '@pakfactory/studio', why: 'create the Glossary Groups (create-if-missing)' },
+  // PROD-3206 follow-on. The nine concept terms the option pages collapse into, seeded as empty
+  // shells so the repoint/clear/delete migrations have somewhere to point before anyone writes a
+  // word. createIfNotExists on a slug-derived id; skips any name or slug already taken.
+  { task: 'seed:glossary-concept-terms', pkg: '@pakfactory/studio', why: 'create the nine concept Glossary Terms (create-if-missing)' },
   { task: 'seed:controller-lab', pkg: '@pakfactory/studio', why: 'idempotent Controller Lab QA seed — Materials type + options, append-only on test product' },
   // Reads the dataset only; writes the `site_search` Algolia index (PROD-3109). Re-run after
   // a parent's status change — children are not re-synced by the Function.
