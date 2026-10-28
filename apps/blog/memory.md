@@ -1389,7 +1389,7 @@ If a publish path bypasses Studio actions (legacy Schedule / API), Publish date 
 **Fix paths (in repo):**
 
 1. Studio Publish actions stamp via `ensure-published-at`.
-2. Sanity Function `stamp-published-at` — still deployed as a safety net for non-Studio publishes (release/version/published). Deploy: `pnpm dlx sanity blueprints deploy`; logs: `pnpm dlx sanity functions logs stamp-published-at`.
+2. Sanity Function `stamp-published-at` — still deployed as a safety net for non-Studio publishes (release/version/published). Runs for **every dataset** since PROD-3205 (no dataset pin; it stamps in the event's own dataset) — before that it followed the deployer's `.env.local` and only ran for `development`. Deploy from `www-new-release` (the only trunk whose blueprint has all 4 functions): `pnpm dlx sanity blueprints deploy`; logs: `pnpm dlx sanity functions logs stamp-published-at`.
 3. Webhook fallback in blog/www `/api/revalidate` — stamps via `SANITY_API_WRITE_TOKEN` before cache bust.
 
 Set `SANITY_API_WRITE_TOKEN` on Vercel (blog + www) and locally for the webhook fallback.

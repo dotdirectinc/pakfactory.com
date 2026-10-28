@@ -79,7 +79,7 @@ export default defineBlueprint({
         projection: ALGOLIA_CONTENT_PROJECTION,
         // One dataset only. Unpinned, a function runs for EVERY dataset in the project, so production
         // edits would land in the same content_* indexes the backfill fills from this dataset, and admin
-        // search would mix the two. Same pinning as stamp-published-at below.
+        // search would mix the two. Same pinning as site-search-sync below.
         resource: {
           type: "dataset",
           id: `${SANITY_PROJECT_ID}.${SANITY_DATASET}`,
@@ -137,10 +137,9 @@ export default defineBlueprint({
 )`,
         projection:
           "{_id, _type, publishedAt, name, publishAt, metadata}",
-        resource: {
-          type: "dataset",
-          id: `${SANITY_PROJECT_ID}.${SANITY_DATASET}`,
-        },
+        // No dataset resource on purpose (PROD-3205): runs for every dataset and
+        // stamps in the event's own dataset (`context.clientOptions`). Pinned, it
+        // followed the deployer's .env.local and never ran for production.
       },
     }),
   ],
