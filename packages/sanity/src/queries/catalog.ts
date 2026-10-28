@@ -1030,8 +1030,13 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   // body the long-form section below it; both are fetched here so the render side
   // can be switched independently. glossaryDefinition stays until that switch
   // lands, which is what makes the two halves deployable in either order.
+  //
+  // No plain-text twin of description on purpose. The only thing the plain copy
+  // fed was the meta-description fallback, and description runs 400-550 chars on
+  // all 208 pages — every one of them truncated mid-sentence in a search result.
+  // shortDescription is already projected above, is 88-103 chars, and is present
+  // on all 208. That is the fallback.
   description,
-  "descriptionPlain": pt::text(description),
   body,
   "benefitsTitle": benefits.title,
   "benefitsPlain": pt::text(benefits.body),
@@ -1654,10 +1659,12 @@ export type CatalogCustomizationDetailDoc = {
    * the render switch, not before.
    */
   glossaryDefinition?: unknown[] | null;
-  /** PROD-3207 — the Option's own "what it is". Replaces glossaryDefinition as the hero. */
+  /**
+   * PROD-3207 — the Option's own "what it is". Replaces glossaryDefinition as
+   * the hero. Portable Text only: the meta-description fallback reads
+   * `shortDescription`, because this field is far too long for one.
+   */
   description?: unknown[] | null;
-  /** Plain text of `description`, for SEO and listing fallbacks. */
-  descriptionPlain?: string | null;
   /** PROD-3207 — long-form section under the hero. Often empty; render nothing then. */
   body?: unknown[] | null;
   benefitsTitle?: string | null;
