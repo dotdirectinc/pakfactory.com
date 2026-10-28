@@ -55,7 +55,7 @@ function RuleSection({ level, id, title }: { level: TableKey; id: string; title:
   useEffect(() => {
     if (!data || data.kind === "none") return;
     const all: Choice[] = data.kind === "product" ? [...data.offers, ...data.offerChoices, ...data.exceptionChoices, ...data.exceptions]
-      : data.kind === "option" ? [...data.compatible, ...data.choices] : [...data.choices, ...data.groups.flat()];
+      : data.kind === "option" ? [...data.compatible, ...data.choices, ...data.offeredBy, ...data.exceptionsOn] : [...data.choices, ...data.groups.flat()];
     addNames({ ...Object.fromEntries(all.map((c) => [c.id, c.title])), [id]: title });
   }, [data, id, title, addNames]);
 
@@ -176,11 +176,32 @@ function Fields({ data, editing, pending }: { data: EditableData; editing: boole
   if (data.kind === "option") {
     const was = new Set(data.compatible.map((c) => c.id));
     const setPair = (b: string, compatible: boolean) => s.put({ kind: "pair", a: data.optionId, b, compatible }, compatible === was.has(b));
+    // Clear availability / Clear compatibility (PROD-3203): one ordinary removal per link, added to the
+    // set like any other edit, so each is listed and checked before anything is submitted.
+    const links = data.offeredBy.length + data.exceptionsOn.length;
+    const clearAvailability = () => {
+      for (const p of data.offeredBy) s.put({ kind: "offer", productId: p.id, optionId: data.optionId, offered: false });
+      for (const x of data.exceptionsOn) s.put({ kind: "exception", productId: x.id, optionId: data.optionId, mode: x.mode, reason: null });
+    };
     return (
-      <Field label={COPY.compatible} pending={pending.compatibleCustomizations}>
-        <Chips items={w.compatible} empty={COPY.noCompatible} pendingRefs={pending.compatibleCustomizations?.refs} onRemove={editing ? (cid) => setPair(cid, false) : undefined} />
-        {editing ? <Picker choices={[...data.choices, ...data.compatible].filter((c) => !w.compatible.some((x) => x.id === c.id))} placeholder={COPY.addCompatible} onPick={(c) => setPair(c.id, true)} /> : null}
-      </Field>
+      <div className="flex flex-col gap-3 text-sm">
+        <Field label={COPY.compatible} pending={pending.compatibleCustomizations}>
+          <Chips items={w.compatible} empty={COPY.noCompatible} pendingRefs={pending.compatibleCustomizations?.refs} onRemove={editing ? (cid) => setPair(cid, false) : undefined} />
+          {editing ? <Picker choices={[...data.choices, ...data.compatible].filter((c) => !w.compatible.some((x) => x.id === c.id))} placeholder={COPY.addCompatible} onPick={(c) => setPair(c.id, true)} /> : null}
+        </Field>
+        <p className="text-muted-foreground">{COPY.offeredBy(data.offeredBy.length)}</p>
+        {editing ? (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" disabled={!links} title={links ? COPY.clearAvailabilityHint : COPY.nothingToClear} onClick={clearAvailability}>
+              {links ? COPY.clearAvailability(links) : `${COPY.clearAvailability(0)} · ${COPY.nothingToClear}`}
+            </Button>
+            <Button size="sm" variant="outline" disabled={!w.compatible.length} title={w.compatible.length ? COPY.clearCompatibilityHint : COPY.nothingToClear}
+              onClick={() => { for (const c of w.compatible) setPair(c.id, false); }}>
+              {w.compatible.length ? COPY.clearCompatibility(w.compatible.length) : `${COPY.clearCompatibility(0)} · ${COPY.nothingToClear}`}
+            </Button>
+          </div>
+        ) : null}
+      </div>
     );
   }
 

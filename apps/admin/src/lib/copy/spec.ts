@@ -602,6 +602,13 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   noExceptions: "No exceptions.",
   compatible: "Compatible with",
   noCompatible: "Compatible with nothing — it is never offered where other customizations decide it.",
+  /** Clear availability / Clear compatibility on an option (PROD-3203). */
+  offeredBy: (n: number) => (n === 0 ? "No product offers it." : `Offered by ${n} product${n === 1 ? "" : "s"}.`),
+  clearAvailability: (n: number) => `Clear availability (${n})`,
+  clearCompatibility: (n: number) => `Clear compatibility (${n})`,
+  nothingToClear: "Nothing to clear",
+  clearAvailabilityHint: "Adds one removal per product that offers it or names it in an exception. Nothing changes until the frame is approved. Afterwards no product refers to it, so Studio can delete it.",
+  clearCompatibilityHint: "Adds one removal per option it is compatible with, on both sides. Nothing changes until the frame is approved.",
   requirements: "Depends on (each requirement must be met; any one entry of it meets it)",
   noRequirements: "Depends on nothing.",
   requirement: (n: number) => `Requirement ${n}`,
@@ -650,8 +657,9 @@ export const ADMIN_SPEC_RULE_EDIT_COPY = {
   cancel: "Cancel",
   devOnly: "Development dataset. Approved changes are written to the registry, then to Sanity at once.",
   submitted: "Submitted — waiting for approval in Registry.",
-  applied: (w: { applied: number; stale: number; failed: number } | null) =>
-    w ? `Approved and applied — ${w.applied} written to Sanity${w.stale ? `, ${w.stale} not written (changed in Studio since)` : ""}${w.failed ? `, ${w.failed} failed` : ""}.` : "Approved — writing to Sanity shortly.",
+  applied: (w: { applied: number; stale: number; failed: number; deferred?: number } | null) =>
+    w?.deferred ? `Approved — ${w.deferred} documents are being written to Sanity in the background; the frame shows how many are left.`
+    : w ? `Approved and applied — ${w.applied} written to Sanity${w.stale ? `, ${w.stale} not written (changed in Studio since)` : ""}${w.failed ? `, ${w.failed} failed` : ""}.` : "Approved — writing to Sanity shortly.",
   openFrame: "Open the frame",
   frameHeading: "What this frame changes",
   noEffectTitle: (n: number) => (n === 1 ? "This change does nothing for any product" : `${n} changes do nothing for any product`),
