@@ -585,6 +585,61 @@ export const MIGRATIONS = [
       defined(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)) &&
       !defined(description)]) == 0`,
   },
+  // ── PROD-3209, three steps in order ──────────────────────────────────────────
+  // Repoint and clear are independent of each other; the delete needs both, and
+  // refuses rather than breaking if either has not run. The shared definition of
+  // "the nine" and of "a mirror" lives in apps/studio/scripts/lib/glossary-concepts.mjs.
+  {
+    id: '20261028-glossary-repoint-concepts',
+    ticket: 'PROD-3209',
+    title: 'Repoint customizationOption.glossaryTerm from its mirror to its concept',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:glossary-repoint',
+    script: 'apps/studio/scripts/migrate-glossary-repoint-concepts.mjs',
+    args: 'flags',
+    // Asserts the NEW shape: no Option in one of the nine Types points at a term
+    // outside the nine. Scoped to `count(glossaryTerm) == 1` because the migration
+    // deliberately skips Options carrying two concepts, so including them would
+    // read false forever. An Option that later clears the field is excluded too.
+    // Stays true: the mirrors it pointed at stop existing one migration later.
+    probe: `count(*[_type == "customizationOption" && count(glossaryTerm) == 1 &&
+      type->slug.current in ["paperboard","chipboards","corrugated-board","foam","blister-plastic","molded-pulp","ink","lamination","foiling"] &&
+      !(glossaryTerm[0]->slug.current in ["paperboard","chipboard","corrugated-board","foam","blister-plastic","molded-pulp","ink","lamination","foiling"])]) == 0`,
+  },
+  {
+    id: '20261028-glossary-clear-mirror-links',
+    ticket: 'PROD-3209',
+    title: 'Clear customizationOption.glossaryTerm where the term is a mirror',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:glossary-clear',
+    script: 'apps/studio/scripts/migrate-glossary-clear-mirror-links.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: no Option outside the nine Types points at a
+    // group-less term. Written against `group` rather than "has no link" on
+    // purpose — the second tier of splits (Embossing & Debossing, Color System,
+    // Spot UV) will give Options outside the nine a legitimate concept, and those
+    // terms carry a group, so this stays true when that lands.
+    probe: `count(*[_type == "customizationOption" && count(glossaryTerm) > 0 &&
+      !(type->slug.current in ["paperboard","chipboards","corrugated-board","foam","blister-plastic","molded-pulp","ink","lamination","foiling"]) &&
+      !defined(glossaryTerm[0]->group)]) == 0`,
+  },
+  {
+    id: '20261028-glossary-delete-mirror-terms',
+    ticket: 'PROD-3209',
+    title: 'Delete the 243 mirror Glossary Terms',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:glossary-delete-mirrors',
+    script: 'apps/studio/scripts/migrate-glossary-delete-mirror-terms.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: no published Glossary Term lacks a group.
+    // ⚠️ This is the weakest probe of the three, because it reads a proxy. It goes
+    // false again if somebody publishes a genuinely new term before setting its
+    // group — which is a content error worth surfacing, not a false alarm, but it
+    // is a reading of today's dataset rather than of this migration's history.
+    // Drafts are excluded so a half-written term does not trip it.
+    probe: `count(*[_type == "glossaryTerm" && !defined(group) &&
+      !(_id in path("drafts.**"))]) == 0`,
+  },
 ]
 
 /**
@@ -658,6 +713,10 @@ export const TASKS = [
   // PROD-3206. The twelve sections the glossary index is split by. createIfNotExists on a
   // title-derived id, so a re-run never undoes a rename the content team made in the Studio.
   { task: 'seed:glossary-groups', pkg: '@pakfactory/studio', why: 'create the Glossary Groups (create-if-missing)' },
+  // PROD-3206 follow-on. The nine concept terms the option pages collapse into, seeded as empty
+  // shells so the repoint/clear/delete migrations have somewhere to point before anyone writes a
+  // word. createIfNotExists on a slug-derived id; skips any name or slug already taken.
+  { task: 'seed:glossary-concept-terms', pkg: '@pakfactory/studio', why: 'create the nine concept Glossary Terms (create-if-missing)' },
   { task: 'seed:controller-lab', pkg: '@pakfactory/studio', why: 'idempotent Controller Lab QA seed — Materials type + options, append-only on test product' },
   // Reads the dataset only; writes the `site_search` Algolia index (PROD-3109). Re-run after
   // a parent's status change — children are not re-synced by the Function.
