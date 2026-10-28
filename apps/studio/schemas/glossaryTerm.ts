@@ -47,7 +47,9 @@ export const glossaryTerm = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'Synonyms and abbreviations. People search "STE box" more than "straight tuck end", and site search needs them.',
+        'Synonyms and abbreviations a reader would actually type. People search "STE box" more ' +
+        'than "straight tuck end", and site search needs both. The concept\'s synonyms, not a ' +
+        'variant\'s — those live on the Customization Option.',
       of: [{ type: 'string' }],
       options: { layout: 'tags' },
     }),
@@ -57,8 +59,9 @@ export const glossaryTerm = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'Two sentences, neutral. Link out to the guide or customization page rather than going ' +
-        'deep here.',
+        'Two sentences. What the word means to anyone in the industry — true whether or not we ' +
+        'offer it. This is the gloss shown on the glossary index and in tooltips, so it has to ' +
+        'stand alone. Never write "we" here.',
       of: [
         {
           type: 'block',
@@ -89,37 +92,44 @@ export const glossaryTerm = defineType({
         },
       ],
     }),
+    /**
+     * PROD-3206: was a hardcoded list of five values, set on 0 of 243 terms.
+     * Now a reference, so the team can add and rename a section without a
+     * deploy — see `glossaryGroup`. Nothing to migrate: the old field was
+     * never filled.
+     */
     defineField({
       name: 'group',
       title: 'Group',
-      type: 'string',
+      type: 'reference',
+      to: [{ type: 'glossaryGroup' }],
       group: GROUPS.content,
-      description: 'Filters the glossary index.',
-      options: {
-        list: [
-          { title: 'Materials', value: 'materials' },
-          { title: 'Finishes', value: 'finishes' },
-          { title: 'Structure', value: 'structure' },
-          { title: 'Operations', value: 'operations' },
-          { title: 'Standards', value: 'standards' },
-        ],
-      },
+      description:
+        'Which section of the glossary index this term appears under. Pick an existing group; ' +
+        'create a new one only when several terms would sit in it.',
     }),
+    /**
+     * PROD-3206. `definition` is the two-sentence gloss; this is the concept in
+     * depth. Length follows fan-out rather than a word target: a term many
+     * options point at is the shared parent and carries the explanation that
+     * would otherwise be written once per option, while a term with one option
+     * beneath it is a doorway and stays short.
+     *
+     * Replaces `visual`, which was deleted here — 0 of 243 used it, no query
+     * read it, no component rendered it. In-page figures belong inline in the
+     * flow, directly under the heading they illustrate, which `bodyImage` does
+     * and a single top-of-page image never could.
+     */
     defineField({
-      name: 'visual',
-      title: 'Visual',
-      type: 'image',
+      name: 'body',
+      title: 'Body',
+      type: 'array',
       group: GROUPS.content,
-      description: 'Optional — only where a term needs a drawing (a dieline, bleed, flute types).',
-      options: { hotspot: true },
-      fields: [
-        defineField({
-          name: 'alt',
-          title: 'Alt text',
-          type: 'string',
-          description: 'Describes the image for screen readers and SEO.',
-        }),
-      ],
+      description:
+        'The concept in depth: how it works, the trade-offs, where it is the wrong choice. ' +
+        'Still vendor-neutral — it should read as true on a competitor\'s site. Do not list what ' +
+        'we offer; that section is derived from the options that point here.',
+      of: [{ type: 'block' }, { type: 'bodyImage' }],
     }),
 
     // ── Categorization (ordered "related" references) ─────────────────────────
@@ -128,7 +138,9 @@ export const glossaryTerm = defineType({
       title: 'Related products',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Product lines, styles or products this term relates to.',
+      description:
+        'Three to five products or lines that best show this term in use — pick, don\'t list. ' +
+        'Hundreds of products share a material, so a complete list is a catalogue, not an answer.',
       of: [
         {
           type: 'reference',
@@ -136,19 +148,16 @@ export const glossaryTerm = defineType({
         },
       ],
     }),
-    defineField({
-      name: 'relatedCustomizations',
-      title: 'Related customizations',
-      type: 'array',
-      group: GROUPS.categorization,
-      description: 'Customization options or categories this term relates to.',
-      of: [
-        {
-          type: 'reference',
-          to: [{ type: 'customizationOption' }, { type: 'customizationCategory' }],
-        },
-      ],
-    }),
+    /**
+     * `relatedCustomizations` was deleted here (PROD-3206). It put a second
+     * block of customization cards on a page that already derives one from
+     * `customizationOption.glossaryTerm`, and the difference between "is an
+     * instance of this" and "is worth comparing to this" is not a distinction
+     * a content team should have to hold while working. 0 of 243 filled, no
+     * query read it. The see-also moves up a level to `relatedTerms` — a
+     * concept page links to concepts. If the thing you want to link to has no
+     * term, author the term; do not re-add this field.
+     */
     defineField({
       name: 'relatedSolutions',
       title: 'Related solutions',
@@ -170,7 +179,10 @@ export const glossaryTerm = defineType({
       title: 'Related terms',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Other glossary terms this one relates to.',
+      description:
+        'Terms a reader of this one would want next — Bleed and Trim, Flute and Liner. Tag from ' +
+        'either side; both pages show the pair. For genuine neighbours, not everything in the ' +
+        'same group.',
       of: [{ type: 'reference', to: [{ type: 'glossaryTerm' }] }],
     }),
 
@@ -178,9 +190,9 @@ export const glossaryTerm = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],
   preview: {
-    select: { title: 'term', group: 'group', media: 'visual' },
-    prepare({ title, group, media }) {
-      return { title: title || 'Untitled term', subtitle: group, media }
+    select: { title: 'term', group: 'group.title' },
+    prepare({ title, group }) {
+      return { title: title || 'Untitled term', subtitle: group }
     },
   },
 })

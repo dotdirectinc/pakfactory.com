@@ -110,7 +110,9 @@ export const customizationOption = defineType({
       type: 'text',
       group: 'content',
       rows: 3,
-      description: 'One-line summary for the customization card, listings and search results.',
+      description:
+        'One line, no more. Used on the customization card, in listings, in search results and ' +
+        'in the comparison column. A summary of the offer, not a definition of the word.',
     }),
     defineField({
       name: 'slug',
@@ -167,15 +169,109 @@ export const customizationOption = defineType({
     // ⚠️ There are 0 Glossary Term documents today, so the picker starts empty. That is
     // the authoring backlog, not a schema problem: `disableNew` is deliberately NOT set
     // here, because the terms have to be created before anything can point at them.
+    //
+    // PROD-3206: `reference` → `reference[]`, and the Studio label becomes
+    // "Concept it belongs to". An option names one concept, or occasionally two
+    // where it genuinely is both — Hybrid Color is CMYK *and* Pantone; Textured
+    // Embossing & Debossing is both. No length validation: two would be an
+    // arbitrary cap taken from the only two dual cases found so far, and a cap
+    // blocks a genuine third rather than catching a wrong one. What guards the
+    // field is the description (is-a, never see-also), the singular label, and
+    // the fact that a wrong entry is visible — the option shows up as a card
+    // under "Available as a customization" on a term it does not belong to.
+    //
+    // Index 0 is the primary: it is what `inheritAliasesFromConcept` reads and
+    // what feeds this option's SEO fallback text, so order here is meaningful.
     defineField({
       name: 'glossaryTerm',
-      title: 'Glossary term',
-      type: 'reference',
+      title: 'Concept it belongs to',
+      type: 'array',
       group: 'content',
-      to: [{ type: 'glossaryTerm' }],
+      of: [{ type: 'reference', to: [{ type: 'glossaryTerm' }] }],
       description:
-        'The industry term this option is an instance of. The definition lives on the Glossary Term — ' +
-        'never restate it here.',
+        'The broader industry concept this option is an instance of — Gloss Lamination belongs ' +
+        'to Lamination. Leave empty when there is no wider concept; that is the normal case. ' +
+        'Name a second only when the option genuinely is both. This is "what it is", never ' +
+        '"what it relates to". The first entry is the primary.',
+    }),
+    // PROD-3206. The option's own "what it is". Receives the copy that currently
+    // lives on the linked term's `definition` and renders in this page's hero —
+    // same words, same position, container renamed.
+    defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'array',
+      group: 'content',
+      of: [{ type: 'block' }],
+      description:
+        'What this option is, and what we run it on. If a Concept is linked, start where its ' +
+        'definition stops — don\'t restate it. If none is linked, this page is the only ' +
+        'definition of the word, so define it here. The same sentence must never appear on two ' +
+        'option pages.',
+    }),
+    // PROD-3206. Depth the structured fields below cannot hold. Expected on the
+    // 151 active options with no concept behind them, which today cap out at a
+    // one-liner plus bullet benefits; optional on a variant, which leans on its
+    // concept page instead.
+    defineField({
+      name: 'body',
+      title: 'Body',
+      type: 'array',
+      group: 'content',
+      of: [{ type: 'block' }, { type: 'bodyImage' }],
+      description:
+        'Depth the structured fields cannot hold — how the process runs, what it does to a ' +
+        'substrate, where it fails, what to supply us. Expected when no Concept is linked, ' +
+        'because then this page is the only page for the word. Optional when one is linked — ' +
+        'keep it to what is specific to this variant. Never restate the description, the ' +
+        'benefits or the properties.',
+    }),
+    defineField({
+      name: 'alsoKnownAs',
+      title: 'Also known as',
+      type: 'array',
+      group: 'content',
+      of: [{ type: 'string' }],
+      options: { layout: 'tags' },
+      // PROD-3206: read-only while the concept's list is being used, so a local
+      // list and an inherited one can never both exist.
+      readOnly: ({ document }) => document?.inheritAliasesFromConcept === true,
+      description:
+        'Synonyms and abbreviations a customer would actually type — "AQ" for Aqueous Coating, ' +
+        '"soft-touch" for Matte Soft Touch Lamination. Site search reads this. Not marketing ' +
+        'variants of the name, and not the concept\'s synonyms — those live on the Glossary Term.',
+      validation: (Rule) => Rule.max(4),
+    }),
+    //
+    // PROD-3206. Where an option and its concept are the same word — UV Coating
+    // the option, UV Coating the concept — their synonyms are the same too, and
+    // storing the list twice is two places to maintain it.
+    //
+    // A checkbox rather than a rule, because every rule that could replace it
+    // fails quietly. Branching on `alsoKnownAs` being EMPTY makes the wrong
+    // answer the default: the field is new, so all 209 active options with a
+    // page start empty, and every variant would print its parent's list —
+    // Matte Lamination reading "also known as: laminating", which nobody calls
+    // it, and which the JSON-LD would then emit as `alternateName`. Branching
+    // on a title or slug match is default-safe but silently deletes the line
+    // the moment someone edits either one.
+    //
+    // Hidden where no concept is linked, which is 151 of the 227 active
+    // options. Both guards read this document's own fields, so both are
+    // synchronous — Sanity does not allow an async `hidden`.
+    defineField({
+      name: 'inheritAliasesFromConcept',
+      title: "Use the concept's aliases",
+      type: 'boolean',
+      group: 'content',
+      initialValue: false,
+      hidden: ({ document }) =>
+        !(document?.glossaryTerm as unknown[] | undefined)?.length,
+      description:
+        'Tick this when the option and its concept are the same word — UV Coating the option, ' +
+        'UV Coating the concept. The page then shows the concept\'s aliases and this option ' +
+        'stores none. Leave it unticked for a variant: Gloss Lamination is not also called ' +
+        '"laminating".',
     }),
     defineField({
       name: 'status',

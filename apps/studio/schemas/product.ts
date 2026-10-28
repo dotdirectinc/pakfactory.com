@@ -152,6 +152,23 @@ export const product = defineType({
       description: 'The /products/<slug> segment. Must be unique across products and product lines.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
+    // PROD-3206. The same field already on `glossaryTerm`, for the same reason:
+    // people search the short form far more than the full name, and site search
+    // needs both. 96 product styles already have "Also called" lists written in
+    // their copy with nowhere structured to put them.
+    defineField({
+      name: 'alsoKnownAs',
+      title: 'Also known as',
+      type: 'array',
+      group: GROUPS.content,
+      of: [{ type: 'string' }],
+      options: { layout: 'tags' },
+      description:
+        'What else this is called in the trade — "STE box" for Straight Tuck End, "mailer" for ' +
+        'Corrugated Mailer Box. People search the short form far more than the full name, and ' +
+        'site search needs both.',
+      validation: (Rule) => Rule.max(4),
+    }),
     defineField({
       name: 'kind',
       title: 'Product type',

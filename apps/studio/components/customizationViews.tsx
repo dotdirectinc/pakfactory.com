@@ -179,7 +179,7 @@ export const GlossaryTermOptionsView = createReferencedByView({
     {
       title: 'Customization options',
       type: 'customizationOption',
-      filter: 'glossaryTerm._ref == $id',
+      filter: '$id in glossaryTerm[]._ref',
       subtitle: 'type->title',
       badge: 'status',
     },
