@@ -1026,6 +1026,13 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   metaDescription,
   "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
   "glossaryDefinition": coalesce(glossaryTerm[0]->definition, glossaryTerm->definition),
+  // PROD-3207 — the Option's own copy. description becomes the hero source and
+  // body the long-form section below it; both are fetched here so the render side
+  // can be switched independently. glossaryDefinition stays until that switch
+  // lands, which is what makes the two halves deployable in either order.
+  description,
+  "descriptionPlain": pt::text(description),
+  body,
   "benefitsTitle": benefits.title,
   "benefitsPlain": pt::text(benefits.body),
   "benefitsBody": benefits.body,
@@ -1637,8 +1644,22 @@ export type CatalogCustomizationDetailDoc = {
   /** SEO only — never map into customer-facing body copy. */
   metaDescription?: string | null;
   glossaryPlain?: string | null;
-  /** Portable Text from linked glossaryTerm.definition (PROD-2779). */
+  /**
+   * Portable Text from linked glossaryTerm.definition (PROD-2779).
+   *
+   * ⚠️ Reads null on every Option since the mirror terms were retired
+   * (PROD-3209): the link is either cleared or points at a concept seeded with
+   * an empty definition. `description` below carries those words now. Kept so
+   * the query and the components can be deployed separately — delete it with
+   * the render switch, not before.
+   */
   glossaryDefinition?: unknown[] | null;
+  /** PROD-3207 — the Option's own "what it is". Replaces glossaryDefinition as the hero. */
+  description?: unknown[] | null;
+  /** Plain text of `description`, for SEO and listing fallbacks. */
+  descriptionPlain?: string | null;
+  /** PROD-3207 — long-form section under the hero. Often empty; render nothing then. */
+  body?: unknown[] | null;
   benefitsTitle?: string | null;
   benefitsPlain?: string | null;
   benefitsBody?: unknown[] | null;
