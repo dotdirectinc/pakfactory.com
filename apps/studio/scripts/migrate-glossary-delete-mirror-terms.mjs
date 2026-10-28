@@ -105,6 +105,19 @@ function hasProse(blocks) {
   )
 }
 
+/**
+ * The rendered words, whitespace collapsed. Guard 2 compares prose to prose, so
+ * this is what both sides are reduced to before they are matched.
+ */
+function proseKey(blocks) {
+  if (!Array.isArray(blocks)) return ''
+  return blocks
+    .flatMap((b) => (Array.isArray(b?.children) ? b.children.map((c) => c?.text ?? '') : []))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 async function main() {
   console.log('\n🗑️   Delete the mirror Glossary Terms (PROD-3209, step 3 of 3)')
   console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${describeMode(args)}\n`)
@@ -166,24 +179,40 @@ async function main() {
     process.exit(1)
   }
 
-  // ── Guard 2 — prose that never reached an Option ──────────────────────────
+  // ── Guard 2 — prose that never reached an Option ──────────────────────
+  //
+  // Matched on the prose itself, not on the title. Two reasons.
+  //
+  // `migrate:option-description` copied the words through the REFERENCE, so the
+  // question that protects the copy is "are these words on an Option", not "is
+  // there an Option with the same name". Four of the 243 never shared a title
+  // with the Option they fed, and a rename would break the title test on any of
+  // the rest.
+  //
+  // 🔴 The first version asked it in GROQ as
+  // `count(*[_type == "customizationOption" && lower(title) == lower(^.term)]) == 0`
+  // and got 0 for every term, failing all 243 over copy that had demonstrably
+  // already moved. `lower()` applied to a `^`-scoped attribute inside a nested
+  // filter does not resolve: `title == ^.term` works, `lower(title) ==
+  // lower($param)` works, the two together silently do not. Comparing in JS
+  // sidesteps it. Do not move this back into GROQ.
   const withProse = published.filter((m) => hasProse(m.definition))
   if (withProse.length) {
-    const orphaned = await client.fetch(
-      `*[_type == "glossaryTerm" && _id in $ids &&
-         count(*[_type == "customizationOption" && lower(title) == lower(^.term) && defined(description)]) == 0
-       ]{ _id, term }`,
-      { ids: withProse.map((m) => m._id) },
+    const descriptions = await client.fetch(
+      `*[_type == "customizationOption" && defined(description)].description`,
     )
+    const carried = new Set(descriptions.map(proseKey).filter(Boolean))
+    const orphaned = withProse.filter((m) => !carried.has(proseKey(m.definition)))
+
     if (orphaned.length) {
-      console.error(`\n❌  ${orphaned.length} mirror term(s) hold prose that no Option of the same name carries.`)
+      console.error(`\n❌  ${orphaned.length} mirror term(s) hold prose that no Option carries.`)
       console.error('    Deleting them would lose copy. NOTHING DELETED.\n')
       orphaned.slice(0, 25).forEach((m) => console.error(`     • ${m.term}`))
       if (orphaned.length > 25) console.error(`     … and ${orphaned.length - 25} more`)
       console.error('\n    Run `migrate:option-description` first, or move the copy by hand.')
       process.exit(1)
     }
-    console.log(`   definitions already on their Option   ${withProse.length}  (checked, safe to drop)`)
+    console.log(`   definitions already carried by an Option   ${withProse.length}  (checked, safe to drop)`)
   }
 
   console.log('\nWill delete (first 15 shown):')
