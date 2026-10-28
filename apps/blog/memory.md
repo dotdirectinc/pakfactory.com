@@ -1418,7 +1418,7 @@ Set `SANITY_API_WRITE_TOKEN` on Vercel (blog + www) and locally for the webhook 
 ### Human ops checklist
 
 1. Soft-schedule: future **Publish date** + **Publish** (native Schedule / Releases off until Growth+).
-2. Deploy blueprint after merge if Function safety net changed: `pnpm dlx sanity blueprints deploy` (dataset from `.env.local`; for production override `NEXT_PUBLIC_SANITY_DATASET=production`).
+2. Deploy blueprint after merge if Function safety net changed: `pnpm dlx sanity blueprints deploy` from `www-new-release`. No dataset comes from `.env.local` any more (PROD-3205): `stamp-published-at` and `algolia-document-sync` run for every dataset, and `algolia-content-sync` / `site-search-sync` are pinned to `PINNED_DATASET` in `sanity.blueprint.ts`.
 3. Set `SANITY_API_WRITE_TOKEN` on blog + www (webhook stamp fallback).
 4. Ensure revalidate webhook projections include `_id` (+ `_type`, `slug`).
 5. **Before** relying on the case-study GROQ gate in production: backfill any published case studies missing `publishedAt` (Studio or a one-off human script — agents must not write documents).

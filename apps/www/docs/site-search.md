@@ -12,7 +12,7 @@ The ⌘K search dialog on www. One ticket per part:
 | Show the SKU on results | PROD-3154 | built 2026-10-23; www only, no reindex |
 | Rank Advanced browse picks by clicks | PROD-3122 | backlog (Advanced only) |
 
-After changing the record or settings in `packages/sanity/src/algolia/site-search.ts`: run `gen:site-search-fn`, merge, redeploy the Functions stack (`npx sanity blueprints deploy` from the repo root; it re-uploads all four Functions, all pinned to one dataset), then run the backfill with `--confirm`. Searches are CDN-cached for up to ~70 minutes, so re-test with a query nobody has run since the change.
+After changing the record or settings in `packages/sanity/src/algolia/site-search.ts`: run `gen:site-search-fn`, merge, redeploy the Functions stack (`npx sanity blueprints deploy` from the repo root; it re-uploads all four Functions; this one is pinned to `PINNED_DATASET` in `sanity.blueprint.ts`, currently `development`), then run the backfill with `--confirm`. Searches are CDN-cached for up to ~70 minutes, so re-test with a query nobody has run since the change.
 
 ## The index — `site_search`
 
@@ -70,7 +70,7 @@ Settings (`SITE_SEARCH_SETTINGS`):
 
 | How | When |
 | --- | --- |
-| Function `site-search-sync` (`functions/site-search-sync/`, `sanity.blueprint.ts`) | On every create, update or delete of an indexed type, pinned to the blueprint's dataset. Its projection carries only the id: Function projections cannot run sub-queries, so it reads the record back with `SITE_SEARCH_DOC_QUERY`. No record means remove it. |
+| Function `site-search-sync` (`functions/site-search-sync/`, `sanity.blueprint.ts`) | On every create, update or delete of an indexed type, pinned to `PINNED_DATASET` in the blueprint (`development`), not to the deployer's `.env.local`. Its projection carries only the id: Function projections cannot run sub-queries, so it reads the record back with `SITE_SEARCH_DOC_QUERY`. No record means remove it. |
 | Backfill `pnpm --filter @pakfactory/studio run algolia:site-search -- --dataset development` | First fill, and after a parent's status change. Dry run by default; `--confirm` applies the settings and swaps the contents atomically (`replaceAllObjects`). It refuses to write 0 records. |
 
 Run the Function locally against one real document (it writes or removes that one record). Run it from the repo root. `--project-id` is required there, because the CLI config with the project lives in `apps/studio`:

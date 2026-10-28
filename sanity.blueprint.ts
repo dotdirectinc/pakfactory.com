@@ -26,19 +26,21 @@ const SANITY_PROJECT_ID =
   process.env.SANITY_PROJECT_ID ??
   process.env.SANITY_STUDIO_PROJECT_ID ??
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-const SANITY_DATASET =
-  process.env.SANITY_DATASET ??
-  process.env.SANITY_STUDIO_DATASET ??
-  process.env.NEXT_PUBLIC_SANITY_DATASET;
+
+// The one dataset algolia-content-sync and site-search-sync run for. Named here, not read
+// from the deployer's .env.local (PROD-3205): a deploy with `production` in that file
+// silently moved both Functions and left their indexes stale. Changing it is a code
+// change; re-run both backfills with the same `--dataset` afterwards.
+const PINNED_DATASET = "development";
 
 if (typeof ALGOLIA_APP_ID !== "string" || typeof ALGOLIA_WRITE_KEY !== "string") {
   throw new Error("ALGOLIA_APP_ID and ALGOLIA_WRITE_KEY must be set");
 }
 
-if (typeof SANITY_PROJECT_ID !== "string" || typeof SANITY_DATASET !== "string") {
+if (typeof SANITY_PROJECT_ID !== "string") {
   throw new Error(
-    "Sanity project/dataset not found — set SANITY_PROJECT_ID + SANITY_DATASET " +
-      "(or the existing NEXT_PUBLIC_SANITY_* / SANITY_STUDIO_* vars) in root .env.local",
+    "Sanity project not found — set SANITY_PROJECT_ID " +
+      "(or the existing NEXT_PUBLIC_SANITY_PROJECT_ID / SANITY_STUDIO_PROJECT_ID) in root .env.local",
   );
 }
 
@@ -79,10 +81,10 @@ export default defineBlueprint({
         projection: ALGOLIA_CONTENT_PROJECTION,
         // One dataset only. Unpinned, a function runs for EVERY dataset in the project, so production
         // edits would land in the same content_* indexes the backfill fills from this dataset, and admin
-        // search would mix the two. Same pinning as site-search-sync below.
+        // search would mix the two. Same pinning as site-search-sync below (PINNED_DATASET).
         resource: {
           type: "dataset",
-          id: `${SANITY_PROJECT_ID}.${SANITY_DATASET}`,
+          id: `${SANITY_PROJECT_ID}.${PINNED_DATASET}`,
         },
       },
       env: {
@@ -105,11 +107,11 @@ export default defineBlueprint({
         on: ["create", "update", "delete"],
         filter: SITE_SEARCH_EVENT_FILTER,
         projection: SITE_SEARCH_EVENT_PROJECTION,
-        // Pinned to one dataset, like algolia-content-sync: unpinned, production edits
+        // Pinned to PINNED_DATASET, like algolia-content-sync: unpinned, production edits
         // would land in the index the backfill fills from this dataset.
         resource: {
           type: "dataset",
-          id: `${SANITY_PROJECT_ID}.${SANITY_DATASET}`,
+          id: `${SANITY_PROJECT_ID}.${PINNED_DATASET}`,
         },
       },
       env: {
