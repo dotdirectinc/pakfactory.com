@@ -292,6 +292,11 @@ export const ADMIN_SPEC_REGISTRY_COPY = {
   allSyncs: "All syncs",
   waitingTitle: "Waiting for review",
   waitingNone: "Nothing is waiting for review.",
+  // Automatic syncs load nothing while a sync frame waits (PROD-3203, 2026-10-28).
+  syncPaused: (dataset: string, skipped: number) =>
+    `Automatic syncs are paused on ${dataset}: ${skipped.toLocaleString()} skipped since`,
+  syncPausedLead:
+    "A sync frame is waiting for review, so changes made in Sanity since then are not picked up. Approve or discard the waiting sync frames, or run Sync Changes to load everything now.",
   attentionTitle: "Needs attention",
   syncFailed: (kind: string) => `${kind} sync failed`,
   recentTitle: "Recent activity",

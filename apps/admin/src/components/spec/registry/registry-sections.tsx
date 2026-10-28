@@ -14,7 +14,7 @@ import {
   type SyncRun,
 } from "@/lib/spec/registry-api";
 import { dependsOn } from "@/lib/spec/prerequisites";
-import { failedRuns, isOpen, recentRuns } from "@/lib/spec/sync-runs";
+import { failedRuns, isOpen, pausedSyncs, recentRuns } from "@/lib/spec/sync-runs";
 import { ADMIN_SPEC_REGISTRY_COPY as COPY, ADMIN_SPEC_SYNC_COPY as SYNC, ADMIN_SPEC_SYNC_HISTORY_COPY as HISTORY } from "@/lib/copy/spec";
 import { RegistrySyncControl } from "./registry-sync-control";
 import { RegistryDismissButton } from "./registry-dismiss-button";
@@ -64,12 +64,22 @@ export async function SyncControlSection({ canSync }: { canSync: boolean }) {
 
 /** #1 — the frames waiting for a decision, ready ones first. */
 export async function WaitingSection() {
-  const drafts = await listDraftChangesets();
+  const [drafts, runs] = await Promise.all([listDraftChangesets(), listSyncRuns()]);
   if (!drafts.ok) return <Section title={COPY.waitingTitle}><SectionError what={COPY.waitingTitle} error={drafts.error} /></Section>;
   const deps = drafts.data.flatMap(dependsOn);
   const approved = deps.length ? await approvedFrames(deps) : new Set<string>();
+  // Only while a frame still waits: once it is decided, the next automatic run loads again.
+  const paused = runs.ok && drafts.data.length ? pausedSyncs(runs.data) : [];
   return (
     <Section title={COPY.waitingTitle} count={drafts.data.length}>
+      {paused.map((p) => (
+        <div key={p.dataset} role="status" className="flex flex-col gap-0.5 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm">
+          <span className="font-medium text-foreground">
+            {COPY.syncPaused(p.dataset, p.skipped)} <LocalTime iso={p.since} className="font-normal text-muted-foreground" />
+          </span>
+          <span className="text-muted-foreground">{COPY.syncPausedLead}</span>
+        </div>
+      ))}
       {drafts.data.length === 0 ? (
         <p className="rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">{COPY.waitingNone}</p>
       ) : (
