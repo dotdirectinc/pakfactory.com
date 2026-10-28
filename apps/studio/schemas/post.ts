@@ -105,6 +105,24 @@ export const post = defineType({
                 'Apply 3–5 topics, each drawn from one of the topic groups.',
             of: [{type: 'reference', to: [{type: 'blogTag'}]}],
         }),
+        // PROD-3206. The tag lives on the post, not on the term: a writer knows
+        // which terms their post explains while writing it, and nobody will walk
+        // back through seventy terms when post 178 publishes. The term page
+        // derives its "Read next" list from this — there is deliberately no
+        // `relatedPosts` field on `glossaryTerm`, which would go stale the day
+        // the next post lands.
+        defineField({
+            name: 'explains',
+            title: 'Explains',
+            type: 'array',
+            group: 'categorization',
+            description:
+                'Terms this post actually explains — not every term it mentions. A post earns a ' +
+                'tag here if a reader looking up that word would be satisfied by this post. ' +
+                'Tagging loosely clutters the glossary: a loose tag shows up as a wrong card in ' +
+                'Read next on that term\'s page.',
+            of: [{type: 'reference', to: [{type: 'glossaryTerm'}]}],
+        }),
         defineField({
             name: 'relatedPosts',
             title: 'Related posts',

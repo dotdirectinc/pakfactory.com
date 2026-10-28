@@ -1103,6 +1103,11 @@ export const resourcesWorkspaceStructure = (
                 .schemaType('glossaryTerm')
                 .child(S.documentTypeList('glossaryTerm').title('Glossary Terms')),
             S.listItem()
+                .title('Glossary Groups')
+                .icon(TagIcon)
+                .schemaType('glossaryGroup')
+                .child(S.documentTypeList('glossaryGroup').title('Glossary Groups')),
+            S.listItem()
                 .title('Guides')
                 .schemaType('guide')
                 .child(S.documentTypeList('guide').title('Guides')),

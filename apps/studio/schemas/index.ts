@@ -39,6 +39,7 @@ import { newsroomDetailPage } from './newsroomDetailPage'
 import { faq } from './faq'
 import { helpCategory } from './helpCategory'
 import { guide } from './guide'
+import { glossaryGroup } from './glossaryGroup'
 import { glossaryTerm } from './glossaryTerm'
 import { dieline } from './dieline'
 import { blogNavigation } from './blogNavigation'
@@ -139,6 +140,7 @@ export const schemaTypes = [
   helpCategory,
   guide,
   dieline,
+  glossaryGroup,
   glossaryTerm,
 
   // Editorial

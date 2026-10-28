@@ -551,6 +551,40 @@ export const MIGRATIONS = [
     probe: `count(*[_type == "solutionStyle" && _id in path("drafts.**") && defined(entityId) &&
         !defined(*[_id == string::split(^._id, "drafts.")[1]][0])]) == 0`,
   },
+  {
+    id: '20261028-glossary-term-array',
+    ticket: 'PROD-3206',
+    title: 'Wrap customizationOption.glossaryTerm into an array',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:glossary-term-array',
+    script: 'apps/studio/scripts/migrate-glossary-term-array.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: nothing carries a glossaryTerm that is not an
+    // array. `glossaryTerm[0]._ref` is undefined on a bare reference object, so a
+    // document this has not reached counts. Stays true forever — the field does not
+    // go back to a single reference, and an option that later clears the field is
+    // excluded by `defined(glossaryTerm)` rather than failing the probe.
+    probe: `count(*[_type == "customizationOption" && defined(glossaryTerm) &&
+      !defined(glossaryTerm[0]._ref)]) == 0`,
+  },
+  {
+    id: '20261028-option-description-from-term',
+    ticket: 'PROD-3206',
+    title: 'Copy the linked Glossary Term definition onto customizationOption.description',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:option-description',
+    script: 'apps/studio/scripts/migrate-option-description-from-term.mjs',
+    args: 'flags',
+    // Asserts the NEW shape is present rather than the old key being gone: the
+    // definition is deliberately LEFT on the term as the hero's source until
+    // PROD-3207 switches the front end, so an "old key is gone" probe would read
+    // false forever. It can go false again without the migration being un-run —
+    // a new option linked to a term and not yet written up reads as pending,
+    // which is a true reading of the dataset rather than a failure.
+    probe: `count(*[_type == "customizationOption" &&
+      defined(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)) &&
+      !defined(description)]) == 0`,
+  },
 ]
 
 /**
@@ -621,6 +655,9 @@ export const TASKS = [
   { task: 'seed:cdp-detail-pages', pkg: '@pakfactory/studio', why: 'idempotent CDP template bands (PROD-3112 / PROD-3124); inserts Works with → Compatible options → Compare → Showcase' },
   { task: 'seed:finder-general', pkg: '@pakfactory/studio', why: 'surgical General-rail buckets on existing heroFinder; preserves section order' },
   { task: 'seed:help-categories', pkg: '@pakfactory/studio', why: 'create the Help Center categories (create-if-missing)' },
+  // PROD-3206. The twelve sections the glossary index is split by. createIfNotExists on a
+  // title-derived id, so a re-run never undoes a rename the content team made in the Studio.
+  { task: 'seed:glossary-groups', pkg: '@pakfactory/studio', why: 'create the Glossary Groups (create-if-missing)' },
   { task: 'seed:controller-lab', pkg: '@pakfactory/studio', why: 'idempotent Controller Lab QA seed — Materials type + options, append-only on test product' },
   // Reads the dataset only; writes the `site_search` Algolia index (PROD-3109). Re-run after
   // a parent's status change — children are not re-synced by the Function.
