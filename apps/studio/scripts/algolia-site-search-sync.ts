@@ -13,8 +13,8 @@
  * how parent status changes reach their children (see site-search.ts, "Known gaps").
  *
  * 🔴 ONE index, filled from ONE dataset. The `site-search-sync` Function is pinned to
- * the blueprint's dataset; backfill from the same one. A production fill is a
- * release-readiness decision (which index name staging and production each read) —
+ * `PINNED_DATASET` in sanity.blueprint.ts (`development`); backfill from the same
+ * one. A production fill is a release-readiness decision (which index name staging and production each read) —
  * `--dataset production` also needs `--yes-production`.
  *
  * Env (repo-root .env.local): ALGOLIA_APP_ID, ALGOLIA_WRITE_KEY, and a Sanity read token
