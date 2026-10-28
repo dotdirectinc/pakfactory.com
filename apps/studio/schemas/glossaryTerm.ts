@@ -163,7 +163,9 @@ export const glossaryTerm = defineType({
       title: 'Related solutions',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Solutions this term relates to.',
+      description:
+        'Three to five solutions that best show this term in use — pick, don\'t list. A complete ' +
+        'list is a catalogue, not an answer.',
       of: [{ type: 'reference', to: [{ type: 'solution' }] }],
     }),
     defineField({
@@ -171,7 +173,9 @@ export const glossaryTerm = defineType({
       title: 'Related expertise',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Expertise stages this term relates to.',
+      description:
+        'Three to five expertise stages that best show this term in use — pick, don\'t list. A ' +
+        'complete list is a catalogue, not an answer.',
       of: [{ type: 'reference', to: [{ type: 'expertiseStage' }] }],
     }),
     defineField({
