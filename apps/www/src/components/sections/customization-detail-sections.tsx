@@ -12,6 +12,7 @@ import {CustomizationShowcase} from '@/components/customization/customization-sh
 import {
     getLearnFirstSectionCopy,
     getReferenceCopy,
+    resolveCompareIntroPlaceholder,
 } from '@/lib/catalog/reference-copy';
 import {mapSectionChrome} from '@/lib/sections/map-section-chrome';
 
@@ -156,10 +157,14 @@ export function CustomizationCompareFromSanity(
     const defaults = isLearnFirstTemplate
         ? getLearnFirstSectionCopy(detail).compare
         : null;
+    const intro = resolveCompareIntroPlaceholder(
+        section.intro?.trim() || defaults?.description,
+        detail,
+    );
     const heading = {
         eyebrow: section.eyebrow?.trim() || defaults?.eyebrow,
         title: section.heading?.trim() || defaults?.title,
-        description: section.intro?.trim() || defaults?.description,
+        description: intro || undefined,
     };
     return (
         <CustomizationComparison

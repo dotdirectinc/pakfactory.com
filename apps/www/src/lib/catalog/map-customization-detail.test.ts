@@ -20,19 +20,36 @@ function detailDoc(
     };
 }
 
-describe('mapSanityCustomizationDetail glossary hero (PROD-2779)', () => {
-    it('maps glossary Definition PT and plain text when linked', () => {
+const foilDescriptionBlocks = [
+    {
+        _type: 'block',
+        _key: 'a',
+        style: 'normal',
+        markDefs: [],
+        children: [
+            {
+                _type: 'span',
+                _key: 'a0',
+                text: 'Hot foil stamping applies metallic foil.',
+                marks: [],
+            },
+        ],
+    },
+];
+
+describe('mapSanityCustomizationDetail option description hero (PROD-3207)', () => {
+    it('maps option Description PT as descriptionBlocks and glossaryPlain as SEO description', () => {
         const glossaryDefinition = [
             {
                 _type: 'block',
-                _key: 'a',
+                _key: 'g',
                 style: 'normal',
                 markDefs: [],
                 children: [
                     {
                         _type: 'span',
-                        _key: 'a0',
-                        text: 'Hot foil stamping applies metallic foil.',
+                        _key: 'g0',
+                        text: 'Glossary concept copy — not the hero.',
                         marks: [],
                     },
                 ],
@@ -40,34 +57,77 @@ describe('mapSanityCustomizationDetail glossary hero (PROD-2779)', () => {
         ];
         const mapped = mapSanityCustomizationDetail(
             detailDoc({
-                shortDescription: 'Short option blurb — must not win.',
+                shortDescription: 'Short option blurb — must not win the hero.',
                 benefitsPlain: 'Benefits plain — must not win.',
-                glossaryPlain: 'Hot foil stamping applies metallic foil.',
+                glossaryPlain: 'SEO glossary plain.',
                 glossaryDefinition,
+                description: foilDescriptionBlocks,
             }),
         );
         assert.ok(mapped);
+        assert.equal(mapped.description, 'SEO glossary plain.');
+        assert.deepEqual(mapped.descriptionBlocks, foilDescriptionBlocks);
         assert.equal(
-            mapped.description,
-            'Hot foil stamping applies metallic foil.',
+            mapped.shortDescription,
+            'Short option blurb — must not win the hero.',
         );
-        assert.equal(mapped.shortDescription, 'Short option blurb — must not win.');
         assert.deepEqual(mapped.glossaryDefinition, glossaryDefinition);
     });
 
-    it('leaves hero description empty when glossary is missing', () => {
+    it('leaves descriptionBlocks empty when Studio Description is missing — no shortDescription fallback', () => {
         const mapped = mapSanityCustomizationDetail(
             detailDoc({
                 shortDescription: 'Short option blurb.',
                 benefitsPlain: 'Benefits plain.',
                 glossaryPlain: null,
                 glossaryDefinition: null,
+                description: null,
             }),
         );
         assert.ok(mapped);
         assert.equal(mapped.description, undefined);
+        assert.equal(mapped.descriptionBlocks, undefined);
         assert.equal(mapped.shortDescription, 'Short option blurb.');
-        assert.equal(mapped.glossaryDefinition, undefined);
+    });
+
+    it('maps body and alias fields without inventing a fallback alias list', () => {
+        const body = [
+            {
+                _type: 'block',
+                _key: 'b',
+                style: 'normal',
+                markDefs: [],
+                children: [
+                    {
+                        _type: 'span',
+                        _key: 'b0',
+                        text: 'Long-form depth.',
+                        marks: [],
+                    },
+                ],
+            },
+        ];
+        const mapped = mapSanityCustomizationDetail(
+            detailDoc({
+                body,
+                alsoKnownAs: ['Foil', '  Hot foil  ', ''],
+                conceptAliases: ['Stamping'],
+                inheritAliasesFromConcept: false,
+            }),
+        );
+        assert.ok(mapped);
+        assert.deepEqual(mapped.body, body);
+        assert.deepEqual(mapped.alsoKnownAs, ['Foil', 'Hot foil']);
+        assert.deepEqual(mapped.conceptAliases, ['Stamping']);
+        assert.equal(mapped.inheritAliasesFromConcept, undefined);
+    });
+
+    it('records inheritAliasesFromConcept when ticked', () => {
+        const mapped = mapSanityCustomizationDetail(
+            detailDoc({inheritAliasesFromConcept: true}),
+        );
+        assert.ok(mapped);
+        assert.equal(mapped.inheritAliasesFromConcept, true);
     });
 
     it('omits an empty short description so the compare blurb hides', () => {

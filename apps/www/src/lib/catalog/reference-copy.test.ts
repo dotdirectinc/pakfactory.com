@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
-import {getLearnFirstSectionCopy, getReferenceCopy} from './reference-copy';
+import {
+    getLearnFirstSectionCopy,
+    getReferenceCopy,
+    resolveCompareIntroPlaceholder,
+} from './reference-copy';
 
 describe('getReferenceCopy', () => {
     it('builds materials compare label', () => {
@@ -82,6 +86,31 @@ describe('getLearnFirstSectionCopy (PROD-3112)', () => {
         assert.match(
             copy.compare.description,
             /other rigid plastics in this category/,
+        );
+    });
+});
+
+describe('resolveCompareIntroPlaceholder (PROD-3207)', () => {
+    it('replaces a literal {type} with the lowercased type title', () => {
+        assert.equal(
+            resolveCompareIntroPlaceholder(
+                'See Gloss side by side with up to two other {type} options.',
+                {
+                    categoryValue: 'finishing',
+                    typeTitle: 'Surface Coating',
+                },
+            ),
+            'See Gloss side by side with up to two other surface coating options.',
+        );
+    });
+
+    it('falls back to the category noun when type title is missing', () => {
+        assert.equal(
+            resolveCompareIntroPlaceholder(
+                'Compare with other {type} options.',
+                {categoryValue: 'finishing'},
+            ),
+            'Compare with other finish options.',
         );
     });
 });
