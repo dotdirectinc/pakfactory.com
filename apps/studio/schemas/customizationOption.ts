@@ -111,8 +111,40 @@ export const customizationOption = defineType({
       group: 'content',
       rows: 3,
       description:
-        'One line, no more. Used on the customization card, in listings, in search results and ' +
-        'in the comparison column. A summary of the offer, not a definition of the word.',
+        'One line, no more. Used in listings, in search results, in the comparison column and ' +
+        'in the configurator\'s detail pane. A summary of the offer, not a definition of the word.',
+    }),
+    /**
+     * PROD-3211. The configurator's option LIST — two lines of space beside a
+     * thumbnail, scanned rather than read. It showed `shortDescription` clipped
+     * mid-clause ("Porous, matte paper wrap that softens ink saturation and
+     * takes foil stamping…") while the detail pane beside it showed the same
+     * sentence whole, so the two panes repeated each other and neither suited
+     * its space.
+     *
+     * ⚠️ A `string`, not `text`, and capped — both deliberate. A textarea
+     * invites a paragraph, and a paragraph here is the problem being fixed.
+     *
+     * 🔴 A list (`string[]`) was considered and DEFERRED, not rejected. It would
+     * enforce the format structurally and could render as ticks or chips on a
+     * wider surface. The separator is what keeps that door open: `a · b · c`
+     * splits mechanically, whereas "a, b and c available on request" across 226
+     * options is 226 rewrites. Revisit once there is real copy to look at.
+     */
+    defineField({
+      name: 'highlights',
+      title: 'Highlights',
+      type: 'string',
+      group: 'content',
+      description:
+        'Two or three fragments separated by · — "Takes foil cleanly · Hides fingerprints". What ' +
+        'makes someone pick this one over the option above it in the configurator. Not a ' +
+        'sentence; Short description is the sentence.',
+      validation: (Rule) =>
+        Rule.max(120).warning(
+          'Over 120 characters will not fit the configurator card and gets clipped. Cut to the ' +
+            'one or two things that decide the choice.',
+        ),
     }),
     defineField({
       name: 'slug',

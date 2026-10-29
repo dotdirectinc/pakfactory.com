@@ -173,6 +173,10 @@ const OPTION_FIELDS = /* groq */ `
   "status": select(${OPTION_TAXONOMY_ON} => status, "not-active"),
   appearsIn,
   shortDescription,
+  // PROD-3211 — the configurator's option LIST reads this; the detail pane beside
+  // it keeps shortDescription. Two lines of space against a full sentence, which
+  // is why the list was clipping mid-clause and repeating the pane.
+  highlights,
   metaDescription,
   "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
   "benefitsPlain": pt::text(benefits.body),
@@ -1260,6 +1264,12 @@ export type CatalogOptionDoc = {
     | null;
   /** House short description for cards / builder (PROD-2762). */
   shortDescription?: string | null;
+  /**
+   * PROD-3211 — fragments for the configurator's option list, separated by ·.
+   * Falls back to `shortDescription` when empty, which is the normal case until
+   * the copy is written. Never the other way round: the list has two lines.
+   */
+  highlights?: string | null;
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
