@@ -635,10 +635,15 @@ function SpecTableFromOptions({
     selectedId: string | undefined;
     onSelect: (id: string) => void;
 }) {
+    // Consultation is a segment chip (builder default) but has no facts row —
+    // SpecTableField hides the table until a real value is selected.
     const segments = options.map((o) => ({id: o.id, label: o.title}));
-    const columns = specTableColumns(options.flatMap((o) => o.facts ?? []));
+    const factOptions = options.filter(
+        (o) => o.id !== PROPERTY_CONSULTATION_ID,
+    );
+    const columns = specTableColumns(factOptions.flatMap((o) => o.facts ?? []));
     const rows: Record<string, string[]> = {};
-    for (const o of options) {
+    for (const o of factOptions) {
         const byKey = new Map(
             (o.facts ?? []).map((f) => [f.key?.trim() || f.label, f.display]),
         );
@@ -655,7 +660,7 @@ function SpecTableFromOptions({
                 columns.length > 0
                     ? rows
                     : Object.fromEntries(
-                          options.map((o) => [o.id, [o.title]]),
+                          factOptions.map((o) => [o.id, [o.title]]),
                       )
             }
             value={selectedId ?? segments[0]?.id}
@@ -1000,9 +1005,7 @@ export function OptionPropertyControllers({
                     case 'specTable':
                         body = (
                             <SpecTableFromOptions
-                                options={displayOptions.filter(
-                                    (o) => o.id !== PROPERTY_CONSULTATION_ID,
-                                )}
+                                options={displayOptions}
                                 selectedId={selectedId}
                                 onSelect={(id) => emitChange([id])}
                             />

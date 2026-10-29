@@ -7,6 +7,7 @@ import {Input} from '@pakfactory/ui/components/input';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import type {BuilderOption, BuilderType} from '@/lib/customization-builder';
+import {optionCardBlurb} from '@/lib/customization-builder/option-card-blurb';
 import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
 
 type CategoryTypeListProps = {
@@ -35,7 +36,12 @@ const SEARCH_MIN_OPTIONS = 8;
 
 function optionMatchesQuery(option: BuilderOption, query: string): boolean {
     if (!query) return true;
-    const hay = [option.title, option.shortDescription, option.description]
+    const hay = [
+        option.title,
+        option.highlights,
+        option.shortDescription,
+        option.description,
+    ]
         .join(' ')
         .toLowerCase();
     return hay.includes(query);
@@ -173,10 +179,7 @@ export function CategoryTypeList({
                                                         option.id,
                                                     ),
                                                 );
-                                            const blurb =
-                                                option.shortDescription?.trim() ||
-                                                option.description?.trim() ||
-                                                '';
+                                            const blurb = optionCardBlurb(option);
                                             return (
                                                 <li key={option.id}>
                                                     <HighlightItem
