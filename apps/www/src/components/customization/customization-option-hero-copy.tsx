@@ -99,8 +99,14 @@ function bodyProseComponents(titleFallback: string): PortableTextComponents {
                 <OptionBodyImage value={value} titleFallback={titleFallback} />
             ),
         },
+        // Explicit block map — do not spread heroProseComponents.block (union
+        // can be a component; spread pulls React statics and fails tsc).
         block: {
-            ...heroProseComponents.block,
+            normal: ({children}) => (
+                <p className="mb-3 text-base leading-relaxed text-muted-foreground last:mb-0">
+                    {children}
+                </p>
+            ),
             h2: ({children}) => (
                 <h2 className="mb-3 mt-6 text-xl font-semibold tracking-tight text-foreground first:mt-0">
                     {children}
@@ -110,11 +116,6 @@ function bodyProseComponents(titleFallback: string): PortableTextComponents {
                 <h3 className="mb-2 mt-5 text-lg font-semibold tracking-tight text-foreground">
                     {children}
                 </h3>
-            ),
-            normal: ({children}) => (
-                <p className="mb-3 text-base leading-relaxed text-muted-foreground last:mb-0">
-                    {children}
-                </p>
             ),
         },
     };
