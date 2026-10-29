@@ -59,11 +59,33 @@ function pluralizeLabel(label: string): string {
     return `${trimmed}s`;
 }
 
-function comparePeerNoun(categoryValue: string, typeTitle?: string): string {
+/** Plural peer noun for compare intros (type title, else category fallback). */
+export function comparePeerNoun(
+    categoryValue: string,
+    typeTitle?: string,
+): string {
     const type = typeTitle?.trim();
     if (type) return pluralizeLabel(type);
     const key = categoryValue.trim().toLowerCase();
     return COMPARE_PEER_NOUN[key] ?? 'options';
+}
+
+/**
+ * PROD-3207 — Achieves CDP template still stores a literal `{type}` placeholder
+ * in the compare intro ("other {type} options"). Use the type title when set,
+ * else a singular category noun — never leave `{type}` on the page.
+ */
+export function resolveCompareIntroPlaceholder(
+    intro: string | null | undefined,
+    detail: Pick<CustomizationDetail, 'categoryValue' | 'typeTitle'>,
+): string {
+    if (!intro) return '';
+    const typeTitle = detail.typeTitle?.trim();
+    const replacement = typeTitle
+        ? typeTitle.toLowerCase()
+        : (CATEGORY_NOUN[detail.categoryValue.trim().toLowerCase()] ??
+          'option');
+    return intro.replaceAll('{type}', replacement);
 }
 
 export function getReferenceCopy(

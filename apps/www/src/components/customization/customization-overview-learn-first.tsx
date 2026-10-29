@@ -1,10 +1,6 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {
-    PortableText,
-    type PortableTextComponents,
-} from '@portabletext/react';
 import {Leaf} from 'lucide-react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {
@@ -12,10 +8,10 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@pakfactory/ui/components/tooltip';
-import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
 import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
 import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
 import {useCustomizationDetailHost} from '@/components/customization/customization-detail-host';
+import {CustomizationOptionHeroCopy} from '@/components/customization/customization-option-hero-copy';
 import {CustomizationRailActions} from '@/components/customization/customization-rail-actions';
 import {
     initialPropertySelection,
@@ -50,50 +46,6 @@ import {isCustomColorSlug} from '@/lib/catalog/swatch-colors';
 
 export const CUSTOMIZATION_OVERVIEW_LEARN_FIRST_ID =
     'customization-overview-learn-first';
-
-const proseComponents: PortableTextComponents = {
-    block: {
-        normal: ({children}) => (
-            <p className="mb-3 text-base leading-relaxed text-muted-foreground last:mb-0">
-                {children}
-            </p>
-        ),
-    },
-    list: {
-        bullet: ({children}) => (
-            <ul className="mb-3 list-disc space-y-2 pl-5 text-base leading-relaxed text-muted-foreground last:mb-0">
-                {children}
-            </ul>
-        ),
-        number: ({children}) => (
-            <ol className="mb-3 list-decimal space-y-2 pl-5 text-base leading-relaxed text-muted-foreground last:mb-0">
-                {children}
-            </ol>
-        ),
-    },
-    listItem: {
-        bullet: ({children}) => <li>{children}</li>,
-        number: ({children}) => <li>{children}</li>,
-    },
-    marks: {
-        strong: ({children}) => (
-            <strong className="font-semibold text-foreground">{children}</strong>
-        ),
-        em: ({children}) => <em>{children}</em>,
-        link: ({value, children}) => {
-            const href: string = value?.href ?? '#';
-            return (
-                <a
-                    href={href}
-                    className="font-medium text-primary underline underline-offset-4 hover:no-underline"
-                    {...externalLinkAttributes(href)}
-                >
-                    {children}
-                </a>
-            );
-        },
-    },
-};
 
 function titlesForIds(
     field: PropertyFieldDescriptor,
@@ -245,14 +197,7 @@ export function CustomizationOverviewLearnFirst({
                             <h1 className="mt-1 text-4xl font-semibold text-foreground">
                                 {detail.title}
                             </h1>
-                            {detail.glossaryDefinition?.length ? (
-                                <div className="mt-4 text-base">
-                                    <PortableText
-                                        value={detail.glossaryDefinition}
-                                        components={proseComponents}
-                                    />
-                                </div>
-                            ) : null}
+                            <CustomizationOptionHeroCopy detail={detail} />
                         </div>
 
                         {showFactsWell ? (

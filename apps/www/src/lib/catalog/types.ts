@@ -628,21 +628,41 @@ export type CustomizationDetail = {
     typeTitle?: string;
     typeSlug?: string;
     /**
-     * Plain text from linked glossary definition (PROD-2779).
-     * On-page hero prefers `glossaryDefinition` PT; this is for SEO fallbacks.
+     * Plain text from linked glossary definition (PROD-2779 / PROD-3207).
+     * SEO / listing / section-token fallback only — not the CDP hero.
      * Empty when no glossary term is linked — do not fill from shortDescription.
      */
     description?: string;
     /**
+     * Option's own "what it is" Portable Text — CDP hero under the H1 (PROD-3207).
+     * Studio field `customizationOption.description`. Never fall back to shortDescription.
+     */
+    descriptionBlocks?: PortableTextBlock[];
+    /**
      * One-line option summary (PROD-3060). Compare-column blurb.
-     * Never copied into `description`.
+     * Never copied into `description` or the hero.
      */
     shortDescription?: string;
     /**
-     * Linked glossaryTerm.definition portable text for the CDP hero (PROD-2779).
-     * When absent, hero description stays empty so missing content is obvious.
+     * Linked glossaryTerm.definition PT — kept for transitional SEO / tooling.
+     * Not the CDP hero after PROD-3207 (hero uses `descriptionBlocks`).
      */
     glossaryDefinition?: PortableTextBlock[];
+    /**
+     * Long-form Portable Text under the hero (PROD-3207). Often empty — render nothing then.
+     */
+    body?: PortableTextBlock[];
+    /**
+     * Option synonyms for the alias line (PROD-3207). Used when inheritAliasesFromConcept is off.
+     */
+    alsoKnownAs?: string[];
+    /**
+     * When true, alias line uses `conceptAliases` instead of `alsoKnownAs` (PROD-3207).
+     * Branch on this flag — never on which list is empty.
+     */
+    inheritAliasesFromConcept?: boolean;
+    /** Concept synonyms when inheritAliasesFromConcept is on (PROD-3207). */
+    conceptAliases?: string[];
     /** SEO meta description only — use in generateMetadata, never on-page body. */
     metaDescription?: string;
     /** Studio `benefits.title` — Overview heading. */

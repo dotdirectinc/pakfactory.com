@@ -1339,8 +1339,14 @@ export function mapSanityCustomizationDetail(
         });
     }
 
-    // CDP hero — glossary Definition only (PROD-2779). No shortDescription /
-    // benefitsPlain fallback so missing glossary links show as empty in QA.
+    // PROD-3207 — hero is the option's own Description PT. glossaryPlain stays
+    // for SEO / tokens only; no shortDescription / benefitsPlain hero fallback.
+    const descriptionBlocks = Array.isArray(doc.description)
+        ? (doc.description as PortableTextBlock[])
+        : undefined;
+    const body = Array.isArray(doc.body)
+        ? (doc.body as PortableTextBlock[])
+        : undefined;
     const glossaryDefinition = Array.isArray(doc.glossaryDefinition)
         ? (doc.glossaryDefinition as PortableTextBlock[])
         : undefined;
@@ -1350,6 +1356,14 @@ export function mapSanityCustomizationDetail(
     const benefitsBody = Array.isArray(doc.benefitsBody)
         ? (doc.benefitsBody as PortableTextBlock[])
         : undefined;
+
+    const alsoKnownAs = (doc.alsoKnownAs ?? [])
+        .map((alias) => (typeof alias === 'string' ? alias.trim() : ''))
+        .filter(Boolean);
+    const conceptAliases = (doc.conceptAliases ?? [])
+        .map((alias) => (typeof alias === 'string' ? alias.trim() : ''))
+        .filter(Boolean);
+    const inheritAliasesFromConcept = Boolean(doc.inheritAliasesFromConcept);
 
     const typeTitle = doc.type?.title?.trim();
     const typeSlug = doc.type?.slug?.trim();
@@ -1386,8 +1400,13 @@ export function mapSanityCustomizationDetail(
         ...(typeTitle ? {typeTitle} : {}),
         ...(typeSlug ? {typeSlug} : {}),
         ...(description ? {description} : {}),
+        ...(descriptionBlocks?.length ? {descriptionBlocks} : {}),
+        ...(body?.length ? {body} : {}),
         ...(shortDescription ? {shortDescription} : {}),
         ...(glossaryDefinition?.length ? {glossaryDefinition} : {}),
+        ...(alsoKnownAs.length > 0 ? {alsoKnownAs} : {}),
+        ...(inheritAliasesFromConcept ? {inheritAliasesFromConcept: true} : {}),
+        ...(conceptAliases.length > 0 ? {conceptAliases} : {}),
         ...(metaDescription ? {metaDescription} : {}),
         ...(benefitsTitle ? {benefitsTitle} : {}),
         ...(benefitsBody?.length ? {benefitsBody} : {}),
