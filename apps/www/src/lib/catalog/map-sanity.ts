@@ -496,6 +496,9 @@ function mapAvailableCustomization(
         option.benefitsPlain,
         type?.description,
     );
+    // PROD-3211 — list-card fragments; leave empty when unauthored so the card
+    // can fall back to shortDescription without inventing copy.
+    const highlights = option.highlights?.trim() || '';
 
     // ADR-024 — primary product still; GROQ coalesces legacy featuredImage / media[0].
     const featuredUrl = option.featuredImage
@@ -536,6 +539,7 @@ function mapAvailableCustomization(
         cardinality: customerSelects,
         imageUrl,
         shortDescription,
+        ...(highlights ? {highlights} : {}),
         description,
         preselected: Boolean(row.preselected),
         ...(option.appearsIn ? {appearsIn: option.appearsIn} : {}),

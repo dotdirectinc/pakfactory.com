@@ -525,6 +525,9 @@ export function buildStepsFromCatalog(
             title: item.label,
             typeId,
             shortDescription: item.shortDescription ?? '',
+            ...(item.highlights?.trim()
+                ? {highlights: item.highlights.trim()}
+                : {}),
             description: item.description ?? '',
             imageUrl: item.imageUrl ?? null,
             status: 'active',

@@ -127,6 +127,8 @@ export type BuilderOption = {
     title: string;
     typeId: string;
     shortDescription: string;
+    /** PROD-3211 — list-card fragments; empty until content is authored. */
+    highlights?: string;
     description: string;
     imageUrl: string | null;
     status: 'active';
@@ -211,6 +213,7 @@ export type CatalogOptionLike = Pick<
     | 'customerSelects'
     | 'slug'
     | 'shortDescription'
+    | 'highlights'
     | 'description'
     | 'imageUrl'
     | 'preselected'

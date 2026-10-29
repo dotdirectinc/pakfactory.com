@@ -74,6 +74,11 @@ export type CustomizationOption = {
     customerSelects?: 'one' | 'many';
     slug?: string;
     shortDescription?: string;
+    /**
+     * PROD-3211 — fragments for the configurator option list (`a · b · c`).
+     * Distinct from `shortDescription` (detail pane sentence). Omit when empty.
+     */
+    highlights?: string;
     description?: string;
     imageUrl?: string | null;
     preselected?: boolean;
