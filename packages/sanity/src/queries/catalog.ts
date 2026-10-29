@@ -277,6 +277,9 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   kind,
   ${PRODUCT_EFFECTIVE_STATUS},
   "description": coalesce(pt::text(description), shortDescription),
+  // PROD-3207 — no concept link on this type, so no checkbox: render the list as
+  // it stands, nothing when it is empty.
+  alsoKnownAs,
   moq,
   dimensionInput,
   dimensionRange,
@@ -654,6 +657,10 @@ const LINE_STYLE_CARD_PROJ = /* groq */ `{
   "slug": slug.current,
   shortDescription,
   "description": pt::text(description),
+  // PROD-3207 — for the style PAGE. This projection also feeds the line's styles
+  // grid, which has no alias line; an unread field on a card is cheaper than a
+  // second projection that then has to be kept in step with this one.
+  alsoKnownAs,
   ${STYLE_CARD_IMAGE},
   "hasPage": ${LINE_STYLE_HAS_PAGE},
   // The style's own FAQs; the style page falls back to the line's when empty.
@@ -704,6 +711,8 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   "slug": slug.current,
   shortDescription,
   "description": pt::text(description),
+  // PROD-3207 — as on product: no checkbox, render it or render nothing.
+  alsoKnownAs,
   ${LINE_FEATURED_IMAGE},
   ${LINE_FEATURED_ICON},
   ${CATALOG_MEDIA_ARRAYS},
@@ -1038,6 +1047,15 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   // on all 208. That is the fallback.
   description,
   body,
+  // PROD-3207 item 3 — the alias line. BRANCH ON THE CHECKBOX, never on empty:
+  // unticked renders the Option's own list, ticked renders the concept's instead.
+  // A "use the Option's, else the concept's" fallback looks equivalent and is not
+  // — the field is new and empty everywhere, so every variant would print its
+  // parent's list on day one, with Matte Lamination reading "also known as:
+  // laminating". conceptAliases is dereferenced here because nothing else does it.
+  alsoKnownAs,
+  inheritAliasesFromConcept,
+  "conceptAliases": glossaryTerm[0]->alsoKnownAs,
   "benefitsTitle": benefits.title,
   "benefitsPlain": pt::text(benefits.body),
   "benefitsBody": benefits.body,
@@ -1302,6 +1320,8 @@ export type CatalogStyleRefDoc = {
   hasPage?: boolean | null;
   shortDescription?: string | null;
   description?: string | null;
+  /** PROD-3207 — synonyms a customer would type. Max 4. Empty renders no alias line. */
+  alsoKnownAs?: string[] | null;
   cardImage?: unknown | null;
   /** The style's own FAQs (line query only). */
   faqs?: CatalogProductFaqDoc[] | null;
@@ -1356,6 +1376,8 @@ export type CatalogProductDoc = {
   kind?: 'standard' | 'inspiration' | null;
   status?: string | null;
   description?: string | null;
+  /** PROD-3207 — synonyms a customer would type. Max 4. Empty renders no alias line. */
+  alsoKnownAs?: string[] | null;
   moq?: number | null;
   dimensionInput?: string | null;
   dimensionRange?: {
@@ -1476,6 +1498,8 @@ export type CatalogProductLineDoc = {
   shortDescription?: string | null;
   /** Plain text from `pt::text(description)`. */
   description?: string | null;
+  /** PROD-3207 — synonyms a customer would type. Max 4. Empty renders no alias line. */
+  alsoKnownAs?: string[] | null;
   /** Featured image cascade: featuredImage → cardImage → heroMedia. */
   cardImage?: unknown | null;
   /** Desktop scroll-scrub hero video URL from `featuredVideo` (upload/URL). */
@@ -1667,6 +1691,17 @@ export type CatalogCustomizationDetailDoc = {
   description?: unknown[] | null;
   /** PROD-3207 — long-form section under the hero. Often empty; render nothing then. */
   body?: unknown[] | null;
+  /** PROD-3207 — the Option's own synonyms. Max 4. Rendered when the checkbox is OFF. */
+  alsoKnownAs?: string[] | null;
+  /**
+   * PROD-3207 — ON means render `conceptAliases` instead of `alsoKnownAs`, for an
+   * Option that is the same word as its concept. Branch on this, never on which
+   * list happens to be empty: both are empty across the whole dataset today, so
+   * an emptiness check would print every parent's list on every variant.
+   */
+  inheritAliasesFromConcept?: boolean | null;
+  /** PROD-3207 — the linked concept's synonyms. Rendered when the checkbox is ON. */
+  conceptAliases?: string[] | null;
   benefitsTitle?: string | null;
   benefitsPlain?: string | null;
   benefitsBody?: unknown[] | null;
