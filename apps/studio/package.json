@@ -51,6 +51,7 @@
     "seed:help-categories": "node scripts/seed-help-categories.mjs",
     "seed:glossary-groups": "node scripts/seed-glossary-groups.mjs",
     "seed:glossary-concept-terms": "node scripts/seed-glossary-concept-terms.mjs",
+    "seed:product-style-aliases": "node scripts/seed-product-style-aliases.mjs",
     "split:coating-type": "node scripts/split-coating-customization-type.mjs",
     "migrate:availability-axes": "node scripts/migrate-customization-availability-axes.mjs",
     "migrate:option-category-benefits": "node scripts/migrate-customization-option-category-and-benefits.mjs",
