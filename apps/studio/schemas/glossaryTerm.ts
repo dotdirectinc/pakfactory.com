@@ -52,6 +52,12 @@ export const glossaryTerm = defineType({
         'variant\'s — those live on the Customization Option.',
       of: [{ type: 'string' }],
       options: { layout: 'tags' },
+      validation: (Rule) =>
+        Rule.max(4).warning(
+          'More than four reads as a keyword list rather than a set of names. Keep the ones a ' +
+            'customer would actually type; a term that only appears in trade documents belongs ' +
+            'in the meta title instead.',
+        ),
     }),
     defineField({
       name: 'definition',
