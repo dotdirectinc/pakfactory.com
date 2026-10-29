@@ -240,7 +240,12 @@ export const customizationOption = defineType({
         'Synonyms and abbreviations a customer would actually type — "AQ" for Aqueous Coating, ' +
         '"soft-touch" for Matte Soft Touch Lamination. Site search reads this. Not marketing ' +
         'variants of the name, and not the concept\'s synonyms — those live on the Glossary Term.',
-      validation: (Rule) => Rule.max(4),
+      validation: (Rule) =>
+        Rule.max(4).warning(
+          'More than four reads as a keyword list rather than a set of names. Keep the ones a ' +
+            'customer would actually type; a term that only appears in trade documents belongs ' +
+            'in the meta title instead.',
+        ),
     }),
     //
     // PROD-3206. Where an option and its concept are the same word — UV Coating

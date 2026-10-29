@@ -167,7 +167,12 @@ export const product = defineType({
         'What else this is called in the trade — "STE box" for Straight Tuck End, "mailer" for ' +
         'Corrugated Mailer Box. People search the short form far more than the full name, and ' +
         'site search needs both.',
-      validation: (Rule) => Rule.max(4),
+      validation: (Rule) =>
+        Rule.max(4).warning(
+          'More than four reads as a keyword list rather than a set of names. Keep the ones a ' +
+            'customer would actually type; a term that only appears in trade documents belongs ' +
+            'in the meta title instead.',
+        ),
     }),
     defineField({
       name: 'kind',
