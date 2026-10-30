@@ -1389,11 +1389,21 @@ export function mapSanityCustomizationDetail(
     );
     const specSheetUrl = doc.specSheetUrl?.trim() || null;
 
+    const appearsIn =
+        doc.appearsIn === 'configurable-with-page' ||
+        doc.appearsIn === 'not-configurable-with-page' ||
+        doc.appearsIn === 'configurable-no-page'
+            ? doc.appearsIn
+            : undefined;
+    const templateId = doc.templateId?.trim() || undefined;
+
     return {
         status: toLifecycle(doc.status),
         id: doc._id,
         title,
         ...(shortName ? {shortName} : {}),
+        ...(appearsIn ? {appearsIn} : {}),
+        ...(templateId ? {templateId} : {}),
         slug,
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title?.trim() || categorySlug,

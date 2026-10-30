@@ -622,6 +622,17 @@ export type CustomizationDetail = {
     shortName?: string;
     /** Coming soon / discontinued show a badge and a notice (PROD-2605). */
     status?: CatalogLifecycle;
+    /**
+     * Where this option appears (PROD-2732). Used for template auto-resolve
+     * (PROD-3127 / PROD-3128) and configurator eligibility — not for forcing
+     * Show CTA off (editors own that on the overview section).
+     */
+    appearsIn?: AppearsIn;
+    /**
+     * Explicit Customization Detail Page layout id when set in Studio.
+     * Empty → `resolveCdpTemplateId` (PROD-3127 / PROD-3128).
+     */
+    templateId?: string;
     slug: string;
     categoryValue: string;
     categoryLabel: string;

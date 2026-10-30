@@ -28,11 +28,16 @@ describe('resolveOverviewChrome', () => {
         );
     });
 
-    it('reads achieves as the only other configuration source', () => {
+    it('reads achieves and none; unknown falls back to properties', () => {
         assert.equal(
             resolveOverviewChrome({configurationSource: 'achieves'})
                 .configurationSource,
             'achieves',
+        );
+        assert.equal(
+            resolveOverviewChrome({configurationSource: 'none'})
+                .configurationSource,
+            'none',
         );
         assert.equal(
             resolveOverviewChrome({configurationSource: 'properties'})

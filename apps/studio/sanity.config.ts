@@ -47,6 +47,7 @@ import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
 import { SolutionStylesView } from './components/SolutionStylesView'
 import {
   CustomizationCategoryTypesView,
+  CustomizationDetailPageUsedByView,
   CustomizationOptionUsedByView,
   CustomizationTypeOptionsView,
   PropertyValueUsedByView,
@@ -260,6 +261,12 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
     return S.document().views([
       S.view.form().title('Edit'),
       S.view.component(CustomizationOptionUsedByView).title('Used by'),
+    ])
+  }
+  if (schemaType === 'customizationDetailPage') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationDetailPageUsedByView).title('Used by'),
     ])
   }
   if (schemaType === 'property') {

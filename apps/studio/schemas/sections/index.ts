@@ -94,8 +94,7 @@ const FAMILY = {
 
 /** CDP template sections (PROD-3112) — Customization insert tab, detail allowlist only. */
 const CDP_DETAIL_SECTIONS = [
-  'customizationOverviewStandard',
-  'customizationOverviewLearnFirst',
+  'customizationOverview',
   'customizationBenefitsSpecs',
   'customizationWorksWith',
   'customizationCompatibleOptions',
@@ -166,9 +165,10 @@ export const SECTION_ALLOW = {
     ...FAMILY.cta,
   ],
   /**
-   * Customization Detail Page templates (PROD-3112). Overview = which overview
-   * `_type` is inserted. Bands are host-inherited from the option on www.
-   * Exclude `customizationsCatalog` (full library). Keep shared layout/CTA rows.
+   * Customization Detail Page templates (PROD-3112). Overview = one type with
+   * a Layout radio (standard / learn-first). Bands are host-inherited from the
+   * option on www. Exclude `customizationsCatalog` (full library). Keep shared
+   * layout/CTA rows.
    */
   customizationDetail: [
     ...CDP_DETAIL_SECTIONS,

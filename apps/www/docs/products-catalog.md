@@ -47,6 +47,8 @@ The customization detail page's **Works with** list reads two cached values inst
 
 Resolving every product's offer (`listProductOfferIndex()`) costs **5.6–6.1 s of CPU**; the index pays it once per cache period instead of on each render. Both are invalidated by the products and customizations tags; a catalog publish expires them (`expire: 0`), so the first customization page after a publish rebuilds the index. `buildWorksWithProducts` = `buildWorksWithIndex` + `arrangeWorksWith` — the same code as the cached path. Before changing any of it, compare the output for every option (PR #915 has the method: 321 options, 0 differences).
 
+The **customization rules catalog** (`getPreparedRules` / `CATALOG_CUSTOMIZATION_RULES_QUERY`) is also under that 2 MB ceiling: options use a slim projection (primary still + slim `achievedBy` cards), not full `OPTION_MEDIA_FIELDS` galleries. Full media stays on PDP / CDP detail queries.
+
 A new catalog read: measure its mapped size; if it can pass 2 MB, cache a slimmer derived value instead (the PROD-3004 related index, this one).
 
 ### What is shown (PROD-2845)

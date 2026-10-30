@@ -20,7 +20,7 @@ import {
     CATALOG_PRODUCTS_QUERY,
     CUSTOMIZATION_CATALOG_PAGE_QUERY,
     CUSTOMIZATION_COMPATIBILITY_PAGE_QUERY,
-    CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
+    CUSTOMIZATION_DETAIL_PAGE_BY_ID_QUERY,
     PRODUCT_CATALOG_PAGE_QUERY,
     PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY,
     SOLUTION_STYLE_PAGE_FOR_STYLE_QUERY,
@@ -179,8 +179,10 @@ async function fetchSanityLineExists(slug: string): Promise<boolean> {
 }
 
 /**
- * The customization rules catalog (PROD-2556): every type and active option with their
- * relationships — about 1 MB, fetched once and cached, never sent to the browser whole.
+ * The customization rules catalog (PROD-2556): every type and active option with
+ * their relationships. GROQ uses a slim option projection (primary still only —
+ * not full galleries) so the cached doc stays under Next's 2 MB data-cache limit.
+ * Offer index / Works with depend on this cache. Never sent to the browser whole.
  */
 async function fetchCustomizationRules(): Promise<CatalogCustomizationRulesDoc | null> {
     if (!isSanityConfigured()) return null;
@@ -820,37 +822,37 @@ export async function getCustomizationCatalogPage(): Promise<CatalogIndexPageDoc
     );
 }
 
-async function fetchCustomizationDetailPage(
-    category: string,
-    handle: string,
+async function fetchCustomizationDetailPageById(
+    id: string,
 ): Promise<CatalogIndexPageDoc | null> {
     if (!isSanityConfigured()) return null;
     try {
         return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
-            CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
-            {category, handle},
+            CUSTOMIZATION_DETAIL_PAGE_BY_ID_QUERY,
+            {id},
         );
     } catch (err) {
-        throw sanityReadFailed('[catalog] Sanity fetchCustomizationDetailPage failed:', err);
+        throw sanityReadFailed(
+            '[catalog] Sanity fetchCustomizationDetailPageById failed:',
+            err,
+        );
     }
 }
 
-/** Sections below a `/customizations/[category]/[handle]` detail chrome (template → Default). */
-export async function getCustomizationDetailPage(
-    category: string,
-    handle: string,
+/**
+ * CDP layout bands by layout document id (PROD-3127).
+ * Callers resolve the id with `resolveCdpTemplateId` from the option detail
+ * (explicit template / appearsIn / achieves) — one sections projection only.
+ */
+export async function getCustomizationDetailPageById(
+    id: string,
 ): Promise<CatalogIndexPageDoc | null> {
-    const categoryKey = normalizeSlug(category);
-    const handleKey = normalizeSlug(handle);
-    const fetchUncached = () =>
-        fetchCustomizationDetailPage(categoryKey, handleKey);
+    const layoutId = id.trim();
+    if (!layoutId) return null;
+    const fetchUncached = () => fetchCustomizationDetailPageById(layoutId);
     const getCached = sanityCache(
         fetchUncached,
-        [
-            `${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-detail-page`,
-            categoryKey,
-            handleKey,
-        ],
+        [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-detail-page`, layoutId],
         {
             revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
             tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],

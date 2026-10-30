@@ -2,7 +2,6 @@ import {defineField, defineType, type FieldDefinition} from 'sanity'
 import {
   BlockElementIcon,
   ComponentIcon,
-  ComposeIcon,
   DocumentsIcon,
   ImageIcon,
   LinkIcon,
@@ -16,12 +15,13 @@ import {sectionHeaderFields} from '../../lib/section-header-fields'
  * Customization Detail Page sections (PROD-3112 · ADR-020 catalog exception).
  *
  * CDP templates are section stacks: editors arrange these types on a
- * `customizationDetailPage` document. Overview chrome is which overview
- * `_type` is inserted — not a layout radio on the template document.
+ * `customizationDetailPage` document. Overview is one type with rail chrome
+ * (Show CTA / Bookmark / Configuration). Benefits & specs stays a separate
+ * band for Get to know / Key properties.
  *
- * All seven types are chrome-only (D35). Option copy, media, properties,
- * peers, compatible products, and compatible customizations are
- * host-inherited on www from the `customizationOption` that renders the page.
+ * All types are chrome-only (D35). Option copy, media, properties, peers,
+ * compatible products, and compatible customizations are host-inherited on www
+ * from the `customizationOption` that renders the page.
  */
 
 /** Studio-only note so overview objects are not field-empty. */
@@ -102,12 +102,13 @@ function overviewLayoutFields() {
       fieldset: 'overviewRail',
       initialValue: 'properties',
       description:
-        'One source for the rail selector. Selectable properties are declared on the type. Achieves lists the customer-facing options this technical option delivers.',
+        'One source for the rail selector. Selectable properties are declared on the type. Achieves lists the customer-facing options this technical option delivers. No Configuration hides the selector (Show CTA / Bookmark stay independent).',
       options: {
         layout: 'radio',
         list: [
           {title: 'Selectable properties', value: 'properties'},
           {title: 'Achieves', value: 'achieves'},
+          {title: 'No Configuration', value: 'none'},
         ],
       },
     }),
@@ -155,37 +156,25 @@ function cdpSectionType(args: {
   })
 }
 
-/** Existing CDP hero — gallery + Configuration / Your selection / Apply. */
-export const customizationOverviewStandard = cdpSectionType({
-  name: 'customizationOverviewStandard',
-  title: 'Customization overview (standard)',
+/** CDP hero — gallery + Sustainability / Applicable on / facts-well rail. */
+export const customizationOverview = cdpSectionType({
+  name: 'customizationOverview',
+  title: 'Customization overview',
   description:
-    'Gallery + configuration rail. Show CTA / Bookmark and Configuration ' +
-    '(selectable properties or Achieves) are layout toggles on this section. ' +
-    'Host fills media and option data.',
+    'Gallery + overview rail (Sustainability, Applicable on, configuration, Apply). ' +
+    'Show CTA / Bookmark and Configuration (properties or Achieves) are toggles on this section. ' +
+    'Host fills media and option data. Pair with Benefits & specs for Get to know / Key properties.',
   icon: ComponentIcon,
   chrome: 'none',
 })
 
-/** Learn-first CDP hero — type eyebrow, sustainability, applicable-on, specs, apply. */
-export const customizationOverviewLearnFirst = cdpSectionType({
-  name: 'customizationOverviewLearnFirst',
-  title: 'Customization overview (learn-first)',
-  description:
-    'Gallery + learn-first rail. Same Show CTA / Bookmark and Configuration ' +
-    'toggles as the standard overview. Host fills glossary and option data. ' +
-    'Pair with Benefits & specs for Get to know / Key properties.',
-  icon: ComposeIcon,
-  chrome: 'none',
-})
-
-/** Benefits + Specs band (standard + learn-first). */
+/** Benefits + Specs band — separate from overview (Get to know / Key properties). */
 export const customizationBenefitsSpecs = cdpSectionType({
   name: 'customizationBenefitsSpecs',
   title: 'Customization benefits & specs',
   description:
-    'Benefits story + Specs & performance table (Get to know + Key properties on learn-first). ' +
-    'Host fills from the option’s benefits and stated properties. Recommended on learn-first as well as Default.',
+    'Benefits story + Specs & performance table (Get to know + Key properties). ' +
+    'Host fills from the option’s benefits and stated properties.',
   icon: DocumentsIcon,
 })
 
@@ -227,8 +216,7 @@ export const customizationShowcase = cdpSectionType({
 })
 
 export const customizationDetailSections = [
-  customizationOverviewStandard,
-  customizationOverviewLearnFirst,
+  customizationOverview,
   customizationBenefitsSpecs,
   customizationWorksWith,
   customizationCompatibleOptions,

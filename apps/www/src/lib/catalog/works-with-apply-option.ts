@@ -10,8 +10,9 @@ export type WorksWithApplyOption = {
 
 /**
  * Which option (if any) Works with product links preselect on the PDP.
- * Knowledge rail (`showCta` off) never preselects. Achieves waits for a
- * selected customer-facing target (PROD-3127 / PROD-3128).
+ * CTA off never preselects. Achieves waits for a selected customer-facing
+ * target. Properties and No Configuration (`none`) use the page option
+ * (PROD-3127 / PROD-3128).
  */
 export function resolveWorksWithApplyOption(args: {
     showCta: boolean;

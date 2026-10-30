@@ -4,8 +4,7 @@ import type {PageSectionCustomizationDetailDoc} from '@pakfactory/sanity/queries
 import {CustomizationCompatibleOptions} from '@/components/customization/customization-compatible-options';
 import {CustomizationComparison} from '@/components/customization/customization-comparison';
 import {useCustomizationDetailHostOptional} from '@/components/customization/customization-detail-host';
-import {CustomizationOverviewLearnFirst} from '@/components/customization/customization-overview-learn-first';
-import {CustomizationOverviewStandard} from '@/components/customization/customization-overview-standard';
+import {CustomizationOverview} from '@/components/customization/customization-overview';
 import {CustomizationReferenceBenefitsSpecs} from '@/components/customization/customization-reference-benefits-specs';
 import {CustomizationReferenceWorksWith} from '@/components/customization/customization-reference-works-with';
 import {CustomizationShowcase} from '@/components/customization/customization-showcase';
@@ -25,29 +24,14 @@ function useHost() {
     return useCustomizationDetailHostOptional();
 }
 
-export function CustomizationOverviewStandardFromSanity(
+export function CustomizationOverviewFromSanity(
     section: PageSectionCustomizationDetailDoc,
 ) {
     const host = useHost();
     if (!host) return null;
     const chrome = mapSectionChrome(section);
     return (
-        <CustomizationOverviewStandard
-            paddingBlock={chrome.paddingBlock}
-            borderTop={chrome.borderTop}
-            borderBottom={chrome.borderBottom}
-        />
-    );
-}
-
-export function CustomizationOverviewLearnFirstFromSanity(
-    section: PageSectionCustomizationDetailDoc,
-) {
-    const host = useHost();
-    if (!host) return null;
-    const chrome = mapSectionChrome(section);
-    return (
-        <CustomizationOverviewLearnFirst
+        <CustomizationOverview
             paddingBlock={chrome.paddingBlock}
             borderTop={chrome.borderTop}
             borderBottom={chrome.borderBottom}
@@ -60,7 +44,7 @@ export function CustomizationBenefitsSpecsFromSanity(
 ) {
     const host = useHost();
     if (!host) return null;
-    const {detail, isLearnFirstTemplate} = host;
+    const {detail} = host;
     const categoryLabel = detail.categoryLabel || detail.categoryValue;
     const reference = getReferenceCopy(detail.categoryValue, categoryLabel);
     void section;
@@ -68,7 +52,7 @@ export function CustomizationBenefitsSpecsFromSanity(
         <CustomizationReferenceBenefitsSpecs
             detail={detail}
             compareLabel={reference.compareLabel}
-            copyVariant={isLearnFirstTemplate ? 'learnFirst' : 'standard'}
+            copyVariant="learnFirst"
         />
     );
 }
@@ -78,19 +62,17 @@ export function CustomizationWorksWithFromSanity(
 ) {
     const host = useHost();
     if (!host) return null;
-    const {detail, worksWith, isLearnFirstTemplate, showCta} = host;
-    const defaults = isLearnFirstTemplate
-        ? getLearnFirstSectionCopy(detail).worksWith
-        : null;
+    const {detail, worksWith, showCta} = host;
+    const defaults = getLearnFirstSectionCopy(detail).worksWith;
     const knowledgeDescription = 'Products this option is used on.';
     const heading = {
-        eyebrow: section.eyebrow?.trim() || defaults?.eyebrow,
+        eyebrow: section.eyebrow?.trim() || defaults.eyebrow,
         title:
             section.heading?.trim() ||
-            (showCta ? defaults?.title : 'Works with'),
+            (showCta ? defaults.title : 'Works with'),
         description:
             section.intro?.trim() ||
-            (showCta ? defaults?.description : knowledgeDescription),
+            (showCta ? defaults.description : knowledgeDescription),
     };
     return (
         <CustomizationReferenceWorksWith
@@ -119,14 +101,12 @@ export function CustomizationCompatibleOptionsFromSanity(
 ) {
     const host = useHost();
     if (!host) return null;
-    const {detail, isLearnFirstTemplate} = host;
-    const defaults = isLearnFirstTemplate
-        ? getLearnFirstSectionCopy(detail).compatibleOptions
-        : null;
+    const {detail} = host;
+    const defaults = getLearnFirstSectionCopy(detail).compatibleOptions;
     const heading = {
-        eyebrow: section.eyebrow?.trim() || defaults?.eyebrow,
-        title: section.heading?.trim() || defaults?.title,
-        description: section.intro?.trim() || defaults?.description,
+        eyebrow: section.eyebrow?.trim() || defaults.eyebrow,
+        title: section.heading?.trim() || defaults.title,
+        description: section.intro?.trim() || defaults.description,
     };
     return (
         <CustomizationCompatibleOptions
@@ -153,17 +133,15 @@ export function CustomizationCompareFromSanity(
 ) {
     const host = useHost();
     if (!host) return null;
-    const {detail, peers, isLearnFirstTemplate} = host;
-    const defaults = isLearnFirstTemplate
-        ? getLearnFirstSectionCopy(detail).compare
-        : null;
+    const {detail, peers} = host;
+    const defaults = getLearnFirstSectionCopy(detail).compare;
     const intro = resolveCompareIntroPlaceholder(
-        section.intro?.trim() || defaults?.description,
+        section.intro?.trim() || defaults.description,
         detail,
     );
     const heading = {
-        eyebrow: section.eyebrow?.trim() || defaults?.eyebrow,
-        title: section.heading?.trim() || defaults?.title,
+        eyebrow: section.eyebrow?.trim() || defaults.eyebrow,
+        title: section.heading?.trim() || defaults.title,
         description: intro || undefined,
     };
     return (
@@ -192,14 +170,12 @@ export function CustomizationShowcaseFromSanity(
 ) {
     const host = useHost();
     if (!host) return null;
-    const {detail, isLearnFirstTemplate} = host;
-    const defaults = isLearnFirstTemplate
-        ? getLearnFirstSectionCopy(detail).showcase
-        : null;
+    const {detail} = host;
+    const defaults = getLearnFirstSectionCopy(detail).showcase;
     const heading = {
-        eyebrow: section.eyebrow?.trim() || defaults?.eyebrow,
-        title: section.heading?.trim() || defaults?.title,
-        description: section.intro?.trim() || defaults?.description,
+        eyebrow: section.eyebrow?.trim() || defaults.eyebrow,
+        title: section.heading?.trim() || defaults.title,
+        description: section.intro?.trim() || defaults.description,
     };
     return (
         <CustomizationShowcase

@@ -10,7 +10,8 @@ import {
     CUSTOMIZATION_COMPARISON_ID,
 } from '@/components/customization/customization-comparison';
 import {CustomizationDetailHostProvider} from '@/components/customization/customization-detail-host';
-import {CustomizationOverviewStandard} from '@/components/customization/customization-overview-standard';
+import {CustomizationOverview} from '@/components/customization/customization-overview';
+import {CustomizationOverviewSkeleton} from '@/components/customization/customization-overview-skeleton';
 import {CustomizationReferenceBenefitsSpecs} from '@/components/customization/customization-reference-benefits-specs';
 import {
     CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
@@ -44,9 +45,10 @@ import type {
     WorksWithProductCard,
 } from '@/lib/catalog/build-works-with-products';
 import {
-    getCustomizationDetailPage,
+    getCustomizationDetailPageById,
     listWorksWithMatches,
 } from '@/lib/catalog/catalog';
+import {resolveCdpTemplateId} from '@/lib/catalog/resolve-cdp-template-id';
 import type {CustomizationDetail, ProductLineRef} from '@/lib/catalog/types';
 import {
     applySectionTokens,
@@ -61,6 +63,7 @@ import {
 const CUSTOMIZATION_FAQS_ID = 'customization-faqs';
 
 const CDP_SECTION_TYPES = new Set([
+    'customizationOverview',
     'customizationOverviewStandard',
     'customizationOverviewLearnFirst',
     'customizationBenefitsSpecs',
@@ -71,6 +74,7 @@ const CDP_SECTION_TYPES = new Set([
 ]);
 
 const OVERVIEW_SECTION_TYPES = new Set([
+    'customizationOverview',
     'customizationOverviewStandard',
     'customizationOverviewLearnFirst',
 ]);
@@ -92,12 +96,9 @@ function stickyEyebrowLabel(
 function pageSectionNavItems(
     pageSections: PageSection[] | null | undefined,
     detail: CustomizationDetail,
-    isLearnFirstTemplate: boolean,
 ): AnchorNavItem[] {
     if (!pageSections?.length) return [];
-    const learnCopy = isLearnFirstTemplate
-        ? getLearnFirstSectionCopy(detail)
-        : null;
+    const learnCopy = getLearnFirstSectionCopy(detail);
 
     return pageSections.flatMap((section): AnchorNavItem[] => {
         switch (section._type) {
@@ -107,7 +108,7 @@ function pageSectionNavItems(
                         id: CUSTOMIZATION_REFERENCE_WORKS_WITH_ID,
                         label: stickyEyebrowLabel(
                             section,
-                            learnCopy?.worksWith.eyebrow,
+                            learnCopy.worksWith.eyebrow,
                             'Works with',
                         ),
                     },
@@ -119,7 +120,7 @@ function pageSectionNavItems(
                         id: CUSTOMIZATION_COMPATIBLE_OPTIONS_ID,
                         label: stickyEyebrowLabel(
                             section,
-                            learnCopy?.compatibleOptions.eyebrow,
+                            learnCopy.compatibleOptions.eyebrow,
                             'Compatible customizations',
                         ),
                     },
@@ -131,7 +132,7 @@ function pageSectionNavItems(
                         id: CUSTOMIZATION_COMPARISON_ID,
                         label: stickyEyebrowLabel(
                             section,
-                            learnCopy?.compare.eyebrow,
+                            learnCopy.compare.eyebrow,
                             'Comparison',
                         ),
                     },
@@ -142,7 +143,7 @@ function pageSectionNavItems(
                         id: CUSTOMIZATION_SHOWCASE_ID,
                         label: stickyEyebrowLabel(
                             section,
-                            learnCopy?.showcase.eyebrow,
+                            learnCopy.showcase.eyebrow,
                             'Showcase',
                         ),
                     },
@@ -153,7 +154,7 @@ function pageSectionNavItems(
                         id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
                         label: stickyEyebrowLabel(
                             section,
-                            learnCopy?.overview.eyebrow,
+                            learnCopy.overview.eyebrow,
                             'Benefits',
                         ),
                     },
@@ -244,12 +245,6 @@ function templateHasCdpSections(sections: PageSection[] | null): boolean {
     return sections.some((s) => CDP_SECTION_TYPES.has(s._type));
 }
 
-function isLearnFirstTemplate(sections: PageSection[] | null): boolean {
-    return Boolean(
-        sections?.some((s) => s._type === 'customizationOverviewLearnFirst'),
-    );
-}
-
 type WorksWithPayload = {
     option: WorksWithOptionRef;
     lines: ProductLineRef[];
@@ -291,32 +286,8 @@ export function CustomizationDetailView({
                 ]}
             />
             <div className="relative">
-                <Suspense
-                    fallback={
-                        <CustomizationDetailLegacyBody
-                            detail={detail}
-                            peers={peers}
-                            pageSections={null}
-                            worksWith={{
-                                option: {
-                                    id: detail.id,
-                                    category: detail.categoryValue,
-                                    slug: detail.slug,
-                                    title: detail.title,
-                                },
-                                lines: detail.productLines,
-                                products: [],
-                            }}
-                            navItems={buildLegacyStaticNavItems(detail)}
-                        />
-                    }
-                >
-                    <CustomizationDetailBody
-                        detail={detail}
-                        peers={peers}
-                        category={category}
-                        handle={handle}
-                    />
+                <Suspense fallback={<CustomizationOverviewSkeleton />}>
+                    <CustomizationDetailBody detail={detail} peers={peers} />
                 </Suspense>
             </div>
         </>
@@ -326,18 +297,20 @@ export function CustomizationDetailView({
 async function CustomizationDetailBody({
     detail,
     peers,
-    category,
-    handle,
 }: {
     detail: CustomizationDetail;
     peers: CustomizationDetail[];
-    category: string;
-    handle: string;
 }) {
-    // Cached for every customization page (PROD-3121): the whole library is too
-    // big for Next's data cache, and resolving every product's offer is ~6 s of CPU.
+    // Layout id in TS (PROD-3127) — one sections projection; avoids Sanity's
+    // 300 KB query-body limit from multi-branch GROQ. Works-with index is
+    // cached for every CDP (PROD-3121).
+    const templateId = resolveCdpTemplateId({
+        templateId: detail.templateId,
+        appearsIn: detail.appearsIn,
+        achievesCount: detail.achieves?.length ?? 0,
+    });
     const [page, worksWithMatches] = await Promise.all([
-        getCustomizationDetailPage(category, handle),
+        getCustomizationDetailPageById(templateId),
         listWorksWithMatches(detail.id),
     ]);
 
@@ -370,7 +343,6 @@ async function CustomizationDetailBody({
     };
 
     const useTemplate = templateHasCdpSections(pageSections);
-    const learnFirst = isLearnFirstTemplate(pageSections);
     const showStickyNav = page?.showStickyNav !== false;
     const overviewSection = pageSections?.find((s) =>
         OVERVIEW_SECTION_TYPES.has(s._type),
@@ -382,12 +354,9 @@ async function CustomizationDetailBody({
             (s) => s._type === 'customizationBenefitsSpecs',
         );
         const injectBenefitsSpecs =
-            learnFirst &&
             !hasBenefitsSpecs &&
             (hasReferenceOverview(detail) || hasReferenceSpecs(detail));
-        const learnCopy = learnFirst
-            ? getLearnFirstSectionCopy(detail)
-            : null;
+        const learnCopy = getLearnFirstSectionCopy(detail);
         const sectionsWithFaqs = injectCompatibleOptionsSection(
             applyFaqHostInherit(pageSections, detail),
             hasCompatibleOptions(detail),
@@ -397,11 +366,11 @@ async function CustomizationDetailBody({
                 ? [
                       {
                           id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
-                          label: learnCopy?.overview.eyebrow || 'Overview',
+                          label: learnCopy.overview.eyebrow || 'Overview',
                       },
                   ]
                 : []),
-            ...pageSectionNavItems(sectionsWithFaqs, detail, learnFirst),
+            ...pageSectionNavItems(sectionsWithFaqs, detail),
         ];
         const overviewSections = sectionsWithFaqs.filter((s) =>
             OVERVIEW_SECTION_TYPES.has(s._type),
@@ -418,7 +387,7 @@ async function CustomizationDetailBody({
                     detail,
                     peers,
                     worksWith,
-                    isLearnFirstTemplate: learnFirst,
+                    isLearnFirstTemplate: true,
                     ...overviewChrome,
                 }}
             >
@@ -446,7 +415,7 @@ async function CustomizationDetailBody({
             worksWith={worksWith}
             navItems={[
                 ...buildLegacyStaticNavItems(detail),
-                ...pageSectionNavItems(pageSections, detail, false),
+                ...pageSectionNavItems(pageSections, detail),
             ]}
         />
     );
@@ -538,16 +507,17 @@ function CustomizationDetailLegacyBody({
                 detail,
                 peers,
                 worksWith,
-                isLearnFirstTemplate: false,
+                isLearnFirstTemplate: true,
                 ...DEFAULT_OVERVIEW_CHROME,
             }}
         >
-            <CustomizationOverviewStandard />
+            <CustomizationOverview />
             <AnchorNav items={navItems} />
             {showOverview || showSpecs ? (
                 <CustomizationReferenceBenefitsSpecs
                     detail={detail}
                     compareLabel={reference.compareLabel}
+                    copyVariant="learnFirst"
                 />
             ) : null}
             {showWorksWith ? (

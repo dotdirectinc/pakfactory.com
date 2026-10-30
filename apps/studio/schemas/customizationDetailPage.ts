@@ -8,10 +8,10 @@ import {pageSectionsField, SECTION_ALLOW} from './sections'
  * `/customizations/[category]/[handle]`.
  *
  * Templates are **section stacks** (PROD-3112 · ADR-020 catalog exception):
- * editors arrange CDP overview + band sections; overview chrome is which
- * overview `_type` is inserted (`customizationOverviewStandard` vs
- * `customizationOverviewLearnFirst`), not a layout radio. Breadcrumb stays
- * route-owned. Per-option copy stays on each `customizationOption`.
+ * editors arrange CDP overview + band sections; overview Layout
+ * (standard / learn-first) is a radio on `customizationOverview`. Benefits &
+ * specs stays a separate band. Breadcrumb stays route-owned. Per-option copy
+ * stays on each `customizationOption`.
  *
  * Options pick a layout via `customizationOption.template`. Seeded Default id
  * `customizationDetailPage` keeps unpublished picks working (www fallback).

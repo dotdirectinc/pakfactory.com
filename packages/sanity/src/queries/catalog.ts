@@ -188,6 +188,55 @@ const OPTION_FIELDS = /* groq */ `
 
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
+/**
+ * Rules-catalog media only — one primary still (no LQIP / galleries / lifestyle /
+ * video). Full OPTION_MEDIA_FIELDS on every active option + nested achievedBy
+ * blew past Next's 2 MB unstable_cache limit (~2.6 MB). mapAvailableCustomization
+ * only needs featuredImage (or media[0]) for configurator cards.
+ */
+const RULES_OPTION_MEDIA = /* groq */ `
+  ${FEATURED_IMAGE_FROM_CATALOG}
+`;
+
+const RULES_ACHIEVED_BY_CARD_FIELDS = /* groq */ `
+  _id,
+  title,
+  "slug": slug.current,
+  "typeTitle": type->title,
+  "categorySlug": type->category->slug.current,
+  appearsIn,
+  shortDescription,
+  "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
+  "benefitsPlain": pt::text(benefits.body),
+  ${RULES_OPTION_MEDIA}
+`;
+
+const RULES_ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
+  _type == "customizationOption" &&
+  !(_id in path("drafts.**")) &&
+  ${OPTION_ACTIVE} &&
+  ^._id in achieves[]._ref
+] | order(title asc) {
+  ${RULES_ACHIEVED_BY_CARD_FIELDS}
+}`;
+
+/** Slim OPTION_FIELDS for {@link CATALOG_CUSTOMIZATION_RULES_QUERY} only. */
+const RULES_OPTION_FIELDS = /* groq */ `
+  _id,
+  title,
+  "slug": slug.current,
+  "status": select(${OPTION_TAXONOMY_ON} => status, "not-active"),
+  appearsIn,
+  shortDescription,
+  highlights,
+  metaDescription,
+  "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
+  "benefitsPlain": pt::text(benefits.body),
+  ${RULES_OPTION_MEDIA},
+  "type": type->${TYPE_PROJ},
+  ${RULES_ACHIEVED_BY_PROJ}
+`;
+
 /** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
 const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
   _type == "product" &&
@@ -1035,6 +1084,10 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   title,
   shortName,
   "slug": slug.current,
+  // PROD-3127 — CDP Apply gate + template auto-resolve read appearsIn on the detail.
+  appearsIn,
+  // Explicit Studio layout pick; empty → www resolveCdpTemplateId (Knowledge / Achieves / Default).
+  "templateId": template._ref,
   shortDescription,
   metaDescription,
   "glossaryPlain": pt::text(coalesce(glossaryTerm[0]->definition, glossaryTerm->definition)),
@@ -1133,7 +1186,8 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
  *
  * `requirements` reads `dependsOn` in either shape: `[{anyOf: [ref]}]` (PROD-2595) or an old
  * flat reference, which is a requirement of one. Large (every compatible pair), so www caches
- * it server-side and never sends it to the browser whole.
+ * it server-side and never sends it to the browser whole. Options use {@link RULES_OPTION_FIELDS}
+ * (primary still only) so the cached doc stays under Next's 2 MB data-cache limit.
  */
 export const CATALOG_CUSTOMIZATION_RULES_QUERY = /* groq */ `{
   "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{
@@ -1149,7 +1203,7 @@ export const CATALOG_CUSTOMIZATION_RULES_QUERY = /* groq */ `{
     !(_id in path("drafts.**")) &&
     ${OPTION_ACTIVE}
   ]{
-    ${OPTION_FIELDS},
+    ${RULES_OPTION_FIELDS},
     "typeId": type._ref,
     "compatibleCustomizations": coalesce(compatibleCustomizations[]._ref, [])
   }
@@ -1677,6 +1731,17 @@ export type CatalogCustomizationDetailDoc = {
   title: string;
   slug: string | null;
   status?: string | null;
+  /** PROD-2732 / PROD-3127 — surfaces + Apply gate on the CDP. */
+  appearsIn?:
+    | 'configurable-with-page'
+    | 'not-configurable-with-page'
+    | 'configurable-no-page'
+    | null;
+  /**
+   * Explicit `customizationDetailPage` layout ref (PROD-3127). Empty → www
+   * `resolveCdpTemplateId` from appearsIn + achieves.
+   */
+  templateId?: string | null;
   /** Customer-facing label. Empty falls back to title for %shortName%. */
   shortName?: string | null;
   shortDescription?: string | null;
