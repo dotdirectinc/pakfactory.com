@@ -29,8 +29,20 @@ function taxonomyKeywords(study: CaseStudyDetail): string[] {
   return [...new Set(titles)];
 }
 
-/** PakFactory publisher Organization node for www case-study graphs. */
-export function pakfactoryOrganization(): {
+/**
+ * Publisher Organization node for www case-study graphs.
+ *
+ * 🔴 `name` used to be the literal string "PakFactory". Editing Company name in
+ * Global Settings changed nothing here, so the Studio field and the markup could
+ * disagree with no way for an editor to notice — the second copy lived in source
+ * code (PROD-3230). It now reads the editor's value.
+ *
+ * The literal survives only as a resilience fallback for when Global Settings
+ * cannot be read at all (Sanity unreachable, project unconfigured). Losing the
+ * Organization node on a transient fetch failure would be worse than a stale but
+ * correct name, so this is deliberately not the newsroom's refuse-to-emit rule.
+ */
+export function pakfactoryOrganization(companyName?: string | null): {
   org: Record<string, unknown>;
   orgId: string;
 } {
@@ -39,7 +51,7 @@ export function pakfactoryOrganization(): {
   return {
     orgId,
     org: organization({
-      name: "PakFactory",
+      name: companyName?.trim() || "PakFactory",
       url: origin,
       id: orgId,
     }),
@@ -50,9 +62,10 @@ export function pakfactoryOrganization(): {
 export function buildCaseStudyJsonLd(
   study: CaseStudyDetail,
   defaultOgImageUrl?: string | null,
+  companyName?: string | null,
 ): string {
   const pageUrl = absoluteUrl(`/case-studies/${study.slug}`);
-  const { org, orgId } = pakfactoryOrganization();
+  const { org, orgId } = pakfactoryOrganization(companyName);
   const image = resolveCaseStudyOgImageUrl(study, defaultOgImageUrl);
   const keywords = taxonomyKeywords(study);
   const articleSection = study.client?.industry?.title?.trim() || undefined;

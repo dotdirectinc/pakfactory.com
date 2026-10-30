@@ -19,8 +19,24 @@ function canonicalOrgUrl(): string {
   return normalizeSiteUrl(getWwwUrl()).replace(/^(https?:\/\/)www\./i, "$1");
 }
 
-/** Stable publisher Organization node for blog graphs. */
-export function pakfactoryOrganization(opts?: { logo?: string }): {
+/**
+ * Publisher Organization node for blog graphs.
+ *
+ * 🔴 `name` used to be the literal string "PakFactory". Editing Company name in
+ * Global Settings changed nothing here, so the Studio field and the markup could
+ * disagree with no way for an editor to notice — the second copy lived in source
+ * code (PROD-3230). It now reads the editor's value when the caller has it.
+ *
+ * The literal survives only as a resilience fallback for when Global Settings
+ * cannot be read (Sanity unreachable, project unconfigured) or when a caller has
+ * no settings in scope. Dropping the Organization node on a transient fetch
+ * failure would be worse than a stale but correct name, so this deliberately
+ * does not use the newsroom's refuse-to-emit rule.
+ */
+export function pakfactoryOrganization(opts?: {
+  logo?: string;
+  name?: string | null;
+}): {
   org: Record<string, unknown>;
   orgId: string;
 } {
@@ -29,7 +45,7 @@ export function pakfactoryOrganization(opts?: { logo?: string }): {
   return {
     orgId,
     org: organization({
-      name: "PakFactory",
+      name: opts?.name?.trim() || "PakFactory",
       url,
       id: orgId,
       ...(opts?.logo ? { logo: opts.logo } : {}),
