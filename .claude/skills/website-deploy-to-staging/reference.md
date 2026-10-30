@@ -1,6 +1,8 @@
 # www-new-release — binding rules (skill reference)
 
-Short extract of [`AGENTS.md`](../../../AGENTS.md) for agents running **deploy-www-release**. Prefer AGENTS.md if anything conflicts.
+Short extract of [`AGENTS.md`](../../../AGENTS.md) for agents running **website-deploy-to-staging**. Prefer AGENTS.md if anything conflicts.
+
+**Name note:** “staging” in the skill name is stakeholder staging ([staging.pakfactory.com](https://staging.pakfactory.com)), which tracks **`www-new-release`**. PR base for this skill is **`www-new-release`**, never git branch `staging`.
 
 ## Trunk
 
@@ -26,6 +28,10 @@ CI allowlist prefixes: `feat/` `feature/` `features/` `fix/` `bugfix/` `hotfix/`
 ## Shared packages
 
 If blog/studio need `packages/ui`, `packages/sanity`, lockfile, or turbo changes: land on `staging` first, then merge `staging` → `www-new-release`. www-only changes may land only on the rebuild trunk.
+
+## Remotes
+
+Canonical GitHub repo: `dotdirectinc/pakfactory.com`. If local `origin` still uses the legacy `dotdirect/pakfactory.com` URL, push to a remote `gh` can create PRs against (often `dotdirectinc`) and pass `--repo dotdirectinc/pakfactory.com` when needed.
 
 ## Handoff order (AGENTS.md)
 

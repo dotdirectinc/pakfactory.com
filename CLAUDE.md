@@ -31,7 +31,7 @@ Skills are **versioned in-repo** under [`.claude/skills/`](.claude/skills/):
 | **seo-structured-data** | [`.claude/skills/seo-structured-data/SKILL.md`](.claude/skills/seo-structured-data/SKILL.md) | Extend `@pakfactory/seo` generators only |
 | **sanity-schema-author** | [`.claude/skills/sanity-schema-author/SKILL.md`](.claude/skills/sanity-schema-author/SKILL.md) | Studio schema authoring |
 | **blog-jira-delivery** | [`.claude/skills/blog-jira-delivery/SKILL.md`](.claude/skills/blog-jira-delivery/SKILL.md) | Blog Jira story E2E → RFA |
-| **deploy-www-release** | [`.claude/skills/deploy-www-release/SKILL.md`](.claude/skills/deploy-www-release/SKILL.md) | www rebuild handoff → PR `--base www-new-release` |
+| **website-deploy-to-staging** | [`.claude/skills/website-deploy-to-staging/SKILL.md`](.claude/skills/website-deploy-to-staging/SKILL.md) | www rebuild handoff → PR `--base www-new-release` (stakeholder staging) |
 
 Invoke by name when the task matches. Cursor twins for some skills live under [`.cursor/skills/`](.cursor/skills/).
 

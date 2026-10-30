@@ -1,16 +1,18 @@
 ---
-name: deploy-www-release
+name: website-deploy-to-staging
 description: >-
-  Ships PakFactory www rebuild work to www-new-release: verify apps/www, optional
-  commit, Jira acceptance comment, push, and open a PR with --base www-new-release.
-  Use when the user says deploy-www-release, wrap up / ship a www rebuild ticket,
-  or open a PR into www-new-release.
+  Ships PakFactory www rebuild work toward stakeholder staging: verify apps/www,
+  optional commit, Jira acceptance comment, push, and open a PR with
+  --base www-new-release. Use when the user says website-deploy-to-staging,
+  wrap up / ship a www rebuild ticket, or open a PR into www-new-release.
 disable-model-invocation: true
 ---
 
-# deploy-www-release
+# website-deploy-to-staging
 
-Handoff skill for the **www rebuild** trunk. Invoke explicitly (e.g. “run deploy-www-release”).
+Handoff skill for the **www rebuild** trunk. Invoke explicitly (e.g. “run website-deploy-to-staging”).
+
+**Staging** in this skill name means stakeholder staging ([staging.pakfactory.com](https://staging.pakfactory.com)), which tracks **`www-new-release`**. PR base is always **`www-new-release`**, never git branch `staging`.
 
 **Deploy** here means: push so Vercel builds the branch/PR. Do **not** change Vercel Production Branch settings, merge the PR, or open `www-new-release` → `main`.
 
@@ -91,7 +93,7 @@ Only after verify succeeds and the user invoked this skill (or explicitly asked 
 
 ```bash
 git push -u origin HEAD
-gh pr create --base www-new-release --title "[PROD-###] Short description" --body "$(cat <<'EOF'
+gh pr create --repo dotdirectinc/pakfactory.com --base www-new-release --title "[PROD-###] Short description" --body "$(cat <<'EOF'
 ## Summary
 - …
 
@@ -100,10 +102,13 @@ gh pr create --base www-new-release --title "[PROD-###] Short description" --bod
 - [ ] `pnpm --filter @pakfactory/www build`
 - [ ] Spot-check: {routes}
 - [ ] Preview / www-new-release alias QA
+- [ ] Stakeholder staging: https://staging.pakfactory.com (after merge)
 
 EOF
 )"
 ```
+
+If `origin` still points at the legacy `dotdirect/pakfactory.com` redirect and `gh` defaults to `dotdirectinc/pakfactory.com`, push to the remote `gh` can read (e.g. `git push -u dotdirectinc HEAD`) and pass `--repo dotdirectinc/pakfactory.com` / `--head` as needed so the PR is not blank-sha.
 
 PR title format: `[PROD-###] …`. Never `--base staging` or `--base main` for this skill.
 
