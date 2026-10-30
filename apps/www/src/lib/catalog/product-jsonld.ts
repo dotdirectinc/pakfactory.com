@@ -169,9 +169,8 @@ export function buildProductDetailJsonLd(product: Product): string {
             answer: faq.answerPlain?.trim() ?? '',
         }))
         .filter((faq) => faq.question && faq.answer);
-    if (faqs.length > 0) {
-        nodes.push(faqPage({items: faqs, id: `${pageUrl}#faq`}));
-    }
+    const faq = faqPage({items: faqs, id: `${pageUrl}#faq`});
+    if (faq) nodes.push(faq);
 
     return serializeJsonLd(jsonLdGraph(nodes));
 }
