@@ -75,6 +75,26 @@ export function withMoq(template: string, moq: number): string {
 }
 
 /**
+ * Buyer-facing lead time from Sanity business-day min/max (PROD-3200).
+ * Same min and max → "N business days"; range → "N–M business days".
+ */
+export function formatLeadTimeBusinessDays(
+    min?: number | null,
+    max?: number | null,
+): string | null {
+    const hasMin = typeof min === 'number' && min > 0;
+    const hasMax = typeof max === 'number' && max > 0;
+    if (!hasMin && !hasMax) return null;
+    if (hasMin && hasMax) {
+        if (min === max) return `${min} business days`;
+        const lo = Math.min(min, max);
+        const hi = Math.max(min, max);
+        return `${lo}–${hi} business days`;
+    }
+    return `${hasMin ? min : max} business days`;
+}
+
+/**
  * Full-word axis list for the dimensions detail helper, e.g.
  * "length, width, and height" or "diameter and height".
  */

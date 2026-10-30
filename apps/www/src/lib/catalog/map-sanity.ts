@@ -845,6 +845,12 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         ...(dimensionRange && Object.keys(dimensionRange).length
             ? {dimensionRange}
             : {}),
+        ...(typeof doc.leadTimeBusinessDaysMin === 'number'
+            ? {leadTimeBusinessDaysMin: doc.leadTimeBusinessDaysMin}
+            : {}),
+        ...(typeof doc.leadTimeBusinessDaysMax === 'number'
+            ? {leadTimeBusinessDaysMax: doc.leadTimeBusinessDaysMax}
+            : {}),
         ...(properties.length > 0 ? {properties} : {}),
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(relatedProducts.length > 0 ? {relatedProducts} : {}),
