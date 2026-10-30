@@ -19,9 +19,13 @@ export function mapWorkShowcase(
         id: card.id,
         title: card.title,
         ...(card.description ? {description: card.description} : {}),
-        image: {src: card.image.src, alt: card.image.alt || card.title},
+        image: {
+            src: card.image?.src ?? '',
+            alt: card.image?.alt || card.title,
+        },
         href: card.href,
     });
+    // Showcase rows need stills; imageless cards stay in InspirationGallery.
     const withImage = gallery.cards.filter((card) => card.image?.src);
     const cases = withImage.filter((card) => CASE_STUDY_PATH.test(card.href)).map(toCard);
     const works = withImage.filter((card) => !CASE_STUDY_PATH.test(card.href)).map(toCard);

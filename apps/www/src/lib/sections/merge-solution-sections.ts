@@ -183,6 +183,7 @@ export function applyFaqInherit(
 
 /**
  * Fill empty `inspirationsGrid.cards` from related styles when listSource allows.
+ * Images are optional (InspirationGallery uses emptyMedia mark).
  */
 export function applyInspirationsInherit(
     sections: PageSectionDoc[],
@@ -192,7 +193,6 @@ export function applyInspirationsInherit(
         (item): item is PageSectionInspirationsCardDoc =>
             Boolean(
                 item?.title?.trim() &&
-                    item?.imageSrc?.trim() &&
                     item?.slug?.trim() &&
                     item?.solutionSlug?.trim(),
             ),

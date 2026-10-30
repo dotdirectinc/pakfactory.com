@@ -53,8 +53,7 @@ function mapCard(
     index: number,
 ): InspirationGalleryCard | null {
     const title = card.title?.trim();
-    const imageSrc = card.imageSrc?.trim();
-    if (!title || !imageSrc) return null;
+    if (!title) return null;
 
     let href: string | null = null;
     if (card.kind === 'typed' || card._type === 'inspirationsCard') {
@@ -67,6 +66,7 @@ function mapCard(
     if (!href) return null;
 
     const description = card.description?.trim();
+    const imageSrc = card.imageSrc?.trim() || null;
     const id =
         card._key?.trim() ||
         `${card._id?.trim() || title}-${index}`;
@@ -75,10 +75,14 @@ function mapCard(
         id,
         title,
         href,
-        image: {
-            src: imageSrc,
-            alt: card.imageAlt?.trim() || title,
-        },
+        ...(imageSrc
+            ? {
+                  image: {
+                      src: imageSrc,
+                      alt: card.imageAlt?.trim() || title,
+                  },
+              }
+            : {}),
         ...(description ? {description} : {}),
     };
 }
