@@ -160,4 +160,4 @@ Studio presentation preview should use www **3003** for `SANITY_STUDIO_PREVIEW_U
 
 ## Deploy handoff
 
-Use skill **deploy-www-release** (root `CLAUDE.md`) for Jira AC comment → push → PR `--base www-new-release`.
+Use skill **website-deploy-to-staging** (root `CLAUDE.md`) for Jira AC comment → push → PR `--base www-new-release` (stakeholder staging).

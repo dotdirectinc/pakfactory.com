@@ -142,7 +142,7 @@ allowlist or auto-run list, in either tool.
 
 These carry the gate in their own steps; keep them in step with this rule:
 `finisher` (BA Acceptance), `blog-jira-delivery` (Request For Approval),
-`deploy-www-release` (Request For Approval), `wayfinder` (Done).
+`website-deploy-to-staging` (Request For Approval), `wayfinder` (Done).
 Each must resolve the transition ID by name — see the table above.
 
 ## Where this rule lives
