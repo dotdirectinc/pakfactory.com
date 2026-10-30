@@ -37,9 +37,8 @@ export function buildExpertiseStageJsonLd(stage: ExpertiseStagePage): string {
             items.push({question, answer});
         }
     }
-    if (items.length > 0) {
-        nodes.push(faqPage({items, id: `${pageUrl}#faq`}));
-    }
+    const faq = faqPage({items, id: `${pageUrl}#faq`});
+    if (faq) nodes.push(faq);
 
     return serializeJsonLd(jsonLdGraph(nodes));
 }
