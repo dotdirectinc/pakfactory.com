@@ -86,7 +86,13 @@ Shared archive chrome: [`archive-layout.tsx`](../apps/blog/src/components/views/
 
 **Shipped:** `organization`, `person`, `blogPosting`, `newsArticle`, `breadcrumbList`, `collectionPage`, `itemList`, `blog`, `webPage`.
 
-**Missing (gap analysis + `seo-structured-data` skill):** `faqPage`, `howTo`.
+⚠️ **This line was wrong from PROD-2162 until 2026-10-30**: it called `faqPage` missing after it had
+shipped and been wired into `expertise-jsonld.ts`, and named a `howTo` generator that never existed
+and never will — Google dropped HowTo rich results in 2023.
+
+**Read [`packages/seo/src/index.ts`](../packages/seo/src/index.ts) for what exists.** As of
+PROD-2990 step 6 the set is complete for every page type www renders; `definedTerm` and
+`definedTermSet` are built but unwired, waiting on `/glossary` (PROD-3219, PROD-1826).
 
 Extend generators in `packages/seo` first; then wire app routes.
 

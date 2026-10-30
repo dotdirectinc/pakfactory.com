@@ -3,6 +3,7 @@ import {
     faqPage,
     jsonLdGraph,
     serializeJsonLd,
+    service,
 } from '@pakfactory/seo';
 import type {PageSectionFaqSectionDoc} from '@pakfactory/sanity/queries';
 
@@ -11,13 +12,26 @@ import {absoluteUrl} from '@/lib/site';
 import {expertiseHref, WWW_ROUTES} from '@/lib/www-routes';
 
 /**
- * JSON-LD for an expertise stage page: BreadcrumbList, plus FAQPage built from
- * the FAQ sections the page actually renders (inherited or custom), so the
- * markup never claims questions that are not on the page.
+ * JSON-LD for an expertise stage page: the Service itself, a BreadcrumbList, and
+ * a FAQPage built from the FAQ sections the page actually renders (inherited or
+ * custom), so the markup never claims questions that are not on the page.
+ *
+ * `Service` rather than `Product` because an Expertise Stage is a capability
+ * PakFactory offers, not a thing a customer adds to a request (SEO Model §6).
+ *
+ * ⚠️ No `provider` yet — it wants an `{"@id"}` pointer at an Organization node,
+ * and this builder is handed only the stage. A pointer at a node that is not in
+ * the graph is worse than omitting the property.
  */
 export function buildExpertiseStageJsonLd(stage: ExpertiseStagePage): string {
     const pageUrl = absoluteUrl(expertiseHref(stage.slug));
     const nodes: Record<string, unknown>[] = [
+        service({
+            id: `${pageUrl}#service`,
+            name: stage.title,
+            url: pageUrl,
+            ...(stage.description ? {description: stage.description} : {}),
+        }),
         breadcrumbList([
             {name: 'Home', url: absoluteUrl(WWW_ROUTES.home)},
             {name: 'Expertise', url: absoluteUrl(WWW_ROUTES.expertise)},

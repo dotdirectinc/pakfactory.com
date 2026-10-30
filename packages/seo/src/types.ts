@@ -164,3 +164,69 @@ export type VideoObjectInput = {
   /** Stable node id for @graph linking */
   id?: string;
 };
+
+/** A name/value fact with no schema.org property of its own — MOQ, lead time. */
+export type ProductPropertyValue = {
+  name: string;
+  value: string;
+};
+
+export type ProductInput = {
+  /** Product title as the page shows it */
+  name: string;
+  /** Absolute canonical URL */
+  url: string;
+  description?: string;
+  /** One absolute image URL, or several with the most representative first */
+  image?: string | readonly string[];
+  sku?: string;
+  /** Organization node, or an `{ "@id" }` pointer to one in the same @graph */
+  brand?: Record<string, unknown>;
+  /** Synonyms the page itself displays. Omitted entirely when empty */
+  alternateName?: readonly string[];
+  /** MOQ, lead time, dimension range — emitted as PropertyValue nodes */
+  additionalProperty?: readonly ProductPropertyValue[];
+  /** Stable node id for @graph linking */
+  id?: string;
+};
+
+export type ServiceInput = {
+  /** Service name as the page shows it */
+  name: string;
+  /** Absolute canonical URL */
+  url: string;
+  description?: string;
+  /** Organization node, or an `{ "@id" }` pointer to one in the same @graph */
+  provider?: Record<string, unknown>;
+  /** Free-text category, e.g. "Structural design" */
+  serviceType?: string;
+  /** Stable node id for @graph linking */
+  id?: string;
+};
+
+export type DefinedTermInput = {
+  /** The term itself */
+  name: string;
+  /** Absolute URL of the term's page */
+  url: string;
+  /** The definition as PLAIN TEXT — flatten Portable Text before calling */
+  description?: string;
+  /** Synonyms. Omitted entirely when empty */
+  alternateName?: readonly string[];
+  /** The glossary this belongs to — a node, or an `{ "@id" }` pointer */
+  inDefinedTermSet?: Record<string, unknown> | string;
+  /** Stable node id for @graph linking */
+  id?: string;
+};
+
+export type DefinedTermSetInput = {
+  /** Glossary name, e.g. "Packaging glossary" */
+  name: string;
+  /** Absolute URL of the glossary index */
+  url: string;
+  description?: string;
+  /** Term nodes, or `{ "@id" }` pointers, in page order */
+  hasDefinedTerm?: readonly Record<string, unknown>[];
+  /** Stable node id for @graph linking */
+  id?: string;
+};
