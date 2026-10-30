@@ -7,7 +7,10 @@ import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
 import {useProductPdpDraft} from '@/components/product/product-pdp-draft';
 import {OverviewSection} from '@/components/ui/overview-section';
-import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
+import {
+    formatLeadTimeBusinessDays,
+    PRODUCT_DETAIL_COPY,
+} from '@/lib/copy/product-detail';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {resolvePrintableSides} from '@/lib/customization-builder';
 
@@ -39,6 +42,10 @@ export function ProductRequestRail() {
     } = useProductPdpDraft();
     const isInspiration = product.kind === 'inspiration';
     const printableSides = resolvePrintableSides(product.properties);
+    const leadTimeLabel = formatLeadTimeBusinessDays(
+        product.leadTimeBusinessDaysMin,
+        product.leadTimeBusinessDaysMax,
+    );
 
     return (
         <div className="mt-8 space-y-6">
@@ -53,6 +60,11 @@ export function ProductRequestRail() {
                     onRemove={removeVolume}
                     moq={product.moq ?? 500}
                 />
+                {leadTimeLabel ? (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        Lead time: {leadTimeLabel}
+                    </p>
+                ) : null}
             </OverviewSection>
 
             <OverviewSection>

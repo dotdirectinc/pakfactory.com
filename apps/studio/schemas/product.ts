@@ -13,6 +13,7 @@ import { productModel3dField } from '../lib/product-model-3d-field'
 import { CATALOG_STATUS, FULL_STATUS_LIST } from '../lib/catalog-status'
 import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
+import { ProductSpecsBaseFallback } from '../components/ProductSpecsBaseFallback'
 import {
   AVAILABILITY_CATALOG_QUERY,
   offeredOptionIds,
@@ -1060,13 +1061,25 @@ export const product = defineType({
     // Hexagonal and Custom Shaped are all L×W×H — same boxes, different product,
     // different page copy. So the shape is stored and the axes are read off it,
     // never the reverse.
+    //
+    // PROD-3200 — inspiration: leave a field empty to fall back to basedOn on www.
+    // This note lists the base values; the fields below stay editable for overrides.
+    defineField({
+      name: 'specsBaseFallbackNote',
+      title: 'Falls back to base when empty',
+      type: 'string',
+      group: GROUPS.specs,
+      readOnly: true,
+      hidden: ({ document }) => !isInspiration(document),
+      components: { input: ProductSpecsBaseFallback },
+    }),
     defineField({
       name: 'dimensionInput',
       title: 'Dimension input',
       type: 'string',
       group: GROUPS.specs,
       description:
-        'How this product is measured. Decides which measurements appear below, and which boxes a customer fills in on the product page. "No Shape" means it takes no dimensions at all.',
+        'How this product is measured. Decides which measurements appear below, and which boxes a customer fills in on the product page. "No Shape" means it takes no dimensions at all. On an inspiration product, clear this field to use the base product’s shape on the site.',
       options: { list: DIMENSION_INPUTS.map(({ value, title }) => ({ value, title })) },
       initialValue: 'rectangular',
     }),
@@ -1075,7 +1088,7 @@ export const product = defineType({
       title: 'Dimension range',
       type: 'object',
       group: GROUPS.specs,
-      description: `Min / max for each measurement this shape takes, in millimetres — always. Set Dimension input above first; only that shape's measurements are shown. ${SOURCE_OWNED_NOTE}`,
+      description: `Min / max for each measurement this shape takes, in millimetres — always. Set Dimension input above first; only that shape's measurements are shown. On an inspiration product, leave empty to use the base product’s range. ${SOURCE_OWNED_NOTE}`,
       options: { collapsible: true, collapsed: false },
       // Only the axes the chosen shape uses. `hidden` is per-field rather than a
       // filtered list because Sanity needs a stable field set: a value already
@@ -1088,7 +1101,7 @@ export const product = defineType({
       title: 'MOQ',
       type: 'number',
       group: GROUPS.specs,
-      description: `This product's own minimum order quantity, in units. Not an override. ${SOURCE_OWNED_NOTE}`,
+      description: `This product's own minimum order quantity, in units. On an inspiration product, leave empty to use the base product’s MOQ on the site. ${SOURCE_OWNED_NOTE}`,
     }),
     defineField({
       name: 'leadTimeBusinessDaysMin',
@@ -1096,7 +1109,7 @@ export const product = defineType({
       type: 'number',
       group: GROUPS.specs,
       description:
-        'The fastest this product is produced, counted in business days — weekends and holidays are not included. Owned by the product data source. Editable for now, read-only once that source is live.',
+        'The fastest this product is produced, counted in business days — weekends and holidays are not included. On an inspiration product, leave empty to use the base product’s lead time. Owned by the product data source. Editable for now, read-only once that source is live.',
     }),
     defineField({
       name: 'leadTimeBusinessDaysMax',
@@ -1104,7 +1117,7 @@ export const product = defineType({
       type: 'number',
       group: GROUPS.specs,
       description:
-        'The longest this product takes to produce, counted in business days. Set it to the same number as the minimum if this product has one fixed lead time. Owned by the product data source. Editable for now, read-only once that source is live.',
+        'The longest this product takes to produce, counted in business days. Set it to the same number as the minimum if this product has one fixed lead time. On an inspiration product, leave empty to use the base product’s lead time. Owned by the product data source. Editable for now, read-only once that source is live.',
       validation: (Rule) =>
         Rule.custom((max, context) => {
           const min = (context.document as {leadTimeBusinessDaysMin?: number} | undefined)

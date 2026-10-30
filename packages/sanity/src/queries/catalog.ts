@@ -333,9 +333,18 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   // PROD-3207 — no concept link on this type, so no checkbox: render the list as
   // it stands, nothing when it is empty.
   alsoKnownAs,
-  moq,
-  dimensionInput,
-  dimensionRange,
+  // PROD-3200 — inspiration falls back to basedOn when own specs are unset.
+  "moq": coalesce(moq, basedOn->moq),
+  "dimensionInput": coalesce(dimensionInput, basedOn->dimensionInput),
+  "dimensionRange": coalesce(dimensionRange, basedOn->dimensionRange),
+  "leadTimeBusinessDaysMin": coalesce(
+    leadTimeBusinessDaysMin,
+    basedOn->leadTimeBusinessDaysMin
+  ),
+  "leadTimeBusinessDaysMax": coalesce(
+    leadTimeBusinessDaysMax,
+    basedOn->leadTimeBusinessDaysMax
+  ),
   // The PRIMARY solution — fixed, never substituted (Richard + Eric, 2026-10-06). The
   // same solution FAQs inherit from; when it has no page the crumb shows as text.
   "breadcrumbParent": solutions[0]->{
@@ -385,7 +394,7 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   kind,
   ${PRODUCT_EFFECTIVE_STATUS},
   "description": coalesce(shortDescription, pt::text(description)),
-  moq,
+  "moq": coalesce(moq, basedOn->moq),
   // Industry for Related Products style→industry fill (PROD-2780) and the line page's
   // inspiration grouping. Cards carry no breadcrumb.
   "industry": coalesce(
@@ -539,7 +548,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   sku,
   kind,
   ${PRODUCT_EFFECTIVE_STATUS},
-  moq,
+  "moq": coalesce(moq, basedOn->moq),
   ${FEATURED_IMAGE_FROM_CATALOG},
   "hoverImageSrc": ${SECOND_PRODUCT_IMAGE_SRC},
   "hoverImageAlt": ${SECOND_PRODUCT_IMAGE_ALT},
@@ -1444,6 +1453,9 @@ export type CatalogProductDoc = {
   alsoKnownAs?: string[] | null;
   moq?: number | null;
   dimensionInput?: string | null;
+  /** PROD-3200 — own or basedOn fallback (GROQ coalesce). */
+  leadTimeBusinessDaysMin?: number | null;
+  leadTimeBusinessDaysMax?: number | null;
   dimensionRange?: {
     lengthMin?: number | null;
     lengthMax?: number | null;

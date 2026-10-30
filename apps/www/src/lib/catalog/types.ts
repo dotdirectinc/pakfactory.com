@@ -288,6 +288,9 @@ export type Product = {
     /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
     dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
+    /** PROD-3200 — own or basedOn fallback from GROQ coalesce. */
+    leadTimeBusinessDaysMin?: number;
+    leadTimeBusinessDaysMax?: number;
     /** Spec rows from Sanity properties (PDP). */
     properties?: ProductProperty[];
     faqs?: ProductFaq[];

@@ -91,9 +91,8 @@ function dimensionSummary(product: Product): string | null {
 /**
  * The manufacturing facts a PDP states that schema.org has no property for.
  *
- * ⚠️ Lead time is deliberately absent: `leadTimeBusinessDaysMin/Max` exists in
- * Sanity but is not projected by `CATALOG_PRODUCT_FIELDS`, so there is nothing
- * to read. Add the projection first if it is wanted here.
+ * Lead time is buyer copy on the PDP rail (PROD-3200); schema.org has no
+ * standard property for manufacturing lead time, so it stays out of JSON-LD.
  */
 function productProperties(product: Product): {name: string; value: string}[] {
     const properties: {name: string; value: string}[] = [];
