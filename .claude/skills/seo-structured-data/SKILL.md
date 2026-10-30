@@ -20,14 +20,21 @@ not an afterthought. This skill is the **authoring** counterpart to `on-page-seo
 literals in an app route. See [`packages/seo/CLAUDE.md`](../../packages/seo/CLAUDE.md):
 *"Extend here first when adding new schema types; then wire the app route."*
 
-Existing generators: `organization`, `person`, `blogPosting`, `newsArticle`,
-`breadcrumbList`, `collectionPage`, `itemList`, `blog`. Pending (per the content-spec gap
-analysis): **`faqPage`**, **`howTo`**.
+**The source of truth is [`packages/seo/src/index.ts`](../../packages/seo/src/index.ts) — read it
+rather than this paragraph.** It is repeated here for convenience and has been wrong before: this
+file called `faqPage` "pending" for months after it shipped.
+
+Existing generators: `organization`, `person`, `profilePage`, `article`, `blog`, `blogPosting`,
+`newsArticle`, `breadcrumbList`, `collectionPage`, `itemList`, `webPage`, `videoObject`, `faqPage`,
+`product`, `service`, `definedTerm`, `definedTermSet`.
+
+⚠️ **There is no `howTo` generator and none is planned.** Google dropped HowTo rich results in 2023,
+so building one would produce markup nothing consumes.
 
 ## Procedure
 
-1. **Pick the type(s).** Post → `blogPosting` (or `newsArticle` for Packaging News) + `organization` + `person` + `breadcrumbList`; add `faqPage` when the post has a FAQ section; `howTo` for tutorial posts; archives → `collectionPage` / `itemList`.
-2. **If the generator exists**, skip to step 4. **If not** (e.g. `faqPage`, `howTo`):
+1. **Pick the type(s).** Post → `blogPosting` (or `newsArticle` for Packaging News) + `organization` + `person` + `breadcrumbList`; add `faqPage` when the page renders a FAQ section; archives → `collectionPage` / `itemList`; product pages → `product` + `breadcrumbList`; expertise stages → `service` + `breadcrumbList`.
+2. **If the generator exists**, skip to step 4. **If not:**
    - Add the input type to `packages/seo/src/types.ts` and export it from `src/index.ts`.
    - Add `packages/seo/src/generators/<type>.ts` — a pure function returning a plain `JsonLdDocument`, **no runtime deps**.
    - Export it from `src/index.ts` and document it in `packages/seo/CLAUDE.md` (generators list).
