@@ -68,9 +68,10 @@ export function InspirationGallery({
                                 href={card.href}
                                 title={card.title}
                                 description={card.description}
-                                imageSrc={card.image.src}
-                                imageAlt={card.image.alt}
+                                imageSrc={card.image?.src}
+                                imageAlt={card.image?.alt}
                                 surface={shell.cardSurface}
+                                emptyMedia="mark"
                             />
                         </li>
                     ))}

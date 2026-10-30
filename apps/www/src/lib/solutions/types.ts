@@ -189,7 +189,8 @@ export type InspirationGalleryCard = {
     id: string;
     title: string;
     description?: string;
-    image: SolutionMedia;
+    /** Cover still; omit when the style has no Images (emptyMedia mark). */
+    image?: SolutionMedia;
     href: string;
     countLabel?: string;
 };
