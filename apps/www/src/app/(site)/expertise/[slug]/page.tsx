@@ -14,6 +14,7 @@ import {buildExpertiseStageJsonLd} from '@/lib/expertise/expertise-jsonld';
 import {absoluteUrl} from '@/lib/site';
 import {expertiseHref} from '@/lib/www-routes';
 import {staticParamsExceptPreview} from '@/lib/static-params';
+import {fetchCompanyRecord} from '@/lib/www-global-settings';
 
 export const revalidate = 60;
 
@@ -81,9 +82,10 @@ export async function generateMetadata({
 
 export default async function ExpertiseStagePage({params}: PageProps) {
     const {slug} = await params;
-    const [stage, orderedStages] = await Promise.all([
+    const [stage, orderedStages, company] = await Promise.all([
         getExpertiseStage(slug),
         listExpertiseStageCards(),
+        fetchCompanyRecord(),
     ]);
     if (!stage) notFound();
     return (
@@ -91,7 +93,7 @@ export default async function ExpertiseStagePage({params}: PageProps) {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
-                    __html: buildExpertiseStageJsonLd(stage),
+                    __html: buildExpertiseStageJsonLd(stage, company),
                 }}
             />
             <ExpertiseStageView stage={stage} orderedStages={orderedStages} />

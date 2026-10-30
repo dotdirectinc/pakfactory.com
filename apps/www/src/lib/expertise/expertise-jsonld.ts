@@ -8,6 +8,8 @@ import {
 import type {PageSectionFaqSectionDoc} from '@pakfactory/sanity/queries';
 
 import type {ExpertiseStagePage} from '@/lib/expertise/types';
+import {companyOrganizationNode} from '@/lib/organization-node';
+import type {CompanyRecord} from '@/lib/www-global-settings';
 import {absoluteUrl} from '@/lib/site';
 import {expertiseHref, WWW_ROUTES} from '@/lib/www-routes';
 
@@ -19,18 +21,24 @@ import {expertiseHref, WWW_ROUTES} from '@/lib/www-routes';
  * `Service` rather than `Product` because an Expertise Stage is a capability
  * PakFactory offers, not a thing a customer adds to a request (SEO Model §6).
  *
- * ⚠️ No `provider` yet — it wants an `{"@id"}` pointer at an Organization node,
- * and this builder is handed only the stage. A pointer at a node that is not in
- * the graph is worse than omitting the property.
+ * `provider` points at the `Organization` node in this same graph. With no
+ * company name in Global Settings there is no node, and `provider` is omitted
+ * rather than left pointing at an `@id` nothing defines (PROD-3230).
  */
-export function buildExpertiseStageJsonLd(stage: ExpertiseStagePage): string {
+export function buildExpertiseStageJsonLd(
+    stage: ExpertiseStagePage,
+    company: CompanyRecord | null = null,
+): string {
     const pageUrl = absoluteUrl(expertiseHref(stage.slug));
+    const publisher = companyOrganizationNode(company);
     const nodes: Record<string, unknown>[] = [
+        ...(publisher ? [publisher.org] : []),
         service({
             id: `${pageUrl}#service`,
             name: stage.title,
             url: pageUrl,
             ...(stage.description ? {description: stage.description} : {}),
+            ...(publisher ? {provider: {'@id': publisher.orgId}} : {}),
         }),
         breadcrumbList([
             {name: 'Home', url: absoluteUrl(WWW_ROUTES.home)},

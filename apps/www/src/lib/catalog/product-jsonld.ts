@@ -7,6 +7,8 @@ import {
 } from '@pakfactory/seo';
 
 import type {Product} from '@/lib/catalog/types';
+import {companyOrganizationNode} from '@/lib/organization-node';
+import type {CompanyRecord} from '@/lib/www-global-settings';
 import {absoluteUrl} from '@/lib/site';
 import {
     productHref,
@@ -116,17 +118,20 @@ function productProperties(product: Product): {name: string; value: string}[] {
  * that never told Google it was a product, and that rendered FAQs visibly while
  * saying nothing about them.
  *
- * ⚠️ No `brand` yet. It wants an `{"@id"}` pointer at an Organization node, and
- * this builder is handed only the product — adding one means threading Site-wide
- * Settings through the call site. A pointer at a node that is not in the graph
- * is worse than omitting the property, so it is omitted.
+ * `brand` points at the `Organization` node in this same graph. When Global
+ * Settings has no company name there is no node, and `brand` is omitted rather
+ * than left pointing at an `@id` nothing defines (PROD-3230).
  *
  * FAQs are read from the same `product.faqs` the page renders, so the markup
  * cannot claim a question the visitor cannot see — Google requires that, and the
  * extraction mirrors `expertise-jsonld.ts`.
  */
-export function buildProductDetailJsonLd(product: Product): string {
+export function buildProductDetailJsonLd(
+    product: Product,
+    company: CompanyRecord | null = null,
+): string {
     const pageUrl = absoluteUrl(productHref(product.slug));
+    const publisher = companyOrganizationNode(company);
     const crumbs = buildProductDetailBreadcrumbs(product);
     // A text-only crumb has no URL to give a ListItem, so it stays out of the markup.
     const linked = crumbs.filter(
@@ -144,11 +149,14 @@ export function buildProductDetailJsonLd(product: Product): string {
         .map((slide) => slide.src)
         .filter((src): src is string => Boolean(src));
 
-    const nodes: Record<string, unknown>[] = [
+    const nodes: Record<string, unknown>[] = [];
+    if (publisher) nodes.push(publisher.org);
+    nodes.push(
         productNode({
             id: `${pageUrl}#product`,
             name: product.title,
             url: pageUrl,
+            ...(publisher ? {brand: {'@id': publisher.orgId}} : {}),
             ...(product.description ? {description: product.description} : {}),
             ...(images.length ? {image: images} : {}),
             ...(product.sku && product.sku !== '-' ? {sku: product.sku} : {}),
@@ -160,7 +168,7 @@ export function buildProductDetailJsonLd(product: Product): string {
             additionalProperty: productProperties(product),
         }),
         breadcrumbList(items),
-    ];
+    );
 
     const faqs = (product.faqs ?? [])
         .map((faq) => ({

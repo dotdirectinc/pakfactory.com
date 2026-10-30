@@ -30,6 +30,7 @@ import {PRODUCT_DETAIL_COPY} from '@/lib/copy/product-detail';
 import {getGooglePlaceReviews} from '@/lib/places/reviews';
 import {mergeSolutionSections} from '@/lib/sections/merge-solution-sections';
 import {mapTestimonialsRow} from '@/lib/sections/map-testimonials-row';
+import {fetchCompanyRecord} from '@/lib/www-global-settings';
 import {
     applySectionTokens,
     sectionTokenContextFromHost,
@@ -226,6 +227,7 @@ async function ProductDetailBelowFold({
 }
 
 export async function ProductDetailView({product}: ProductDetailViewProps) {
+    const company = await fetchCompanyRecord();
     const displaySku = displayProductSku(product.sku, product.slug);
     const specRows = buildProductSpecRows(product);
     const customizationItems = mapCustomizationPreviewItems(
@@ -242,7 +244,7 @@ export async function ProductDetailView({product}: ProductDetailViewProps) {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
-                    __html: buildProductDetailJsonLd(product),
+                    __html: buildProductDetailJsonLd(product, company),
                 }}
             />
             <PageBreadcrumbSection items={breadcrumbItems} />

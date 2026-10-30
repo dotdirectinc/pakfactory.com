@@ -939,6 +939,12 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
     "height": asset->metadata.dimensions.height
   },
   "companyName": organization.legalName,
+  "companyDescription": organization.description,
+  // Organization.sameAs — the profiles that tie this entity together across the
+  // web. The socialLinks field has described itself as feeding this since it was
+  // added, and nothing read it until PROD-3230. Blank URLs are dropped here so
+  // no caller has to.
+  "socialProfileUrls": organization.socialLinks[defined(url)].url,
   "companyAddress": organization.contact.address,
   "watermark": watermark{
     "enabled": coalesce(enabled, true),

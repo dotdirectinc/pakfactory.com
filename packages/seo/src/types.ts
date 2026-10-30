@@ -18,6 +18,13 @@ export type OrganizationInput = {
   logo?: string;
   /** Same-as profiles */
   sameAs?: string[];
+  /**
+   * Plain-text company description — the "About" paragraph. Google reads it as
+   * part of the company record. Global Settings has told editors their Company
+   * description feeds structured data since before anything passed it through
+   * (PROD-3230/PROD-3231).
+   */
+  description?: string;
   /** Stable node id for @graph linking (absolute URI, often with #fragment) */
   id?: string;
 };
