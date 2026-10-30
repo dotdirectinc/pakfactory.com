@@ -4,6 +4,7 @@ import { groupsFor, GROUPS } from '../lib/field-groups'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { featuredNotAlreadyDerived } from '../lib/concept-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 
 /**
@@ -138,21 +139,47 @@ export const glossaryTerm = defineType({
       of: [{ type: 'block' }, { type: 'bodyImage' }],
     }),
 
-    // ── Categorization (ordered "related" references) ─────────────────────────
+    // ── Categorization (ordered, curated "featured" references) ───────────────
+    //
+    // Renamed from `related*` in PROD-3218. "Related products" reads as a
+    // statement of fact, and the field is an editorial pick of three to five —
+    // which matters more now that a COMPLETE list arrives automatically beside it
+    // from the documents naming this term. "Featured" says picked, not complete.
+    //
+    // The rename reached the field names, not just the labels: all three were
+    // empty on all 9 terms and nothing outside this file read them. The
+    // `relatedProducts` in the catalog queries is `product.relatedProducts`, a
+    // different field that happens to share the old name — untouched.
+    //
+    // 🔴 All three gate on status, which nothing did before: an editor could put a
+    // retired product in a curated list and nothing objected.
+    //
+    // ⚠️ The three gates are NOT the same string, and copying one to the others
+    // breaks it. Keep aligned with `packages/sanity/src/queries/status-gates.ts`:
+    //   packaging   LINE_STYLE_ACTIVE — unset reads as ACTIVE, and 13 production
+    //               lines still carry no status. `status == "active"` hides them.
+    //   solutions   SOLUTION_ACTIVE — no unset arm, deliberately: `status` replaced
+    //               `hasPage`, which defaulted to false, so an un-migrated solution
+    //               must read as having no page.
+    //   expertise   matches `expertise.ts`, which gates on != discontinued rather
+    //               than a whitelist, so a coming-soon stage stays featurable.
     defineField({
-      name: 'relatedProducts',
-      title: 'Related products',
+      name: 'featuredPackaging',
+      title: 'Featured packaging',
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Three to five products or lines that best show this term in use — pick, don\'t list. ' +
-        'Hundreds of products share a material, so a complete list is a catalogue, not an answer.',
+        'Three to five lines, styles or products that best show this term in use — pick, don\'t ' +
+        'list. Packaging that names this term as its concept already appears automatically, so ' +
+        'feature what adds to that.',
       of: [
         {
           type: 'reference',
           to: [{ type: 'productLine' }, { type: 'productStyle' }, { type: 'product' }],
+          options: { filter: '(!defined(status) || status == "active")' },
         },
       ],
+      validation: (Rule) => Rule.custom(featuredNotAlreadyDerived()).warning(),
     }),
     /**
      * `relatedCustomizations` was deleted here (PROD-3206). It put a second
@@ -164,25 +191,44 @@ export const glossaryTerm = defineType({
      * concept page links to concepts. If the thing you want to link to has no
      * term, author the term; do not re-add this field.
      */
+    // Gained `solutionStyle` in PROD-3218. The packaging field reaches all three
+    // levels of the product hierarchy while this one reached only the top of its
+    // two, and a Solution Style has its own page — there was no reason an editor
+    // could feature a Product Style but not a Solution Style.
+    //
+    // ⚠️ A Solution Style is a STORED FILTER: membership is computed and nothing
+    // is ever tagged into one. Safe to reference, never to tag.
     defineField({
-      name: 'relatedSolutions',
-      title: 'Related solutions',
+      name: 'featuredSolutions',
+      title: 'Featured solutions',
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Three to five solutions that best show this term in use — pick, don\'t list. A complete ' +
-        'list is a catalogue, not an answer.',
-      of: [{ type: 'reference', to: [{ type: 'solution' }] }],
+        'Three to five solutions or solution styles that best show this term in use — pick, ' +
+        'don\'t list. A complete list is a catalogue, not an answer.',
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'solution' }, { type: 'solutionStyle' }],
+          options: { filter: 'status == "active"' },
+        },
+      ],
     }),
     defineField({
-      name: 'relatedExpertise',
-      title: 'Related expertise',
+      name: 'featuredExpertise',
+      title: 'Featured expertise',
       type: 'array',
       group: GROUPS.categorization,
       description:
         'Three to five expertise stages that best show this term in use — pick, don\'t list. A ' +
         'complete list is a catalogue, not an answer.',
-      of: [{ type: 'reference', to: [{ type: 'expertiseStage' }] }],
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'expertiseStage' }],
+          options: { filter: 'status != "discontinued"' },
+        },
+      ],
     }),
     defineField({
       name: 'relatedTerms',

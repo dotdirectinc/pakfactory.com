@@ -130,6 +130,23 @@ export const productLine = defineType({
             'in the meta title instead.',
         ),
     }),
+    // PROD-3218. The product side of the concept link, matching the field that has
+    // been on `customizationOption` since PROD-3206. A Glossary Term derives its
+    // "Available as packaging" list from these, so nothing is typed on the term.
+    //
+    // No parent guard here, unlike style and product: a line is the top of the
+    // hierarchy and has nothing to double-tag against.
+    defineField({
+      name: 'glossaryTerm',
+      title: 'Concept it belongs to',
+      type: 'array',
+      group: GROUPS.content,
+      of: [{ type: 'reference', to: [{ type: 'glossaryTerm' }] }],
+      description:
+        'What this line is an instance of, never what it relates to. Tag here only when the ' +
+        'concept is true of every style in the line — otherwise tag the styles. Empty is the ' +
+        'normal case.',
+    }),
     // Renamed from `intro` (PROD-2454): one concept, one name across
     // Line / Style / Solution / Product. Portable text, so the link
     // annotations the original values carried survived the move.
