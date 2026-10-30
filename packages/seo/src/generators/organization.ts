@@ -8,6 +8,7 @@ export function organization(input: OrganizationInput): Record<string, unknown> 
   };
   if (input.id) doc["@id"] = input.id;
   if (input.logo) doc.logo = input.logo;
+  if (input.description) doc.description = input.description;
   if (input.sameAs?.length) doc.sameAs = [...input.sameAs];
   return doc;
 }

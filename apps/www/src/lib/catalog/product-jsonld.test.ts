@@ -59,3 +59,47 @@ describe('PDP breadcrumb — the primary parent is fixed (2026-10-06)', () => {
         assert.equal(json.includes('Watch Box'), true);
     });
 });
+
+describe('PDP Organization — the node has to exist before brand can point at it', () => {
+    const company = {
+        name: 'PakFactory',
+        logoUrl: 'https://cdn.sanity.io/logo.png',
+        description: 'A custom packaging manufacturer.',
+        sameAs: ['https://www.linkedin.com/company/pakfactory'],
+    };
+
+    const graph = (companyRecord: typeof company | null) =>
+        JSON.parse(buildProductDetailJsonLd(product(), companyRecord))[
+            '@graph'
+        ] as Record<string, unknown>[];
+
+    it('emits the Organization node and points brand at its @id', () => {
+        const nodes = graph(company);
+        const org = nodes.find((n) => n['@type'] === 'Organization');
+        const prod = nodes.find((n) => n['@type'] === 'Product');
+
+        assert.ok(org, 'the graph should carry an Organization node');
+        assert.equal(org.name, 'PakFactory');
+        assert.equal(org.description, 'A custom packaging manufacturer.');
+        assert.deepEqual(org.sameAs, [
+            'https://www.linkedin.com/company/pakfactory',
+        ]);
+        // The pointer must resolve inside this same graph, not dangle.
+        assert.deepEqual(prod?.brand, {'@id': org['@id']});
+    });
+
+    it('omits both the node and brand when there is no company record', () => {
+        const nodes = graph(null);
+        assert.equal(
+            nodes.some((n) => n['@type'] === 'Organization'),
+            false,
+        );
+        const prod = nodes.find((n) => n['@type'] === 'Product');
+        assert.ok(prod);
+        assert.equal(
+            'brand' in prod,
+            false,
+            'brand must not point at a node that is not in the graph',
+        );
+    });
+});

@@ -17,6 +17,12 @@ export type WwwGlobalSettings = {
    * why every www Organization node carried a literal instead (PROD-3230).
    */
   companyName?: string | null;
+  /** Global Settings → Company → Company description. `Organization.description`. */
+  companyDescription?: string | null;
+  /** Global Settings → Company → Social profiles, blank URLs already dropped. */
+  socialProfileUrls?: string[] | null;
+  /** Company logo asset URL — `Organization.logo`. */
+  organizationLogoUrl?: string | null;
   /** Global OG image fallback for case studies and other www pages. */
   defaultOgImageUrl?: string | null;
   /** Editor-managed favicon (PROD-2200) — falls back to `public/favicon.ico`. */
@@ -62,4 +68,37 @@ export async function fetchWwwGlobalSettings(): Promise<WwwGlobalSettings | null
 export async function fetchCompanyName(): Promise<string | null> {
   const settings = await fetchWwwGlobalSettings();
   return settings?.companyName?.trim() || null;
+}
+
+/** Everything the `Organization` JSON-LD node needs, from one cached read. */
+export type CompanyRecord = {
+  name: string;
+  logoUrl?: string;
+  description?: string;
+  sameAs?: string[];
+};
+
+/**
+ * The company record for structured data, or **null when there is no company
+ * name** — the same rule the newsroom's `publisherNode` follows. An Organization
+ * with no name is not a weaker node, it is a false one, so nothing is invented.
+ *
+ * Every optional property is omitted rather than emitted blank, so a half-filled
+ * Global Settings produces a smaller node and never an empty-valued one.
+ */
+export async function fetchCompanyRecord(): Promise<CompanyRecord | null> {
+  const settings = await fetchWwwGlobalSettings();
+  const name = settings?.companyName?.trim();
+  if (!name) return null;
+  const logoUrl = settings?.organizationLogoUrl?.trim();
+  const description = settings?.companyDescription?.trim();
+  const sameAs = (settings?.socialProfileUrls ?? [])
+    .map((url) => url?.trim())
+    .filter((url): url is string => Boolean(url));
+  return {
+    name,
+    ...(logoUrl ? { logoUrl } : {}),
+    ...(description ? { description } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+  };
 }
