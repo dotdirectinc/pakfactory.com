@@ -766,6 +766,12 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         },
     );
 
+    // Trimmed, blanks dropped, absent when empty — `Product.alternateName` must
+    // never be an empty array in the JSON-LD (PROD-2990 step 6).
+    const productAliases = (doc.alsoKnownAs ?? [])
+        .map((alias) => (typeof alias === 'string' ? alias.trim() : ''))
+        .filter(Boolean);
+
     return {
         title: doc.title,
         slug,
@@ -773,6 +779,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         sku: doc.sku?.trim() || '-',
         kind,
         status: toLifecycle(doc.status),
+        ...(productAliases.length > 0 ? {alsoKnownAs: productAliases} : {}),
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
         media,

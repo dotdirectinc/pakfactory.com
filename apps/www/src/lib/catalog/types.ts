@@ -276,6 +276,14 @@ export type Product = {
      * page-less one still shows as text instead of a 404 link. Absent = all link.
      */
     breadcrumbLinks?: {line: boolean; style: boolean; parent: boolean};
+    /**
+     * Synonyms (PROD-3206). Fetched by `CATALOG_PRODUCT_FIELDS` all along but not
+     * surfaced until PROD-2990 step 6 needed it for `Product.alternateName`.
+     *
+     * ⚠️ Empty on every product today — the 254 synonyms loaded by PROD-3212 are
+     * on Product **Style**, not Product. Absent rather than `[]` when unset.
+     */
+    alsoKnownAs?: string[];
     moq?: number;
     /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
     dimensionInput?: string;
