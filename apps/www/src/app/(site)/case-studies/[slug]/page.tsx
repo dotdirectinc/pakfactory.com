@@ -19,6 +19,7 @@ import {
 import { absoluteUrl } from "@/lib/site";
 import { plainTextFromBlocks } from "@/lib/portable-text";
 import { buildCaseStudyJsonLd } from "@/lib/case-study-jsonld";
+import { fetchCompanyName } from "@/lib/www-global-settings";
 import {
   buildSocialMetadata,
   fetchDefaultOgImageUrl,
@@ -104,16 +105,17 @@ function SectionDivider() {
 export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params;
 
-  const [study, pageData, defaultOgImageUrl] = await Promise.all([
+  const [study, pageData, defaultOgImageUrl, companyName] = await Promise.all([
     getCaseStudy(slug),
     getCaseStudiesPage(),
     fetchDefaultOgImageUrl(),
+    fetchCompanyName(),
   ]);
 
   if (!study) notFound();
 
   const pageUrl = absoluteUrl(`/case-studies/${slug}`);
-  const jsonLd = buildCaseStudyJsonLd(study, defaultOgImageUrl);
+  const jsonLd = buildCaseStudyJsonLd(study, defaultOgImageUrl, companyName);
 
   const heroIntroPtComponents = makeHeroIntroPtComponents(study.client?.website);
   const storyPtComponents = makeCaseStudyPtComponents(study.title);

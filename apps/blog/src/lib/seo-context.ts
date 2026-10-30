@@ -5,6 +5,12 @@ export type SeoContext = {
   siteName: string;
   defaultOgImageUrl?: string | null;
   organizationLogoUrl?: string | null;
+  /**
+   * Global Settings → Company → Company name. Already queried and typed by
+   * `BlogGlobalSettings`; it was simply never surfaced here, which is why the
+   * Organization node carried a literal instead (PROD-3230).
+   */
+  companyName?: string | null;
   blogSettings: Awaited<ReturnType<typeof fetchBlogSettings>>;
 };
 
@@ -18,6 +24,7 @@ export async function fetchSeoContext(): Promise<SeoContext> {
     siteName: global?.siteTitle?.trim() || "PakFactory Blog",
     defaultOgImageUrl: global?.defaultOgImageUrl,
     organizationLogoUrl: global?.organizationLogoUrl,
+    companyName: global?.companyName?.trim() || null,
     blogSettings,
   };
 }

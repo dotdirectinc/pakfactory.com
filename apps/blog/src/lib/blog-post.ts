@@ -231,6 +231,7 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
   const postUrl = postCanonicalUrl(post);
   const { org, orgId } = pakfactoryOrganization({
     logo: ctx.organizationLogoUrl ?? undefined,
+    name: ctx.companyName,
   });
   const authorSlug = post.author?.slug ?? undefined;
   const authorPageUrl = authorSlug ? absoluteUrl(authorHref(authorSlug)) : undefined;

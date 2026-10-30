@@ -22,6 +22,11 @@ export function buildCategoryArchiveJsonLd(
   const itemListId = `${pageUrl}#itemlist`;
   const pageLabel =
     pageNumber > 1 ? `${category.title} — Page ${pageNumber}` : category.title;
+  // ⚠️ No settings in scope, so this falls back to the literal company name.
+  // The builder is called from a sync view component; reading Global Settings
+  // here means threading it down from the route. Left for PROD-3230 rather than
+  // changing a live blog view's signature (the other three call sites read the
+  // editor's value).
   const { org } = pakfactoryOrganization();
 
   const collection = collectionPage({

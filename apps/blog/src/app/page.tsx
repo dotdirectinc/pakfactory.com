@@ -47,7 +47,9 @@ export default async function BlogHomePage() {
         process.env.NODE_ENV === 'development' && blocks.length === 0;
 
     const siteUrl = siteBaseUrl();
-    const { org, orgId } = pakfactoryOrganization();
+    const { org, orgId } = pakfactoryOrganization({
+        name: settings?.companyName,
+    });
     const blogId = `${siteUrl}#blog`;
     const blogDescription =
         home?.metaDescription?.trim() || HOME_DESCRIPTION_FALLBACK;

@@ -23,6 +23,7 @@ export async function buildAuthorJsonLd(
   const ctx = await fetchSeoContext();
   const { org, orgId } = pakfactoryOrganization({
     logo: ctx.organizationLogoUrl ?? undefined,
+    name: ctx.companyName,
   });
 
   const personNode = person({

@@ -18,6 +18,11 @@ export function buildAllArchiveJsonLd(
   const pageUrl = absoluteUrl(archivePageHref(pageNumber));
   const collectionId = `${pageUrl}#collection`;
   const itemListId = `${pageUrl}#itemlist`;
+  // ⚠️ No settings in scope, so this falls back to the literal company name.
+  // The builder is called from a sync view component; reading Global Settings
+  // here means threading it down from the route. Left for PROD-3230 rather than
+  // changing a live blog view's signature (the other three call sites read the
+  // editor's value).
   const { org } = pakfactoryOrganization();
 
   const collection = collectionPage({

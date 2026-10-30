@@ -11,6 +11,12 @@ import { sanityCache, sanityReadFailed } from "@/lib/sanity/sanity-cache";
 export type WwwGlobalSettings = {
   /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
   gtmId?: string | null;
+  /**
+   * Global Settings → Company → Organization → Company name (`organization.legalName`).
+   * The shared query already returned it; this type simply never declared it, which is
+   * why every www Organization node carried a literal instead (PROD-3230).
+   */
+  companyName?: string | null;
   /** Global OG image fallback for case studies and other www pages. */
   defaultOgImageUrl?: string | null;
   /** Editor-managed favicon (PROD-2200) — falls back to `public/favicon.ico`. */
@@ -47,4 +53,13 @@ const getCachedWwwGlobalSettings = sanityCache(
 /** Global Settings singleton — GTM container ID for production analytics inject. */
 export async function fetchWwwGlobalSettings(): Promise<WwwGlobalSettings | null> {
   return getCachedWwwGlobalSettings();
+}
+
+/**
+ * The editor-managed company name, or null when Global Settings cannot be read.
+ * Callers fall back rather than inventing one — see `pakfactoryOrganization`.
+ */
+export async function fetchCompanyName(): Promise<string | null> {
+  const settings = await fetchWwwGlobalSettings();
+  return settings?.companyName?.trim() || null;
 }
