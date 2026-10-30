@@ -325,14 +325,11 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
       answer: item.answerText!.trim(),
     }));
 
-  if (faqItems.length > 0) {
-    nodes.push(
-      faqPage({
-        id: `${postUrl}#faq`,
-        items: faqItems,
-      }),
-    );
-  }
+  const faq = faqPage({
+    id: `${postUrl}#faq`,
+    items: faqItems,
+  });
+  if (faq) nodes.push(faq);
 
   return serializeBlogJsonLd(nodes);
 }
