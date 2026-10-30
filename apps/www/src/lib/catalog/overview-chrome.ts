@@ -1,9 +1,10 @@
 /**
  * Overview rail chrome on CDP templates (PROD-3126 / PROD-3127 / PROD-3128).
  * Unset CTA / Bookmark read as shown; unset configuration source is properties.
+ * Studio Show CTA / Bookmark / Configuration are the source of truth.
  */
 
-export type ConfigurationSource = 'properties' | 'achieves';
+export type ConfigurationSource = 'properties' | 'achieves' | 'none';
 
 export type OverviewChrome = {
     showCta: boolean;
@@ -30,14 +31,21 @@ function readChrome(section: unknown): {
     };
 }
 
+function resolveConfigurationSource(
+    value: unknown,
+): ConfigurationSource {
+    if (value === 'achieves') return 'achieves';
+    if (value === 'none') return 'none';
+    return 'properties';
+}
+
 export function resolveOverviewChrome(section: unknown): OverviewChrome {
     const fields = readChrome(section);
     return {
         showCta: fields.showCta !== false,
         showBookmark: fields.showBookmark !== false,
-        configurationSource:
-            fields.configurationSource === 'achieves'
-                ? 'achieves'
-                : 'properties',
+        configurationSource: resolveConfigurationSource(
+            fields.configurationSource,
+        ),
     };
 }

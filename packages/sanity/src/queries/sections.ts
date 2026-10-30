@@ -561,6 +561,7 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     "services": services[@->status != "discontinued"]->${EXPERTISE_SERVICE_DIMENSION}
   },
   _type in [
+    "customizationOverview",
     "customizationOverviewStandard",
     "customizationOverviewLearnFirst"
   ] => {
@@ -1148,7 +1149,10 @@ export type PageSectionStubDoc = PageSectionChromeFields & {
 /** CDP template bands (PROD-3112) — chrome only; host fills option data on www. */
 export type PageSectionCustomizationDetailDoc = PageSectionChromeFields & {
     _type:
+        | 'customizationOverview'
+        /** @deprecated Prefer `customizationOverview` — kept until migrate:cdp-overview-layout. */
         | 'customizationOverviewStandard'
+        /** @deprecated Prefer `customizationOverview` — kept until migrate:cdp-overview-layout. */
         | 'customizationOverviewLearnFirst'
         | 'customizationBenefitsSpecs'
         | 'customizationWorksWith'

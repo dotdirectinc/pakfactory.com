@@ -43,6 +43,19 @@ describe('resolveWorksWithApplyOption', () => {
         );
     });
 
+    it('uses the page option when Configuration is No Configuration (none)', () => {
+        assert.deepEqual(
+            resolveWorksWithApplyOption({
+                showCta: true,
+                configurationSource: 'none',
+                pageOption: page,
+                achieves,
+                selectedAchievesId: 'opt-gloss',
+            }),
+            page,
+        );
+    });
+
     it('uses the selected Achieves target and the page option as achievedBy', () => {
         assert.deepEqual(
             resolveWorksWithApplyOption({

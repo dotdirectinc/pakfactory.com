@@ -42,7 +42,7 @@ Key files on rebuild:
 
 - [`map-sanity.ts`](../src/lib/catalog/map-sanity.ts) — `mapSanityCustomizationDetail`
 - [`customization-option-hero-copy.tsx`](../src/components/customization/customization-option-hero-copy.tsx)
-- [`customization-overview-learn-first.tsx`](../src/components/customization/customization-overview-learn-first.tsx) / [`customization-overview-standard.tsx`](../src/components/customization/customization-overview-standard.tsx)
+- [`customization-overview.tsx`](../src/components/customization/customization-overview.tsx)
 - [`option-aliases.ts`](../src/lib/catalog/option-aliases.ts)
 - [`reference-copy.ts`](../src/lib/catalog/reference-copy.ts) — `resolveCompareIntroPlaceholder`
 

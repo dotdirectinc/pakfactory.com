@@ -113,6 +113,30 @@ export const PropertyValueUsedByView = createReferencedByView({
  * the form above; for this relationship it is the only view the Option has, and
  * the reverse lookup it does is the only way to answer it from this side.
  */
+/**
+ * Customization Detail Page layout → options that pick it (PROD-3127).
+ * Lists explicit `template` refs only. Empty-template Not Configurable options
+ * still resolve Knowledge/Achieves on www at runtime and will not appear here
+ * until an editor sets the field.
+ */
+export const CustomizationDetailPageUsedByView = createReferencedByView({
+  tag: 'customization-detail-page-used-by',
+  note:
+    'Customization options that explicitly pick this layout on the Template tab. ' +
+    'Empty template still auto-resolves on the site (Not Configurable → Knowledge or Achieves; ' +
+    'otherwise Default) and does not appear in this list until the field is set.',
+  sections: [
+    {
+      title: 'Customization options',
+      type: 'customizationOption',
+      filter: 'template._ref == $id',
+      subtitle: 'type->title + " · " + coalesce(appearsIn, "no appearsIn")',
+      badge: 'status',
+    },
+  ],
+  empty: 'No customization option picks this layout yet.',
+})
+
 export const CustomizationOptionUsedByView = createReferencedByView({
   tag: 'customization-option-used-by',
   note: 'Everything that names this option from its own side. What this option itself declares is on the Edit tab.',

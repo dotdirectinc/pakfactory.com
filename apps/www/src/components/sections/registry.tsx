@@ -30,8 +30,7 @@ import {
     CustomizationBenefitsSpecsFromSanity,
     CustomizationCompatibleOptionsFromSanity,
     CustomizationCompareFromSanity,
-    CustomizationOverviewLearnFirstFromSanity,
-    CustomizationOverviewStandardFromSanity,
+    CustomizationOverviewFromSanity,
     CustomizationShowcaseFromSanity,
     CustomizationWorksWithFromSanity,
 } from '@/components/sections/customization-detail-sections';
@@ -372,10 +371,13 @@ export const SECTION_COMPONENTS: Record<
     solutionsRow: SolutionsRowFromSanity as ComponentType<PageSection>,
     pressReleasesRow:
         PressReleasesRowFromSanity as ComponentType<PageSection>,
+    customizationOverview:
+        CustomizationOverviewFromSanity as ComponentType<PageSection>,
+    /** Legacy until migrate:cdp-overview-layout rewrites templates. */
     customizationOverviewStandard:
-        CustomizationOverviewStandardFromSanity as ComponentType<PageSection>,
+        CustomizationOverviewFromSanity as ComponentType<PageSection>,
     customizationOverviewLearnFirst:
-        CustomizationOverviewLearnFirstFromSanity as ComponentType<PageSection>,
+        CustomizationOverviewFromSanity as ComponentType<PageSection>,
     customizationBenefitsSpecs:
         CustomizationBenefitsSpecsFromSanity as ComponentType<PageSection>,
     customizationWorksWith:

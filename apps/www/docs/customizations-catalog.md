@@ -139,37 +139,44 @@ Detail pages at `/customizations/[category]/[handle]` are **section-composed** (
 | Piece | Where |
 | --- | --- |
 | Template doc | `customizationDetailPage` — Main Website → Customization Pages → Customization Detail Pages |
-| Option pick | `customizationOption.template` → that layout (empty → Default id `customizationDetailPage`) |
+| Option pick | `customizationOption.template` → that layout. Empty → www `resolveCdpTemplateId` from **Where this appears** (PROD-3127 / PROD-3128): Not Configurable + `achieves[]` → Achieves; Not Configurable alone → Knowledge; else Default. Layout loaded by id (`CUSTOMIZATION_DETAIL_PAGE_BY_ID_QUERY`) — not a multi-branch GROQ (Sanity 300 KB query-body limit) |
+| Studio Used by | Document view tab on each layout lists options with an explicit `template` ref (empty auto-resolve does not appear until the field is set) |
 | Allowlist | `SECTION_ALLOW.customizationDetail` |
-| Overview types | `customizationOverviewStandard` · `customizationOverviewLearnFirst` |
-| Overview layout | `showCta` · `showBookmark` (unset = on) · `configurationSource` (`properties` \| `achieves`, unset = properties) |
-| Band types | `customizationBenefitsSpecs` · `customizationWorksWith` · `customizationCompatibleOptions` · `customizationCompare` · `customizationShowcase` |
+| Overview type | `customizationOverview` — gallery + Sustainability / Applicable on / facts-well rail (not Get to know) |
+| Overview chrome | `showCta` · `showBookmark` (unset = on) · `configurationSource` (`properties` \| `achieves` \| `none` / No Configuration, unset = properties). Studio toggles are the source of truth on www |
+| Band types | `customizationBenefitsSpecs` (Get to know + Key properties — **separate** from overview) · `customizationWorksWith` · `customizationCompatibleOptions` · `customizationCompare` · `customizationShowcase` |
 | Host inherit | www `CustomizationDetailHostProvider` fills option media/copy/peers/products into those sections |
 
 Three presets of the same overview (PROD-3126 / PROD-3127 / PROD-3128):
 
 | Template | Seeded id | Overview | Configuration | CTA |
 | --- | --- | --- | --- | --- |
-| Customization Detail Page — Default | `customizationDetailPage` | Standard | Selectable properties | On |
-| Customization Detail Page — Knowledge | `customizationDetailPageKnowledge` | Standard | Selectable properties | Off (Bookmark on). Works with omitted; product links do not preselect this option. |
-| Customization Detail Page — Achieves | `customizationDetailPageAchieves` | Learn-first | Forward `achieves[]` radios | On. Apply / Works with use the selected customer-facing option. |
+| Customization Detail Page — Default | `customizationDetailPage` | One overview shell | Selectable properties | On |
+| Customization Detail Page — Knowledge | `customizationDetailPageKnowledge` | One overview shell | Selectable properties | Off (Bookmark on). Works with omitted; product links do not preselect this option. Get to know via Benefits & specs on new stubs, or www inject when the live layout omits the band. |
+| Customization Detail Page — Achieves | `customizationDetailPageAchieves` | One overview shell | Forward `achieves[]` radios | On. Apply / Works with use the selected customer-facing option. |
 
-Breadcrumb stays route-owned. Until the Default template has CDP sections seeded, www falls back to the hardcoded standard CDP (same UX as before).
+Breadcrumb stays route-owned. Until the Default template has CDP sections seeded, www falls back to the hardcoded CDP overview + optional bands. If Benefits & specs is missing on a template but the option has why/specs copy, www injects that band.
 
 ### Human Studio setup (agents do not write documents)
 
-1. **Customization Detail Page — Default** (`customizationDetailPage`): Overview (standard) → Benefits & specs → … as needed. Publish.
-2. **Customization Detail Page — Learn-first** (`customizationDetailPageLearnFirst`): Overview (learn-first) first, then Benefits & specs (Get to know + Key properties — why copy lives in this band, not the hero). Publish. If the template omits Benefits & specs, www injects that band so why/specs still render.
-3. **Customization Detail Page — Knowledge** (`customizationDetailPageKnowledge`) and **Customization Detail Page — Achieves** (`customizationDetailPageAchieves`): created by the seed below when missing. Point not-configurable options at Knowledge; point Achieves-bearing options (e.g. AQ Coating) at Achieves.
-4. Point options at the desired template, or leave empty for Default.
-5. **Seed remaining bands** (Works with → Compatible options → Compare → Showcase) onto Default / Learn-first / Achieves, and Knowledge without Works with — dry-run then write:
+1. **Customization Detail Page — Default** (`customizationDetailPage`): Overview → Benefits & specs → … as needed. Publish.
+2. **Customization Detail Page — Learn-first** (`customizationDetailPageLearnFirst`): same overview shell; Benefits & specs for Get to know + Key properties. Publish.
+3. **Customization Detail Page — Knowledge** / **Achieves**: leave option `template` empty to auto-resolve, or set explicitly (shows on the layout’s **Used by** tab). Achieves = Configuration → Achieves on the overview section.
+4. **Migrate legacy overview `_type`s / drop `layout`** (once per dataset):
+
+```bash
+pnpm --filter @pakfactory/studio run migrate:cdp-overview-layout -- --dataset development
+pnpm --filter @pakfactory/studio run migrate:cdp-overview-layout -- --dataset development --confirm
+```
+
+5. **Seed create-only** — creates missing Default / Learn-first / Knowledge / Achieves stubs (unified overview + Benefits & specs → Works with → …; Knowledge omits Works with). **Never patches an existing CDP layout.** Get to know on an existing Knowledge doc that omits Benefits & specs comes from www inject when the option has why/specs.
 
 ```bash
 pnpm --filter @pakfactory/studio run seed:cdp-detail-pages -- --dataset development
 pnpm --filter @pakfactory/studio run seed:cdp-detail-pages -- --dataset development --confirm
 ```
 
-Stable keys: `cdp-overview-standard`, `cdp-overview-learn-first`, `cdp-works-with`, `cdp-compatible-options`, `cdp-compare`, `cdp-showcase`. Idempotent (inserts missing only). Creates stub Default / Learn-first / Knowledge / Achieves docs when absent. Re-runs retitle those four to **Customization Detail Page — …**. Overview and benefits are not rewritten on Default / Learn-first. www still injects Compatible options when the option has pairs and the template omits the type.
+Stable keys on new stubs: `cdp-overview`, `cdp-benefits-specs`, `cdp-works-with`, `cdp-compatible-options`, `cdp-compare`, `cdp-showcase`. www still injects Compatible options when the option has pairs and the template omits the type.
 
 ## Out of scope (this ticket)
 

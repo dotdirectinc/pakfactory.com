@@ -98,12 +98,14 @@ export const CUSTOMIZATION_DETAIL_PAGE_QUERY = /* groq */ `*[
 ][0]${CATALOG_INDEX_PAGE_PROJECTION}`
 
 /**
- * Prefer the option’s selected Customization Detail Page layout; fall back to Default id.
+ * One Customization Detail Page layout by document id (PROD-3127).
+ * www resolves the id in TS (`resolveCdpTemplateId`) from the option detail —
+ * do not inline PAGE_SECTIONS_PROJECTION for every auto-assign branch (Sanity
+ * API CDN rejects query bodies over 300 KB).
  */
-export const CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY = /* groq */ `coalesce(
-  *[_type == "customizationOption" && type->category->slug.current == $category && slug.current == $handle][0].template->${CATALOG_INDEX_PAGE_PROJECTION},
-  *[_id == "customizationDetailPage"][0]${CATALOG_INDEX_PAGE_PROJECTION}
-)`
+export const CUSTOMIZATION_DETAIL_PAGE_BY_ID_QUERY = /* groq */ `*[
+  _id == $id
+][0]${CATALOG_INDEX_PAGE_PROJECTION}`
 
 /** Default Solution Style Page layout (fallback when a style has no template). */
 export const SOLUTION_STYLE_PAGE_QUERY = /* groq */ `*[

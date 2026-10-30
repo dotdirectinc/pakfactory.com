@@ -1,26 +1,27 @@
 #!/usr/bin/env node
 /**
- * Seed Customization Detail Page templates (PROD-3112 / PROD-3124 / PROD-3126).
+ * Seed Customization Detail Page templates (PROD-3112 / PROD-3124 / PROD-3126 /
+ * PROD-3127 / PROD-3128).
  *
- * Ensures layout docs exist and inserts missing host-inherited bands, in this
- * order:
- *   customizationWorksWith
- *   → customizationCompatibleOptions (PROD-3124)
+ * CREATE-ONLY for missing layout docs. If a CDP layout already exists (any
+ * published or draft id), this script leaves it untouched — no band inserts,
+ * retitles, or chrome patches. Editors own existing templates.
+ *
+ * New stubs get `customizationOverview` (no layout field) plus host-inherited
+ * bands in this order:
+ *   customizationOverview
+ *   → customizationBenefitsSpecs (Get to know / Key properties)
+ *   → customizationWorksWith (omitted on Knowledge)
+ *   → customizationCompatibleOptions
  *   → customizationCompare
  *   → customizationShowcase
  *
- * Missing bands are inserted relative to neighbours (after Works with /
- * before Compare), not blindly appended — so a re-run on already-seeded
- * templates puts compatible options in the right place.
+ * www injects Benefits & specs when a live template omits the band but the
+ * option has why/specs copy — so existing Knowledge layouts still show Get to
+ * know without a seed rewrite.
  *
- * Default + Learn-first: does not seed overview or benefits (editors / other
- * setup own those). Knowledge + Achieves stubs get an overview when missing
- * (PROD-3127 / PROD-3128). Re-runs patch rail chrome on those overviews
- * (`showCta`, `showBookmark`, `configurationSource`) without rewriting `_type`.
- * Knowledge omits Works with.
- *
- * Stable `_key`s so re-runs are idempotent. Creates stub docs when missing.
- * Re-runs retitle existing docs to the canonical Studio labels.
+ * Stable `_key`s on new stubs. Creates Default / Learn-first / Knowledge /
+ * Achieves when absent.
  *
  * ⚠️ Written by an agent, RUN BY A HUMAN. Agents never write documents on any
  * dataset (AGENTS.md § Sanity content — agent guardrails).
@@ -47,7 +48,9 @@ const USAGE = `Usage:
 
   --dataset         REQUIRED. Which dataset to read/write. No env fallback.
   --confirm         Actually write. Without it the run is a dry run.
-  --yes-production  Second gate; required to write to production.`
+  --yes-production  Second gate; required to write to production.
+
+  Existing CDP layout docs are never modified — only missing ids are created.`
 
 const args = parseScriptArgs({usage: USAGE})
 const {confirm: apply} = args
@@ -82,20 +85,19 @@ const client = createClient({
   perspective: 'raw',
 })
 
+const BENEFITS_SPECS_KEY = 'cdp-benefits-specs'
 const WORKS_WITH_KEY = 'cdp-works-with'
 const COMPATIBLE_OPTIONS_KEY = 'cdp-compatible-options'
 const COMPARE_KEY = 'cdp-compare'
 const SHOWCASE_KEY = 'cdp-showcase'
-const OVERVIEW_STANDARD_KEY = 'cdp-overview-standard'
-const OVERVIEW_LEARN_FIRST_KEY = 'cdp-overview-learn-first'
-
-const OVERVIEW_TYPES = new Set([
-  'customizationOverviewStandard',
-  'customizationOverviewLearnFirst',
-])
+const OVERVIEW_KEY = 'cdp-overview'
 
 /** Chrome-only stubs — www host fills option data; headings fall back in React. */
 const REMAINING_BANDS = [
+  {
+    _type: 'customizationBenefitsSpecs',
+    _key: BENEFITS_SPECS_KEY,
+  },
   {
     _type: 'customizationWorksWith',
     _key: WORKS_WITH_KEY,
@@ -114,6 +116,14 @@ const REMAINING_BANDS = [
   },
 ]
 
+const DEFAULT_OVERVIEW = {
+  _type: 'customizationOverview',
+  _key: OVERVIEW_KEY,
+  showCta: true,
+  showBookmark: true,
+  configurationSource: 'properties',
+}
+
 const TARGETS = [
   {
     id: 'customizationDetailPage',
@@ -121,6 +131,7 @@ const TARGETS = [
     title: 'Customization Detail Page — Default',
     showStickyNav: false,
     includeWorksWith: true,
+    overview: {...DEFAULT_OVERVIEW},
   },
   {
     id: 'customizationDetailPageLearnFirst',
@@ -128,6 +139,7 @@ const TARGETS = [
     title: 'Customization Detail Page — Learn-first',
     showStickyNav: false,
     includeWorksWith: true,
+    overview: {...DEFAULT_OVERVIEW},
   },
   {
     id: 'customizationDetailPageKnowledge',
@@ -136,11 +148,8 @@ const TARGETS = [
     showStickyNav: false,
     includeWorksWith: false,
     overview: {
-      _type: 'customizationOverviewStandard',
-      _key: OVERVIEW_STANDARD_KEY,
+      ...DEFAULT_OVERVIEW,
       showCta: false,
-      showBookmark: true,
-      configurationSource: 'properties',
     },
   },
   {
@@ -150,53 +159,11 @@ const TARGETS = [
     showStickyNav: false,
     includeWorksWith: true,
     overview: {
-      _type: 'customizationOverviewLearnFirst',
-      _key: OVERVIEW_LEARN_FIRST_KEY,
-      showCta: true,
-      showBookmark: true,
+      ...DEFAULT_OVERVIEW,
       configurationSource: 'achieves',
     },
   },
 ]
-
-function bandAlreadyPresent(sections, band) {
-  return sections.some(
-    (s) => s?._key === band._key || s?._type === band._type,
-  )
-}
-
-/**
- * Insert `band` after the previous seeded neighbour, else before the next,
- * else append. Leaves existing order/chrome alone when the type or `_key`
- * is already on the template.
- */
-function insertBand(sections, band) {
-  if (bandAlreadyPresent(sections, band)) return false
-
-  const bandIndex = REMAINING_BANDS.findIndex((b) => b._key === band._key)
-  for (let i = bandIndex - 1; i >= 0; i--) {
-    const prev = REMAINING_BANDS[i]
-    const at = sections.findIndex(
-      (s) => s?._key === prev._key || s?._type === prev._type,
-    )
-    if (at >= 0) {
-      sections.splice(at + 1, 0, band)
-      return true
-    }
-  }
-  for (let i = bandIndex + 1; i < REMAINING_BANDS.length; i++) {
-    const next = REMAINING_BANDS[i]
-    const at = sections.findIndex(
-      (s) => s?._key === next._key || s?._type === next._type,
-    )
-    if (at >= 0) {
-      sections.splice(at, 0, band)
-      return true
-    }
-  }
-  sections.push(band)
-  return true
-}
 
 function bandsForTarget(target) {
   return target.includeWorksWith
@@ -204,40 +171,21 @@ function bandsForTarget(target) {
     : REMAINING_BANDS.filter((band) => band._type !== 'customizationWorksWith')
 }
 
-const OVERVIEW_CHROME_KEYS = ['showCta', 'showBookmark', 'configurationSource']
-
-function ensureOverview(sections, overview) {
-  if (!overview) return false
-  const at = sections.findIndex((s) => OVERVIEW_TYPES.has(s?._type))
-  if (at < 0) {
-    sections.unshift(overview)
-    return true
-  }
-  const current = sections[at]
-  let changed = false
-  const next = {...current}
-  for (const key of OVERVIEW_CHROME_KEYS) {
-    if (overview[key] === undefined) continue
-    if (current[key] !== overview[key]) {
-      next[key] = overview[key]
-      changed = true
-    }
-  }
-  if (changed) sections[at] = next
-  return changed
-}
-
-function ensureRemainingBands(existing, target) {
-  const sections = Array.isArray(existing) ? [...existing] : []
-  let changed = ensureOverview(sections, target.overview)
+/** Full section stack for a brand-new stub only. */
+function stubSections(target) {
+  const sections = []
+  if (target.overview) sections.push({...target.overview})
   for (const band of bandsForTarget(target)) {
-    if (insertBand(sections, band)) changed = true
+    sections.push({...band})
   }
-  return {sections, changed}
+  return sections
 }
 
 async function seed() {
   console.log(`\n🌱  CDP detail pages → ${DATASET} (${PROJECT_ID})\n`)
+  console.log(
+    '  Policy: existing layout docs are skipped; only missing ids are created.\n',
+  )
 
   const plans = []
   for (const target of TARGETS) {
@@ -246,49 +194,49 @@ async function seed() {
         _id,
         _type,
         title,
-        previewImage,
-        showStickyNav,
-        sections
+        "sectionCount": count(sections)
       }`,
       {id: target.id},
     )
-    const {sections, changed: bandsChanged} = ensureRemainingBands(
-      doc?.sections,
-      target,
-    )
-    const stickyChanged = doc?.showStickyNav !== target.showStickyNav
-    const titleChanged = (doc?.title?.trim() || '') !== target.title
-    const nextDoc = {
-      _id: target.id,
-      _type: target.type,
-      title: target.title,
-      showStickyNav: target.showStickyNav,
-      sections,
-    }
-    if (doc?.previewImage) nextDoc.previewImage = doc.previewImage
 
-    const isCreate = !doc
-    const changed = isCreate || bandsChanged || stickyChanged || titleChanged
+    if (doc) {
+      plans.push({
+        target,
+        isCreate: false,
+        changed: false,
+        nextDoc: null,
+        existingId: doc._id,
+        sectionCount: doc.sectionCount ?? 0,
+      })
+      continue
+    }
+
     plans.push({
       target,
-      isCreate,
-      changed,
-      nextDoc,
-      existingKeys: (doc?.sections ?? []).map((s) => s?._key).filter(Boolean),
+      isCreate: true,
+      changed: true,
+      nextDoc: {
+        _id: target.id,
+        _type: target.type,
+        title: target.title,
+        showStickyNav: target.showStickyNav,
+        sections: stubSections(target),
+      },
+      existingId: null,
+      sectionCount: 0,
     })
   }
 
   for (const plan of plans) {
-    const label = plan.isCreate ? 'CREATE' : plan.changed ? 'PATCH' : 'OK'
-    console.log(
-      `  [${label}] ${plan.target.id} (${plan.target.type}) — sections: ${plan.nextDoc.sections.length}`,
-    )
-    if (plan.changed && !plan.isCreate) {
-      const added = plan.nextDoc.sections
-        .map((s) => s._key)
-        .filter((k) => !plan.existingKeys.includes(k))
-      if (added.length) console.log(`           insert keys: ${added.join(', ')}`)
+    if (!plan.isCreate) {
+      console.log(
+        `  [SKIP] ${plan.target.id} — already exists (${plan.existingId}, ${plan.sectionCount} section(s))`,
+      )
+      continue
     }
+    console.log(
+      `  [CREATE] ${plan.target.id} (${plan.target.type}) — sections: ${plan.nextDoc.sections.length}`,
+    )
   }
 
   if (!apply) {
@@ -298,8 +246,8 @@ async function seed() {
     return
   }
 
-  const unchanged = plans.every((plan) => !plan.changed)
-  if (unchanged) {
+  const toWrite = plans.filter((plan) => plan.changed && plan.nextDoc)
+  if (toWrite.length === 0) {
     console.log(`\nNothing to do on dataset=${DATASET}.\n`)
     return
   }
@@ -310,12 +258,13 @@ async function seed() {
   }
 
   const tx = client.transaction()
-  for (const plan of plans) {
-    if (!plan.changed) continue
+  for (const plan of toWrite) {
     tx.createOrReplace(plan.nextDoc)
   }
   await tx.commit()
-  console.log('\n✅  CDP detail page templates written.\n')
+  console.log(
+    `\n✅  Created ${toWrite.length} CDP detail page template(s). Existing layouts unchanged.\n`,
+  )
 }
 
 seed().catch((err) => {

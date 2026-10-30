@@ -452,7 +452,8 @@ export const customizationOption = defineType({
       description:
         'Pick a Customization Detail Page layout — section arrangement (overview type + bands). ' +
         'Manage layouts under Main Website → Customization Pages → Customization Detail Pages. ' +
-        'Empty → seeded Default layout (`customizationDetailPage`).',
+        'Empty → www auto-picks from Where this appears: Not Configurable + Achieves → Achieves; ' +
+        'Not Configurable alone → Knowledge; otherwise Default (`customizationDetailPage`).',
       hidden: ({document}) => !hasDetailPage(document?.appearsIn),
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
@@ -460,7 +461,7 @@ export const customizationOption = defineType({
           if (!hasDetailPage(doc?.appearsIn)) return true
           return value
             ? true
-            : 'Options with a page should select a Customization Detail Page layout'
+            : 'Empty uses the auto layout from Where this appears (Knowledge / Achieves / Default). Pick a layout to override.'
         }).warning(),
     }),
     // ADR-024: Images / Videos / Lifestyle images / Lifestyle videos.

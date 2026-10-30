@@ -53,4 +53,11 @@ describe('resolveConfigurationFields', () => {
             [],
         );
     });
+
+    it('hides all selectors when source is none (No Configuration)', () => {
+        assert.deepEqual(
+            resolveConfigurationFields('none', properties, achieves),
+            [],
+        );
+    });
 });
