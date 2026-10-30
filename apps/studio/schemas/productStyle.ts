@@ -7,6 +7,7 @@ import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { conceptNotAlreadyOnParent } from '../lib/concept-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { entityFields } from '../lib/entity-id-field'
 import { FULL_STATUS_LIST, isParentOffStatus, STATUS_DESCRIPTION_TAIL } from '../lib/catalog-status'
@@ -120,6 +121,24 @@ export const productStyle = defineType({
             'customer would actually type; a term that only appears in trade documents belongs ' +
             'in the meta title instead.',
         ),
+    }),
+    // PROD-3218. The product side of the concept link, matching the field that has
+    // been on `customizationOption` since PROD-3206. A Glossary Term derives its
+    // "Available as packaging" list from these, so nothing is typed on the term.
+    //
+    // This is the level most construction concepts land on — Tuck End Boxes is an
+    // instance of Tuck End, and the products beneath it are not tagged again.
+    defineField({
+      name: 'glossaryTerm',
+      title: 'Concept it belongs to',
+      type: 'array',
+      group: GROUPS.content,
+      of: [{ type: 'reference', to: [{ type: 'glossaryTerm' }] }],
+      description:
+        'What this style is an instance of, never what it relates to — Tuck End Boxes belongs ' +
+        'to Tuck End. Tag here only when it is true of every product in the style; if only some ' +
+        'qualify, tag those instead. Empty is the normal case.',
+      validation: (Rule) => Rule.custom(conceptNotAlreadyOnParent('productLine')).warning(),
     }),
     defineField({
       name: 'productLine',

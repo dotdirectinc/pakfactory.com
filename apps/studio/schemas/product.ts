@@ -5,6 +5,7 @@ import { catalogMediaFields } from '../lib/catalog-media-fields'
 import { DIMENSION_INPUTS, AXIS_LABEL, usesAxis, type DimensionAxis } from '@pakfactory/sanity/dimension-inputs'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
+import { conceptNotAlreadyOnParent } from '../lib/concept-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
@@ -173,6 +174,25 @@ export const product = defineType({
             'customer would actually type; a term that only appears in trade documents belongs ' +
             'in the meta title instead.',
         ),
+    }),
+    // PROD-3218. The product side of the concept link, matching the field that has
+    // been on `customizationOption` since PROD-3206. A Glossary Term derives its
+    // "Available as packaging" list from these, so nothing is typed on the term.
+    //
+    // 🔴 Reach for this only when the concept is true of SOME products in a style
+    // and not all — a window variant inside a style where most have no window. When
+    // it is true of the whole style it belongs on the style, and the guard says so.
+    defineField({
+      name: 'glossaryTerm',
+      title: 'Concept it belongs to',
+      type: 'array',
+      group: GROUPS.content,
+      of: [{ type: 'reference', to: [{ type: 'glossaryTerm' }] }],
+      description:
+        'What this product is an instance of, never what it relates to. Tag here only when its ' +
+        'style does not already carry the concept — tagging both shows the same thing twice on ' +
+        'the term page. Empty is the normal case.',
+      validation: (Rule) => Rule.custom(conceptNotAlreadyOnParent('productStyle')).warning(),
     }),
     defineField({
       name: 'kind',

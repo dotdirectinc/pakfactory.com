@@ -607,3 +607,6 @@ export {
     PRODUCT_HAS_PAGE,
     PRODUCT_LISTED,
 } from './queries/status-gates';
+
+/** Glossary term page (PROD-3218). No route consumes these yet — PROD-3219 builds it. */
+export { GLOSSARY_TERM_QUERY, GLOSSARY_TERM_SLUGS_QUERY } from './queries/glossary';
