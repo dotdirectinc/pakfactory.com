@@ -27,6 +27,38 @@ test("organization emits the full company record when it has one", () => {
   ]);
 });
 
+test("organization carries the contact record Google reads", () => {
+  const node = organization({
+    name: "PakFactory",
+    url: "https://pakfactory.com",
+    foundingDate: "2015-01-01",
+    telephone: "+1 888-622-2819",
+    email: "quote@pakfactory.com",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "600 Alden Rd Ste 600",
+      addressLocality: "Markham",
+      addressRegion: "ON",
+      postalCode: "L3R 0E7",
+      addressCountry: "CA",
+    },
+  });
+
+  assert.equal(node.foundingDate, "2015-01-01");
+  assert.equal(node.telephone, "+1 888-622-2819");
+  assert.equal(node.email, "quote@pakfactory.com");
+  assert.deepEqual(node.address, {
+    "@type": "PostalAddress",
+    streetAddress: "600 Alden Rd Ste 600",
+    addressLocality: "Markham",
+    addressRegion: "ON",
+    postalCode: "L3R 0E7",
+    // Two-letter ISO code, never "Canada" — the reason the free-text field
+    // could not be used as-is (PROD-3231).
+    addressCountry: "CA",
+  });
+});
+
 test("organization omits every optional property when absent", () => {
   const node = organization({
     name: "PakFactory",

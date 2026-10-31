@@ -25,6 +25,17 @@ export type OrganizationInput = {
    * (PROD-3230/PROD-3231).
    */
   description?: string;
+  /** ISO 8601 date, e.g. "2015-01-01" */
+  foundingDate?: string;
+  /** E.164-ish, e.g. "+1 888-622-2819" */
+  telephone?: string;
+  email?: string;
+  /**
+   * A `PostalAddress` node. Built from the structured sub-fields rather than a
+   * free-text blob: `addressCountry` wants a two-letter ISO 3166-1 code, which a
+   * single string cannot reliably be split into (PROD-3231).
+   */
+  address?: Record<string, unknown>;
   /** Stable node id for @graph linking (absolute URI, often with #fragment) */
   id?: string;
 };
