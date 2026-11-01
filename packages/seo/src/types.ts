@@ -222,6 +222,20 @@ export type ServiceInput = {
   id?: string;
 };
 
+export type WebSiteInput = {
+  /** The site's name — what Google may show above a result instead of the domain */
+  name: string;
+  /** Absolute home-page URL, the domain or subdomain root */
+  url: string;
+  description?: string;
+  /** Other names for the site, best first; Google's fallback for the site name */
+  alternateName?: string[];
+  /** Organization node, or an `{ "@id" }` pointer to one in the same @graph */
+  publisher?: Record<string, unknown>;
+  /** Stable node id for @graph linking */
+  id?: string;
+};
+
 export type DefinedTermInput = {
   /** The term itself */
   name: string;
