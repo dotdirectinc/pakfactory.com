@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 
+import {formatLeadTimeBusinessDays} from '@/lib/copy/product-detail';
+
 import {buildProductDetailBreadcrumbs, buildProductDetailJsonLd} from './product-jsonld';
 import type {Product} from './types';
 
@@ -101,5 +103,52 @@ describe('PDP Organization — the node has to exist before brand can point at i
             false,
             'brand must not point at a node that is not in the graph',
         );
+    });
+});
+
+describe('PDP additionalProperty — lead time must say what the rail says (PROD-3232)', () => {
+    const props = (extra: Partial<Product>) => {
+        const nodes = JSON.parse(
+            buildProductDetailJsonLd(product(extra), null),
+        )['@graph'] as Record<string, unknown>[];
+        const prod = nodes.find((n) => n['@type'] === 'Product');
+        return (prod?.additionalProperty ?? []) as {
+            name: string;
+            value: string;
+        }[];
+    };
+
+    it('states the lead time the visible rail states, character for character', () => {
+        const leadTime = props({
+            leadTimeBusinessDaysMin: 20,
+            leadTimeBusinessDaysMax: 25,
+        }).find((pair) => pair.name === 'Lead time');
+
+        assert.ok(leadTime, 'a product with a lead time should declare one');
+        // Pinned to the rail's own formatter. If these ever diverge the markup
+        // contradicts the visible page, which is the real manual-action risk.
+        assert.equal(leadTime.value, formatLeadTimeBusinessDays(20, 25));
+        assert.equal(leadTime.value, '20\u201325 business days');
+    });
+
+    it('collapses a single fixed lead time exactly as the rail does', () => {
+        assert.equal(
+            props({
+                leadTimeBusinessDaysMin: 18,
+                leadTimeBusinessDaysMax: 18,
+            }).find((pair) => pair.name === 'Lead time')?.value,
+            formatLeadTimeBusinessDays(18, 18),
+        );
+    });
+
+    it('omits the pair entirely when there is no lead-time data', () => {
+        const pairs = props({moq: 500});
+        assert.equal(
+            pairs.some((pair) => pair.name === 'Lead time'),
+            false,
+            'no lead time is an absent pair, never an empty one',
+        );
+        // MOQ still ships, so the absence is specific rather than a blanket drop.
+        assert.ok(pairs.some((pair) => pair.name === 'Minimum order quantity'));
     });
 });
