@@ -23,6 +23,20 @@ export type WwwGlobalSettings = {
   socialProfileUrls?: string[] | null;
   /** Company logo asset URL — `Organization.logo`. */
   organizationLogoUrl?: string | null;
+  /** `Organization.foundingDate` — ISO date. */
+  companyFoundingDate?: string | null;
+  /** `Organization.email`. The press address is a separate field and stays separate. */
+  companyEmail?: string | null;
+  /** `Organization.telephone`. */
+  companyPhone?: string | null;
+  /** Structured address — the parts a `PostalAddress` node needs. */
+  companyPostalAddress?: {
+    streetAddress?: string | null;
+    addressLocality?: string | null;
+    addressRegion?: string | null;
+    postalCode?: string | null;
+    addressCountry?: string | null;
+  } | null;
   /** Global OG image fallback for case studies and other www pages. */
   defaultOgImageUrl?: string | null;
   /** Editor-managed favicon (PROD-2200) — falls back to `public/favicon.ico`. */
@@ -76,7 +90,38 @@ export type CompanyRecord = {
   logoUrl?: string;
   description?: string;
   sameAs?: string[];
+  foundingDate?: string;
+  telephone?: string;
+  email?: string;
+  /** A schema.org `PostalAddress`, already shaped — omitted when every part is blank. */
+  address?: Record<string, unknown>;
 };
+
+/**
+ * The address parts as a `PostalAddress` node, or undefined when nothing is set.
+ *
+ * Built part by part rather than from the retired free-text field: a single
+ * string cannot be split reliably, and `addressCountry` wants a two-letter ISO
+ * code specifically (PROD-3231). Each part is omitted when blank, so a partly
+ * filled address still produces a valid node instead of blank-valued keys.
+ */
+function postalAddress(
+  parts: WwwGlobalSettings["companyPostalAddress"],
+): Record<string, unknown> | undefined {
+  if (!parts) return undefined;
+  const node: Record<string, unknown> = {};
+  const put = (key: string, value?: string | null): void => {
+    const trimmed = value?.trim();
+    if (trimmed) node[key] = trimmed;
+  };
+  put("streetAddress", parts.streetAddress);
+  put("addressLocality", parts.addressLocality);
+  put("addressRegion", parts.addressRegion);
+  put("postalCode", parts.postalCode);
+  put("addressCountry", parts.addressCountry);
+  if (Object.keys(node).length === 0) return undefined;
+  return { "@type": "PostalAddress", ...node };
+}
 
 /**
  * The company record for structured data, or **null when there is no company
@@ -95,10 +140,18 @@ export async function fetchCompanyRecord(): Promise<CompanyRecord | null> {
   const sameAs = (settings?.socialProfileUrls ?? [])
     .map((url) => url?.trim())
     .filter((url): url is string => Boolean(url));
+  const foundingDate = settings?.companyFoundingDate?.trim();
+  const telephone = settings?.companyPhone?.trim();
+  const email = settings?.companyEmail?.trim();
+  const address = postalAddress(settings?.companyPostalAddress);
   return {
     name,
     ...(logoUrl ? { logoUrl } : {}),
     ...(description ? { description } : {}),
     ...(sameAs.length ? { sameAs } : {}),
+    ...(foundingDate ? { foundingDate } : {}),
+    ...(telephone ? { telephone } : {}),
+    ...(email ? { email } : {}),
+    ...(address ? { address } : {}),
   };
 }

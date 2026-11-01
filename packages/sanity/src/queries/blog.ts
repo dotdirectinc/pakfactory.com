@@ -945,6 +945,12 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   // added, and nothing read it until PROD-3230. Blank URLs are dropped here so
   // no caller has to.
   "socialProfileUrls": organization.socialLinks[defined(url)].url,
+  "companyFoundingDate": organization.foundingDate,
+  "companyEmail": organization.contact.email,
+  "companyPhone": organization.contact.phone,
+  "companyPostalAddress": organization.contact.postalAddress,
+  // 🔴 Retired free-text address (PROD-3231). Still projected only because the
+  // blog types it; nothing renders it. Goes when the field does.
   "companyAddress": organization.contact.address,
   "watermark": watermark{
     "enabled": coalesce(enabled, true),

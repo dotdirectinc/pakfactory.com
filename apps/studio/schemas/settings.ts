@@ -100,13 +100,25 @@ export const settings = defineType({
       type: 'object',
       group: 'company',
       description:
-        'Company identity. Used for the blog header logo and in structured data.',
+        'The one company record, shared by the main site and the blog — two copies ' +
+        'would eventually disagree, and Google would see one company contradicting ' +
+        'itself. Feeds the Organization data Google reads, the blog header logo, and ' +
+        'the About and Media cards on press releases.',
       options: { collapsible: true, collapsed: false },
       fields: [
+        // ⚠️ The key is `legalName` but the value is schema.org `name` — every query
+        // maps it that way ("companyName": organization.legalName). If the registered
+        // legal entity is ever needed it gets its own field; never put it here. A
+        // rename is a dataset migration plus two GROQ queries, so the label and this
+        // comment carry the distinction instead (PROD-3231).
         defineField({
           name: 'legalName',
           title: 'Company name',
           type: 'string',
+          description:
+            'The name the company goes by publicly. Emitted as the organisation name ' +
+            "in Google's structured data on every page, and shown in the blog header. " +
+            'Use the brand name, not the registered legal entity.',
           validation: (Rule) => Rule.required(),
         }),
         defineField(
@@ -118,8 +130,9 @@ export const settings = defineType({
             options: { hotspot: true },
             description:
               
-                'Shown in the blog header in place of the PakFactory wordmark, and in ' +
-                'structured data.',
+                'Shown in the blog header in place of the PakFactory wordmark, and sent ' +
+                'to Google as the company logo, where it can appear beside the company ' +
+                'name in search results.',
             fields: [
               defineField({
                 name: 'alt',
@@ -132,7 +145,14 @@ export const settings = defineType({
             validation: (Rule) => Rule.required(),
           }),
         ),
-        defineField({ name: 'foundingDate', title: 'Founding date', type: 'date' }),
+        defineField({
+          name: 'foundingDate',
+          title: 'Founding date',
+          type: 'date',
+          description:
+            'The date PakFactory was founded. Sent to Google as part of the company ' +
+            'record — it does not appear anywhere on the site.',
+        }),
         // Named `description`, not `boilerplate`: it matches
         // schema.org/Organization.description, which is where it is going
         // anyway, and "boilerplate" is press jargon that means nothing to
@@ -152,9 +172,9 @@ export const settings = defineType({
           rows: 4,
           description:
             'The standard "About PakFactory" paragraph, around 60 words. Shown at the foot ' +
-            'of every press release for journalists to quote, and used as the company ' +
-            'description in structured data. Changing it changes it everywhere, including ' +
-            'on past releases. Leave blank to hide the "About" card on releases.',
+            'of every press release for journalists to quote, and sent to Google as the ' +
+            'company description. Changing it changes it everywhere, including on past ' +
+            'releases. Leave blank to hide the "About" card on releases.',
         }),
         defineField({
           name: 'contact',
@@ -162,7 +182,15 @@ export const settings = defineType({
           type: 'object',
           options: { collapsible: true, collapsed: true },
           fields: [
-            defineField({ name: 'email', title: 'Email', type: 'string' }),
+            defineField({
+              name: 'email',
+              title: 'Email',
+              type: 'string',
+              description:
+                'The general contact address. Sent to Google as part of the company ' +
+                'record. Press enquiries use the field below instead — there is no ' +
+                'fallback between the two.',
+            }),
             defineField({
               name: 'pressEmail',
               title: 'Media enquiries email',
@@ -172,8 +200,76 @@ export const settings = defineType({
                 '"Media contact" card at the foot of every release. Leave blank to hide that ' +
                 'card — there is no fallback to the general contact email.',
             }),
-            defineField({ name: 'phone', title: 'Phone', type: 'string' }),
-            defineField({ name: 'address', title: 'Address', type: 'text', rows: 2 }),
+            defineField({
+              name: 'phone',
+              title: 'Phone',
+              type: 'string',
+              description:
+                'The main phone number, in international format (+1 …). Sent to Google ' +
+                'as part of the company record — it does not appear anywhere on the site.',
+            }),
+            // 🔴 Retired in favour of `postalAddress` (PROD-3231). A single string
+            // cannot be split reliably into the parts a footer, a contact page and
+            // schema.org each need separately — `addressCountry` alone wants a
+            // two-letter ISO code. Kept and populated per Conventions §4.3: mark
+            // deprecated, migrate readers, remove later. Nothing reads it today.
+            defineField({
+              name: 'address',
+              title: 'Address (old, free text)',
+              type: 'text',
+              rows: 2,
+              deprecated: {
+                reason:
+                  'Replaced by the structured Address below. Copy the parts across; ' +
+                  'this field is read by nothing.',
+              },
+            }),
+            defineField({
+              name: 'postalAddress',
+              title: 'Address',
+              type: 'object',
+              description:
+                'The company address, split into parts so a footer, a contact page and ' +
+                'Google can each use the pieces they need. Nothing on the site renders ' +
+                'it yet — it is held here ready for when one does.',
+              options: { collapsible: true, collapsed: false },
+              fields: [
+                defineField({
+                  name: 'streetAddress',
+                  title: 'Street address',
+                  type: 'string',
+                  description: 'Street, number and unit, e.g. 600 Alden Rd Ste 600.',
+                }),
+                defineField({
+                  name: 'addressLocality',
+                  title: 'City',
+                  type: 'string',
+                }),
+                defineField({
+                  name: 'addressRegion',
+                  title: 'Province / state',
+                  type: 'string',
+                  description: 'Short form, e.g. ON.',
+                }),
+                defineField({
+                  name: 'postalCode',
+                  title: 'Postal code',
+                  type: 'string',
+                }),
+                defineField({
+                  name: 'addressCountry',
+                  title: 'Country code',
+                  type: 'string',
+                  description:
+                    'Two-letter country code — CA, not Canada. Google expects the code, ' +
+                    'and the country name is ignored.',
+                  validation: (Rule) =>
+                    Rule.uppercase()
+                      .length(2)
+                      .error('Two letters, e.g. CA'),
+                }),
+              ],
+            }),
           ],
         }),
       ],

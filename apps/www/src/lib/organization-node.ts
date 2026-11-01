@@ -28,6 +28,10 @@ export function companyOrganizationNode(record: CompanyRecord | null): {
             ...(record.logoUrl ? {logo: record.logoUrl} : {}),
             ...(record.description ? {description: record.description} : {}),
             ...(record.sameAs?.length ? {sameAs: record.sameAs} : {}),
+            ...(record.foundingDate ? {foundingDate: record.foundingDate} : {}),
+            ...(record.telephone ? {telephone: record.telephone} : {}),
+            ...(record.email ? {email: record.email} : {}),
+            ...(record.address ? {address: record.address} : {}),
         }),
     };
 }
