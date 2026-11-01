@@ -7,6 +7,7 @@ import {
 } from '@pakfactory/seo';
 
 import type {Product} from '@/lib/catalog/types';
+import {formatLeadTimeBusinessDays} from '@/lib/copy/product-detail';
 import {companyOrganizationNode} from '@/lib/organization-node';
 import type {CompanyRecord} from '@/lib/www-global-settings';
 import {absoluteUrl} from '@/lib/site';
@@ -93,8 +94,16 @@ function dimensionSummary(product: Product): string | null {
 /**
  * The manufacturing facts a PDP states that schema.org has no property for.
  *
- * Lead time is buyer copy on the PDP rail (PROD-3200); schema.org has no
- * standard property for manufacturing lead time, so it stays out of JSON-LD.
+ * `additionalProperty` is the schema.org slot for exactly this — facts with no
+ * property of their own. MOQ and lead time are the two a buyer asks about, so
+ * both belong here (PROD-3232). An earlier comment claimed lead time stayed out
+ * because schema.org has no property for it; that is the reason to use
+ * `additionalProperty`, not the reason to omit.
+ *
+ * 🔴 Lead time is built with `formatLeadTimeBusinessDays`, the same formatter
+ * the visible rail uses (`product-request-rail.tsx`). Never format it again
+ * here: markup that disagrees with the page is the one real manual-action risk
+ * in this file, and two copies of the formatting would eventually disagree.
  */
 function productProperties(product: Product): {name: string; value: string}[] {
     const properties: {name: string; value: string}[] = [];
@@ -103,6 +112,13 @@ function productProperties(product: Product): {name: string; value: string}[] {
             name: 'Minimum order quantity',
             value: String(product.moq),
         });
+    }
+    const leadTime = formatLeadTimeBusinessDays(
+        product.leadTimeBusinessDaysMin,
+        product.leadTimeBusinessDaysMax,
+    );
+    if (leadTime) {
+        properties.push({name: 'Lead time', value: leadTime});
     }
     const dimensions = dimensionSummary(product);
     if (dimensions) {
