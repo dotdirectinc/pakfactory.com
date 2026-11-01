@@ -21,6 +21,7 @@ export type {
   ProfilePageInput,
   ServiceInput,
   WebPageInput,
+  WebSiteInput,
 } from "./types";
 export { SCHEMA_CONTEXT } from "./types";
 
@@ -40,6 +41,7 @@ export { product } from "./generators/product";
 export { profilePage } from "./generators/profilePage";
 export { service } from "./generators/service";
 export { webPage } from "./generators/webPage";
+export { website } from "./generators/website";
 
 export { videoObject } from "./generators/videoObject";
 export { jsonLdGraph, serializeJsonLd } from "./serialize";
