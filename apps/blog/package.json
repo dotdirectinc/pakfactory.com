@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start --port ${PORT:-3004}",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
@@ -44,6 +45,7 @@
     "eslint-config-next": "^16.2.3",
     "postcss": "^8.5.1",
     "tailwindcss": "^4.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.3"
   }
 }
