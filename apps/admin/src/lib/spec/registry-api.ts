@@ -249,6 +249,39 @@ export async function saveOptionEdit(changesetId: string, edit: { kind: OptionEd
   return call<{ revision: number | null }>(`/api/v1/changesets/${encodeURIComponent(changesetId)}/option-edits`, { method: "POST", body: edit });
 }
 
+// ── A new property's Register frame (PROD-3169) ─────────────────────────────────
+
+export type PropertyStream = "CUS" | "PRD" | "ALL";
+
+/** GET /changesets/:id/property-edit — the mnemonic and stream as they stand, polled while the frame is open. */
+export type PropertyEditState = {
+  state: string;
+  approvedBy: string | null;
+  discardedBy: string | null;
+  replacedBy: string | null;
+  /** Approve sends this; the server refuses a stale one. */
+  revision: number;
+  editedBy: string | null;
+  editedAt: string | null;
+  proposed: { mnemonic: string; stream: PropertyStream };
+  mnemonic: string | null;
+  stream: PropertyStream | null;
+  /** The registered code, once approved. */
+  code: string | null;
+  /** Why the mnemonic as it stands cannot be approved; null when it can. */
+  problem: string | null;
+  streams: PropertyStream[];
+};
+
+export async function getPropertyEdit(changesetId: string) {
+  return call<PropertyEditState>(`/api/v1/changesets/${encodeURIComponent(changesetId)}/property-edit`);
+}
+
+/** Save the reviewer's mnemonic and / or stream. */
+export async function savePropertyEdit(changesetId: string, edit: { mnemonic?: string; stream?: PropertyStream }) {
+  return call<{ revision: number | null }>(`/api/v1/changesets/${encodeURIComponent(changesetId)}/property-edit`, { method: "POST", body: edit });
+}
+
 // ── Catalog sync (PROD-2751) ─────────────────────────────────────────────────
 
 export type SyncRunState = "requested" | "running" | "done" | "failed";
