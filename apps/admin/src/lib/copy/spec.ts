@@ -877,3 +877,32 @@ export const ADMIN_SPEC_OPTION_EDIT_COPY = {
   saveFailed: (error: string) => `Not saved: ${error}`,
   readOnly: "You can view this frame; editing needs approval rights.",
 } as const;
+
+/** A new property's Register frame (PROD-3169): its mnemonic and stream are chosen before approval. */
+export const ADMIN_SPEC_PROPERTY_EDIT_COPY = {
+  heading: "Register this property",
+  lead: "Its mnemonic and stream are proposed. Change either before approving: both are permanent once approved. Every change is saved for everyone looking at this frame; whoever approves first decides.",
+  mnemonic: "Mnemonic",
+  mnemonicHelp: "3 letters. Its values' codes carry it (PVA-ABC-…), so it must be unique across every kind.",
+  save: "Save",
+  saving: "Saving…",
+  proposed: (m: string) => `Proposed: ${m}`,
+  stream: "Stream",
+  streamHelp: "What the property describes. Its code names it (PTY-ALL-…).",
+  streams: {
+    CUS: { label: "CUS — customizations", help: "Stated on customization options" },
+    PRD: { label: "PRD — products", help: "Stated on products" },
+    ALL: { label: "ALL — both", help: "Stated on products and customization options" },
+  },
+  registeredAs: (code: string, mnemonic: string) => `Registered as ${code}, mnemonic ${mnemonic}.`,
+  valuesNext: "Its values are proposed on the next Sync Changes, once its code is written to Studio.",
+  editedBy: (who: string, at: string) => `Last edit by ${who}, ${at}.`,
+  approvedBy: (who: string) => `Approved by ${who}. This frame is closed.`,
+  discardedBy: (who: string) => `Discarded by ${who}. This frame is closed.`,
+  replaced: "This frame was replaced by a newer Sync Changes — opening the new one…",
+  openReplacement: "Open the new frame",
+  notThreeLetters: "Enter 3 letters.",
+  unsaved: (saved: string) => `The mnemonic is not saved — Approve would register ${saved}. Save it first.`,
+  saveFailed: (error: string) => `Not saved: ${error}`,
+  readOnly: "You can view this frame; editing needs approval rights.",
+} as const;

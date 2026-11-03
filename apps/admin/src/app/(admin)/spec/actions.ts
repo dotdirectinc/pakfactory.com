@@ -3,7 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { SPEC_RULES_TAG } from "@/lib/spec/cache";
 import { ADMIN_SPEC_COPY } from "@/lib/copy/spec";
-import { decideChangeset, dismissSyncRun, getOptionCandidates, getOptionEdits, saveOptionEdit, type OptionCandidates, type OptionEditKind, type OptionEditState, getSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type NotionFieldGroup, type RelationsOwnerValue } from "@/lib/spec/registry-api";
+import { decideChangeset, dismissSyncRun, getOptionCandidates, getOptionEdits, getPropertyEdit, saveOptionEdit, savePropertyEdit, type PropertyEditState, type PropertyStream, type OptionCandidates, type OptionEditKind, type OptionEditState, getSyncRun, requestSyncRun, setDocumentExclusion, setRelationsOwner, type NotionFieldGroup, type RelationsOwnerValue } from "@/lib/spec/registry-api";
 
 /** `stillRunning`: the gateway gave up on an approve that the server may yet finish (QA 2026-10-26). */
 export type DecisionResult = { ok: true } | { ok: false; error: string; stillRunning?: boolean };
@@ -127,5 +127,20 @@ export async function saveOptionEditAction(
   edit: { kind: OptionEditKind; target: string; selected: boolean; reason?: string | null },
 ): Promise<{ ok: true; revision: number | null } | { ok: false; error: string }> {
   const res = await saveOptionEdit(changesetId, edit);
+  return res.ok ? { ok: true, revision: res.data.revision } : { ok: false, error: res.error };
+}
+
+/** A property Register frame's mnemonic and stream as they stand (PROD-3169), read every 3 s while it is open. */
+export async function propertyEditStateAction(changesetId: string): Promise<{ ok: true; data: PropertyEditState } | { ok: false; error: string }> {
+  const res = await getPropertyEdit(changesetId);
+  return res.ok ? { ok: true, data: res.data } : { ok: false, error: res.error };
+}
+
+/** Save the mnemonic and / or stream on a property Register frame, as the signed-in person. */
+export async function savePropertyEditAction(
+  changesetId: string,
+  edit: { mnemonic?: string; stream?: PropertyStream },
+): Promise<{ ok: true; revision: number | null } | { ok: false; error: string }> {
+  const res = await savePropertyEdit(changesetId, edit);
   return res.ok ? { ok: true, revision: res.data.revision } : { ok: false, error: res.error };
 }

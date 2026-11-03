@@ -4,8 +4,9 @@ import { SpecFrameImpactNow } from "@/components/spec/spec-frame-impact-now";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
-import { approvedFrames, getChangesetDetail, getOptionCandidates, getOptionEdits } from "@/lib/spec/registry-api";
+import { approvedFrames, getChangesetDetail, getOptionCandidates, getOptionEdits, getPropertyEdit } from "@/lib/spec/registry-api";
 import { SpecOptionFrameEditor } from "@/components/spec/spec-option-frame-editor";
+import { SpecPropertyFrameEditor } from "@/components/spec/spec-property-frame-editor";
 import type { ProposalRow } from "@/lib/spec/option-frame-rows";
 import { blockedBy, dependsOn } from "@/lib/spec/prerequisites";
 import { canApprove, requireRegistryGrant } from "@/lib/spec/require-grant";
@@ -63,6 +64,9 @@ export default async function SpecChangesetPage({
     : [null, null];
   const optionEditor = optionRules && optionEdits?.ok && optionCandidates?.ok ? { edits: optionEdits.data, candidates: optionCandidates.data } : null;
   const sentences = Array.isArray(cs.summary?.sentences) ? (cs.summary.sentences as string[]) : [];
+  // A new property's Register frame (PROD-3169): its mnemonic and stream are chosen on the frame.
+  const registration = cs.summary?.registration as { kind?: string; title?: string } | undefined;
+  const propertyEdit = registration?.kind === "property" ? await getPropertyEdit(cs.id) : null;
 
   return (
     // An option frame's two side-by-side tables get the wider page (PROD-3167).
@@ -99,6 +103,18 @@ export default async function SpecChangesetPage({
           {(optionEdits && !optionEdits.ok ? optionEdits.error : null) ?? (optionCandidates && !optionCandidates.ok ? optionCandidates.error : null)}
         </p>
       ) : null}
+      {propertyEdit?.ok ? (
+        <SpecPropertyFrameEditor
+          changesetId={cs.id}
+          title={registration?.title ?? ""}
+          initial={propertyEdit.data}
+          itemCount={items.length}
+          canEdit={canApprove(me)}
+          blockedBy={blocked}
+        />
+      ) : propertyEdit && !propertyEdit.ok ? (
+        <p role="alert" className="text-sm text-destructive">{propertyEdit.error}</p>
+      ) : null}
       {cs.source === "spec-edit" || cs.summary?.standardOffers || (optionRules && !optionEditor) ? <SpecEditSummary summary={cs.summary ?? {}} /> : null}
 
       {/* A pending option frame's items are rebuilt from the edits at approval: the editor above is the list. */}
@@ -127,7 +143,7 @@ export default async function SpecChangesetPage({
           {cs.source === "spec-edit" ? <SpecFrameImpactNow items={items} summary={cs.summary ?? {}} /> : null}
           {cs.source === "spec-edit" ? <SpecFrameOverrides changesetId={cs.id} /> : null}
           {resyncKind ? <SpecResyncButton kind={resyncKind} dataset={resyncDataset} /> : null}
-          {optionEditor ? null : <SpecDecisionBar
+          {optionEditor || propertyEdit ? null : <SpecDecisionBar
             changesetId={cs.id}
             itemCount={items.length}
             excludedCount={items.filter((i) => i.excluded_at).length}
