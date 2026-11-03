@@ -15,8 +15,8 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  *
  * ⚠️ The rule nothing enforces: a customization page must PULL this definition,
  * not write its own — the model's named weakest point. One `definition` field,
- * links allowed; plain text is derived for the tooltip / index row / structured
- * data, so nothing is stored twice.
+ * links allowed; plain text is derived for the tooltip and structured data, so
+ * nothing is stored twice. The /glossary index does not show it (D86).
  */
 export const glossaryTerm = defineType({
   name: 'glossaryTerm',
@@ -67,8 +67,8 @@ export const glossaryTerm = defineType({
       group: GROUPS.content,
       description:
         'Two sentences. What the word means to anyone in the industry — true whether or not we ' +
-        'offer it. This is the gloss shown on the glossary index and in tooltips, so it has to ' +
-        'stand alone. Never write "we" here.',
+        'offer it. It opens this term\'s own page and is shown in tooltips elsewhere on the ' +
+        'site, so it has to stand alone. Never write "we" here.',
       of: [
         {
           type: 'block',
