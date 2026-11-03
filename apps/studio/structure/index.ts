@@ -1082,7 +1082,7 @@ export const newsroomStructure = (
  *  Guide · Help Article). FAQ · Help Category · Dieline join when they exist. */
 export const resourcesWorkspaceStructure = (
     S: StructureBuilder,
-    _context: StructureResolverContext,
+    context: StructureResolverContext,
 ) =>
     S.list()
         .title('Resources')
@@ -1102,11 +1102,15 @@ export const resourcesWorkspaceStructure = (
                 .title('Glossary Terms')
                 .schemaType('glossaryTerm')
                 .child(S.documentTypeList('glossaryTerm').title('Glossary Terms')),
-            S.listItem()
-                .title('Glossary Groups')
-                .icon(TagIcon)
-                .schemaType('glossaryGroup')
-                .child(S.documentTypeList('glossaryGroup').title('Glossary Groups')),
+            // Drag-to-order (PROD-3285), same as Product Lines. The drag order is the
+            // topic order on the /glossary index's By topic view (D77, D86).
+            orderableList({
+                type: 'glossaryGroup',
+                navTitle: 'Glossary Groups',
+                icon: TagIcon,
+                S,
+                context,
+            }),
             S.listItem()
                 .title('Guides')
                 .schemaType('guide')
