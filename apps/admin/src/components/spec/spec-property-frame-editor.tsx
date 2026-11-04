@@ -9,11 +9,13 @@ import { Label } from "@pakfactory/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@pakfactory/ui/components/radio-group";
 import { propertyEditStateAction, savePropertyEditAction } from "@/app/(admin)/spec/actions";
 import { SpecDecisionBar } from "@/components/spec/spec-decision-bar";
-import { ADMIN_SPEC_PROPERTY_EDIT_COPY as COPY } from "@/lib/copy/spec";
-import type { PropertyEditState, PropertyStream } from "@/lib/spec/registry-api";
+import { ADMIN_SPEC_MNEMONIC_KIND_COPY, ADMIN_SPEC_PROPERTY_EDIT_COPY as COPY } from "@/lib/copy/spec";
+import type { MnemonicFrameKind, PropertyEditState, PropertyStream } from "@/lib/spec/registry-api";
 
 type Props = {
   changesetId: string;
+  /** property, line, solution or category (PROD-3170): only a property has a stream. */
+  kind: MnemonicFrameKind;
   title: string;
   initial: PropertyEditState;
   itemCount: number;
@@ -28,8 +30,11 @@ const MNEMONIC = /^[A-Z]{3}$/;
  * code names are proposed by Sync Changes; the reviewer may change either before approving. Shared and
  * saved, no lock: the page reads the frame every 3 s while it is visible and pending, and Approve sends the
  * revision on screen — the server refuses a stale one, and mints the code with what was approved.
+ *
+ * A new line, solution or customization category's Register frame (PROD-3170) is the same without a stream.
  */
-export function SpecPropertyFrameEditor({ changesetId, title, initial, itemCount, canEdit, blockedBy }: Props) {
+export function SpecPropertyFrameEditor({ changesetId, kind, title, initial, itemCount, canEdit, blockedBy }: Props) {
+  const K = ADMIN_SPEC_MNEMONIC_KIND_COPY[kind];
   const router = useRouter();
   const [edit, setEdit] = useState(initial);
   const [mnemonic, setMnemonic] = useState(initial.mnemonic ?? "");
@@ -83,8 +88,8 @@ export function SpecPropertyFrameEditor({ changesetId, title, initial, itemCount
     <section className="flex flex-col gap-4 rounded-md border border-border p-4">
       <div aria-live="polite" aria-atomic="true" className="sr-only">{decided ?? (edit.replacedBy ? COPY.replaced : "")}</div>
       <div className="flex flex-col gap-1">
-        <h2 className="text-sm font-medium text-foreground">{COPY.heading} · {title}</h2>
-        {editable ? <p className="text-sm text-muted-foreground">{COPY.lead}</p> : null}
+        <h2 className="text-sm font-medium text-foreground">{K.heading} · {title}</h2>
+        {editable ? <p className="text-sm text-muted-foreground">{K.lead}</p> : null}
         {draft && !canEdit ? <p className="text-sm text-muted-foreground">{COPY.readOnly}</p> : null}
         {edit.editedBy && edit.editedAt ? (
           <p className="text-xs text-muted-foreground">{COPY.editedBy(edit.editedBy, new Date(edit.editedAt).toLocaleTimeString())}</p>
@@ -101,10 +106,10 @@ export function SpecPropertyFrameEditor({ changesetId, title, initial, itemCount
       {edit.state === "approved" && edit.code && edit.mnemonic ? (
         <div className="flex flex-col gap-1">
           <p className="text-sm text-foreground">{COPY.registeredAs(edit.code, edit.mnemonic)}</p>
-          <p className="text-sm text-muted-foreground">{COPY.valuesNext}</p>
+          <p className="text-sm text-muted-foreground">{K.next}</p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className={`grid gap-6 ${edit.streams.length ? "sm:grid-cols-2" : ""}`}>
           <form
             className="flex flex-col gap-2"
             onSubmit={(e) => { e.preventDefault(); if (editable && typedValid && unsaved) void save({ mnemonic: typed }); }}
@@ -128,13 +133,13 @@ export function SpecPropertyFrameEditor({ changesetId, title, initial, itemCount
               ) : null}
             </div>
             <p id={`${mnemonicId}-help`} className="text-xs text-muted-foreground">
-              {COPY.mnemonicHelp} {edit.proposed.mnemonic !== edit.mnemonic ? COPY.proposed(edit.proposed.mnemonic) : null}
+              {K.mnemonicHelp} {edit.proposed.mnemonic !== edit.mnemonic ? COPY.proposed(edit.proposed.mnemonic) : null}
             </p>
             {unsaved && typed && !typedValid ? <p className="text-sm text-destructive">{COPY.notThreeLetters}</p> : null}
             {!unsaved && edit.problem ? <p role="alert" className="text-sm text-destructive">⚠ {edit.problem}</p> : null}
           </form>
 
-          <div className="flex flex-col gap-2">
+          {edit.streams.length ? <div className="flex flex-col gap-2">
             <Label id={streamId}>{COPY.stream}</Label>
             <RadioGroup
               aria-labelledby={streamId}
@@ -153,7 +158,7 @@ export function SpecPropertyFrameEditor({ changesetId, title, initial, itemCount
               ))}
             </RadioGroup>
             <p className="text-xs text-muted-foreground">{COPY.streamHelp}</p>
-          </div>
+          </div> : null}
         </div>
       )}
 
