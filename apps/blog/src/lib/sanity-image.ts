@@ -127,6 +127,31 @@ export const sanityImageLoader: ImageLoader = ({ src, width, quality }) => {
   }
 };
 
+/** Thumbnails are tiny, so the extra bytes for a cleaner encode are negligible. */
+const SQUARE_THUMBNAIL_QUALITY = 90;
+
+/**
+ * `next/image` loader for **square, object-cover thumbnails** (PROD-3210).
+ *
+ * {@link sanityImageLoader} sizes by width with `fit=max`, so a 16:9 source at
+ * `w=96` comes back 96×54. Covering a square box then stretches that 54px
+ * height to fill it, which blurs the thumbnail. This loader asks the CDN for a
+ * `width`×`width` centre crop instead, so the delivered pixels match the box.
+ */
+export const sanitySquareImageLoader: ImageLoader = ({ src, width, quality }) => {
+  try {
+    const url = new URL(src);
+    url.searchParams.set("w", String(width));
+    url.searchParams.set("h", String(width));
+    url.searchParams.set("q", String(quality ?? SQUARE_THUMBNAIL_QUALITY));
+    url.searchParams.set("auto", "format");
+    url.searchParams.set("fit", "crop");
+    return url.toString();
+  } catch {
+    return src;
+  }
+};
+
 /** True when `src` is a Sanity CDN URL we can resize via {@link sanityImageLoader}. */
 export function isSanityCdnUrl(src: string): boolean {
   try {

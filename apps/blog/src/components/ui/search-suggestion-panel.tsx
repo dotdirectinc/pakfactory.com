@@ -5,12 +5,11 @@ import {Folder, Tag} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 import type {SearchSuggestion, SearchSuggestTab} from '@/lib/algolia-suggest';
 import {SearchHighlight} from '@/components/ui/search-highlight';
-import {SanityImage} from '@/components/ui/sanity-image';
 import {
     SearchSuggestTabs,
     type SearchSuggestTabOption,
 } from '@/components/ui/search-suggest-tabs';
-import {isSanityCdnUrl} from '@/lib/sanity-image';
+import {isSanityCdnUrl, sanitySquareImageLoader} from '@/lib/sanity-image';
 
 type SearchSuggestionPanelProps = {
     listboxId: string;
@@ -38,10 +37,12 @@ function SuggestionLeading({item}: {item: SearchSuggestion}) {
         return (
             <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-muted">
                 {isSanityCdnUrl(imageUrl) ? (
-                    <SanityImage
+                    // Square crop from the CDN: a width-only request returns a
+                    // short landscape image that object-cover upscales (PROD-3210).
+                    <Image
                         src={imageUrl}
                         alt={imageAlt || item.title}
-                        applyWatermark={false}
+                        loader={sanitySquareImageLoader}
                         fill
                         sizes="40px"
                         className="object-cover"
