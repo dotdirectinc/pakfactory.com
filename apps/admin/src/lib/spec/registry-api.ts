@@ -249,7 +249,8 @@ export async function saveOptionEdit(changesetId: string, edit: { kind: OptionEd
   return call<{ revision: number | null }>(`/api/v1/changesets/${encodeURIComponent(changesetId)}/option-edits`, { method: "POST", body: edit });
 }
 
-// ── A new property's Register frame (PROD-3169) ─────────────────────────────────
+// ── A Register frame whose mnemonic is chosen on the frame: a property (PROD-3169), a line, a solution or a
+// customization category (PROD-3170). Served at property-edit for every kind; only a property has a stream. ──
 
 export type PropertyStream = "CUS" | "PRD" | "ALL";
 
@@ -263,15 +264,21 @@ export type PropertyEditState = {
   revision: number;
   editedBy: string | null;
   editedAt: string | null;
-  proposed: { mnemonic: string; stream: PropertyStream };
+  proposed: { mnemonic: string; stream?: PropertyStream };
   mnemonic: string | null;
   stream: PropertyStream | null;
   /** The registered code, once approved. */
   code: string | null;
   /** Why the mnemonic as it stands cannot be approved; null when it can. */
   problem: string | null;
+  /** Empty for a line, solution or category: only a property has a stream. */
   streams: PropertyStream[];
+  /** property, line, solution or category (absent from a server before PROD-3170: a property). */
+  kind?: MnemonicFrameKind;
 };
+
+export type MnemonicFrameKind = "property" | "line" | "solution" | "category";
+export const MNEMONIC_FRAME_KINDS: readonly MnemonicFrameKind[] = ["property", "line", "solution", "category"];
 
 export async function getPropertyEdit(changesetId: string) {
   return call<PropertyEditState>(`/api/v1/changesets/${encodeURIComponent(changesetId)}/property-edit`);

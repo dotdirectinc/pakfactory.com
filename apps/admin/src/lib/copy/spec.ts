@@ -906,3 +906,31 @@ export const ADMIN_SPEC_PROPERTY_EDIT_COPY = {
   saveFailed: (error: string) => `Not saved: ${error}`,
   readOnly: "You can view this frame; editing needs approval rights.",
 } as const;
+
+/** What changes by kind on a Register frame whose mnemonic is chosen on the frame (PROD-3169, PROD-3170). */
+export const ADMIN_SPEC_MNEMONIC_KIND_COPY = {
+  property: {
+    heading: "Register this property",
+    lead: ADMIN_SPEC_PROPERTY_EDIT_COPY.lead,
+    mnemonicHelp: ADMIN_SPEC_PROPERTY_EDIT_COPY.mnemonicHelp,
+    next: ADMIN_SPEC_PROPERTY_EDIT_COPY.valuesNext,
+  },
+  line: {
+    heading: "Register this product line",
+    lead: "Its mnemonic is proposed. Change it before approving: it is permanent once approved, and its code is LIN-<mnemonic>. Every change is saved for everyone looking at this frame; whoever approves first decides.",
+    mnemonicHelp: "3 letters. Its styles' and products' codes carry it (STY-ABC-…, PRD-ABC-…), so it must be unique across every kind.",
+    next: "Its styles and products can be registered once its code is written to Studio.",
+  },
+  solution: {
+    heading: "Register this solution",
+    lead: "Its mnemonic is proposed. Change it before approving: it is permanent once approved. Its code names its solution type (SOL-IND-…). Every change is saved for everyone looking at this frame; whoever approves first decides.",
+    mnemonicHelp: "3 letters. Its solution styles' codes carry it (SST-ABC-…), so it must be unique across every kind.",
+    next: "Its solution styles can be registered once its code is written to Studio.",
+  },
+  category: {
+    heading: "Register this customization category",
+    lead: "Its mnemonic is proposed. Change it before approving: it is permanent once approved, and its code is CAT-<mnemonic>. Every change is saved for everyone looking at this frame; whoever approves first decides.",
+    mnemonicHelp: "3 letters. Its types' and options' codes carry it (TYP-ABC-…, OPT-ABC-…), so it must be unique across every kind.",
+    next: "Its types can be registered once its code is written to Studio.",
+  },
+} as const;
