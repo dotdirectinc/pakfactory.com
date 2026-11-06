@@ -9,6 +9,7 @@ import {
     normalizeQuery,
     type SearchMatch,
     type SearchResponse,
+    type SearchScope,
 } from './search-query';
 
 /**
@@ -38,6 +39,8 @@ export function useSiteSearch(
     rawQuery: string,
     type: string | null,
     match: SearchMatch = 'default',
+    /** `via` (PROD-3296): the full pre-configured group; reports no analytics events. */
+    scope: SearchScope = 'all',
 ): SiteSearchState {
     const query = normalizeQuery(rawQuery);
     const [state, setState] = useState<SiteSearchState>({status: 'idle'});
@@ -54,6 +57,7 @@ export function useSiteSearch(
             const params = new URLSearchParams({q: query});
             if (type) params.set('type', type);
             if (match !== 'default') params.set('match', match);
+            if (scope !== 'all') params.set('scope', scope);
             try {
                 const res = await fetch(`/api/search?${params}`, {
                     signal: controller.signal,
@@ -73,6 +77,8 @@ export function useSiteSearch(
                 }
                 const data = (await res.json()) as SearchResponse;
                 setState({status: 'ready', query, data});
+                // The main query already reported this search.
+                if (scope !== 'all') return;
                 const key = `${query}|${type ?? ''}|${match}`;
                 if (reported.current !== key) {
                     reported.current = key;
@@ -95,7 +101,7 @@ export function useSiteSearch(
             controller.abort();
             window.clearTimeout(timer);
         };
-    }, [query, type, match]);
+    }, [query, type, match, scope]);
 
     return state;
 }

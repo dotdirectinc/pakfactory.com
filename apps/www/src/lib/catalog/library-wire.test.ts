@@ -66,6 +66,7 @@ const productLibrary: ProductLibraryResult = {
                 {src: 'https://cdn.sanity.io/images/x/y/b.png', alt: 'A different alt'},
                 {src: 'https://cdn.sanity.io/images/x/y/b2.png'},
             ],
+            preconfigured: ['Matte', 'Satin Ribbon Handle'],
         }),
         // Absent alt, reuses refs from the rows above.
         product({
@@ -73,6 +74,7 @@ const productLibrary: ProductLibraryResult = {
             productLine: rigid,
             industries: [{slug: 'food', title: 'Food'}],
             moq: 100,
+            preconfigured: ['Satin Ribbon Handle'],
         }),
     ],
     linesBySlug: {
@@ -103,6 +105,17 @@ describe('product library wire format', () => {
         assert.equal(packed.lines.length, 2);
         assert.equal(packed.styles.length, 3);
         assert.equal(packed.industries.length, 2);
+    });
+
+    it('stores each pre-configured option title once (PROD-3296)', () => {
+        const packed = packProductLibrary(productLibrary);
+        assert.deepEqual(packed.options, ['Matte', 'Satin Ribbon Handle']);
+    });
+
+    it('unpacks a payload cached before pre-configured options existed', () => {
+        const {options: _options, ...legacy} = packProductLibrary(productLibrary);
+        const restored = unpackProductLibrary(legacy);
+        assert.equal(restored.items.some((item) => item.preconfigured), false);
     });
 
     it('preserves secondary style membership (PROD-2843)', () => {

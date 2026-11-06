@@ -24,6 +24,8 @@ import {
 import {
     buildProductFacetCounts,
     matchesProductItem,
+    matchesProductItemViaCustomization,
+    preconfiguredMatches,
 } from '@/lib/catalog/product-catalog-filter';
 import {
     unpackProductLibrary,
@@ -38,6 +40,8 @@ import {
 } from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
+/** Pre-configured matches shown before "Show all" (PROD-3296). */
+const VIA_PAGE_SIZE = 8;
 
 export type ProductCatalogPanelProps = {
     /** Compact wire form from `ProductCatalogView` (PROD-2757); unpacked once here. */
@@ -167,6 +171,36 @@ export function ProductCatalogPanel({
         );
     }, [library.items, deferredQuery, effectiveSelections, propertyTitles]);
 
+    // PROD-3296: inspiration presets found only through an option they arrive with,
+    // under the same filters. Shown as their own group below the direct matches; the
+    // result count and facet counts stay on the direct matches.
+    const viaMatches = useMemo(() => {
+        if (!deferredQuery.trim()) return [];
+        return library.items.filter((item) =>
+            matchesProductItemViaCustomization(
+                item,
+                {query: deferredQuery, selections: effectiveSelections},
+                propertyTitles,
+            ),
+        );
+    }, [library.items, deferredQuery, effectiveSelections, propertyTitles]);
+
+    const viaCardMeta = useMemo(() => {
+        const meta: Record<string, {badge?: string | null; note?: string | null}> = {
+            ...cardMetaByProductId,
+        };
+        for (const item of viaMatches) {
+            const via = preconfiguredMatches(item, deferredQuery);
+            meta[item._id] = {
+                ...meta[item._id],
+                note: `Pre-configured with ${via.join(', ')}`,
+            };
+        }
+        return meta;
+    }, [viaMatches, deferredQuery, cardMetaByProductId]);
+
+    const [viaExpandedFor, setViaExpandedFor] = useState<string | null>(null);
+
     const filterResetKey = useMemo(
         () =>
             JSON.stringify({
@@ -192,6 +226,9 @@ export function ProductCatalogPanel({
     });
 
     const shown = filtered.slice(0, visible);
+    const viaExpanded = viaExpandedFor === filterResetKey;
+    const viaShown = viaExpanded ? viaMatches : viaMatches.slice(0, VIA_PAGE_SIZE);
+    const viaQuery = deferredQuery.trim();
 
     const countsByFacet = useMemo(
         () =>
@@ -423,13 +460,19 @@ export function ProductCatalogPanel({
                         )}
                         aria-busy={isAppending || isSearchUpdating}
                     >
-                        <ProductCatalogList
-                            items={shown}
-                            lineEntry={lineEntry}
-                            emptyMessage={emptyMessage}
-                            productHrefQuery={productHrefQuery}
-                            cardMetaByProductId={cardMetaByProductId}
-                        />
+                        {filtered.length === 0 && viaMatches.length > 0 ? (
+                            <p className="text-sm text-muted-foreground" role="status">
+                                No products are named “{viaQuery}”.
+                            </p>
+                        ) : (
+                            <ProductCatalogList
+                                items={shown}
+                                lineEntry={lineEntry}
+                                emptyMessage={emptyMessage}
+                                productHrefQuery={productHrefQuery}
+                                cardMetaByProductId={cardMetaByProductId}
+                            />
+                        )}
                         {isAppending ? (
                             <ProductCatalogListSkeleton count={appendCount} />
                         ) : null}
@@ -456,6 +499,40 @@ export function ProductCatalogPanel({
                                 </Button>
                             ) : null}
                         </div>
+                        {viaMatches.length > 0 ? (
+                            <section
+                                className="flex flex-col gap-4 border-t border-dashed border-border pt-6"
+                                aria-labelledby="catalog-via-customization"
+                            >
+                                <h2
+                                    id="catalog-via-customization"
+                                    className="text-base font-semibold text-foreground"
+                                >
+                                    Products using “{viaQuery}”{' '}
+                                    <span className="font-normal text-muted-foreground">
+                                        ({viaMatches.length})
+                                    </span>
+                                </h2>
+                                <ProductCatalogList
+                                    items={viaShown}
+                                    productHrefQuery={productHrefQuery}
+                                    cardMetaByProductId={viaCardMeta}
+                                />
+                                {viaMatches.length > viaShown.length ? (
+                                    <div className="flex justify-center">
+                                        <Button
+                                            type="button"
+                                            variant="link"
+                                            onClick={() => setViaExpandedFor(filterResetKey)}
+                                            className="gap-1 text-primary"
+                                        >
+                                            Show all {viaMatches.length}
+                                            <ChevronDown className="size-4" aria-hidden />
+                                        </Button>
+                                    </div>
+                                ) : null}
+                            </section>
+                        ) : null}
                     </div>
                 </div>
             </SectionReveal>

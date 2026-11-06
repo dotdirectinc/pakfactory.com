@@ -7,6 +7,7 @@ import {
     isSkuQuery,
     normalizeQuery,
     parseMatch,
+    parseScope,
     parseTypeFilter,
     resolveHref,
     shapeResponse,
@@ -141,4 +142,127 @@ test('shapeResponse: the exact SKU goes first, positions follow the shown order'
     // A hit without a SKU carries no `sku` key.
     const noSku = shapeResponse('trays', null, {hits: [raw('style', '')]}, BLOG).groups[0]!.hits;
     assert.equal('sku' in noSku[0]!, false);
+});
+
+// PROD-3296: an inspiration product found only by an option it arrives with goes to its
+// own group; anything that also matched directly stays where it was.
+const none = {value: '', matchLevel: 'none'};
+const hl = (overrides: Record<string, unknown>) => ({
+    sku: none,
+    title: none,
+    tags: [],
+    parents: [none],
+    summary: none,
+    preconfigured: [],
+    ...overrides,
+});
+
+test('shapeResponse moves preconfigured-only product hits into viaCustomization', () => {
+    const out = shapeResponse(
+        'ribbon',
+        null,
+        {
+            nbHits: 4,
+            hits: [
+                {
+                    objectID: 'acc',
+                    type: 'product',
+                    group: 'products',
+                    title: 'Ribbon',
+                    href: '/products/ribbon',
+                    _highlightResult: hl({title: {value: '<em>Ribbon</em>', matchLevel: 'full'}}),
+                },
+                {
+                    objectID: 'preset',
+                    type: 'product',
+                    group: 'products',
+                    kind: 'inspiration',
+                    title: 'Luxury Gift Box',
+                    href: '/products/luxury-gift-box',
+                    preconfigured: ['Matte', 'Satin Ribbon Handle'],
+                    _highlightResult: hl({
+                        preconfigured: [
+                            {value: 'Matte', matchLevel: 'none'},
+                            {value: 'Satin <em>Ribbon</em> Handle', matchLevel: 'full'},
+                        ],
+                    }),
+                },
+                {
+                    // Matched by its title too: a direct match, stays in Products.
+                    objectID: 'both',
+                    type: 'product',
+                    group: 'products',
+                    kind: 'inspiration',
+                    title: 'Ribbon Gift Bag',
+                    href: '/products/ribbon-gift-bag',
+                    preconfigured: ['Ribbon Closure'],
+                    _highlightResult: hl({
+                        title: {value: '<em>Ribbon</em> Gift Bag', matchLevel: 'full'},
+                        preconfigured: [{value: '<em>Ribbon</em> Closure', matchLevel: 'full'}],
+                    }),
+                },
+                {
+                    // Only its marketing copy repeats the option: still found VIA it.
+                    objectID: 'copy',
+                    type: 'product',
+                    group: 'products',
+                    kind: 'inspiration',
+                    title: 'Hinged Coffee Box',
+                    href: '/products/hinged-coffee-box',
+                    preconfigured: ['Ribbon Stop'],
+                    _highlightResult: hl({
+                        summary: {value: 'with a <em>ribbon</em> stop', matchLevel: 'full'},
+                        preconfigured: [{value: '<em>Ribbon</em> Stop', matchLevel: 'full'}],
+                    }),
+                },
+                {
+                    // A record from before the reindex: no highlight for the new attribute.
+                    objectID: 'old',
+                    type: 'product',
+                    group: 'products',
+                    title: 'Old record',
+                    href: '/products/old',
+                },
+            ],
+        },
+        BLOG,
+    );
+    assert.deepEqual(out.groups[0]!.hits.map((h) => h.id), ['acc', 'both', 'old']);
+    assert.deepEqual(out.viaCustomization.map((h) => h.id), ['preset', 'copy']);
+    assert.deepEqual(out.viaCustomization[0]!.via, ['Satin Ribbon Handle']);
+    assert.equal(out.viaCustomization[0]!.position, 2);
+    // Raw `preconfigured` is never passed to the client.
+    assert.equal('preconfigured' in out.viaCustomization[0]!, false);
+    // Suggestions read direct matches only; Basic mode adds the group itself.
+    assert.deepEqual(topHits(out, 6).map((h) => h.id), ['acc', 'both', 'old']);
+});
+
+test('only products can be found via a customization', () => {
+    const out = shapeResponse(
+        'ribbon',
+        null,
+        {
+            hits: [
+                {
+                    objectID: 'guide',
+                    type: 'guide',
+                    group: 'guides',
+                    title: 'Gift wrap',
+                    href: '/blog/gift-wrap',
+                    preconfigured: ['Ribbon'],
+                    _highlightResult: hl({preconfigured: [{value: '<em>Ribbon</em>', matchLevel: 'full'}]}),
+                },
+            ],
+        },
+        BLOG,
+    );
+    assert.deepEqual(out.viaCustomization, []);
+    assert.deepEqual(out.groups[0]!.hits.map((h) => h.id), ['guide']);
+});
+
+test('parseScope: only "via" narrows the query to the pre-configured group', () => {
+    assert.equal(parseScope('via'), 'via');
+    assert.equal(parseScope(' VIA '), 'via');
+    assert.equal(parseScope('all'), 'all');
+    assert.equal(parseScope(null), 'all');
 });

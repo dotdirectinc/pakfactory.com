@@ -1,4 +1,5 @@
 import { PRIMARY_PRODUCT_IMAGE_GROQ } from "../queries/catalog-media";
+import { PRECONFIGURED_OPTION_TITLES } from "../queries/preconfigured";
 import {
   HAS_DETAIL_PAGE,
   LINE_STYLE_HAS_PAGE,
@@ -193,6 +194,11 @@ const IMAGE_SOURCE = /* groq */ `select(
  *   parents                   titles of what the document sits under (line, styles,
  *                             solutions, option type + category, client, blog category)
  *   tags                      property-value titles (products, options); blog tags
+ *   preconfigured             inspiration products only: titles of the Active options it
+ *                             arrives with (`availableCustomizations[preselected == true]`),
+ *                             so "ribbon" finds the presets built with a ribbon (PROD-3296).
+ *                             Never a standard product's list — that is what it is merely
+ *                             COMPATIBLE with, which would match nearly everything.
  *   publishedAtTimestamp      ms since epoch; 0 when undated
  */
 export const SITE_SEARCH_PROJECTION = /* groq */ `{
@@ -244,6 +250,7 @@ export const SITE_SEARCH_PROJECTION = /* groq */ `{
     _type == "post" => tags[]->title,
     []
   ))),
+  "preconfigured": ${PRECONFIGURED_OPTION_TITLES},
   "publishedAtTimestamp": coalesce(
     (dateTime(publishedAt) - dateTime("1970-01-01T00:00:00Z")) * 1000,
     0
@@ -268,7 +275,17 @@ export const SITE_SEARCH_EVENT_PROJECTION = /* groq */ `{_id, _type, "operation"
 
 export const SITE_SEARCH_SETTINGS = {
   // A SKU match outranks a title match; a SKU one character off matches nothing (PROD-3136).
-  searchableAttributes: ["sku", "title", "tags", "parents", "unordered(summary)"],
+  // `preconfigured` is last, so a product found by its own title, SKU, tags or parents always
+  // outranks one found only by an option it arrives with (PROD-3296). The API splits the
+  // latter into their own group by reading which attributes matched.
+  searchableAttributes: [
+    "sku",
+    "title",
+    "tags",
+    "parents",
+    "unordered(summary)",
+    "unordered(preconfigured)",
+  ],
   disableTypoToleranceOnAttributes: ["sku"],
   attributesForFaceting: ["type", "group", "filterOnly(kind)"],
   customRanking: ["asc(typeRank)", "desc(publishedAtTimestamp)"],
@@ -300,6 +317,8 @@ export type SiteSearchRecord = {
   hoverImage: string | null;
   parents: string[];
   tags: string[];
+  /** Inspiration products: titles of their Active pre-selected options. Others: []. */
+  preconfigured: string[];
   publishedAtTimestamp: number;
 };
 

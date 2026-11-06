@@ -32,6 +32,7 @@ export function hitToItem(hit: SearchHit, queryID: string | null): SearchNavItem
         ...(hit.hoverImage ? {hoverImage: hit.hoverImage} : {}),
         summary: hit.summary,
         ...(hit.sku ? {sku: hit.sku} : {}),
+        ...(hit.via?.length ? {via: viaText(hit.via)} : {}),
         label: TYPE_LABELS[hit.type],
         track: queryID ? {queryID, objectID: hit.id, position: hit.position} : undefined,
     };
@@ -58,6 +59,36 @@ const VARIANT: Record<SearchGroup, SearchSectionModel['variant']> = {
     guides: 'cards',
     resources: 'cards',
 };
+
+/** "Pre-configured with Satin Ribbon Handle" — why a `viaCustomization` hit is there (PROD-3296). */
+export function viaText(via: string[]): string {
+    return `Pre-configured with ${via.join(', ')}`;
+}
+
+/** Heading of the pre-configured group: the visitor's own words (PROD-3296). */
+export function viaTitle(query: string): string {
+    return `Products using “${query}”`;
+}
+
+/**
+ * Inspiration products found only through an option they arrive with, as one
+ * section below the direct matches (PROD-3296). Null when there are none.
+ */
+export function viaSection(
+    data: SearchResponse,
+    query: string,
+    limit: number,
+    variant: SearchSectionModel['variant'],
+): SearchSectionModel | null {
+    const hits = (data.viaCustomization ?? []).slice(0, limit);
+    if (!hits.length) return null;
+    return {
+        key: 'results-via-customization',
+        title: viaTitle(query),
+        variant,
+        items: hits.map((hit) => hitToItem(hit, data.queryID)),
+    };
+}
 
 /** One section per tab group, in rail order, each capped at `limit` hits. */
 export function resultSections(data: SearchResponse, limit: number): SearchSectionModel[] {

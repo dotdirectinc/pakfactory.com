@@ -95,6 +95,38 @@ export function matchesProductItem(
 }
 
 /**
+ * The pre-configured options of a product that contain the search text — the same
+ * case-insensitive substring match as the main search (PROD-3296). Empty when none
+ * do or the query is empty.
+ */
+export function preconfiguredMatches(
+    item: Pick<ProductLibraryItem, 'preconfigured'>,
+    query: string,
+): string[] {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return (item.preconfigured ?? []).filter((title) => title.toLowerCase().includes(q));
+}
+
+/**
+ * A product the search finds ONLY through an option it arrives with (PROD-3296):
+ * not a direct match, but one of its pre-configured options contains the query,
+ * and it passes every active filter. These show in their own group below the
+ * direct matches; the header count and facet counts stay on direct matches.
+ */
+export function matchesProductItemViaCustomization(
+    item: ProductLibraryItem,
+    input: ProductCatalogFilterInput,
+    propertyTitles: Record<string, string> = {},
+): boolean {
+    if (!input.query.trim()) return false;
+    const engine = createProductFacetEngine(propertyTitles);
+    if (engine.matchesItem(item, input)) return false;
+    if (preconfiguredMatches(item, input.query).length === 0) return false;
+    return engine.matchesItem(item, {query: '', selections: input.selections});
+}
+
+/**
  * Disjunctive (except-self) facet counts: for facet F, count options against
  * items that match query + all selections except F.
  */
