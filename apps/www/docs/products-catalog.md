@@ -123,7 +123,7 @@ www helpers: [`lib/catalog/product-kind.ts`](../src/lib/catalog/product-kind.ts)
 | Industries facet | `solutions[]` where `solutionType == "industry"` |
 | Sustainability facet | `properties[]` → property + values (when property is sustainability) |
 | Product Style (nested) | `productStyles[]` membership (union); `productStyle` is primary for card display (PROD-2843) |
-| Search | title, SKU, line title, all linked style titles |
+| Search | title, SKU, line title, all linked style titles. Inspiration presets whose **pre-configured** options contain the text, and that pass the active filters, show as their own group below the grid, under **Products using “…”** (PROD-3296; `matchesProductItemViaCustomization`). Each card reads “Pre-configured with …”. The result count and facet counts stay on direct matches only. |
 
 Facet URL keys use `product-line`, `product-style`, `product-type`, `industry`, and `property.slug`. Shared rail: Product type (when kinds exist) + Product Line + Industries (when tagged) + Sustainability (when values exist).
 

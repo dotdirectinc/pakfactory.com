@@ -500,6 +500,11 @@ export type ProductLibraryItem = {
     industries: {slug: string; title: string}[];
     /** property.slug → propertyValue.slug[] */
     attrs: Record<string, string[]>;
+    /**
+     * Inspiration presets: titles of the Active options they arrive with (PROD-3296).
+     * Search finds a preset by these, in its own group. Empty or missing otherwise.
+     */
+    preconfigured?: string[];
 };
 
 /**

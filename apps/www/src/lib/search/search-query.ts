@@ -48,7 +48,25 @@ export const RETRIEVED_ATTRIBUTES = [
     'parents',
     // Products only: exact-SKU ordering below, and shown beside the title (PROD-3154).
     'sku',
+    // Inspiration products (PROD-3296): read server-side to name the matched options
+    // (`via`); the list itself is not passed to the client.
+    'preconfigured',
 ] as const;
+
+/**
+ * Highlighting is requested only to learn WHICH attributes matched — never shown
+ * as-is. A hit that matched nothing but `preconfigured` is a product found by an
+ * option it arrives with, and goes to its own group (PROD-3296).
+ */
+export const PRECONFIGURED_ATTRIBUTE = 'preconfigured';
+/**
+ * What makes a hit a DIRECT match. `summary` is left out on purpose: a preset's
+ * marketing copy often repeats its options ("…finished with a satin ribbon"), and
+ * counting that would keep it out of the pre-configured group — seen on
+ * `development` 2026-11-06 for "ribbon" (RGD-052-TE1, RGD-001-LX1).
+ */
+export const DIRECT_MATCH_ATTRIBUTES = ['sku', 'title', 'tags', 'parents'] as const;
+export const HIGHLIGHT_ATTRIBUTES = [...DIRECT_MATCH_ATTRIBUTES, PRECONFIGURED_ATTRIBUTE] as const;
 
 /**
  * Lower-case, collapse whitespace, cap the length. Repeat queries that differ
@@ -88,6 +106,21 @@ export function parseTypeFilter(raw: string | null | undefined): SearchFilter {
  * word must match, typos and the last word's prefix allowed).
  */
 export type SearchMatch = 'default' | 'loose';
+
+/**
+ * `?scope=via` (PROD-3296): only inspiration products found through a pre-configured
+ * option — the full "Products using …" group for Basic search's all-results view.
+ * The main query holds 30 hits ranked across every type, and pre-configured matches
+ * rank last (`preconfigured` is the last searchable attribute), so on `development`
+ * only 2 of the 42 "ribbon" presets fit. Sent once per SUBMITTED query, never per
+ * keystroke.
+ */
+export type SearchScope = 'all' | 'via';
+export const VIA_HITS_PER_PAGE = 48;
+
+export function parseScope(raw: string | null | undefined): SearchScope {
+    return (raw ?? '').trim().toLowerCase() === 'via' ? 'via' : 'all';
+}
 
 export function parseMatch(raw: string | null | undefined): SearchMatch {
     return (raw ?? '').trim().toLowerCase() === 'loose' ? 'loose' : 'default';
@@ -130,6 +163,11 @@ export type SearchHit = {
     parents: string[];
     /** Products with a SKU only (PROD-3154), so a SKU match can be seen in the results. */
     sku?: string;
+    /**
+     * Set only on `viaCustomization` hits (PROD-3296): the pre-configured options that
+     * matched the query, e.g. ["Satin Ribbon Handle"] for "ribbon".
+     */
+    via?: string[];
     /** 1-based rank in Algolia's response, for click events. */
     position: number;
 };
@@ -141,17 +179,66 @@ export type SearchResponse = {
     /** Facet counts. With a filter they count within that filter only. */
     counts: {group: Record<string, number>; type: Record<string, number>};
     groups: {group: string; hits: SearchHit[]}[];
+    /**
+     * Inspiration products found ONLY through an option they arrive with (PROD-3296) —
+     * shown as their own group below the direct matches, never inside `groups`.
+     * Ranked after every direct product match (`preconfigured` is the last searchable
+     * attribute), so a page of 30 holds the direct matches first.
+     */
+    viaCustomization: SearchHit[];
     /** Algolia queryID (click analytics), null when absent. */
     queryID: string | null;
 };
 
 export function emptyResponse(query: string, filter: SearchFilter): SearchResponse {
-    return {query, filter, total: 0, counts: {group: {}, type: {}}, groups: [], queryID: null};
+    return {
+        query,
+        filter,
+        total: 0,
+        counts: {group: {}, type: {}},
+        groups: [],
+        viaCustomization: [],
+        queryID: null,
+    };
 }
 
 type RawHit = {objectID: string} & Partial<Record<string, unknown>>;
 
 const str = (value: unknown): string => (typeof value === 'string' ? value : '');
+
+type HighlightPart = {value?: unknown; matchLevel?: unknown};
+
+const matched = (part: unknown): boolean =>
+    !!part &&
+    typeof part === 'object' &&
+    (part as HighlightPart).matchLevel !== undefined &&
+    (part as HighlightPart).matchLevel !== 'none';
+
+/** Whether any value of a highlighted attribute (string or array) matched. */
+function attributeMatched(part: unknown): boolean {
+    return Array.isArray(part) ? part.some(matched) : matched(part);
+}
+
+/**
+ * The pre-configured options that matched, when nothing else on the hit did —
+ * otherwise null (a direct match, or Algolia sent no highlight). The values are
+ * read back from the record, not from the highlight, so no markup can leak in.
+ */
+export function viaPreconfigured(raw: RawHit): string[] | null {
+    if (str(raw.type) !== 'product') return null;
+    const highlight = raw._highlightResult as Record<string, unknown> | undefined;
+    if (!highlight || typeof highlight !== 'object') return null;
+    if (DIRECT_MATCH_ATTRIBUTES.some((name) => attributeMatched(highlight[name]))) return null;
+    const parts = highlight[PRECONFIGURED_ATTRIBUTE];
+    const values = Array.isArray(raw[PRECONFIGURED_ATTRIBUTE])
+        ? (raw[PRECONFIGURED_ATTRIBUTE] as unknown[])
+        : [];
+    if (!Array.isArray(parts)) return null;
+    const via = parts
+        .map((part, i) => (matched(part) ? values[i] : null))
+        .filter((v): v is string => typeof v === 'string' && v.length > 0);
+    return via.length ? via : null;
+}
 
 /**
  * Guides live on the blog app. `site_search` stores `/blog/{slug}`; the blog's
@@ -183,6 +270,7 @@ export function shapeResponse(
     blogUrl: string,
 ): SearchResponse {
     const byGroup = new Map<string, SearchHit[]>();
+    const viaCustomization: SearchHit[] = [];
     let hits = result.hits;
     if (isSkuQuery(query)) {
         const exact = (raw: RawHit) => compactSku(str(raw.sku)) === compactSku(query);
@@ -211,6 +299,11 @@ export function shapeResponse(
                 : [],
             position: index + 1,
         };
+        const via = viaPreconfigured(raw);
+        if (via) {
+            viaCustomization.push({...hit, via});
+            continue;
+        }
         const list = byGroup.get(hit.group) ?? [];
         list.push(hit);
         byGroup.set(hit.group, list);
@@ -231,6 +324,7 @@ export function shapeResponse(
         groups: order
             .filter((group) => byGroup.has(group))
             .map((group) => ({group, hits: byGroup.get(group)!})),
+        viaCustomization,
     };
 }
 

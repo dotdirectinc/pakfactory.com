@@ -42,6 +42,27 @@ const dataset = [
     sku: `SKU-${id}`,
     ...(extra as object),
   })),
+  // PROD-3296: an inspiration preset arrives with its pre-selected options; a standard
+  // product's list is only what it is compatible with, flags or not.
+  { _id: "o-ribbon", _type: "customizationOption", title: "Satin Ribbon Handle", slug: { current: "satin-ribbon" }, status: "active", appearsIn: "configurable-no-page", type: { _ref: "type" } },
+  { _id: "o-closure", _type: "customizationOption", title: "Ribbon Closure", slug: { current: "ribbon-closure" }, status: "active", appearsIn: "configurable-with-page", type: { _ref: "type" } },
+  { _id: "o-retired", _type: "customizationOption", title: "Retired Ribbon", slug: { current: "retired-ribbon" }, status: "not-active", type: { _ref: "type" } },
+  {
+    _id: "p-preset", _type: "product", kind: "inspiration", title: "Luxury Gift Box", slug: { current: "p-preset" },
+    basedOn: { _ref: "p-ok" }, solutions: [{ _ref: "sol" }],
+    productLine: { _ref: "line" }, productStyle: [{ _ref: "style" }], sku: "SKU-p-preset",
+    availableCustomizations: [
+      { _key: "a", customization: { _ref: "o-ribbon" }, preselected: true },
+      { _key: "b", customization: { _ref: "o-closure" }, preselected: true },
+      { _key: "c", customization: { _ref: "o-retired" }, preselected: true },
+      { _key: "d", customization: { _ref: "o-ok" }, preselected: false },
+    ],
+  },
+  {
+    _id: "p-standard-flagged", _type: "product", kind: "standard", title: "Standard with a stray flag", slug: { current: "p-standard-flagged" },
+    productLine: { _ref: "line" }, productStyle: [{ _ref: "style" }], sku: "SKU-p-standard-flagged",
+    availableCustomizations: [{ _key: "a", customization: { _ref: "o-ribbon" }, preselected: true }],
+  },
   { _id: "drafts.p-ok", _type: "product", kind: "standard", title: "Draft", slug: { current: "p-ok" }, productLine: { _ref: "line" }, productStyle: [{ _ref: "style" }] },
   { _id: "sol", _type: "solution", title: "Cosmetics", slug: { current: "cosmetics" }, status: "active" },
   { _id: "sol-unset", _type: "solution", title: "Never earned a page", slug: { current: "sol-unset" } },
@@ -66,7 +87,7 @@ const run = async (query: string, params: Record<string, unknown> = {}) =>
 test("indexes exactly the documents whose www page exists", async () => {
   const ids = ((await run(`*[${SITE_SEARCH_FILTER}]._id`)) as string[]).sort();
   assert.deepEqual(ids, [
-    "cs", "exp", "line", "line-gone", "o-ok", "p-gone", "p-ok", "p-tmp", "post", "pr", "sol", "ss", "style", "style-in-gone",
+    "cs", "exp", "line", "line-gone", "o-closure", "o-ok", "p-gone", "p-ok", "p-preset", "p-standard-flagged", "p-tmp", "post", "pr", "sol", "ss", "style", "style-in-gone",
   ]);
 });
 
@@ -108,6 +129,18 @@ test("products carry their SKU; temporary TMP- codes and other types carry none"
   assert.equal(sku["p-tmp"], null);
   assert.equal(sku["line"], null);
   assert.equal(sku["post"], null);
+});
+
+test("inspiration presets carry their Active pre-selected options; nothing else does (PROD-3296)", async () => {
+  const rows = (await run(SITE_SEARCH_BACKFILL_QUERY)) as SiteSearchRecord[];
+  const pre = Object.fromEntries(rows.map((row) => [row.objectID, row.preconfigured]));
+  // Pre-selected + Active, with or without a detail page; not the retired one, not the unflagged one.
+  assert.deepEqual(pre["p-preset"], ["Ribbon Closure", "Satin Ribbon Handle"]);
+  // A flag on a standard product is inert (Studio warns) — its list means "compatible".
+  assert.deepEqual(pre["p-standard-flagged"], []);
+  assert.deepEqual(pre["p-ok"], []);
+  assert.deepEqual(pre["o-ok"], []);
+  assert.deepEqual(pre["post"], []);
 });
 
 test("the Function's query returns null for a document that stopped qualifying", async () => {

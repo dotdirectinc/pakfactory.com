@@ -43,6 +43,8 @@ export type SearchNavItem = {
     summary?: string;
     /** Product SKU (PROD-3154): beside the title in `list` rows, under it on `grid` cards. */
     sku?: string;
+    /** Why a product is a result when it did not match directly (PROD-3296): "Pre-configured with …". */
+    via?: string;
     label?: string;
     /** `list` rows: a recent search (clock icon, removable) or "see all" (search icon). */
     icon?: 'recent' | 'search';
@@ -310,7 +312,16 @@ export function SiteSearchSection({
                                             />
                                         </span>
                                     ) : null}
-                                    {item.label ? (
+                                    {item.via ? (
+                                        <span
+                                            className={cn(
+                                                'max-w-[45%] shrink truncate text-xs',
+                                                dark ? 'text-white/55' : 'text-muted-foreground',
+                                            )}
+                                        >
+                                            <Highlighted text={item.via} query={highlight} dark={dark} />
+                                        </span>
+                                    ) : item.label ? (
                                         <span
                                             className={cn(
                                                 'shrink-0 text-xs',
@@ -423,6 +434,16 @@ export function SiteSearchSection({
                                         )}
                                     >
                                         {item.sku}
+                                    </span>
+                                ) : null}
+                                {item.via ? (
+                                    <span
+                                        className={cn(
+                                            'mt-0.5 line-clamp-2 block text-[11px]',
+                                            dark ? 'text-white/55' : 'text-muted-foreground',
+                                        )}
+                                    >
+                                        {item.via}
                                     </span>
                                 ) : null}
                             </span>

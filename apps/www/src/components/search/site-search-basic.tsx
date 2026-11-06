@@ -23,6 +23,7 @@ import {
     StatusText,
     useActiveIndex,
     useOpenResult,
+    viaSection,
 } from './site-search-shared';
 
 /**
@@ -35,12 +36,17 @@ import {
  * 3. Enter, or "See all results" → every result for the query, grouped by type
  *
  * Steps 2 and 3 read the same `/api/search` response, so submitting costs no
- * extra request. Advanced mode (`site-search-advanced.tsx`) is the paused
+ * extra request. Both end with "Products using “…”": inspiration products found
+ * only through an option they arrive with (PROD-3296). Advanced mode (`site-search-advanced.tsx`) is the paused
  * first design.
  */
 
 const SUGGESTION_LIMIT = 6;
+/** Suggestions from the pre-configured group when there are direct matches too (PROD-3296). */
+const VIA_SUGGESTION_LIMIT = 2;
 const RESULT_LIMIT = 30;
+/** The pre-configured group in the all-results view (`scope=via` page size). */
+const VIA_RESULT_LIMIT = 48;
 const SEE_ALL_ID = '__see-all';
 
 const TEXTS = {
@@ -48,30 +54,41 @@ const TEXTS = {
     error: 'Search isn’t available right now. Try again in a moment.',
 };
 
+/**
+ * While typing: the best direct matches, then — under their own heading — up to
+ * `VIA_SUGGESTION_LIMIT` products found through an option they arrive with
+ * (PROD-3296), more when there are fewer direct matches to show. "See all
+ * results" stays the last row.
+ */
 function suggestionSections(data: SearchResponse, query: string): SearchSectionModel[] {
-    const hits = topHits(data, SUGGESTION_LIMIT);
-    if (!hits.length) return [];
-    return [
-        {
+    const viaCount = data.viaCustomization?.length ?? 0;
+    const direct = topHits(data, SUGGESTION_LIMIT - Math.min(VIA_SUGGESTION_LIMIT, viaCount));
+    const via = viaSection(data, query, SUGGESTION_LIMIT - direct.length, 'list');
+    if (!direct.length && !via) return [];
+    const seeAll: SearchNavItem = {
+        id: SEE_ALL_ID,
+        title: `See all results for “${query}”`,
+        icon: 'search',
+    };
+    const sections: SearchSectionModel[] = [];
+    if (direct.length) {
+        sections.push({
             key: 'suggestions',
             title: 'Suggestions',
             variant: 'list',
             hideTitle: true,
-            items: [
-                ...hits.map((hit) => hitToItem(hit, data.queryID)),
-                {
-                    id: SEE_ALL_ID,
-                    title: `See all results for “${query}”`,
-                    icon: 'search',
-                },
-            ],
-        },
-    ];
+            items: direct.map((hit) => hitToItem(hit, data.queryID)),
+        });
+    }
+    if (via) sections.push(via);
+    sections[sections.length - 1]!.items.push(seeAll);
+    return sections;
 }
 
 /** "12 results for “mailer”", or "Top 30 of 45 results…" when the page is capped. */
 function resultsSummary(data: SearchResponse, query: string): string {
-    const shown = data.groups.reduce((n, g) => n + g.hits.length, 0);
+    const shown =
+        data.groups.reduce((n, g) => n + g.hits.length, 0) + (data.viaCustomization?.length ?? 0);
     const noun = data.total === 1 ? 'result' : 'results';
     return shown < data.total
         ? `Top ${shown} of ${data.total} ${noun} for “${query}”`
@@ -99,6 +116,19 @@ export function SiteSearchBasicBody({
     const search = useSiteSearch(query, null, 'loose');
     const answered =
         hasQuery && search.status === 'ready' && search.query === normalized ? search.data : null;
+    // All-results view only: the full "Products using …" group (PROD-3296). The main
+    // page of 30 holds few of them — they rank after every direct match. Until it
+    // answers (or if it fails), the main response's share stands in.
+    const viaSearch = useSiteSearch(showAll ? normalized : '', null, 'loose', 'via');
+    const viaFull =
+        showAll && viaSearch.status === 'ready' && viaSearch.query === normalized
+            ? viaSearch.data.viaCustomization
+            : null;
+    const results = useMemo<SearchResponse | null>(() => {
+        if (!answered || !viaFull) return answered;
+        const direct = new Set(answered.groups.flatMap((g) => g.hits.map((h) => h.id)));
+        return {...answered, viaCustomization: viaFull.filter((hit) => !direct.has(hit.id))};
+    }, [answered, viaFull]);
 
     const sections = useMemo<SearchSectionModel[]>(() => {
         if (!hasQuery) {
@@ -120,11 +150,12 @@ export function SiteSearchBasicBody({
         }
         // Nothing selectable until this query is answered, so ↓ + Enter can't
         // open a result for what was typed before.
-        if (!answered || answered.total === 0) return [];
-        return showAll
-            ? resultSections(answered, RESULT_LIMIT)
-            : suggestionSections(answered, normalized);
-    }, [hasQuery, recents, clear, answered, showAll, normalized]);
+        if (!results || results.total === 0) return [];
+        if (!showAll) return suggestionSections(results, normalized);
+        // Direct matches by type, then the pre-configured group last (PROD-3296).
+        const via = viaSection(results, normalized, VIA_RESULT_LIMIT, 'grid');
+        return [...resultSections(results, RESULT_LIMIT), ...(via ? [via] : [])];
+    }, [hasQuery, recents, clear, results, showAll, normalized]);
 
     const flat = useMemo(() => sections.flatMap((s) => s.items), [sections]);
     const {pendingId, prefetch, open} = useOpenResult(onClose);
@@ -198,7 +229,7 @@ export function SiteSearchBasicBody({
         );
     }
 
-    const showResultsHeader = showAll && answered && answered.total > 0 && !pendingId;
+    const showResultsHeader = showAll && results && results.total > 0 && !pendingId;
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -222,7 +253,7 @@ export function SiteSearchBasicBody({
                             className={cn('text-sm', dark ? 'text-white/60' : 'text-muted-foreground')}
                             role="status"
                         >
-                            {resultsSummary(answered, normalized)}
+                            {resultsSummary(results, normalized)}
                         </p>
                     ) : null}
                     <SectionList

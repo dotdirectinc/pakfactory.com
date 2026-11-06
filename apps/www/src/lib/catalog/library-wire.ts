@@ -50,12 +50,19 @@ type PackedProductItem = [
     attrs?: Record<string, string[]> | null,
     images?: {src: string; alt?: string}[] | null,
     styleIndexes?: number[] | null,
+    /** Indexes into `options` — an inspiration preset's pre-selected titles (PROD-3296). */
+    preconfigured?: number[] | null,
 ];
 
 export type PackedProductLibrary = Omit<ProductLibraryResult, 'items'> & {
     lines: RefRow[];
     styles: RefRow[];
     industries: RefRow[];
+    /**
+     * Distinct pre-configured option titles (PROD-3296); items point into it. Optional
+     * so a payload cached before this field still unpacks.
+     */
+    options?: string[];
     items: PackedProductItem[];
 };
 
@@ -104,6 +111,15 @@ export function packProductLibrary(
     const lines = refTable();
     const styles = refTable();
     const industries = refTable();
+    const options: string[] = [];
+    const optionIndex = new Map<string, number>();
+    const optionIndexOf = (title: string): number => {
+        const existing = optionIndex.get(title);
+        if (existing !== undefined) return existing;
+        optionIndex.set(title, options.length);
+        options.push(title);
+        return options.length - 1;
+    };
 
     const items = library.items.map((item): PackedProductItem => {
         const primaryStyle = styles.indexOf(item.productStyle);
@@ -137,6 +153,7 @@ export function packProductLibrary(
             isEmptyRecord(item.attrs) ? null : item.attrs,
             item.images?.length ? item.images : null,
             styleIndexes,
+            item.preconfigured?.length ? item.preconfigured.map(optionIndexOf) : null,
         ];
         while (row.length > 7 && row[row.length - 1] === null) row.pop();
         return row;
@@ -148,6 +165,7 @@ export function packProductLibrary(
         lines: lines.rows,
         styles: styles.rows,
         industries: industries.rows,
+        ...(options.length ? {options} : {}),
         items,
     };
 }
@@ -155,7 +173,7 @@ export function packProductLibrary(
 export function unpackProductLibrary(
     packed: PackedProductLibrary,
 ): ProductLibraryResult {
-    const {lines, styles, industries, items, ...rest} = packed;
+    const {lines, styles, industries, options = [], items, ...rest} = packed;
     return {
         ...rest,
         items: items.map((row): ProductLibraryItem => {
@@ -175,7 +193,11 @@ export function unpackProductLibrary(
                 attrs = null,
                 images = null,
                 styleIndexes = null,
+                preconfiguredIndexes = null,
             ] = row;
+            const preconfigured = (preconfiguredIndexes ?? [])
+                .map((index) => options[index])
+                .filter((title): title is string => typeof title === 'string');
             const productStyle = toRef(styles[style]!);
             const productStyles = (styleIndexes ?? [style]).map((index) =>
                 toRef(styles[index]!),
@@ -200,6 +222,7 @@ export function unpackProductLibrary(
                 ),
                 attrs: attrs ?? {},
                 ...(images === null ? {} : {images}),
+                ...(preconfigured.length ? {preconfigured} : {}),
             };
         }),
     };

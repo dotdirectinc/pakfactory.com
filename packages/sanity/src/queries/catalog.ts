@@ -11,6 +11,7 @@ import {
   type PageSectionDoc,
 } from './sections';
 import {MODEL_3D_FIELDS} from './product-model-3d';
+import {PRECONFIGURED_OPTION_TITLES} from './preconfigured';
 import {
   CARD_IMAGE_FROM_CATALOG,
   CATALOG_IMAGE_ALT,
@@ -552,6 +553,9 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   ${FEATURED_IMAGE_FROM_CATALOG},
   "hoverImageSrc": ${SECOND_PRODUCT_IMAGE_SRC},
   "hoverImageAlt": ${SECOND_PRODUCT_IMAGE_ALT},
+  // Inspiration presets: titles of the options they arrive with — catalog search finds a
+  // preset by them in its own group (PROD-3296). [] for standard products.
+  "preconfigured": ${PRECONFIGURED_OPTION_TITLES},
   // Dereference, then filter — never \`*[_id == coalesce(^…)]\`: with an expression
   // instead of a literal id Sanity scans the whole dataset once per product
   // (~10 s per lookup on 1,243 products; 30 s for this query). Same rows, 1–1.5 s.
@@ -1431,6 +1435,8 @@ export type CatalogProductLibraryStyleDoc = {
 
 export type CatalogProductLibraryDoc = CatalogProductDoc & {
   libraryProperties?: CatalogProductLibraryPropertyDoc[] | null;
+  /** Inspiration presets: Active pre-selected option titles (PROD-3296). */
+  preconfigured?: (string | null)[] | null;
   industries?: (CatalogProductLibraryIndustryDoc | null)[] | null;
 };
 

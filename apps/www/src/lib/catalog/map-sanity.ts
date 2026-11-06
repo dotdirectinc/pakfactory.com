@@ -906,6 +906,15 @@ export function mapSanityProductLibraryItem(
         industries.push({slug, title});
     }
 
+    // Inspiration presets only (the query returns [] otherwise) — PROD-3296.
+    const preconfigured = [
+        ...new Set(
+            (doc.preconfigured ?? [])
+                .map((title) => title?.trim())
+                .filter((title): title is string => !!title),
+        ),
+    ];
+
     const membershipStyles = mapLibraryStyleRefs(doc.productStyles);
     const productStyles =
         membershipStyles.length > 0
@@ -938,6 +947,7 @@ export function mapSanityProductLibraryItem(
             ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
             industries,
             attrs,
+            ...(preconfigured.length ? {preconfigured} : {}),
         },
         propertyTitles,
         valueTitles,

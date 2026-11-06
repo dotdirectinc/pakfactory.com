@@ -4,10 +4,15 @@ import {describe, it} from 'node:test';
 import {buildProductLibraryResult} from './build-product-library';
 import {
     matchesProductItem,
+    matchesProductItemViaCustomization,
+    preconfiguredMatches,
     productItemHasFacetValue,
 } from './product-catalog-filter';
 import type {ProductLibraryItem} from './types';
-import {PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID} from './types';
+import {
+    PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+    PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID,
+} from './types';
 
 const book = {slug: 'book-style-rigid-boxes', title: 'Book Style Rigid Boxes'};
 const magnetic = {
@@ -99,6 +104,52 @@ describe('product catalog style membership (PROD-2843)', () => {
                     ],
                 },
             }),
+            false,
+        );
+    });
+});
+
+describe('search via pre-configured customizations (PROD-3296)', () => {
+    const corrugated = {slug: 'corrugated-boxes', title: 'Corrugated Boxes'};
+    const accessory = item({slug: 'ribbon', title: 'Ribbon', sku: 'ACC-072'});
+    const rigidPreset = item({
+        slug: 'luxury-gift-box',
+        title: 'Custom Luxury Gift Box',
+        kind: 'inspiration',
+        preconfigured: ['Matte', 'Satin Ribbon Handle'],
+    });
+    const corrugatedPreset = item({
+        slug: 'wine-mailer',
+        title: 'Wine Mailer',
+        kind: 'inspiration',
+        productLine: corrugated,
+        preconfigured: ['Ribbon Closure'],
+    });
+    const rigidOnly = {[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID]: ['rigid-boxes']};
+
+    it('names the matching options, case-insensitively', () => {
+        assert.deepEqual(preconfiguredMatches(rigidPreset, 'RIBBON'), ['Satin Ribbon Handle']);
+        assert.deepEqual(preconfiguredMatches(rigidPreset, ''), []);
+        assert.deepEqual(preconfiguredMatches(accessory, 'ribbon'), []);
+    });
+
+    it('is a separate match from title/SKU, so a product is never in both groups', () => {
+        const input = {query: 'ribbon', selections: {}};
+        assert.equal(matchesProductItem(accessory, input), true);
+        assert.equal(matchesProductItemViaCustomization(accessory, input), false);
+        assert.equal(matchesProductItem(rigidPreset, input), false);
+        assert.equal(matchesProductItemViaCustomization(rigidPreset, input), true);
+    });
+
+    it('respects the active filters: Rigid Boxes + "ribbon" finds the rigid preset only', () => {
+        const input = {query: 'ribbon', selections: rigidOnly};
+        assert.equal(matchesProductItemViaCustomization(rigidPreset, input), true);
+        assert.equal(matchesProductItemViaCustomization(corrugatedPreset, input), false);
+    });
+
+    it('needs a query — filters alone list products the usual way', () => {
+        assert.equal(
+            matchesProductItemViaCustomization(rigidPreset, {query: '  ', selections: rigidOnly}),
             false,
         );
     });

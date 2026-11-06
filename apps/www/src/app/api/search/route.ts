@@ -6,20 +6,25 @@ import { getSearchClient } from "@/lib/search/algolia";
 import { searchGate } from "@/lib/search/search-budget";
 import {
   emptyResponse,
+  HIGHLIGHT_ATTRIBUTES,
   HITS_PER_PAGE,
   MIN_QUERY_LENGTH,
   normalizeQuery,
   effectiveMatch,
   parseMatch,
+  parseScope,
   parseTypeFilter,
+  PRECONFIGURED_ATTRIBUTE,
   RETRIEVED_ATTRIBUTES,
   shapeResponse,
+  VIA_HITS_PER_PAGE,
 } from "@/lib/search/search-query";
 import { searchUserToken } from "@/lib/search/user-token";
 import { BLOG_URL } from "@/lib/www-nav";
 
 /**
  * GET /api/search?q=…&type=…&match=loose — the www ⌘K search (PROD-3110).
+ * `&scope=via` returns only the "Products using …" group in full (PROD-3296).
  *
  * One `site_search` query per request, server-side, so the browser never
  * talks to Algolia. Successful responses are CDN-cached by URL, so a repeat of
@@ -47,9 +52,12 @@ export async function GET(request: Request) {
   const query = normalizeQuery(url.searchParams.get("q"));
   const filter = parseTypeFilter(url.searchParams.get("type"));
   const match = effectiveMatch(query, parseMatch(url.searchParams.get("match")));
+  // `scope=via` (PROD-3296): inspiration products found through a pre-configured
+  // option only — no type filter, no facets, a larger page.
+  const via = parseScope(url.searchParams.get("scope")) === "via";
 
   if (query.length < MIN_QUERY_LENGTH) {
-    return json(emptyResponse(query, filter), 200, CACHED);
+    return json(emptyResponse(query, via ? null : filter), 200, CACHED);
   }
 
   const client = getSearchClient();
@@ -73,11 +81,17 @@ export async function GET(request: Request) {
         indexName: SITE_SEARCH_INDEX,
         searchParams: {
           query,
-          hitsPerPage: HITS_PER_PAGE,
-          facets: ["group", "type"],
+          hitsPerPage: via ? VIA_HITS_PER_PAGE : HITS_PER_PAGE,
+          facets: via ? [] : ["group", "type"],
+          restrictSearchableAttributes: via ? [PRECONFIGURED_ATTRIBUTE] : undefined,
           attributesToRetrieve: [...RETRIEVED_ATTRIBUTES],
-          attributesToHighlight: [],
-          filters: filter ? `${filter.facet}:${filter.value}` : undefined,
+          // Read only to tell direct matches from pre-configured ones (PROD-3296).
+          attributesToHighlight: [...HIGHLIGHT_ATTRIBUTES],
+          filters: via
+            ? "kind:inspiration"
+            : filter
+              ? `${filter.facet}:${filter.value}`
+              : undefined,
           removeWordsIfNoResults: match === "loose" ? "allOptional" : undefined,
           analytics: true,
           // Returns a queryID so the dialog can report clicks (PROD-3111).

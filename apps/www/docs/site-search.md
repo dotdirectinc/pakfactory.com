@@ -10,6 +10,7 @@ The ⌘K search dialog on www. One ticket per part:
 | Basic mode, the default: recents, loose suggestions, all results on Enter | PROD-2525 (#912) | built 2026-10-21 |
 | Find products by SKU | PROD-3136 (#918, #922) | built 2026-10-21; Function redeployed, `development` backfilled |
 | Show the SKU on results | PROD-3154 | built 2026-10-23; www only, no reindex |
+| Find presets by their pre-configured customizations | PROD-3296 | built 2026-11-06; needs a reindex |
 | Rank Advanced browse picks by clicks | PROD-3122 | backlog (Advanced only) |
 
 After changing the record or settings in `packages/sanity/src/algolia/site-search.ts`: run `gen:site-search-fn`, merge, redeploy the Functions stack (`npx sanity blueprints deploy` from the repo root; it re-uploads all four Functions; this one is pinned to `PINNED_DATASET` in `sanity.blueprint.ts`, currently `development`), then run the backfill with `--confirm`. Searches are CDN-cached for up to ~70 minutes, so re-test with a query nobody has run since the change.
@@ -51,16 +52,17 @@ Materials are customization options, so they show under Customizations. **Proper
 
 ### Record
 
-`objectID, type, group, typeRank, kind, sku, title, href, summary, image, imageAlt, hoverImage, parents[], tags[], publishedAtTimestamp`
+`objectID, type, group, typeRank, kind, sku, title, href, summary, image, imageAlt, hoverImage, parents[], tags[], preconfigured[], publishedAtTimestamp`
 
 * `href` is a host-free www path. Blog posts are on the www origin in production, but on staging they live at `staging-blog.pakfactory.com`. The API resolves that host.
 * `parents` holds the titles of what the document sits under: line, styles, solutions, option type and category, client, blog category.
 * `image`: lines, styles and solutions have no images of their own, so they borrow the first child's image. Products and options without an image get none, which matches www.
+* `preconfigured` (PROD-3296): inspiration products only — titles of the Active options the preset arrives with (`availableCustomizations[preselected == true]`). `[]` on standard products: their list is what they are merely *compatible* with, which would match nearly everything. The fragment is `PRECONFIGURED_OPTION_TITLES` (`packages/sanity/src/queries/preconfigured.ts`), shared with the `/products` catalog library.
 * `hoverImage`: products only — Sanity `images[1]` for the ⌘K product-grid swap (PROD-3130). Null on every other type and on products with one still. After this field lands, reindex (`gen:site-search-fn`, blueprint deploy, backfill `--confirm`); old records simply do not swap.
 * Records are about 0.6 KB each. Algolia's limit is 10 KB.
 
 Settings (`SITE_SEARCH_SETTINGS`):
-* searchable attributes: `sku`, `title`, `tags`, `parents`, `summary`
+* searchable attributes: `sku`, `title`, `tags`, `parents`, `summary`, `preconfigured` (last, so any direct match outranks a pre-configured one)
 * `sku` (products only, PROD-3136) is matched without typos, so an exact SKU finds its product first and a SKU one character off finds nothing by SKU. Temporary `TMP-` codes are left out. The SKU is also returned to the dialog and shown on product results (PROD-3154): beside the title in Basic suggestions, with the typed query in bold, and under the title on the all-results product cards.
 * facets: `type`, `group`, and `kind` (filter only)
 * ties go to `typeRank`, so products come before press releases
@@ -96,7 +98,8 @@ pnpm --filter @pakfactory/sanity run gen:site-search-fn
 
 `site-search.test.ts` fails if the copy is stale.
 
-**Known gaps** (the next backfill fixes both):
+**Known gaps** (the next backfill fixes all three):
+* Renaming or switching off a customization option fires no event for the presets that pre-select it, so their `preconfigured` titles stay until the next backfill (PROD-3296).
 * A parent switched off (line, style, solution, type or category) fires no event for its children, so their records stay until the next backfill. The API does not re-check pages per hit; a stale hit opens the page's not-found state.
 * A case study, press release or post saved with a future `publishedAt` is skipped, and nothing re-fires when that date passes.
 
@@ -131,6 +134,9 @@ The dialog never talks to Algolia. It calls two www routes:
 * `q` is normalized (lower-case, single spaces, max 80 characters). Under 2 characters it returns an empty result without calling Algolia. The dialog should send the normalized string so equivalent queries share one CDN entry.
 * **SKU queries** (`COR-008`, `cor 008`, `RGD-060-AP2`, or a prefix like `cor-00`; PROD-3136) are never loosened, so a mistyped SKU returns nothing instead of hundreds of loose matches. The product whose SKU matches exactly goes first: Algolia splits SKUs at the hyphen, so `COR-008-BR1` matches "cor-008" as well as `COR-008` does. `sku` is retrieved for this ordering and, since PROD-3154, passed to the client for display.
 * `match=loose` (Basic mode) sets Algolia `removeWordsIfNoResults: allOptional`: when every word together finds nothing, words become optional ("blue kraft mailer" → 211 hits instead of 0). Without it, every word must match (typos and the last word's prefix are still allowed). It is a separate CDN cache entry.
+* **Found via a pre-configured customization** (PROD-3296). The query asks Algolia to highlight `sku, title, tags, parents, summary, preconfigured`, only to read which attributes matched; no markup reaches the client. A product hit that matched `preconfigured` and **none of** `sku, title, tags, parents` goes to `viaCustomization` instead of `groups`, with `via` = the matched option titles (`["Satin Ribbon Handle"]`). `summary` is ignored on purpose: preset copy often repeats its options. Records indexed before the reindex have no `preconfigured`, so they stay direct matches.
+* **`scope=via`** returns that group in full: `restrictSearchableAttributes: [preconfigured]`, `kind:inspiration`, 48 hits, no facets. It is needed because `preconfigured` ranks last, so the 30-hit main page holds few of them. On `development`, “ribbon” fits 2 of its 42 presets on the main page; `scope=via` returns all 42. Basic mode sends it **once per submitted query** (Enter / See all), never while typing, and it reports no analytics event.
+* Basic mode shows the group as **Products using “…”**: while typing, up to 2 rows under the direct suggestions (more when there are fewer direct matches), from the main response; on Enter, a product grid after every other group, from `scope=via`. Each item reads “Pre-configured with …”.
 * `type` is a rail tab (`products`, `solutions`, `customizations`, `guides`, `resources`) or one record type (`product-line`, …). Anything else is ignored. With a filter, the counts cover that filter only, so the dialog keeps its rail counts from the unfiltered query.
 * 30 hits per query, ranked across all groups. A group with a count but no hits in the top 30 (often Customizations next to "mailer") fills when its tab is opened.
 * Guide links are absolute, on `NEXT_PUBLIC_BLOG_URL` (staging: `staging-blog.pakfactory.com/blog`). Everything else is a www path.
