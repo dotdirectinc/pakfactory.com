@@ -331,7 +331,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
-    ] | order(coalesce(featuredInCategory, false) desc, publishedAt desc)[0...4]${POST_CARD_FIELDS}
+    ] | order(coalesce(lastModified, publishedAt) desc)[0...4]${POST_CARD_FIELDS}
   },
   _type == "postCategoryRow" => {
     postsCount,
