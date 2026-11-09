@@ -1,15 +1,21 @@
 'use client';
 
 import type {MouseEvent} from 'react';
+import {usePathname} from 'next/navigation';
 import {Bookmark, Download} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
 import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
+import {useOptionalCustomizationDetailHost} from '@/components/customization/customization-detail-host';
+import {useQuickConfigure} from '@/components/quick-configure/quick-configure';
+import {resolveWorksWithApplyOption} from '@/lib/catalog/works-with-apply-option';
 import {Icon} from '@/components/ui/icon';
 import {StatusNotice} from '@/components/ui/status-badge';
-import {stubBookmarkAction} from '@/lib/catalog-card-actions';
+import {runBookmarkToggle} from '@/lib/bookmarks/bookmark-actions';
+import {customizationBookmarkId, useBookmarks} from '@/lib/bookmarks/bookmarks';
+import {useBookmarkAuth} from '@/lib/bookmarks/use-bookmark-auth';
 import type {CatalogLifecycle} from '@/lib/catalog/types';
-import {WWW_ROUTES} from '@/lib/www-routes';
+import {customizationCategoryHref, WWW_ROUTES} from '@/lib/www-routes';
 
 export type CustomizationRailActionsProps = {
     showCta: boolean;
@@ -33,9 +39,57 @@ export function CustomizationRailActions({
 }: CustomizationRailActionsProps) {
     const showOrderCtas = !lifecycle || lifecycle === 'active';
     const showSpecSheet = Boolean(specSheetUrl);
+    const pathname = usePathname() || '/';
+    // F25: Apply opens the Apply popup (the buyer's items first) instead of scrolling.
+    const quick = useQuickConfigure();
+    const host = useOptionalCustomizationDetailHost();
+    const applyInPopup = quick.enabled && Boolean(host);
+    const openApplyPopup = () => {
+        if (!host) return;
+        const pageOption = {category: host.worksWith.option.category, slug: host.worksWith.option.slug};
+        const option =
+            resolveWorksWithApplyOption({
+                showCta: host.showCta,
+                configurationSource: host.configurationSource,
+                pageOption,
+                achieves: host.detail.achieves,
+                selectedAchievesId: host.selectedAchievesId,
+            }) ?? pageOption;
+        quick.openApply({
+            option: {...option, title: host.detail.shortName?.trim() || host.detail.title},
+            suggestions: host.worksWith.products.map((p) => ({
+                slug: p.slug,
+                title: p.title,
+                imageUrl: p.imageUrl,
+                lineTitle: p.productLineTitle,
+            })),
+        });
+    };
 
+    // Bookmarks: the customization on this page (signed-in buyers; guests go to login).
+    const {canBookmark, loginHref} = useBookmarkAuth();
+    const {isBookmarked} = useBookmarks();
+    const detail = host?.detail;
+    const bookmarkId = detail ? customizationBookmarkId(detail.categoryValue, detail.slug) : '';
+    const bookmarked = Boolean(bookmarkId) && isBookmarked('customization', bookmarkId);
     const onBookmark = (event: MouseEvent<HTMLButtonElement>) => {
-        stubBookmarkAction(event);
+        if (!detail) return;
+        runBookmarkToggle(
+            event,
+            {
+                type: 'customization',
+                id: bookmarkId,
+                snapshot: {
+                    title: detail.title,
+                    href: customizationCategoryHref(detail.categoryValue, detail.slug),
+                    imageUrl: detail.media[0]?.src ?? null,
+                    categoryValue: detail.categoryValue,
+                    ...(detail.typeSlug ? {typeSlug: detail.typeSlug} : {}),
+                    ...(detail.typeTitle ? {typeTitle: detail.typeTitle} : {}),
+                },
+            },
+            {allowed: canBookmark, loginHref: loginHref(pathname)},
+        );
     };
 
     if (!showOrderCtas) {
@@ -63,6 +117,14 @@ export function CustomizationRailActions({
                     >
                         Apply to a product
                     </Button>
+                ) : applyInPopup ? (
+                    <Button
+                        type="button"
+                        className="h-auto w-full px-6 py-3 text-base"
+                        onClick={openApplyPopup}
+                    >
+                        Apply to a product
+                    </Button>
                 ) : (
                     <Button asChild className="h-auto w-full px-6 py-3 text-base">
                         <InPageAnchorLink
@@ -73,15 +135,16 @@ export function CustomizationRailActions({
                     </Button>
                 )
             ) : null}
-            {showBookmark ? (
+            {showBookmark && detail ? (
                 <Button
                     type="button"
                     variant="outline"
                     className="h-auto w-full px-6 py-3 text-base shadow-none"
                     onClick={onBookmark}
+                    aria-pressed={bookmarked}
                 >
                     <Icon icon={Bookmark} size="sm" />
-                    Bookmark
+                    {bookmarked ? 'Bookmarked' : 'Bookmark'}
                 </Button>
             ) : null}
             {showSpecSheet ? (

@@ -143,10 +143,46 @@ export type RequestDraft = {
     /** Request-level uploads (the requirements-step dropzone). */
     referenceImages?: RequestReferenceImage[];
     /**
+     * Consent at submit (c45, Unreleased · POC): optional email opt-in for packaging
+     * ideas and offers. Off unless ticked. Not sent to the backend yet (needs a field).
+     */
+    marketingOptIn?: boolean;
+    /**
+     * R36 What do you need? (quote request on the Contact page). Absent = packaging,
+     * today's behaviour. 'service' drops the packaging fields and makes ship-to optional.
+     */
+    need?: 'packaging' | 'service' | 'both';
+    /** R36 (owner Nov 3): what the buyer ticked, as a list that can grow. See lib/intake/needs.ts. */
+    needs?: string[];
+    /** Step intake (Nov 2): the "Something else" service, in the buyer's words (services holds OTHER_SERVICE_ID). */
+    serviceOther?: string;
+    /**
+     * Step intake (Nov 2): the buyer picked on How we can help in THIS visit. Not read back from
+     * storage, and cleared when the entry resumes a request, so a new visit starts with nothing
+     * picked; going Back within the visit keeps it. `need` and the answers under it are kept.
+     */
+    needPicked?: boolean;
+    /**
+     * Website PRD v4.7 (R36, owner Nov 6): the door that opened the general request set the need
+     * (e.g. a packaging landing page's Get a Quote), so Project details hides the choice and offers
+     * the other need as an add-on. Kept across reloads, unlike needPicked.
+     */
+    needFromDoor?: boolean;
+    /** Step intake Contact (Nov 2): the buyer's company website. Backend field still needed. */
+    contactWebsite?: string;
+    /** Product/service request opened on the step intake (v2/v3), not the one-page form (Nov 2). */
+    stepIntake?: boolean;
+    /** General quote intake on the step shell (Nov 1): ship-to is not asked. */
+    shipToOptional?: boolean;
+    /** Intake v3 offer screens answered (e.g. design help): yes / no. */
+    intakeOffers?: Record<string, 'yes' | 'no'>;
+    /**
      * When set, the Request Builder (and submit) only includes these pool line
      * ids. `null` means all lines (express / legacy / services).
      */
     builderLineIds: string[] | null;
+    /** RFQ v2: items the buyer unticked in the request's Items section (new items join ticked). */
+    excludedLineIds?: string[];
     submittedAt: string | null;
     ref: string | null;
 };
@@ -154,6 +190,28 @@ export type RequestDraft = {
 export type RequestState = {
     lines: RequestLine[];
     draft: RequestDraft;
+    /**
+     * Named drafts the buyer chose to keep (Website PRD R22, WEB-J1 D5).
+     * Each holds its brief and the lines that were in it; those lines are no
+     * longer in `lines` (the pool) until the draft is continued or deleted.
+     * Browser-only for now; following a signed-in buyer is R23 (next phase).
+     */
+    savedDrafts?: SavedDraft[];
+    /**
+     * R22 (model B): which request is open. null = "New request". When a saved
+     * draft is open, `lines` + `draft` ARE that draft (so Add to request, the
+     * brief and submit all act on it) and its savedDrafts entry is refreshed on
+     * every switch. The New request waits in `stashedNew` meanwhile.
+     */
+    activeDraftId?: string | null;
+    stashedNew?: {lines: RequestLine[]; draft: RequestDraft} | null;
+};
+
+export type SavedDraft = {
+    id: string;
+    savedAt: string;
+    draft: RequestDraft;
+    lines: RequestLine[];
 };
 
 export const EMPTY_DRAFT: RequestDraft = {
@@ -374,11 +432,32 @@ function parseDraft(value: unknown): RequestDraft {
         builderLineIds: parseBuilderLineIds(
             (d as {builderLineIds?: unknown}).builderLineIds,
         ),
+        ...(Array.isArray((d as {excludedLineIds?: unknown}).excludedLineIds)
+            ? {excludedLineIds: ((d as {excludedLineIds: unknown[]}).excludedLineIds).filter((x): x is string => typeof x === 'string')}
+            : {}),
         submittedAt:
             typeof d.submittedAt === 'string' || d.submittedAt === null
                 ? d.submittedAt
                 : null,
         ref: typeof d.ref === 'string' || d.ref === null ? d.ref : null,
+        // Kept across reloads (Nov 2): these were dropped on read, so a resumed intake lost them.
+        ...(d.need === 'packaging' || d.need === 'service' || d.need === 'both' ? {need: d.need} : {}),
+        ...(Array.isArray(d.needs) ? {needs: (d.needs as unknown[]).filter((x): x is string => typeof x === 'string')} : {}),
+        ...(typeof d.marketingOptIn === 'boolean' ? {marketingOptIn: d.marketingOptIn} : {}),
+        ...(typeof d.shipToOptional === 'boolean' ? {shipToOptional: d.shipToOptional} : {}),
+        ...(typeof d.serviceOther === 'string' ? {serviceOther: d.serviceOther} : {}),
+        ...(typeof d.contactWebsite === 'string' ? {contactWebsite: d.contactWebsite} : {}),
+        ...(typeof d.stepIntake === 'boolean' ? {stepIntake: d.stepIntake} : {}),
+        ...(typeof d.needFromDoor === 'boolean' ? {needFromDoor: d.needFromDoor} : {}),
+        // needPicked is NOT read back (owner Nov 2): a new visit (reload, Save & exit, a door)
+        // starts How we can help with nothing picked; the answers under it are kept.
+        ...(d.intakeOffers && typeof d.intakeOffers === 'object'
+            ? {
+                  intakeOffers: Object.fromEntries(
+                      Object.entries(d.intakeOffers).filter(([, v]) => v === 'yes' || v === 'no'),
+                  ) as Record<string, 'yes' | 'no'>,
+              }
+            : {}),
     };
 }
 
@@ -412,11 +491,17 @@ function parseState(raw: string | null): RequestState {
             };
         }
         if (!parsed || typeof parsed !== 'object') return EMPTY_STATE;
-        const obj = parsed as {lines?: unknown; draft?: unknown};
+        const obj = parsed as {lines?: unknown; draft?: unknown; savedDrafts?: unknown; activeDraftId?: unknown; stashedNew?: unknown};
         const lines = Array.isArray(obj.lines)
             ? obj.lines.filter(isRequestLine)
             : [];
-        return {lines, draft: parseDraft(obj.draft)};
+        const savedDrafts = parseSavedDrafts(obj.savedDrafts);
+        const activeDraftId = typeof obj.activeDraftId === 'string' && savedDrafts.some((x) => x.id === obj.activeDraftId) ? obj.activeDraftId : null;
+        const sn = obj.stashedNew as {lines?: unknown; draft?: unknown} | null | undefined;
+        const stashedNew = sn && typeof sn === 'object'
+            ? {lines: Array.isArray(sn.lines) ? sn.lines.filter(isRequestLine) : [], draft: parseDraft(sn.draft)}
+            : null;
+        return {lines, draft: parseDraft(obj.draft), savedDrafts, activeDraftId, stashedNew};
     } catch {
         return EMPTY_STATE;
     }
@@ -431,8 +516,30 @@ function emit() {
     for (const listener of listeners) listener();
 }
 
-function persist(state: RequestState): void {
+function parseSavedDrafts(value: unknown): SavedDraft[] {
+    if (!Array.isArray(value)) return [];
+    return value.flatMap((v): SavedDraft[] => {
+        if (!v || typeof v !== 'object') return [];
+        const o = v as {id?: unknown; savedAt?: unknown; draft?: unknown; lines?: unknown};
+        if (typeof o.id !== 'string') return [];
+        return [{
+            id: o.id,
+            savedAt: asString(o.savedAt, new Date(0).toISOString()),
+            draft: parseDraft(o.draft),
+            lines: Array.isArray(o.lines) ? o.lines.filter(isRequestLine) : [],
+        }];
+    });
+}
+
+function persist(next: RequestState): void {
     if (typeof window === 'undefined') return;
+    // Most writers only pass {lines, draft}: keep the saved drafts unless given.
+    const state: RequestState = {
+        ...next,
+        savedDrafts: next.savedDrafts ?? getRequestStateSnapshot().savedDrafts ?? [],
+        activeDraftId: next.activeDraftId !== undefined ? next.activeDraftId : (getRequestStateSnapshot().activeDraftId ?? null),
+        stashedNew: next.stashedNew !== undefined ? next.stashedNew : (getRequestStateSnapshot().stashedNew ?? null),
+    };
     const raw = JSON.stringify(state);
     window.localStorage.setItem(REQUEST_STORAGE_KEY, raw);
     cachedRaw = raw;
@@ -663,13 +770,14 @@ export function expandRequestProducts(): void {
     });
 }
 
-/** Clears everything the buyer typed. Product lines in the pool survive. */
+/** Clears everything the buyer typed and retires the lead id. Product lines in the pool survive. */
 export function discardRequestDraft(): void {
     const current = getRequestStateSnapshot();
     persist({
         lines: current.lines,
         draft: {
             ...EMPTY_DRAFT,
+            id: newId('draft'),
             productsExpanded: current.lines.length > 0,
         },
     });
@@ -730,26 +838,28 @@ export function startRequestFromSelection(selectedIds: string[]): void {
         .map((line) => line.id);
     if (builderLineIds.length === 0) return;
 
-    const base = current.draft.submittedAt
-        ? {...EMPTY_DRAFT, id: newId('draft')}
-        : {...current.draft};
-
+    // Fresh answers each time; the selected products stay in the pool and this draft.
     persist({
         lines: current.lines,
         draft: {
-            ...base,
+            ...EMPTY_DRAFT,
+            id: newId('draft'),
             builderLineIds,
             express: false,
             entryKind: 'products',
             productsExpanded: true,
-            servicesEnabled: base.servicesEnabled,
-            title: base.title || defaultDraftTitle(),
+            servicesEnabled: false,
+            title: defaultDraftTitle(),
             submittedAt: null,
             ref: null,
         },
     });
 }
 
+/**
+ * Start (or restart) a product / service / general intake with empty answers.
+ * Pool lines stay; the previous lead's answers do not carry across.
+ */
 export function ensureBuilderDraft(
     opts?: {express?: boolean; mode?: RequestEntryKind},
 ): void {
@@ -759,30 +869,22 @@ export function ensureBuilderDraft(
         (opts?.express ? 'express' : 'products');
 
     if (mode === 'express') {
-        if (
-            current.draft.entryKind !== 'express' ||
-            !current.draft.express ||
-            current.draft.submittedAt
-        ) {
-            startExpressDraft();
-        }
+        startExpressDraft();
         return;
     }
 
     if (mode === 'services') {
-        const base = current.draft.submittedAt
-            ? {...EMPTY_DRAFT}
-            : {...current.draft};
         persist({
-            lines: current.draft.submittedAt ? [] : current.lines,
+            lines: current.lines,
             draft: {
-                ...base,
+                ...EMPTY_DRAFT,
+                id: newId('draft'),
                 express: false,
                 entryKind: 'services',
                 productsExpanded: false,
                 servicesEnabled: true,
                 builderLineIds: null,
-                title: base.title || defaultDraftTitle(),
+                title: defaultDraftTitle(),
                 submittedAt: null,
                 ref: null,
             },
@@ -790,27 +892,169 @@ export function ensureBuilderDraft(
         return;
     }
 
-    // products entry
+    // products entry — empty answers; keep a Your Request selection scope if one was just set
+    const keepScope =
+        current.draft.entryKind === 'products' &&
+        !current.draft.express &&
+        Array.isArray(current.draft.builderLineIds) &&
+        current.draft.builderLineIds.length > 0;
     persist({
-        ...current,
+        lines: current.lines,
         draft: {
-            ...current.draft,
+            ...EMPTY_DRAFT,
+            id: newId('draft'),
             express: false,
             entryKind: 'products',
             productsExpanded: true,
-            servicesEnabled: current.draft.servicesEnabled,
-            title: current.draft.title || defaultDraftTitle(),
-            ...(current.draft.submittedAt
-                ? {submittedAt: null, ref: null}
-                : {}),
+            servicesEnabled: false,
+            builderLineIds: keepScope ? current.draft.builderLineIds : null,
+            title: defaultDraftTitle(),
+            submittedAt: null,
+            ref: null,
         },
     });
 }
 
 export function defaultDraftTitle(date = new Date()): string {
-    return `Draft request - ${date.toLocaleDateString('en-US', {
+    return `Draft quote request - ${date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
     })}`;
+}
+
+/** Display name of a request tab. */
+export function requestName(draft: RequestDraft): string {
+    return draft.title || defaultDraftTitle();
+}
+
+/** The open draft's latest contents, written back into savedDrafts. */
+function withActiveSynced(state: RequestState): SavedDraft[] {
+    const list = state.savedDrafts ?? [];
+    if (!state.activeDraftId) return list;
+    return list.map((x) =>
+        x.id === state.activeDraftId
+            ? {...x, draft: {...state.draft, id: x.id}, lines: state.lines, savedAt: new Date().toISOString()}
+            : x,
+    );
+}
+
+/** The requests as tabs: New request first, then each draft (open one shows live counts). */
+export function requestTabs(state: RequestState): {id: string | null; name: string; count: number}[] {
+    const newCount = state.activeDraftId ? (state.stashedNew?.lines.length ?? 0) : state.lines.length;
+    return [
+        {id: null, name: 'New quote request', count: newCount},
+        ...(state.savedDrafts ?? []).map((x) => ({
+            id: x.id,
+            name: x.id === state.activeDraftId ? requestName(state.draft) : requestName(x.draft),
+            count: x.id === state.activeDraftId ? state.lines.length : x.lines.length,
+        })),
+    ];
+}
+
+/**
+ * Switch the open request (R22 model B). The open one is put away (a draft
+ * back into savedDrafts, the New request into stashedNew) and the target is
+ * loaded into lines + draft, so everything that adds or submits acts on it.
+ */
+export function switchRequest(targetId: string | null): void {
+    const current = getRequestStateSnapshot();
+    if ((current.activeDraftId ?? null) === targetId) return;
+    const savedDrafts = withActiveSynced(current);
+    const stashedNew = current.activeDraftId ? (current.stashedNew ?? null) : {lines: current.lines, draft: current.draft};
+    if (targetId === null) {
+        const back = stashedNew ?? {lines: [], draft: {...EMPTY_DRAFT, id: newId('draft')}};
+        persist({lines: back.lines, draft: back.draft, savedDrafts, activeDraftId: null, stashedNew: null});
+        return;
+    }
+    const target = savedDrafts.find((x) => x.id === targetId);
+    if (!target) return;
+    persist({
+        lines: target.lines,
+        draft: {...target.draft, id: target.id, builderLineIds: null, productsExpanded: target.lines.length > 0},
+        savedDrafts,
+        activeDraftId: target.id,
+        stashedNew,
+    });
+}
+
+/**
+ * "Save as draft" (R22): name the request in the brief and keep it as a tab.
+ * From New request: the brief and the items in it become a new draft (the
+ * rest stay in New request) and that draft becomes the open request. From an
+ * open draft: it is already a tab; just keep its name and time.
+ * Express (General brief) is a normal form: never saved. Returns the draft id.
+ */
+export function saveCurrentDraft(): string | null {
+    const current = getRequestStateSnapshot();
+    const d = current.draft;
+    if (d.express || d.entryKind === 'express' || d.submittedAt) return null;
+    if (current.activeDraftId) {
+        persist({...current, draft: {...d, title: requestName(d)}, savedDrafts: withActiveSynced({...current, draft: {...d, title: requestName(d)}})});
+        return current.activeDraftId;
+    }
+    const inBrief = linesForBuilder(current.lines, d);
+    if (isDraftEmpty(d) && inBrief.length === 0) return null;
+    const ids = new Set(inBrief.map((l) => l.id));
+    const id = d.id;
+    const saved: SavedDraft = {
+        id,
+        savedAt: new Date().toISOString(),
+        draft: {...d, title: requestName(d), builderLineIds: null},
+        lines: inBrief,
+    };
+    const rest = current.lines.filter((l) => !ids.has(l.id));
+    persist({
+        lines: saved.lines,
+        draft: {...saved.draft, productsExpanded: saved.lines.length > 0},
+        savedDrafts: [...(current.savedDrafts ?? []).filter((x) => x.id !== id), saved],
+        activeDraftId: id,
+        stashedNew: {lines: rest, draft: {...EMPTY_DRAFT, id: newId('draft'), productsExpanded: rest.length > 0}},
+    });
+    return id;
+}
+
+export function renameSavedDraft(id: string, title: string): void {
+    const current = getRequestStateSnapshot();
+    const t = title.trim();
+    if (!t) return;
+    persist({
+        ...current,
+        draft: current.activeDraftId === id ? {...current.draft, title: t} : current.draft,
+        savedDrafts: (current.savedDrafts ?? []).map((x) => (x.id === id ? {...x, draft: {...x.draft, title: t}} : x)),
+    });
+}
+
+/** Delete a draft; like Discard, its items go back to New request. */
+export function deleteSavedDraft(id: string): void {
+    if ((getRequestStateSnapshot().activeDraftId ?? null) === id) switchRequest(null);
+    const current = getRequestStateSnapshot();
+    const target = (current.savedDrafts ?? []).find((x) => x.id === id);
+    if (!target) return;
+    const merge = (into: RequestLine[]) => {
+        const have = new Set(into.map((l) => l.id));
+        return [...into, ...target.lines.filter((l) => !have.has(l.id))];
+    };
+    const savedDrafts = (current.savedDrafts ?? []).filter((x) => x.id !== id);
+    if (current.activeDraftId) {
+        const sn = current.stashedNew ?? {lines: [], draft: {...EMPTY_DRAFT, id: newId('draft')}};
+        persist({...current, savedDrafts, stashedNew: {...sn, lines: merge(sn.lines)}});
+    } else {
+        persist({...current, lines: merge(current.lines), savedDrafts});
+    }
+}
+
+/** After a draft is submitted it stops being a draft: drop its tab and reopen New request. */
+export function settleSubmittedDraft(): void {
+    const current = getRequestStateSnapshot();
+    if (!current.activeDraftId || !current.draft.submittedAt) return;
+    const id = current.activeDraftId;
+    const back = current.stashedNew ?? {lines: [], draft: {...EMPTY_DRAFT, id: newId('draft')}};
+    persist({
+        lines: back.lines,
+        draft: back.draft,
+        savedDrafts: (current.savedDrafts ?? []).filter((x) => x.id !== id),
+        activeDraftId: null,
+        stashedNew: null,
+    });
 }

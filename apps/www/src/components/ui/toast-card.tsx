@@ -17,6 +17,8 @@ export type ToastCardProps = {
     description?: string;
     /** Rendered as an underlined link below the text, not a button beside it. */
     action?: ToastCardAction;
+    /** A second, in-place action (e.g. Undo), shown before the link. Closes the toast. */
+    secondaryAction?: {label: string; onClick: () => void};
     /** Defaults to a check in a circle. Pass a node to swap the glyph. */
     icon?: ReactNode;
     dismissLabel: string;
@@ -35,6 +37,7 @@ export function ToastCard({
     title,
     description,
     action,
+    secondaryAction,
     icon,
     dismissLabel,
     onDismiss,
@@ -58,6 +61,18 @@ export function ToastCard({
                     <p className="mt-1 text-sm text-muted-foreground">
                         {description}
                     </p>
+                ) : null}
+                {secondaryAction ? (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            secondaryAction.onClick();
+                            onDismiss();
+                        }}
+                        className="mt-2 mr-4 inline-flex items-center text-sm font-medium text-foreground underline underline-offset-4"
+                    >
+                        {secondaryAction.label}
+                    </button>
                 ) : null}
                 {action ? (
                     <Link

@@ -17,6 +17,12 @@ import {
     clearAllRequestLines,
     consumeSubmittedRequestLines,
     discardRequestDraft,
+    saveCurrentDraft,
+    switchRequest,
+    requestTabs,
+    settleSubmittedDraft,
+    renameSavedDraft,
+    deleteSavedDraft,
     ensureBuilderDraft,
     expandRequestProducts,
     getRequestStateServerSnapshot,
@@ -33,6 +39,7 @@ import {
     type RequestEntryKind,
     type RequestLine,
     type RequestState,
+    type SavedDraft,
     type UpdateLinePatch,
 } from '@/lib/request/request.storage';
 
@@ -54,6 +61,18 @@ type RequestContextValue = {
     startFromSelection: (selectedIds: string[]) => void;
     ensureBuilder: (opts?: {express?: boolean; mode?: RequestEntryKind}) => void;
     discardDraft: () => void;
+    /** Named drafts kept from "Save as draft" (R22). */
+    savedDrafts: SavedDraft[];
+    /** Save as draft (R22): returns the draft id now open, or null. */
+    saveDraft: () => string | null;
+    /** The open request: null = New request, else a saved draft id. */
+    activeDraftId: string | null;
+    /** New request + each draft, with live counts. */
+    tabs: {id: string | null; name: string; count: number}[];
+    switchTo: (id: string | null) => void;
+    settleSubmitted: () => void;
+    renameDraft: (id: string, title: string) => void;
+    deleteDraft: (id: string) => void;
     /** The signed-in buyer, or null. Resolved on the server; never fetched here. */
     viewer: AccountIdentity | null;
 };
@@ -121,6 +140,14 @@ export function RequestProvider({
     const discardDraft = useCallback(() => {
         discardRequestDraft();
     }, []);
+    const saveDraft = useCallback(() => saveCurrentDraft(), []);
+    const switchTo = useCallback((id: string | null) => switchRequest(id), []);
+    const settleSubmitted = useCallback(() => settleSubmittedDraft(), []);
+    const tabs = useMemo(() => requestTabs(state), [state]);
+    const activeDraftId = state.activeDraftId ?? null;
+    const renameDraft = useCallback((id: string, title: string) => renameSavedDraft(id, title), []);
+    const deleteDraft = useCallback((id: string) => deleteSavedDraft(id), []);
+    const savedDrafts = useMemo(() => state.savedDrafts ?? [], [state.savedDrafts]);
 
     /**
      * Seed the draft from the account, ONCE per mount, and only into fields the
@@ -183,6 +210,24 @@ export function RequestProvider({
         if (Object.keys(patch).length > 0) updateRequestDraft(patch);
     }, [viewer, state.draft.id]);
 
+    // Owner Nov 3: signing out mid-request clears the contact details that came from the account
+    // (fields the buyer changed are kept). Request only: nothing is written back to the account.
+    const lastViewer = useRef<AccountIdentity | null>(viewer);
+    useEffect(() => {
+        const was = lastViewer.current;
+        lastViewer.current = viewer;
+        if (!was || viewer) return;
+        // Signing in again re-seeds this draft.
+        seededDraftId.current = null;
+        const draft = getRequestStateSnapshot().draft;
+        if (draft.submittedAt) return;
+        const patch: Partial<RequestDraft> = {};
+        if (draft.contactEmail === was.email) patch.contactEmail = '';
+        if (was.firstName && draft.contactFirstName === was.firstName) patch.contactFirstName = '';
+        if (was.lastName && draft.contactLastName === was.lastName) patch.contactLastName = '';
+        if (Object.keys(patch).length > 0) updateRequestDraft(patch);
+    }, [viewer]);
+
     const value = useMemo(
         () => ({
             lines: state.lines,
@@ -199,6 +244,14 @@ export function RequestProvider({
             startFromSelection,
             ensureBuilder,
             discardDraft,
+            savedDrafts,
+            saveDraft,
+            activeDraftId,
+            tabs,
+            switchTo,
+            settleSubmitted,
+            renameDraft,
+            deleteDraft,
             viewer,
         }),
         [
@@ -216,6 +269,14 @@ export function RequestProvider({
             startFromSelection,
             ensureBuilder,
             discardDraft,
+            savedDrafts,
+            saveDraft,
+            activeDraftId,
+            tabs,
+            switchTo,
+            settleSubmitted,
+            renameDraft,
+            deleteDraft,
             viewer,
         ],
     );

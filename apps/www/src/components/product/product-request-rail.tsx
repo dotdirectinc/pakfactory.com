@@ -2,6 +2,7 @@
 
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {AddToRequestButton} from '@/components/product/add-to-request-button';
+import {ApplyChooser} from '@/components/product/apply-chooser';
 import {ContentsField} from '@/components/product/contents-field';
 import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
@@ -83,6 +84,7 @@ export function ProductRequestRail() {
             </OverviewSection>
 
             <OverviewSection>
+                <ApplyChooser />
                 <CustomizationEntry
                     availableCustomizations={product.availableCustomizations}
                     customizationRules={product.customizationRules}

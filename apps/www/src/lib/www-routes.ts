@@ -22,6 +22,7 @@ export const WWW_ROUTES = {
     requestProducts: '/request/products',
     requestExpress: '/request/general',
     requestServices: '/request/services',
+    bookmarks: '/bookmarks',
 } as const;
 
 export type WwwRouteHref = (typeof WWW_ROUTES)[keyof typeof WWW_ROUTES];
