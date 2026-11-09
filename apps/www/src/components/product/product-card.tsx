@@ -2,7 +2,8 @@
 
 import {StatusBadge} from '@/components/ui/status-badge';
 import type {CatalogLifecycle} from '@/lib/catalog/types';
-import {useState, type MouseEvent} from 'react';
+import {usePathname} from 'next/navigation';
+import type {MouseEvent} from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
 import {Columns2, Package} from 'lucide-react';
@@ -12,10 +13,11 @@ import {Icon} from '@/components/ui/icon';
 import {IconActionRow} from '@/components/ui/icon-action-row';
 import {MediaCardFrame} from '@/components/ui/media-card-frame';
 import {SanityImage} from '@/components/ui/sanity-image';
-import {
-    stubBookmarkAction,
-    stubCompareAction,
-} from '@/lib/catalog-card-actions';
+import {runBookmarkToggle} from '@/lib/bookmarks/bookmark-actions';
+import {useBookmarks} from '@/lib/bookmarks/bookmarks';
+import {useBookmarkAuth} from '@/lib/bookmarks/use-bookmark-auth';
+import {labelFromSlug} from '@/lib/compare/compare-set';
+import {useCompareToggle} from '@/lib/compare/use-compare-toggle';
 import {displayProductSku} from '@/lib/catalog/display-sku';
 import {pickCardHoverStill} from '@/lib/catalog/card-hover-still';
 import {useSanityImageSettle} from '@/lib/sanity/use-sanity-image-settle';
@@ -42,6 +44,8 @@ export type ProductCardImage = {
 export type ProductCardData = {
     title: string;
     href: string;
+    /** Product slug — bookmark id when set; otherwise derived from href. */
+    slug?: string;
     sku?: string;
     eyebrowLabel?: string;
     imageUrl?: string | null;
@@ -50,6 +54,7 @@ export type ProductCardData = {
     images?: ProductCardImage[];
     moq?: number | string;
     leadTime?: string;
+    productLine?: {slug: string; title: string};
     /** Coming soon shows a badge on the image; listings never carry discontinued. */
     status?: CatalogLifecycle;
     /** Compatibility / match badge on the media (PROD-2921). */
@@ -79,13 +84,6 @@ function resolveGallery(data: ProductCardData): ProductCardImage[] {
     return [];
 }
 
-const compareAction = {
-    id: 'compare',
-    label: 'Compare',
-    ariaLabel: 'Compare',
-    icon: Columns2,
-    onClick: stubCompareAction,
-} as const;
 
 /**
  * **Transactional card** — product catalog tile (SKU eyebrow, bookmark / compare).
@@ -104,16 +102,78 @@ export function ProductCard({
     // Strip ?query so compatibility handoff hrefs don't pollute the slug.
     const pathOnly = data.href.split('?')[0] ?? '';
     const slugFromHref = pathOnly.split('/').filter(Boolean).pop() ?? '';
-    const eyebrow = displayProductSku(data.sku, slugFromHref).toUpperCase();
-    const [saved, setSaved] = useState(false);
+    const productSlug = data.slug?.trim() || slugFromHref;
+    const eyebrow = displayProductSku(data.sku, productSlug).toUpperCase();
+    const pathname = usePathname() || '/';
+    const {canBookmark, loginHref} = useBookmarkAuth();
+    const {isBookmarked} = useBookmarks();
+    const saved = isBookmarked('product', productSlug);
     const {prefetch, enablePrefetch} = usePointerPrefetch(data.href);
     const gallery = resolveGallery(data);
     const hover = pickCardHoverStill(gallery[0]?.src, gallery[1]);
+    const restImage = gallery[0];
+    // R43 (PRD v4.6): Add to compare from any product card; groups by product line (R44).
+    const compareToggle = useCompareToggle(
+        productSlug
+            ? {
+                  kind: 'product',
+                  id: productSlug,
+                  title: data.title,
+                  href: pathOnly || data.href,
+                  imageUrl: restImage?.src ?? data.imageUrl ?? null,
+                  groupKey: data.productLine?.slug ?? 'products',
+                  groupLabel: data.productLine?.title ?? labelFromSlug(data.productLine?.slug ?? 'products'),
+                  ...(data.sku ? {sku: data.sku} : {}),
+              }
+            : null,
+    );
+    const compareAction = {
+        id: 'compare',
+        label: compareToggle.actionLabel,
+        ariaLabel: compareToggle.actionLabel,
+        icon: Columns2,
+        onClick: compareToggle.onClick,
+    };
 
     function handleBookmark(event: MouseEvent<HTMLButtonElement>) {
-        stubBookmarkAction(event);
-        setSaved((prev) => !prev);
+        const moq =
+            typeof data.moq === 'number'
+                ? data.moq
+                : typeof data.moq === 'string' && /^\d+$/.test(data.moq)
+                  ? Number(data.moq)
+                  : undefined;
+        runBookmarkToggle(
+            event,
+            {
+                type: 'product',
+                id: productSlug,
+                snapshot: {
+                    title: data.title,
+                    href: pathOnly || data.href,
+                    imageUrl: restImage?.src ?? data.imageUrl,
+                    imageAlt: restImage?.alt ?? data.imageAlt ?? data.title,
+                    ...(data.productLine
+                        ? {
+                              productLineSlug: data.productLine.slug,
+                              productLineTitle: data.productLine.title,
+                          }
+                        : {}),
+                    ...(data.sku ? {sku: data.sku} : {}),
+                    ...(moq != null ? {moq} : {}),
+                },
+            },
+            {allowed: canBookmark, loginHref: loginHref(pathname)},
+        );
     }
+
+    const bookmarkButton = (
+        <BookmarkIconButton
+            pressed={saved}
+            onClick={handleBookmark}
+            ariaLabel={saved ? 'Bookmarked' : 'Bookmark product'}
+            tooltipSide="bottom"
+        />
+    );
 
     const placeholder = (
         <span className="flex size-full items-center justify-center">
@@ -173,14 +233,7 @@ export function ProductCard({
                     <StatusBadge status={data.status} />
                 ) : undefined
             }
-            bookmark={
-                <BookmarkIconButton
-                    pressed={saved}
-                    onClick={handleBookmark}
-                    ariaLabel="Bookmark product"
-                    tooltipSide="bottom"
-                />
-            }
+            bookmark={bookmarkButton}
             mediaActions={
                 <IconActionRow
                     className="shrink-0"
@@ -200,12 +253,7 @@ export function ProductCard({
                             <span className="min-w-0 flex-1" />
                         )}
                         <div className="flex shrink-0 items-center gap-2 sm:hidden">
-                            <BookmarkIconButton
-                                pressed={saved}
-                                onClick={handleBookmark}
-                                ariaLabel="Bookmark product"
-                                tooltipSide="bottom"
-                            />
+                            {bookmarkButton}
                             <IconActionRow
                                 variant="media"
                                 tooltipSide="bottom"

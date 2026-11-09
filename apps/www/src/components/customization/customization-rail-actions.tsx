@@ -2,7 +2,7 @@
 
 import type {MouseEvent} from 'react';
 import {usePathname} from 'next/navigation';
-import {Bookmark, Download} from 'lucide-react';
+import {Bookmark, Columns2, Download} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
 import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
@@ -12,6 +12,9 @@ import {resolveWorksWithApplyOption} from '@/lib/catalog/works-with-apply-option
 import {Icon} from '@/components/ui/icon';
 import {StatusNotice} from '@/components/ui/status-badge';
 import {runBookmarkToggle} from '@/lib/bookmarks/bookmark-actions';
+import {CompareToggleLabel} from '@/components/compare/compare-toggle-label';
+import {labelFromSlug} from '@/lib/compare/compare-set';
+import {useCompareToggle} from '@/lib/compare/use-compare-toggle';
 import {customizationBookmarkId, useBookmarks} from '@/lib/bookmarks/bookmarks';
 import {useBookmarkAuth} from '@/lib/bookmarks/use-bookmark-auth';
 import type {CatalogLifecycle} from '@/lib/catalog/types';
@@ -72,6 +75,22 @@ export function CustomizationRailActions({
     const detail = host?.detail;
     const bookmarkId = detail ? customizationBookmarkId(detail.categoryValue, detail.slug) : '';
     const bookmarked = Boolean(bookmarkId) && isBookmarked('customization', bookmarkId);
+    // R43 (PRD v4.6): Add to compare on the Customization DP; groups by library category (R44).
+    const compareToggle = useCompareToggle(
+        detail
+            ? {
+                  kind: 'customization',
+                  id: bookmarkId,
+                  title: detail.title,
+                  href: customizationCategoryHref(detail.categoryValue, detail.slug),
+                  imageUrl: detail.media[0]?.src ?? null,
+                  groupKey: detail.categoryValue,
+                  groupLabel: detail.categoryLabel?.trim() || labelFromSlug(detail.categoryValue),
+                  categoryValue: detail.categoryValue,
+                  ...(detail.typeTitle ? {typeTitle: detail.typeTitle} : {}),
+              }
+            : null,
+    );
     const onBookmark = (event: MouseEvent<HTMLButtonElement>) => {
         if (!detail) return;
         runBookmarkToggle(
@@ -145,6 +164,18 @@ export function CustomizationRailActions({
                 >
                     <Icon icon={Bookmark} size="sm" />
                     {bookmarked ? 'Bookmarked' : 'Bookmark'}
+                </Button>
+            ) : null}
+            {detail ? (
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="group/cmp h-auto w-full px-6 py-3 text-base shadow-none"
+                    onClick={compareToggle.onClick}
+                    aria-pressed={compareToggle.inCompare}
+                >
+                    <Icon icon={Columns2} size="sm" />
+                    <CompareToggleLabel inCompare={compareToggle.inCompare} />
                 </Button>
             ) : null}
             {showSpecSheet ? (

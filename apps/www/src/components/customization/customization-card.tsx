@@ -9,6 +9,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
+import {usePathname} from 'next/navigation';
 import {Columns2, Package} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -17,8 +18,15 @@ import {Icon} from '@/components/ui/icon';
 import {IconActionRow} from '@/components/ui/icon-action-row';
 import {MediaCardFrame} from '@/components/ui/media-card-frame';
 import {SanityImage} from '@/components/ui/sanity-image';
-import {stubBookmarkAction, stubCompareAction} from '@/lib/catalog-card-actions';
+import {runBookmarkToggle} from '@/lib/bookmarks/bookmark-actions';
+import {
+    customizationBookmarkId,
+    useBookmarks,
+} from '@/lib/bookmarks/bookmarks';
+import {useBookmarkAuth} from '@/lib/bookmarks/use-bookmark-auth';
 import type {CustomizationLibraryItem} from '@/lib/catalog/types';
+import {labelFromSlug} from '@/lib/compare/compare-set';
+import {useCompareToggle} from '@/lib/compare/use-compare-toggle';
 import {useSanityImageSettle} from '@/lib/sanity/use-sanity-image-settle';
 import {
     mediaDissolveHoverInClass,
@@ -38,6 +46,7 @@ export type CustomizationCardData = Pick<
     | 'categoryValue'
     | 'categoryLabel'
     | 'typeTitle'
+    | 'typeSlug'
     | 'imageUrl'
     | 'imageAlt'
     | 'featuredImageUrl'
@@ -53,14 +62,6 @@ type CustomizationCardProps = {
     /** Above-fold catalog tiles — LCP candidates. */
     priority?: boolean;
 };
-
-const compareAction = {
-    id: 'compare',
-    label: 'Compare',
-    ariaLabel: 'Compare',
-    icon: Columns2,
-    onClick: stubCompareAction,
-} as const;
 
 /**
  * Catalog thumbs only (PROD-3102 parity): under-report slot width so with 2× DPR
@@ -147,7 +148,11 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
     const href = customizationCategoryHref(item.categoryValue, item.slug);
     const displayTitle = item.shortName?.trim() || item.title;
     const eyebrow = item.typeTitle?.trim().toUpperCase() ?? '';
-    const [saved, setSaved] = useState(false);
+    const bookmarkId = customizationBookmarkId(item.categoryValue, item.slug);
+    const pathname = usePathname() || '/';
+    const {canBookmark, loginHref} = useBookmarkAuth();
+    const {isBookmarked} = useBookmarks();
+    const saved = isBookmarked('customization', bookmarkId);
     const {prefetch, enablePrefetch} = usePointerPrefetch(href);
     const [playing, setPlaying] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -155,6 +160,18 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
     const isMobile = useIsMobileViewport();
 
     const {thumbSrc, thumbAlt, hoverVideo, hoverImage} = resolveCardMedia(item);
+    // R43/R44 (PRD v4.6): one compare set; customizations group by library category.
+    const compareToggle = useCompareToggle({
+        kind: 'customization',
+        id: bookmarkId,
+        title: displayTitle,
+        href,
+        imageUrl: thumbSrc ?? null,
+        groupKey: item.categoryValue,
+        groupLabel: item.categoryLabel?.trim() || labelFromSlug(item.categoryValue),
+        categoryValue: item.categoryValue,
+        ...(item.typeTitle ? {typeTitle: item.typeTitle} : {}),
+    });
     const allowHoverFx = !prefersReducedMotion && !isMobile;
     const showHoverVideo = allowHoverFx && Boolean(hoverVideo);
     const showHoverImage = allowHoverFx && Boolean(hoverImage) && !showHoverVideo;
@@ -169,9 +186,54 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
     }, [showHoverVideo]);
 
     function handleBookmark(event: MouseEvent<HTMLButtonElement>) {
-        stubBookmarkAction(event);
-        setSaved((prev) => !prev);
+        runBookmarkToggle(
+            event,
+            {
+                type: 'customization',
+                id: bookmarkId,
+                snapshot: {
+                    title: displayTitle,
+                    href,
+                    imageUrl: thumbSrc,
+                    imageAlt: thumbAlt,
+                    categoryValue: item.categoryValue,
+                    ...(item.typeSlug ? {typeSlug: item.typeSlug} : {}),
+                    ...(item.typeTitle ? {typeTitle: item.typeTitle} : {}),
+                },
+            },
+            {allowed: canBookmark, loginHref: loginHref(pathname)},
+        );
     }
+
+    const compareAction = {
+        id: 'compare',
+        label: compareToggle.actionLabel,
+        ariaLabel: compareToggle.actionLabel,
+        icon: Columns2,
+        onClick: compareToggle.onClick,
+    };
+
+    const bookmarkButton = (
+        <span>
+            <BookmarkIconButton
+                pressed={saved}
+                onClick={handleBookmark}
+                ariaLabel={saved ? 'Bookmarked' : 'Bookmark customization'}
+                tooltipSide="bottom"
+            />
+        </span>
+    );
+
+    const compareRow = (
+        <span>
+            <IconActionRow
+                className="shrink-0"
+                variant="media"
+                tooltipSide="bottom"
+                actions={[compareAction]}
+            />
+        </span>
+    );
 
     const startVideo = () => {
         if (!showHoverVideo) return;
@@ -270,22 +332,8 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
                     <StatusBadge status={item.status} />
                 ) : undefined
             }
-            bookmark={
-                <BookmarkIconButton
-                    pressed={saved}
-                    onClick={handleBookmark}
-                    ariaLabel="Bookmark customization"
-                    tooltipSide="bottom"
-                />
-            }
-            mediaActions={
-                <IconActionRow
-                    className="shrink-0"
-                    variant="media"
-                    tooltipSide="bottom"
-                    actions={[compareAction]}
-                />
-            }
+            bookmark={bookmarkButton}
+            mediaActions={compareRow}
             meta={
                 <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
@@ -297,17 +345,8 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
                             <span className="min-w-0 flex-1" />
                         )}
                         <div className="flex shrink-0 items-center gap-2 sm:hidden">
-                            <BookmarkIconButton
-                                pressed={saved}
-                                onClick={handleBookmark}
-                                ariaLabel="Bookmark customization"
-                                tooltipSide="bottom"
-                            />
-                            <IconActionRow
-                                variant="media"
-                                tooltipSide="bottom"
-                                actions={[compareAction]}
-                            />
+                            {bookmarkButton}
+                            {compareRow}
                         </div>
                     </div>
                     <Link

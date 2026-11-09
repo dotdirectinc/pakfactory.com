@@ -23,12 +23,17 @@ export function toProductLibraryCardData(
     return {
         title: item.title,
         href,
+        slug: item.slug,
         sku: item.sku,
         eyebrowLabel: item.productStyle.title ?? item.productLine.title,
         imageUrl: item.imageUrl ?? null,
         imageAlt: item.imageAlt ?? item.title,
         images: item.images,
         moq: item.moq,
+        productLine: {
+            slug: item.productLine.slug,
+            title: item.productLine.title,
+        },
         ...(item.status ? {status: item.status} : {}),
     };
 }

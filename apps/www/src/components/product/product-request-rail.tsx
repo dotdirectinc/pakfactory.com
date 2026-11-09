@@ -1,19 +1,25 @@
 'use client';
 
+import {Columns2} from 'lucide-react';
+import {Button} from '@pakfactory/ui/components/button';
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
+import {CompareToggleLabel} from '@/components/compare/compare-toggle-label';
 import {AddToRequestButton} from '@/components/product/add-to-request-button';
 import {ApplyChooser} from '@/components/product/apply-chooser';
 import {ContentsField} from '@/components/product/contents-field';
 import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
 import {useProductPdpDraft} from '@/components/product/product-pdp-draft';
+import {Icon} from '@/components/ui/icon';
 import {OverviewSection} from '@/components/ui/overview-section';
+import {useCompareToggle} from '@/lib/compare/use-compare-toggle';
 import {
     formatLeadTimeBusinessDays,
     PRODUCT_DETAIL_COPY,
 } from '@/lib/copy/product-detail';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {resolvePrintableSides} from '@/lib/customization-builder';
+import {productHref} from '@/lib/www-routes';
 
 /**
  * PDP buy-box rail — quantity, contents, customization, Add to request.
@@ -42,6 +48,19 @@ export function ProductRequestRail() {
         handleAdd,
     } = useProductPdpDraft();
     const isInspiration = product.kind === 'inspiration';
+    // R43 (PRD v4.6): Add to compare on the Product DP and Inspiration DP; groups by line (R44).
+    const compareToggle = useCompareToggle({
+        kind: 'product',
+        id: product.slug,
+        title: product.title,
+        href: productHref(product.slug),
+        imageUrl: product.media[0]?.src ?? null,
+        groupKey: product.productLine.slug,
+        groupLabel: product.productLine.title,
+        styleTitle: product.productStyle?.title,
+        inspiration: isInspiration,
+        ...(product.sku ? {sku: product.sku} : {}),
+    });
     const printableSides = resolvePrintableSides(product.properties);
     const leadTimeLabel = formatLeadTimeBusinessDays(
         product.leadTimeBusinessDaysMin,
@@ -104,6 +123,16 @@ export function ProductRequestRail() {
             </OverviewSection>
 
             <AddToRequestButton disabled={!ready} onClick={handleAdd} />
+            <Button
+                type="button"
+                variant="outline"
+                className="group/cmp h-auto w-full px-6 py-3 text-base shadow-none"
+                onClick={compareToggle.onClick}
+                aria-pressed={compareToggle.inCompare}
+            >
+                <Icon icon={Columns2} size="sm" />
+                <CompareToggleLabel inCompare={compareToggle.inCompare} />
+            </Button>
         </div>
     );
 }

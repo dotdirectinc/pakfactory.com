@@ -416,6 +416,8 @@ export type CustomizationLibraryItem = {
     categoryLabel?: string;
     /** Sanity customizationType.title — catalog card eyebrow (PROD-3100). */
     typeTitle?: string;
+    /** Sanity customizationType.slug — kept on bookmarks (optional; not mapped for listings yet). */
+    typeSlug?: string;
     /**
      * Rest thumb = primary product image else first Images item (ADR-024).
      * Prefer `featuredImageUrl` / `mediaImages` for hover logic.
