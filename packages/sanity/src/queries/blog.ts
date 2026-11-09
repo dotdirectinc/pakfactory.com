@@ -287,7 +287,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
-    ] | order(publishedAt desc)[0...4]${POST_CARD_FIELDS}
+    ] | order(coalesce(lastModified, publishedAt) desc)[0...4]${POST_CARD_FIELDS}
   )
 }`;
 
@@ -315,7 +315,7 @@ export const LATEST_HOME_POSTS_QUERY = /* groq */ `*[
   && defined(publishedAt)
   && publishedAt <= now()
   && ($excludeId == null || _id != $excludeId)
-] | order(publishedAt desc)[0...4]${POST_CARD_FIELDS}`;
+] | order(coalesce(lastModified, publishedAt) desc)[0...4]${POST_CARD_FIELDS}`;
 
 /** Shared page-builder block projection (home + landing arrays). */
 const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
@@ -346,7 +346,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
-    ] | order(publishedAt desc)[0...6]${POST_CARD_FIELDS}
+    ] | order(coalesce(lastModified, publishedAt) desc)[0...6]${POST_CARD_FIELDS}
   },
   _type == "postPopularRow" => {
     heading,
@@ -629,7 +629,7 @@ export const POSTS_BY_CATEGORY_SLUG_QUERY = /* groq */ `*[
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
-] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
+] | order(coalesce(lastModified, publishedAt) desc)[0...3]${POST_CARD_FIELDS}`;
 
 /** Canonical post detail by slug (PROD-1502). Preview bypass: PROD-2252. */
 export const POST_BY_SLUG_QUERY = /* groq */ `*[
@@ -687,7 +687,7 @@ export const BLOG_CATEGORY_FEATURED_POSTS_QUERY = /* groq */ `*[
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
-] | order(publishedAt desc)[0...4]${POST_CARD_FIELDS}`;
+] | order(coalesce(lastModified, publishedAt) desc)[0...4]${POST_CARD_FIELDS}`;
 
 /**
  * Recommended topics for the category page (PROD-1951): the tag list of the
@@ -714,7 +714,7 @@ export const BLOG_CATEGORY_POSTS_COUNT_QUERY = /* groq */ `count(*[
 
 export const BLOG_CATEGORY_POSTS_PAGE_NEWEST_QUERY = /* groq */ `*[
   ${CATEGORY_POST_FILTER}
-] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+] | order(coalesce(lastModified, publishedAt) desc)[$start...$end]${POST_CARD_FIELDS}`;
 
 export const BLOG_CATEGORY_POSTS_PAGE_OLDEST_QUERY = /* groq */ `*[
   ${CATEGORY_POST_FILTER}
@@ -839,7 +839,7 @@ export const BLOG_ALL_POSTS_PAGE_QUERY = /* groq */ `*[
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
-] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+] | order(coalesce(lastModified, publishedAt) desc)[$start...$end]${POST_CARD_FIELDS}`;
 
 /**
  * All-posts archive in a single round-trip — total count + one page slice.
@@ -860,7 +860,7 @@ export const BLOG_ALL_POSTS_ARCHIVE_QUERY = /* groq */ `{
     && defined(slug.current)
     && defined(publishedAt)
     && publishedAt <= now()
-  ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}
+  ] | order(coalesce(lastModified, publishedAt) desc)[$start...$end]${POST_CARD_FIELDS}
 }`;
 
 /** Latest 20 published posts for RSS 2.0 (`/rss.xml`, PROD-1505). */
@@ -1271,7 +1271,7 @@ export const AUTHOR_POSTS_COUNT_QUERY = /* groq */ `count(*[
 /** Paginated author posts (newest first) — `$start` inclusive, `$end` exclusive. */
 export const AUTHOR_POSTS_PAGE_QUERY = /* groq */ `*[
   ${AUTHOR_POST_FILTER}
-] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+] | order(coalesce(lastModified, publishedAt) desc)[$start...$end]${POST_CARD_FIELDS}`;
 
 /** Authors eligible for sitemap: ≥2 published posts and a bio (short or long).
  * Thin authors (no bio / 0–1 posts) stay noindex and are omitted here.
