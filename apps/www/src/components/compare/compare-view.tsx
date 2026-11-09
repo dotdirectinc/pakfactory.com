@@ -12,6 +12,7 @@ import Link from 'next/link';
 import {usePathname, useRouter, useSearchParams} from 'next/navigation';
 import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
+import {setChatContext} from '@/lib/chat/chat-context';
 import {Bookmark, Check, ChevronDown, Columns2, HelpCircle, Share2, X} from 'lucide-react';
 import {
     DropdownMenu,
@@ -396,6 +397,14 @@ export function CompareView({
             window.removeEventListener('resize', check);
         };
     }, [showHeroesKey]);
+
+    // CMP-16: the chat gets the items in this comparison (Intercom: visitor attributes for the team).
+    const ctxKey = cols.map((c) => c.title).join('|');
+    useEffect(() => {
+        if (!cols.length) return;
+        setChatContext({kind: 'compare', group: cols[0]?.groupLabel ?? '', items: cols.map((c) => c.title)});
+        return () => setChatContext(null);
+    }, [ctxKey]);
 
     const setEmpty = items.length === 0 && !shared;
     const awaitingRedirect = !ids.length && Boolean(redirectTarget);

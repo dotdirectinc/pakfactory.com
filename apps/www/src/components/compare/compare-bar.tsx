@@ -2,8 +2,9 @@
 
 /**
  * Compare bar (vault prd-website-compare.md §4.1, CMP-1–CMP-7, CMP-12): the site-wide compare
- * tool. The round compare button sits bottom-right; open, the bar slides up full width with its
- * own Close and the round button fades out.
+ * tool. The round compare button sits
+ * bottom-right, under the chat button — when it appears it takes chat's place and chat moves up.
+ * Open: the bar slides up full width with its own Close; the compare button fades out and chat lifts above the bar.
  * - Adding confirms with a snackbar ("Added to Rigid boxes (2) · Compare · Undo"); the bar opens
  *   from the round button (and once on the first add of a session).
  * - Slim bar: one row per group, every group visible, Compare (n) per row.
@@ -15,7 +16,7 @@
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {getCompareBehavior} from '@/lib/compare/compare-behavior';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Columns2, Plus, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {pageDielineContentClass, pageDielineOuterClass} from '@pakfactory/ui/components/page-dieline-section';
@@ -44,6 +45,13 @@ type Fit = 'yes' | 'no' | 'unknown';
 /** How a thumbnail relates to the one being hovered. */
 type Relation = 'match' | 'unknown' | 'dim' | null;
 
+/** Chat moves up by the round button (size-12) + an 8px gap; it reads these from chat-fab.tsx. */
+const FAB_STACK = 'calc(3rem + 8px)';
+function setRootVar(name: string, value: string | null) {
+    if (typeof document === 'undefined') return;
+    if (value == null) document.documentElement.style.removeProperty(name);
+    else document.documentElement.style.setProperty(name, value);
+}
 const SNACK_MS = 4500;
 
 function Thumb({
@@ -126,7 +134,13 @@ export function CompareBar({guided}: {guided: boolean}) {
     const open = dock.open && !hidden && hasItems;
     const groups = useMemo(() => compareGroups(items), [items]);
 
+    // Chat sits on top of the round compare button while it shows; the open bar (full width)
+    // lifts both buttons above it.
     const barRef = useRef<HTMLDivElement>(null);
+    const showButton = !hidden && hasItems && !open;
+    useEffect(() => {
+        setRootVar('--compare-fab-stack', showButton ? FAB_STACK : '0px');
+    }, [showButton]);
     // Slide: mount, then move in on the next frame; on close move out, then unmount.
     const [mounted, setMounted] = useState(false);
     const [shown, setShown] = useState(false);
@@ -140,6 +154,17 @@ export function CompareBar({guided}: {guided: boolean}) {
         const t = setTimeout(() => setMounted(false), 320);
         return () => clearTimeout(t);
     }, [open]);
+    useLayoutEffect(() => {
+        const el = barRef.current;
+        setRootVar('--compare-drawer-lift', shown && el ? `${Math.round(el.getBoundingClientRect().height + 8)}px` : '0px');
+    }, [shown, items.length, dock.pending]);
+    useEffect(
+        () => () => {
+            setRootVar('--compare-fab-stack', null);
+            setRootVar('--compare-drawer-lift', null);
+        },
+        [],
+    );
 
     // Remember the last page outside /compare, so Close on /compare returns there (owner Nov 9).
     useEffect(() => {
@@ -325,7 +350,7 @@ export function CompareBar({guided}: {guided: boolean}) {
                     className="pointer-events-none fixed z-[80] size-12 overflow-hidden rounded-lg border border-border bg-muted shadow-lg transition-all duration-500 ease-in-out"
                     style={
                         fly.go
-                            ? {left: 'auto', right: 20, top: 'calc(100vh - 1.25rem - 3rem)', transform: 'scale(0.5)', opacity: 0.4}
+                            ? {left: 'auto', right: 20, top: 'calc(100vh - var(--chat-fab-offset, 1.25rem) - 3rem)', transform: 'scale(0.5)', opacity: 0.4}
                             : {left: fly.x - 24, top: fly.y - 24, transform: 'scale(1)', opacity: 1}
                     }
                 >
@@ -339,7 +364,7 @@ export function CompareBar({guided}: {guided: boolean}) {
                 <div
                     role="status"
                     className="fixed left-1/2 z-[70] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-1 rounded-xl bg-foreground py-2 pl-4 pr-2 text-sm text-background shadow-xl"
-                    style={{bottom: 'calc(1.25rem + 4rem)'}}
+                    style={{bottom: 'calc(var(--chat-fab-offset, 1.25rem) + 4rem)'}}
                 >
                     <span className="pr-2">{dock.snack.text}</span>
                     {snackGroup && snackGroup.items.length >= 2 ? (
@@ -394,7 +419,7 @@ export function CompareBar({guided}: {guided: boolean}) {
                     'fixed right-5 z-[60] transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none',
                     open ? 'pointer-events-none translate-y-2 opacity-0' : 'translate-y-0 opacity-100',
                 )}
-                style={{bottom: '1.25rem'}}
+                style={{bottom: 'var(--chat-fab-offset, 1.25rem)'}}
                 aria-hidden={open || undefined}
             >
                 <button

@@ -6,6 +6,7 @@ import {draftMode} from 'next/headers';
 import '@fontsource-variable/geist';
 import {GoogleTagManager} from '@next/third-parties/google';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
+import {ChatSettingsProvider} from '@/components/chat/chat-settings';
 import {SanityVisualEditing} from '@/components/layout/sanity-visual-editing';
 import {ScrollLockShiftFix} from '@/components/layout/scroll-lock-shift-fix';
 import {VirtualPageviewTracker} from '@/components/layout/virtual-pageview-tracker';
@@ -53,6 +54,11 @@ export default async function RootLayout({
     const globalSettings = await fetchWwwGlobalSettings();
     const gtmId = resolveGtmId(globalSettings?.gtmId);
     const watermark = toWatermarkConfig(globalSettings?.watermark, '/api/wm');
+    // Intercom chat (Global Settings → Integrations); off unless enabled with an App ID.
+    const chatSettings = {
+        intercomEnabled: Boolean(globalSettings?.intercomEnabled),
+        intercomAppId: globalSettings?.intercomAppId?.trim() || null,
+    };
     return (
         <html lang="en">
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
@@ -63,7 +69,7 @@ export default async function RootLayout({
                     <VirtualPageviewTracker />
                 </Suspense>
                 <TooltipProvider>
-                    {children}
+                    <ChatSettingsProvider value={chatSettings}>{children}</ChatSettingsProvider>
                 </TooltipProvider>
                 {isDraft ? <SanityVisualEditing /> : null}
                 </WatermarkProvider>
