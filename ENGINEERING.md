@@ -69,7 +69,7 @@ Choose the **narrowest** store that works:
 3. **Feature provider** — rare; only when many siblings under one feature share non-URL state.
 4. **No default global client store** (Redux/Zustand/etc.) for marketing/blog UI.
 
-**Approved Context pattern (www):** [`apps/www/src/lib/request/request-provider.tsx`](apps/www/src/lib/request/request-provider.tsx) — RFQ “Your Request” pool uses Context + `useSyncExternalStore`, with **`useMemo` on the context value** and **`useCallback` on stable actions** so consumers do not re-render on every parent render. That is the bar for feature providers — not a license for app-wide stores.
+**Approved Context pattern (www):** [`apps/www/src/lib/request/request-provider.tsx`](apps/www/src/lib/request/request-provider.tsx) — RFQ “Your Request” pool uses Context + `useSyncExternalStore`, with **`useMemo` on the context value** and **`useCallback` on stable actions** so consumers do not re-render on every parent render. That is the bar for feature providers — not a license for app-wide stores. Mount [`RequestRoot`](apps/www/src/lib/request/request-root.tsx) **once** from the root layout (provider + chat + compare dock) so `(site)` ↔ `(request)` ↔ `(compare)` do not remount it; chrome-less tools keep their own top bars without site nav. Server viewer prefill for quote contact uses `RequestViewerSync` in `(request)/layout`, not a second `RequestRoot`.
 
 ADR-013: feature **controllers** in `modules/` own URL/data wiring; shared `ui/` primitives stay props-only.
 
@@ -110,6 +110,14 @@ Reconciliation folklore (“keys must be array index”, “memo always helps”
 - Shared core → controlled, **props-only** `ui/` (or `@pakfactory/ui`).
 - Feature owns data + URL in **`modules/`** controllers.
 - **Never** import one feature’s controller/view into another; **never** fork a feature component — extract the shared core.
+
+### If someone asks why
+
+A component has one home, one name, and one look. Routes only route. A control used by two features is a props-only piece in `ui/`, and the feature passes in the data and the words. A control used by one feature stays in that feature folder. Color and spacing come from the shared tokens and the 8px grid ([`DESIGN.md`](DESIGN.md)). A change for one feature stays in that feature, and the next screen uses the same control.
+
+The public names for that split are **presentational** (how it looks: props and callbacks only) and **container** (how it works: data, URL, copy). ADR-013 calls them the shared core and the feature composition. On the blog the container lives in `modules/`. On www it lives in the feature folder (`request/`, `compare/`, `product/`) — www does not use `modules/` ([`apps/www/CLAUDE.md`](apps/www/CLAUDE.md)).
+
+A shared close control is presentational: the circle, the icon, `onClick`, and an accessible name passed in. The request shell and the compare page are the containers: each decides where Close sits and which label it speaks. The same split is already in the app — [`BookmarkIconButton`](apps/www/src/components/ui/bookmark-icon-button.tsx) is presentational; the product and customization cards own the bookmark action.
 
 ### Routing shell (ADR-005 retained)
 

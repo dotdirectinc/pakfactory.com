@@ -410,6 +410,8 @@ export type CustomizationLibraryItem = {
      * Customer-facing card title (PROD-3100). Empty means the card uses `title`.
      */
     shortName?: string;
+    /** One-line option summary — compare “Also compare” peek. */
+    shortDescription?: string;
     slug: string;
     /** Sanity customizationCategory.slug */
     categoryValue: string;

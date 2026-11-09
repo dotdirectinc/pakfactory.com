@@ -71,6 +71,13 @@ type ProductRequestCardProps = {
     onSelectedChange?: (selected: boolean) => void;
     /** Step intake (owner Nov 3): less padding so the details get more room. */
     compact?: boolean;
+    /**
+     * When true, card participates in parent accordion collapse.
+     * Parent owns open state via `expanded` / `onExpandedChange`.
+     */
+    collapsible?: boolean;
+    expanded?: boolean;
+    onExpandedChange?: (open: boolean) => void;
 };
 
 type SpecRow = {key: string; label: string; value: string};
@@ -174,6 +181,9 @@ export function ProductRequestCard({
     selected = false,
     onSelectedChange,
     compact = false,
+    collapsible = false,
+    expanded,
+    onExpandedChange,
 }: ProductRequestCardProps) {
     const title = line.productTitle ?? line.productSlug;
     const thumb = line.productMedia?.[0];
@@ -287,13 +297,18 @@ export function ProductRequestCard({
         setCustomizeOpen(open);
     }
 
+    function openForEdit(open: () => void) {
+        if (collapsible) onExpandedChange?.(true);
+        open();
+    }
+
     function editAction(onEdit: () => void) {
         return (
             <Button
                 type="button"
                 variant="link"
                 className={cn(LINK_ACTION_CLASS, 'shrink-0')}
-                onClick={onEdit}
+                onClick={() => openForEdit(onEdit)}
             >
                 {REQUEST_COPY.paperEdit}
             </Button>
@@ -305,10 +320,29 @@ export function ProductRequestCard({
             <PickImagePreviewProvider>
             <RequestProductCard
                 {...(compact ? {className: 'p-6'} : {})}
+                {...(collapsible
+                    ? {
+                          expanded: expanded ?? false,
+                          onExpandedChange,
+                          collapsedSummary: qtyList
+                              ? `${REQUEST_COPY.quantityLabel} ${qtyList}`
+                              : REQUEST_COPY.notAdded,
+                          expandLabel: (expanded ?? false)
+                              ? REQUEST_COPY.collapseLineDetails.replace(
+                                    '{title}',
+                                    title,
+                                )
+                              : REQUEST_COPY.expandLineDetails.replace(
+                                    '{title}',
+                                    title,
+                                ),
+                      }
+                    : {})}
                 title={
                     <Link
                         href={productHref(line.productSlug)}
                         className="text-foreground underline-offset-4 hover:underline"
+                        onClick={(event) => event.stopPropagation()}
                     >
                         {title}
                     </Link>
@@ -424,6 +458,7 @@ export function ProductRequestCard({
                             onCheckedChange={(value) =>
                                 onSelectedChange?.(value === true)
                             }
+                            onClick={(event) => event.stopPropagation()}
                             aria-label={`Select ${title}`}
                             className="size-6 [&_svg]:size-4"
                         />

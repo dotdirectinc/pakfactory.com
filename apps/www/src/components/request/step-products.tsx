@@ -1,8 +1,11 @@
 'use client';
 
+import {useMemo} from 'react';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {ProductRequestCard} from '@/components/request/product-request-card';
 import {ServicesUpsellToggle} from '@/components/request/services-upsell-toggle';
 import {REQUEST_COPY} from '@/lib/copy/request';
+import {useRequestLineAccordion} from '@/lib/request/use-request-line-accordion';
 import type {
     RequestLine,
     UpdateLinePatch,
@@ -31,6 +34,8 @@ export function StepProducts({
     servicesEnabled,
     onServicesEnabledChange,
 }: StepProductsProps) {
+    const lineIds = useMemo(() => lines.map((line) => line.id), [lines]);
+    const accordion = useRequestLineAccordion(lineIds);
     const showServicesUpsell =
         !embedded &&
         servicesEnabled !== undefined &&
@@ -54,7 +59,11 @@ export function StepProducts({
                     {REQUEST_COPY.noProductsYet}
                 </p>
             ) : (
-                <ul className="space-y-3">
+                <ul
+                    className={cn(
+                        accordion.collapsible ? 'space-y-3' : 'space-y-8',
+                    )}
+                >
                     {lines.map((line) => (
                         <ProductRequestCard
                             key={line.id}
@@ -62,6 +71,11 @@ export function StepProducts({
                             draftId={draftId}
                             onRemove={onRemove}
                             onUpdate={onUpdate}
+                            collapsible={accordion.collapsible}
+                            expanded={accordion.isExpanded(line.id)}
+                            onExpandedChange={(open) =>
+                                accordion.setExpanded(line.id, open)
+                            }
                         />
                     ))}
                 </ul>

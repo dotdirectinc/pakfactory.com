@@ -24,17 +24,21 @@ export async function GET(req: Request) {
             if (!p) return NextResponse.json({items: []});
             const pool = whole ? await listProducts() : await listRelatedProductSiblings(p);
             const siblings = pool.filter((s) => s.productLine.slug === p.productLine.slug && !exclude.has(s.slug));
-            const items = siblings.slice(0, whole ? 60 : 2).map((s) => ({
-                kind: 'product',
-                id: s.slug,
-                title: s.title,
-                href: productHref(s.slug),
-                imageUrl: s.media?.[0]?.src ?? null,
-                groupKey: s.productLine.slug,
-                groupLabel: s.productLine.title,
-                ...(s.productStyle?.title ? {styleTitle: s.productStyle.title} : {}),
-                ...(s.kind === 'inspiration' ? {inspiration: true} : {}),
-            }));
+            const items = siblings.slice(0, whole ? 60 : 2).map((s) => {
+                const shortDescription = s.description?.trim() || undefined;
+                return {
+                    kind: 'product' as const,
+                    id: s.slug,
+                    title: s.title,
+                    href: productHref(s.slug),
+                    imageUrl: s.media?.[0]?.src ?? null,
+                    groupKey: s.productLine.slug,
+                    groupLabel: s.productLine.title,
+                    ...(s.productStyle?.title ? {styleTitle: s.productStyle.title} : {}),
+                    ...(s.kind === 'inspiration' ? {inspiration: true} : {}),
+                    ...(shortDescription ? {shortDescription} : {}),
+                };
+            });
             return NextResponse.json({items});
         }
         const [category] = id.split('/');
@@ -42,17 +46,21 @@ export async function GET(req: Request) {
         const items = lib.items
             .filter((c) => c.categoryValue === category && !exclude.has(`${c.categoryValue}/${c.slug}`))
             .slice(0, whole ? 60 : 2)
-            .map((c) => ({
-                kind: 'customization',
-                id: `${c.categoryValue}/${c.slug}`,
-                title: c.shortName?.trim() || c.title,
-                href: customizationCategoryHref(c.categoryValue, c.slug),
-                imageUrl: c.featuredImageUrl ?? c.imageUrl ?? null,
-                groupKey: c.categoryValue,
-                groupLabel: c.categoryLabel?.trim() || c.categoryValue,
-                categoryValue: c.categoryValue,
-                ...(c.typeTitle ? {typeTitle: c.typeTitle} : {}),
-            }));
+            .map((c) => {
+                const shortDescription = c.shortDescription?.trim() || undefined;
+                return {
+                    kind: 'customization' as const,
+                    id: `${c.categoryValue}/${c.slug}`,
+                    title: c.shortName?.trim() || c.title,
+                    href: customizationCategoryHref(c.categoryValue, c.slug),
+                    imageUrl: c.featuredImageUrl ?? c.imageUrl ?? null,
+                    groupKey: c.categoryValue,
+                    groupLabel: c.categoryLabel?.trim() || c.categoryValue,
+                    categoryValue: c.categoryValue,
+                    ...(c.typeTitle ? {typeTitle: c.typeTitle} : {}),
+                    ...(shortDescription ? {shortDescription} : {}),
+                };
+            });
         return NextResponse.json({items});
     } catch {
         return NextResponse.json({items: []});

@@ -4,6 +4,7 @@ import {useEffect, useMemo, useRef, type ReactNode} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {SectionReveal} from '@/components/common/section-reveal';
 import {RequestShell} from '@/components/request-v2/request-shell';
 import {IntakeContactScreen} from '@/components/intake/screens/intake-contact-screen';
 import {IntakeReview} from '@/components/intake/screens/intake-review';
@@ -194,6 +195,7 @@ export function RequestPageV2({
             {/* Owner Nov 6: centred heading, and the steps in one centred column (max-w-5xl, 1024px) so it reads as one form. */}
             <PageHeadingSection
                 align="center"
+                settle
                 title={flow === 'product' ? 'Quote Request' : 'Get a Quote'}
                 description={
                     flow === 'product'
@@ -203,7 +205,7 @@ export function RequestPageV2({
             />
             {/* flush: section dividers run to the page's dashed guides; each section centres its own 1024px (max-w-5xl) column. */}
             <PageDielineSection paddingBlock="none" flush innerClassName="pb-16 sm:pb-20 lg:pb-24">
-                <div className="flex w-full flex-col">
+                <SectionReveal className="flex w-full flex-col">
                     {visible.map((k, i) => (
                         <SectionShell
                             key={k}
@@ -236,7 +238,7 @@ export function RequestPageV2({
                             {blockedReason(open, flow, draft, lines, ctx.rules) ?? 'Finish the steps above to submit'}
                         </p>
                     ) : null}
-                </div>
+                </SectionReveal>
             </PageDielineSection>
         </RequestShell>
     );

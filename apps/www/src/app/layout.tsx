@@ -12,6 +12,8 @@ import {ScrollLockShiftFix} from '@/components/layout/scroll-lock-shift-fix';
 import {VirtualPageviewTracker} from '@/components/layout/virtual-pageview-tracker';
 import {buildFaviconIcons} from '@pakfactory/sanity/favicon';
 import {WatermarkProvider} from '@pakfactory/ui/components/watermark-context';
+import {NAV_SESSION_FLAG_SCRIPT} from '@/lib/auth/nav-session-flag';
+import {RequestRoot} from '@/lib/request/request-root';
 import {fetchWwwGlobalSettings} from '@/lib/www-global-settings';
 import {toWatermarkConfig} from '@/lib/watermark';
 import './globals.css';
@@ -64,12 +66,16 @@ export default async function RootLayout({
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
                 <ScrollLockShiftFix />
+                {/* Outside RequestRoot: React 19 drops <script> under client re-renders. */}
+                <script dangerouslySetInnerHTML={{__html: NAV_SESSION_FLAG_SCRIPT}} />
                 <WatermarkProvider value={watermark}>
                 <Suspense fallback={null}>
                     <VirtualPageviewTracker />
                 </Suspense>
                 <TooltipProvider>
-                    <ChatSettingsProvider value={chatSettings}>{children}</ChatSettingsProvider>
+                    <ChatSettingsProvider value={chatSettings}>
+                        <RequestRoot>{children}</RequestRoot>
+                    </ChatSettingsProvider>
                 </TooltipProvider>
                 {isDraft ? <SanityVisualEditing /> : null}
                 </WatermarkProvider>

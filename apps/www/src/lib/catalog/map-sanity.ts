@@ -1192,12 +1192,14 @@ export function mapSanityLibraryOption(
     }
 
     const shortName = doc.shortName?.trim();
+    const shortDescription = doc.shortDescription?.trim();
     const typeTitle = doc.type?.title?.trim();
 
     return {
         _id: doc._id,
         title: doc.title,
         ...(shortName ? {shortName} : {}),
+        ...(shortDescription ? {shortDescription} : {}),
         slug,
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title ?? categorySlug,

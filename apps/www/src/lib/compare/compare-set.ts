@@ -7,8 +7,8 @@
  * option type (library category) — up to COMPARE_GROUP_MAX per group; a fifth asks to
  * replace one. Adding is never refused.
  *
- * Also holds the dock's UI state (open, the group it opens on, a pending "replace one?",
- * the fly-in source) so the add buttons and the dock stay in step.
+ * Also holds the dock's UI state (open, the group it opens on, a pending "replace one?")
+ * so the add buttons and the dock stay in step.
  */
 import {useSyncExternalStore} from 'react';
 
@@ -50,8 +50,6 @@ type DockState = {
     focus: string | null;
     /** A fifth item waiting for "replace one?". */
     pending: CompareItem | null;
-    /** Screen point the last added item flies from. */
-    flyFrom: {x: number; y: number; imageUrl?: string | null; at: number} | null;
     /** Compare spec CMP-1: the confirmation shown instead of opening the bar ("Added to Rigid boxes (2) · Compare · Undo"). */
     snack: CompareSnack | null;
     /** The set before the last add or replace, for Undo. */
@@ -62,7 +60,7 @@ export type CompareSnack = {text: string; /** `kind:groupKey` to offer Compare f
 
 type State = {items: CompareItem[]; dock: DockState};
 
-let state: State = {items: [], dock: {open: false, focus: null, pending: null, flyFrom: null, snack: null, undo: null}};
+let state: State = {items: [], dock: {open: false, focus: null, pending: null, snack: null, undo: null}};
 let loaded = false;
 
 function load(): void {
@@ -117,13 +115,13 @@ export type AddInput = Omit<CompareItem, 'addedAt'>;
 export type AddResult = 'added' | 'removed' | 'pending' | 'present';
 
 /** Add (or, if already there, remove). Opens the dock on the item's group; never refused. */
-export function toggleCompare(input: AddInput, from?: {x: number; y: number}, page?: string): AddResult {
+export function toggleCompare(input: AddInput, page?: string): AddResult {
     load();
     if (state.items.some((i) => i.kind === input.kind && i.id === input.id)) {
         removeFromCompare(input.kind, input.id);
         return 'removed';
     }
-    return addToCompare(input, from, page);
+    return addToCompare(input, page);
 }
 
 const FIRST_SHOWN_KEY = 'pf_compare_bar_shown';
@@ -147,24 +145,23 @@ function markFirstShown(): void {
  * opening the bar (the first add of a session opens it once); a fifth item in a full group
  * replaces the oldest with Undo, or asks "Replace which?" (getCompareBehavior).
  */
-export function addToCompare(input: AddInput, from?: {x: number; y: number}, page?: string): AddResult {
+export function addToCompare(input: AddInput, page?: string): AddResult {
     load();
     if (state.items.some((i) => i.kind === input.kind && i.id === input.id)) return 'present';
     const item: CompareItem = {...input, addedAt: Date.now()};
     const focus = groupId(item.kind, item.groupKey);
     const inGroup = state.items.filter((i) => groupId(i.kind, i.groupKey) === focus);
-    const flyFrom = from ? {...from, imageUrl: item.imageUrl, at: Date.now()} : null;
     const behavior = getCompareBehavior();
     const prev = state.items;
     const where = page ?? (typeof window !== 'undefined' ? window.location.pathname : '');
     if (inGroup.length >= Math.min(behavior.maxPerGroup, COMPARE_GROUP_LIMIT)) {
         if (behavior.fifth === 'ask') {
-            set({dock: {...state.dock, open: true, focus, pending: item, flyFrom: null, snack: null}});
+            set({dock: {...state.dock, open: true, focus, pending: item, snack: null}});
             return 'pending';
         }
         const oldest = [...inGroup].sort((a, b) => a.addedAt - b.addedAt)[0]!;
         const items = [...prev.filter((i) => !(i.kind === oldest.kind && i.id === oldest.id)), item];
-        set({items, dock: {...state.dock, focus, pending: null, flyFrom, undo: prev, snack: {text: `Replaced ${oldest.title} with ${item.title}`, compareGroup: focus, at: Date.now()}}}, true);
+        set({items, dock: {...state.dock, focus, pending: null, undo: prev, snack: {text: `Replaced ${oldest.title} with ${item.title}`, compareGroup: focus, at: Date.now()}}}, true);
         trackCompare('compare_add', {item_type: item.kind, group: item.groupKey, page: where, replaced: true});
         return 'added';
     }
@@ -179,7 +176,6 @@ export function addToCompare(input: AddInput, from?: {x: number; y: number}, pag
                 open: state.dock.open || openOnce,
                 focus,
                 pending: null,
-                flyFrom,
                 undo: prev,
                 snack: openOnce || state.dock.open ? null : {text: `Added to ${item.groupLabel} (${n})`, compareGroup: n >= 2 ? focus : null, at: Date.now()},
             },
@@ -256,7 +252,38 @@ export function compareReturnHref(): string | null {
 export function clearCompare(): void {
     load();
     trackCompare('compare_action', {action: 'clear', items: state.items.length});
-    set({items: [], dock: {open: false, focus: null, pending: null, flyFrom: null, snack: null, undo: null}}, true);
+    set({items: [], dock: {open: false, focus: null, pending: null, snack: null, undo: null}}, true);
+}
+
+/** Remove every item in one product line / customization group (one dock row). */
+export function clearCompareGroup(kind: CompareKind, groupKey: string): void {
+    load();
+    const before = state.items.length;
+    const items = state.items.filter((i) => !(i.kind === kind && i.groupKey === groupKey));
+    const removed = before - items.length;
+    if (removed === 0) return;
+    trackCompare('compare_action', {action: 'clear_group', kind, groupKey, items: removed});
+    const empty = items.length === 0;
+    set(
+        {
+            items,
+            dock: {
+                ...state.dock,
+                ...(empty
+                    ? {open: false, focus: null, pending: null, snack: null, undo: null}
+                    : {
+                          pending:
+                              state.dock.pending &&
+                              state.dock.pending.kind === kind &&
+                              state.dock.pending.groupKey === groupKey
+                                  ? null
+                                  : state.dock.pending,
+                          snack: null,
+                      }),
+            },
+        },
+        true,
+    );
 }
 
 export function setDockOpen(open: boolean, focus?: string | null): void {
@@ -281,7 +308,7 @@ function subscribe(cb: () => void): () => void {
     };
 }
 
-const EMPTY: State = {items: [], dock: {open: false, focus: null, pending: null, flyFrom: null, snack: null, undo: null}};
+const EMPTY: State = {items: [], dock: {open: false, focus: null, pending: null, snack: null, undo: null}};
 
 /** The compare set and dock state; re-renders on every change (and across tabs). */
 export function useCompareSet(): State {

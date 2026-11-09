@@ -192,6 +192,8 @@ export const REQUEST_COPY = {
     addProductsCta: 'Add products from the catalog',
     expandProductsCta: 'Add products to this request',
     removeLine: 'Remove',
+    expandLineDetails: 'Expand details for {title}',
+    collapseLineDetails: 'Collapse details for {title}',
     removeLineConfirmTitle: 'Remove this product?',
     removeLineConfirmDescription:
         'You’re going to remove “{title}” from your request.',
@@ -275,7 +277,7 @@ export const REQUEST_COPY = {
     intakeUploadDialogLabel: 'Your files',
     /** Owner Nov 6: the tile names the files that enrich the brief (option A). */
     intakeAddFileTile: 'Add files',
-    intakeAddFileHint: 'Logo, artwork, dieline or a photo of your product',
+    intakeAddFileHint: 'Brief, logo, artwork, dieline or a photo of your product',
     intakeAddMoreFiles: 'Add more',
     /** Beside the add tile while no files are added (owner Nov 3): why files are worth it. */
     intakeFilesNudge: 'Artwork, a dieline, your logo or a photo of your product helps us quote faster',

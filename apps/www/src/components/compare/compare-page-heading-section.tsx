@@ -6,19 +6,22 @@ import {PageHeadingContent} from '@/components/common/page-heading-section';
 
 type ComparePageHeadingSectionProps = {
     title: ReactNode;
+    /** Kind toggle (and optional view controls) under the title. */
+    nav?: ReactNode;
     actions?: ReactNode;
     settle?: boolean;
-    /** Full-bleed dashed bottom rule. Default true (same as PageHeadingSection). */
+    /** Full-bleed bottom rule under the heading. Default true. */
     borderBottom?: boolean;
     className?: string;
 };
 
 /**
  * Compare page heading — same dieline / type rhythm as {@link PageHeadingSection},
- * with a right-side utilities slot (kind toggle + Share) the shared heading lacks.
+ * with an optional nav strip under the title (Share + kind toggle live there).
  */
 export function ComparePageHeadingSection({
     title,
+    nav,
     actions,
     settle = false,
     borderBottom = true,
@@ -30,20 +33,23 @@ export function ComparePageHeadingSection({
             paddingBlock="lg"
             className={className}
         >
-            <div
-                className={cn(
-                    'flex w-full flex-col gap-6',
-                    actions && 'md:flex-row md:items-end md:justify-between md:gap-4',
-                )}
-            >
-                <PageHeadingContent
-                    eyebrow="Compare"
-                    title={title}
-                    settle={settle}
-                />
-                {actions ? (
-                    <div className="flex shrink-0 items-center gap-2">{actions}</div>
-                ) : null}
+            <div className="flex w-full flex-col gap-6">
+                <div
+                    className={cn(
+                        'flex w-full flex-col gap-6',
+                        actions && 'md:flex-row md:items-end md:justify-between md:gap-4',
+                    )}
+                >
+                    <PageHeadingContent
+                        eyebrow="Compare"
+                        title={title}
+                        settle={settle}
+                    />
+                    {actions ? (
+                        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+                    ) : null}
+                </div>
+                {nav ? <div className="flex w-full items-center justify-between gap-x-4">{nav}</div> : null}
             </div>
         </PageDielineSection>
     );

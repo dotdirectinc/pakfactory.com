@@ -1,8 +1,10 @@
 'use client';
 
-import {useEffect} from 'react';
+import {useEffect, useMemo} from 'react';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {ProductRequestCard} from '@/components/request/product-request-card';
 import {useRequest} from '@/lib/request/request-provider';
+import {useRequestLineAccordion} from '@/lib/request/use-request-line-accordion';
 
 /**
  * RFQ v2 Items section: the items in the request, each with a tick (decision 6: the
@@ -15,6 +17,8 @@ export function ProductsSection() {
     const selected = new Set(lines.map((l) => l.id).filter((id) => !excluded.has(id)));
     const selectedIds = lines.map((l) => l.id).filter((id) => selected.has(id));
     const key = selectedIds.join(',');
+    const lineIds = useMemo(() => lines.map((l) => l.id), [lines]);
+    const accordion = useRequestLineAccordion(lineIds);
     // Keep the request's items (builderLineIds, what's submitted) in step with the ticks.
     useEffect(() => {
         if ((draft.builderLineIds ?? []).join(',') !== key) updateDraft({builderLineIds: selectedIds});
@@ -27,7 +31,12 @@ export function ProductsSection() {
     };
     return (
         <div className="flex flex-col gap-8">
-            <ul className="flex list-none flex-col gap-8 p-0">
+            <ul
+                className={cn(
+                    'flex list-none flex-col p-0',
+                    accordion.collapsible ? 'gap-3' : 'gap-8',
+                )}
+            >
                 {lines.map((line) => (
                     <ProductRequestCard
                         key={line.id}
@@ -38,6 +47,11 @@ export function ProductsSection() {
                         onSelectedChange={(on) => setSelected(line.id, on)}
                         onRemove={(id) => removeLine(id)}
                         onUpdate={updateLine}
+                        collapsible={accordion.collapsible}
+                        expanded={accordion.isExpanded(line.id)}
+                        onExpandedChange={(open) =>
+                            accordion.setExpanded(line.id, open)
+                        }
                     />
                 ))}
             </ul>

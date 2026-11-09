@@ -8,12 +8,18 @@ import {CompareBar} from '@/components/compare/compare-bar';
 import {QuickConfigureProvider} from '@/components/quick-configure/quick-configure';
 import {RequestProvider} from '@/lib/request/request-provider';
 
+/**
+ * Site-wide request shell: provider + compare dock + chat + toaster.
+ * Mounted once from the root layout so `(site)` ↔ `(request)` ↔ `(compare)`
+ * do not remount it (signed-in Close→home stays smooth). Viewer prefill for
+ * quote flows uses {@link RequestViewerSync} from `(request)/layout`.
+ */
 export function RequestRoot({
     children,
     viewer = null,
 }: {
     children: ReactNode;
-    /** Resolved on the server in `(request)/layout.tsx`; null when signed out. */
+    /** Optional; prefer RequestViewerSync from the request layout. */
     viewer?: AccountIdentity | null;
 }) {
     return (
@@ -26,7 +32,9 @@ export function RequestRoot({
                 {/* Site chat (Intercom at launch; Global Settings → Integrations). */}
                 <ChatFab />
             </QuickConfigureProvider>
-            <Toaster richColors closeButton position="bottom-right" />
+            <Toaster richColors closeButton position="bottom-center" />
         </RequestProvider>
     );
 }
+
+export {RequestViewerSync} from '@/lib/request/request-provider';

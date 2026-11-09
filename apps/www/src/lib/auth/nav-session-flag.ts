@@ -22,15 +22,15 @@ export function hasAuthCookie(): boolean {
 export const NAV_SESSION_WRAPPER_ID = 'pf-nav-session';
 
 /**
- * Inline script rendered right inside the header wrapper. Before first paint
- * it marks the wrapper when a Supabase auth cookie is present
- * (`sb-<ref>-auth-token`, possibly chunked `.0`/`.1`), so CSS can show an
- * account placeholder instead of "Sign in" for likely-signed-in visitors.
- * Signed-out visitors see the same header as before. The cookie only decides
- * which placeholder to paint; `useNavAccount` decides what replaces it.
+ * Inline script in the root layout (outside `RequestRoot`) so a client parent
+ * re-render cannot drop it (React 19). Marks `#pf-nav-session` when a Supabase
+ * auth cookie is present so CSS can show an account placeholder instead of
+ * "Sign in". Waits for the wrapper if the site layout streams in after this
+ * script. The cookie only decides which placeholder to paint; `useNavAccount`
+ * decides what replaces it.
  */
-export const NAV_SESSION_FLAG_SCRIPT = `(function(){try{if(new RegExp(${JSON.stringify(
+export const NAV_SESSION_FLAG_SCRIPT = `(function(){try{var re=new RegExp(${JSON.stringify(
     AUTH_COOKIE_PATTERN,
-)}).test(document.cookie)){document.getElementById(${JSON.stringify(
+)});if(!re.test(document.cookie))return;var id=${JSON.stringify(
     NAV_SESSION_WRAPPER_ID,
-)}).setAttribute('data-session','')}}catch(e){}})();`;
+)};function mark(el){if(el)el.setAttribute('data-session','')}var el=document.getElementById(id);if(el){mark(el);return}var obs=new MutationObserver(function(){var n=document.getElementById(id);if(n){mark(n);obs.disconnect()}});obs.observe(document.documentElement,{childList:true,subtree:true})}catch(e){}})();`;

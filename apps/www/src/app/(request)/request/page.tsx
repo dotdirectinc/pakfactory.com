@@ -8,6 +8,7 @@ export const metadata: Metadata = comingSoonMetadata('Quote Request');
 
 export default function RequestPage() {
     // RFQ v2 (flag): /request goes to the items request if there are items, else the general one.
+    // Lives in the request shell (no site nav / footer) so the redirect does not flash site chrome.
     if (RFQ_V2_ENABLED) return <RequestRootV2Entry />;
     return <YourRequest />;
 }

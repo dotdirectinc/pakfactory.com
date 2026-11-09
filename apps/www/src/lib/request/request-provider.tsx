@@ -8,6 +8,7 @@ import {
     useLayoutEffect,
     useMemo,
     useRef,
+    useState,
     useSyncExternalStore,
     type ReactNode,
 } from 'react';
@@ -79,6 +80,11 @@ type RequestContextValue = {
 
 const RequestContext = createContext<RequestContextValue | null>(null);
 
+/** Lets `(request)/layout` push the server-resolved viewer without remounting the root provider. */
+const RequestViewerDispatch = createContext<
+    ((next: AccountIdentity | null) => void) | null
+>(null);
+
 /**
  * `useLayoutEffect` warns when it runs during server rendering, where there is
  * no layout to read. Falling back to `useEffect` on the server keeps the console
@@ -90,11 +96,13 @@ const useIsomorphicLayoutEffect =
 
 export function RequestProvider({
     children,
-    viewer = null,
+    viewer: viewerProp = null,
 }: {
     children: ReactNode;
+    /** Optional initial viewer (tests / legacy). Prefer {@link RequestViewerSync} at root. */
     viewer?: AccountIdentity | null;
 }) {
+    const [viewer, setViewer] = useState<AccountIdentity | null>(viewerProp);
     const state: RequestState = useSyncExternalStore(
         subscribeRequest,
         getRequestStateSnapshot,
@@ -282,8 +290,28 @@ export function RequestProvider({
     );
 
     return (
-        <RequestContext.Provider value={value}>{children}</RequestContext.Provider>
+        <RequestViewerDispatch.Provider value={setViewer}>
+            <RequestContext.Provider value={value}>{children}</RequestContext.Provider>
+        </RequestViewerDispatch.Provider>
     );
+}
+
+/**
+ * Server → client bridge for `(request)` contact prefill. Sets the root
+ * provider’s viewer before paint; does not clear on unmount (leaving request
+ * must not wipe contact fields via the sign-out seed path).
+ */
+export function RequestViewerSync({
+    viewer,
+}: {
+    viewer: AccountIdentity | null;
+}) {
+    const setViewer = useContext(RequestViewerDispatch);
+    useIsomorphicLayoutEffect(() => {
+        if (!setViewer) return;
+        setViewer(viewer);
+    }, [setViewer, viewer]);
+    return null;
 }
 
 export function useRequest(): RequestContextValue {

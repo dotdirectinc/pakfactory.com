@@ -132,58 +132,70 @@ function DescribeFirst({notes, onNotes, images, rejected, onPick, onRemove, flow
             </label>
         </div>
     );
-    const describe = (
-        <div className={cn('flex flex-col gap-2', columns && 'h-full lg:col-span-2')}>
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <Label htmlFor="intake-brief" className="text-base font-medium">
-                    {'label' in copy ? copy.label : REQUEST_COPY.intakeDescribeLabel}
-                </Label>
-                {/* columns (RFQ v2): the Add files tile is the upload — no duplicate link. */}
-                {columns ? null : (
-                    <button
-                        type="button"
-                        onClick={() => setDialogOpen(true)}
-                        className="text-sm font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground"
-                    >
-                        {REQUEST_COPY.intakeUploadDocLink}
-                    </button>
-                )}
-            </div>
-            <Textarea
-                id="intake-brief"
-                className={cn(
-                    'rounded-sm bg-background text-sm',
-                    // RFQ v2 columns: taller field, stretches with the files panel.
-                    columns ? 'min-h-48 flex-1' : 'min-h-36',
-                    dragging && 'border-foreground bg-muted/40',
-                )}
-                placeholder={copy.placeholder}
-                value={notes}
-                onChange={(e) => onNotes(e.target.value)}
-                // Files dropped on the box are added like any upload.
-                onDragOver={(e) => {
-                    if (!e.dataTransfer.types.includes('Files')) return;
-                    e.preventDefault();
-                    setDragging(true);
-                }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={(e) => {
-                    const dropped = Array.from(e.dataTransfer.files ?? []);
-                    setDragging(false);
-                    if (!dropped.length) return;
-                    e.preventDefault();
-                    onPick(dropped);
-                }}
-            />
+    const label = (
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <Label htmlFor="intake-brief" className="text-base font-medium">
+                {'label' in copy ? copy.label : REQUEST_COPY.intakeDescribeLabel}
+            </Label>
+            {/* columns (RFQ v2): the Add files tile is the upload — no duplicate link. */}
+            {columns ? null : (
+                <button
+                    type="button"
+                    onClick={() => setDialogOpen(true)}
+                    className="text-sm font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground"
+                >
+                    {REQUEST_COPY.intakeUploadDocLink}
+                </button>
+            )}
         </div>
+    );
+    const textarea = (
+        <Textarea
+            id="intake-brief"
+            className={cn(
+                'rounded-sm bg-background text-sm',
+                // RFQ v2 columns: taller field, stretches with the files panel.
+                columns ? 'min-h-48 h-full' : 'min-h-36',
+                dragging && 'border-foreground bg-muted/40',
+            )}
+            placeholder={copy.placeholder}
+            value={notes}
+            onChange={(e) => onNotes(e.target.value)}
+            // Files dropped on the box are added like any upload.
+            onDragOver={(e) => {
+                if (!e.dataTransfer.types.includes('Files')) return;
+                e.preventDefault();
+                setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+                const dropped = Array.from(e.dataTransfer.files ?? []);
+                setDragging(false);
+                if (!dropped.length) return;
+                e.preventDefault();
+                onPick(dropped);
+            }}
+        />
     );
     return (
         <div className="flex flex-col gap-4">
-            <div className={cn(columns ? 'grid grid-cols-1 items-stretch gap-8 lg:grid-cols-3' : 'flex flex-col gap-4')}>
-                {/* Columns: description wider (2 cols) on the left, files (1 col) on the right. */}
-                {describe}
-                {files}
-            </div>
+            {columns ? (
+                // Label on its own row so the dropzone top lines up with the textarea, not the label.
+                <div className="grid grid-cols-1 items-stretch gap-x-8 gap-y-2 lg:grid-cols-3">
+                    <div className="lg:col-span-2">{label}</div>
+                    <div className="hidden lg:block" aria-hidden />
+                    <div className="lg:col-span-2">{textarea}</div>
+                    {files}
+                </div>
+            ) : (
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                        {label}
+                        {textarea}
+                    </div>
+                    {files}
+                </div>
+            )}
             {rejected.length > 0 ? (
                 <ul className="flex flex-col gap-0.5">
                     {rejected.map((reason) => (

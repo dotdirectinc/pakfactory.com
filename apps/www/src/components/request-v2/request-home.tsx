@@ -64,12 +64,13 @@ export function RequestHomeV2({
         setState('ready');
         // Once per visit to this kind.
     }, [kind]);
-    if (state === 'pending') return null;
+    // Client-only entry: paint the shell while localStorage is read (avoid a blank page).
+    if (state === 'pending') return <RequestShell />;
     if (state === 'expired' || state === 'empty') {
         const expired = state === 'expired';
         return (
             <RequestShell>
-                <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-28 text-center">
+                <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-28 text-center animate-page-enter motion-reduce:animate-none">
                     <h1 className="text-2xl font-medium tracking-tight">{expired ? 'This link has expired' : 'No items yet'}</h1>
                     <p className="text-sm text-muted-foreground">
                         {expired
@@ -113,7 +114,8 @@ export function RequestRootV2() {
     useEffect(() => {
         router.replace(KIND_PATH[defaultKind()]);
     }, [router]);
-    return null;
+    // Shell while redirecting — this route is under the request group, so no site footer flash.
+    return <RequestShell />;
 }
 
 /**
