@@ -40,7 +40,7 @@ export function ProductConfigurationBar() {
 
     return (
         <>
-            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <div className="fixed inset-x-0 bottom-0 z-40 animate-in fade-in slide-in-from-bottom-4 fill-mode-both duration-300 ease-out motion-reduce:animate-none border-t border-border bg-background/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur supports-[backdrop-filter]:bg-background/80">
                 <div className="mx-auto flex w-full max-w-[1760px] items-center gap-4 px-6 py-3 sm:px-8">
                     <div className="min-w-0 flex-1">
                         <p className="text-[11px] font-semibold tracking-wider text-muted-foreground">
