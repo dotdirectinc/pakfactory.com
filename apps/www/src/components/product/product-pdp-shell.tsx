@@ -1,6 +1,6 @@
 'use client';
 
-import type {ReactNode} from 'react';
+import {useEffect, useState, type ReactNode} from 'react';
 import {Badge} from '@pakfactory/ui/components/badge';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -78,11 +78,27 @@ function OrderablePdpBody({
     children,
 }: ProductPdpShellProps) {
     const {showStickyBar} = useProductPdpDraft();
+    // The sticky bar only shows once the Overview (with the rail) has scrolled out of view.
+    // Default true so the bar does not flash before the observer runs.
+    const [overviewInView, setOverviewInView] = useState(true);
+
+    useEffect(() => {
+        const overview = document.getElementById('pdp-overview');
+        if (!overview) return;
+        const io = new IntersectionObserver(
+            ([entry]) => setOverviewInView(Boolean(entry?.isIntersecting)),
+            {threshold: 0},
+        );
+        io.observe(overview);
+        return () => io.disconnect();
+    }, []);
+
+    const barVisible = showStickyBar && !overviewInView;
 
     return (
         <div
             className={cn(
-                showStickyBar &&
+                barVisible &&
                     'pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]',
             )}
         >
@@ -92,7 +108,7 @@ function OrderablePdpBody({
                 configure={<ProductRequestRail />}
             />
             {children}
-            <ProductConfigurationBar />
+            {barVisible ? <ProductConfigurationBar /> : null}
         </div>
     );
 }

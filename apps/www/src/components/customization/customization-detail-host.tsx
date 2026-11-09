@@ -72,6 +72,11 @@ export function CustomizationDetailHostProvider({
     );
 }
 
+/** Apply popup: the host when the caller may sit outside a customization page. */
+export function useOptionalCustomizationDetailHost(): CustomizationDetailHostValue | null {
+    return useContext(CustomizationDetailHostContext);
+}
+
 export function useCustomizationDetailHost(): CustomizationDetailHostValue {
     const ctx = useContext(CustomizationDetailHostContext);
     if (!ctx) {

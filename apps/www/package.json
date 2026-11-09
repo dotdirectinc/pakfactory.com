@@ -18,6 +18,7 @@
     "@fontsource-variable/geist": "^5.2.8",
     "@google/model-viewer": "^4.3.1",
     "@hookform/resolvers": "^5.9.1",
+    "@intercom/messenger-js-sdk": "^0.0.20",
     "@next/third-parties": "^16.2.10",
     "@pakfactory/auth-ui": "workspace:*",
     "@pakfactory/brief-builder-ui": "workspace:*",

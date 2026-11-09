@@ -76,4 +76,10 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     pantonePmsLabel: 'Pantone (PMS) codes',
     pantonePmsPlaceholder: 'e.g. PMS 185 C',
     pantonePmsRemove: 'Remove Pantone code',
+    /** PROD-3180: Apply chooser (product already in the request). */
+    applyChooserTitle: '{product} is already in your request',
+    applyChooserBody: 'Apply {options} to that product, or start a new line with it?',
+    applyChooserUpdate: 'Update the one in my request',
+    applyChooserNew: 'Start a new line',
+    applyChooserUpdated: '{options} applied to the product in your request',
 } as const;

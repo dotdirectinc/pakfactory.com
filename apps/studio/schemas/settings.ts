@@ -464,6 +464,30 @@ export const settings = defineType({
       description: 'The Google Tag Manager container ID (e.g. GTM-XXXXXXX).',
     }),
     defineField({
+      name: 'intercomEnabled',
+      title: 'Show Intercom chat',
+      type: 'boolean',
+      group: 'integrations',
+      initialValue: false,
+      description:
+        'Shows the chat button on the website (www) and opens the Intercom Messenger. Turn off to hide chat without a deploy.',
+    }),
+    defineField({
+      name: 'intercomAppId',
+      title: 'Intercom App ID',
+      type: 'string',
+      group: 'integrations',
+      description:
+        'Intercom → Settings → Channels → Messenger → Install (e.g. "y4dek71p"). Public ID, not a secret.',
+      hidden: ({ document }) => !document?.intercomEnabled,
+      validation: (Rule) =>
+        Rule.custom((value: string | undefined, context) => {
+          const enabled = (context.document as { intercomEnabled?: boolean } | undefined)?.intercomEnabled
+          if (!value?.trim()) return enabled ? 'Add the Intercom App ID, or turn off Intercom chat.' : true
+          return /^[a-z0-9]+$/i.test(value.trim()) ? true : 'Letters and numbers only (e.g. "y4dek71p").'
+        }),
+    }),
+    defineField({
       name: 'gscVerification',
       title: 'Google Search Console verification',
       type: 'string',

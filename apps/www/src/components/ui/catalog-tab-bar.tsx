@@ -35,7 +35,7 @@ type CatalogTabBarProps = {
  * primary bar under the active tab, the primitive's own offset `::after` bar
  * switched off for a real bottom border.
  */
-const TAB_TRIGGER_CLASS =
+export const TAB_TRIGGER_CLASS =
     'h-auto flex-none gap-2 rounded-none border-0 border-b-4 border-transparent px-0 py-4 text-sm font-medium text-muted-foreground shadow-none after:hidden hover:text-primary data-[state=active]:border-b-primary data-[state=active]:text-primary data-[state=active]:shadow-none';
 
 /**

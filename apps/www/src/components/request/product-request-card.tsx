@@ -22,6 +22,7 @@ import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/cop
 import {DestructiveConfirmDialog} from '@/components/common/destructive-confirm-dialog';
 import {MAX_REF_IMAGES} from '@/components/product/contents-field';
 import {QuantityPicker} from '@/components/product/quantity-picker';
+import {PickImagePreviewProvider, PickThumb, PickThumbPlaceholder} from '@/components/request/pick-image-preview';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {
     createEmptyBuilderState,
@@ -31,7 +32,7 @@ import {
     type CustomizationBuilderState,
 } from '@/lib/customization-builder';
 import {
-    lineCustomizationGroups,
+    lineCustomizationGroupsForCard,
     type LineCustomizationPick,
 } from '@/lib/request/line-customization-groups';
 import {lineDimensionDisplay} from '@/lib/request/line-dimension-display';
@@ -68,6 +69,15 @@ type ProductRequestCardProps = {
     selectable?: boolean;
     selected?: boolean;
     onSelectedChange?: (selected: boolean) => void;
+    /** Step intake (owner Nov 3): less padding so the details get more room. */
+    compact?: boolean;
+    /**
+     * When true, card participates in parent accordion collapse.
+     * Parent owns open state via `expanded` / `onExpandedChange`.
+     */
+    collapsible?: boolean;
+    expanded?: boolean;
+    onExpandedChange?: (open: boolean) => void;
 };
 
 type SpecRow = {key: string; label: string; value: string};
@@ -82,6 +92,38 @@ function resolveBuilderState(line: RequestLine): CustomizationBuilderState {
 
 function formatQuantityList(quantities: number[]): string {
     return quantities.map((n) => n.toLocaleString('en-US')).join(', ');
+}
+
+/** One customization pick on the product card: image (if any), label, property values (R42). */
+function PickRow({pick, reserveImage}: {pick: LineCustomizationPick; reserveImage: boolean}) {
+    const swatches = pick.swatches ?? [];
+    return (
+        <div className="flex items-start gap-2">
+            {pick.imageUrl ? (
+                <PickThumb src={pick.imageUrl} label={pick.label} />
+            ) : reserveImage ? (
+                <PickThumbPlaceholder />
+            ) : null}
+            <div className={cn('flex min-w-0 flex-col gap-1', (pick.imageUrl || reserveImage) && 'pt-1')}>
+                <span>{formatPickLabel(pick)}</span>
+                {swatches.length > 0 ? (
+                    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                        {swatches.map((sw) => (
+                            <li key={sw.label} className="flex items-center gap-1.5">
+                                <PickThumb
+                                    size="sm"
+                                    label={sw.label}
+                                    {...(sw.imageUrl ? {src: sw.imageUrl} : {})}
+                                    {...(sw.color ? {color: sw.color} : {})}
+                                />
+                                {sw.label}
+                            </li>
+                        ))}
+                    </ul>
+                ) : null}
+            </div>
+        </div>
+    );
 }
 
 function formatPickLabel(pick: LineCustomizationPick): string {
@@ -138,6 +180,10 @@ export function ProductRequestCard({
     selectable = false,
     selected = false,
     onSelectedChange,
+    compact = false,
+    collapsible = false,
+    expanded,
+    onExpandedChange,
 }: ProductRequestCardProps) {
     const title = line.productTitle ?? line.productSlug;
     const thumb = line.productMedia?.[0];
@@ -182,7 +228,10 @@ export function ProductRequestCard({
     const room = MAX_REF_IMAGES - draftImages.length;
     const qtyList = formatQuantityList(line.quantities);
     const dimensionsValue = lineDimensionDisplay(line);
-    const customizationGroups = lineCustomizationGroups(line);
+    // Owner Nov 3: every category shows, with "Specialist to advise" when nothing is picked.
+    const customizationGroups = lineCustomizationGroupsForCard(line);
+    // R42: once any pick on this card has an image, picks without one get a placeholder tile.
+    const cardHasPickImages = customizationGroups.some((g) => g.picks.some((p) => p.imageUrl));
     const notesRows = buildNotesRows(line);
     const dimensionSet = Boolean(dimensionsValue?.trim());
     const showCustomizationDetail =
@@ -248,13 +297,18 @@ export function ProductRequestCard({
         setCustomizeOpen(open);
     }
 
+    function openForEdit(open: () => void) {
+        if (collapsible) onExpandedChange?.(true);
+        open();
+    }
+
     function editAction(onEdit: () => void) {
         return (
             <Button
                 type="button"
                 variant="link"
                 className={cn(LINK_ACTION_CLASS, 'shrink-0')}
-                onClick={onEdit}
+                onClick={() => openForEdit(onEdit)}
             >
                 {REQUEST_COPY.paperEdit}
             </Button>
@@ -263,11 +317,32 @@ export function ProductRequestCard({
 
     return (
         <li>
+            <PickImagePreviewProvider>
             <RequestProductCard
+                {...(compact ? {className: 'p-6'} : {})}
+                {...(collapsible
+                    ? {
+                          expanded: expanded ?? false,
+                          onExpandedChange,
+                          collapsedSummary: qtyList
+                              ? `${REQUEST_COPY.quantityLabel} ${qtyList}`
+                              : REQUEST_COPY.notAdded,
+                          expandLabel: (expanded ?? false)
+                              ? REQUEST_COPY.collapseLineDetails.replace(
+                                    '{title}',
+                                    title,
+                                )
+                              : REQUEST_COPY.expandLineDetails.replace(
+                                    '{title}',
+                                    title,
+                                ),
+                      }
+                    : {})}
                 title={
                     <Link
                         href={productHref(line.productSlug)}
                         className="text-foreground underline-offset-4 hover:underline"
+                        onClick={(event) => event.stopPropagation()}
                     >
                         {title}
                     </Link>
@@ -295,7 +370,8 @@ export function ProductRequestCard({
                         label: REQUEST_COPY.customizationRowLabel,
                         action: editAction(() => setCustomizeOpen(true)),
                         children: showCustomizationDetail ? (
-                            <div className="flex flex-col gap-2">
+                            // Owner Nov 3: more room between categories (Dimensions, Materials, …).
+                            <div className="flex flex-col gap-5">
                                 <div>
                                     <p className="font-medium text-foreground">
                                         Dimensions
@@ -312,18 +388,16 @@ export function ProductRequestCard({
                                             {group.categoryTitle}
                                         </p>
                                         {group.picks.length > 0 ? (
-                                            <ul className="mt-0.5 flex flex-col text-muted-foreground">
-                                                {group.picks.map(
-                                                    (pick, index) => (
-                                                        <li
-                                                            key={`${group.categoryTitle}-${pick.label}-${index}`}
-                                                        >
-                                                            {formatPickLabel(
-                                                                pick,
-                                                            )}
-                                                        </li>
-                                                    ),
-                                                )}
+                                            // R42 (owner Nov 3): picks with a catalog image show it; hover previews it.
+                                            <ul className="mt-1 flex flex-col gap-1.5 text-muted-foreground">
+                                                {group.picks.map((pick, index) => (
+                                                    <li key={`${group.categoryTitle}-${pick.label}-${index}`}>
+                                                        <PickRow
+                                                            pick={pick}
+                                                            reserveImage={cardHasPickImages}
+                                                        />
+                                                    </li>
+                                                ))}
                                             </ul>
                                         ) : (
                                             <p className="mt-0.5 text-muted-foreground">
@@ -384,8 +458,9 @@ export function ProductRequestCard({
                             onCheckedChange={(value) =>
                                 onSelectedChange?.(value === true)
                             }
+                            onClick={(event) => event.stopPropagation()}
                             aria-label={`Select ${title}`}
-                            className="mt-0.5"
+                            className="size-6 [&_svg]:size-4"
                         />
                     ) : undefined
                 }
@@ -530,14 +605,14 @@ export function ProductRequestCard({
                                         />
                                         {image.status === 'uploading' ? (
                                             <span
-                                                className="absolute inset-0 grid place-items-center text-[10px] font-medium text-foreground"
+                                                className="absolute inset-0 grid place-items-center text-xs font-medium text-foreground"
                                                 role="status"
                                             >
                                                 {REQUEST_COPY.imageUploading}
                                             </span>
                                         ) : null}
                                         {image.status === 'error' ? (
-                                            <span className="absolute inset-0 grid place-items-center bg-destructive/10 text-[10px] font-medium text-destructive">
+                                            <span className="absolute inset-0 grid place-items-center bg-destructive/10 text-xs font-medium text-destructive">
                                                 {REQUEST_COPY.imageFailed}
                                             </span>
                                         ) : null}
@@ -603,6 +678,7 @@ export function ProductRequestCard({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            </PickImagePreviewProvider>
         </li>
     );
 }

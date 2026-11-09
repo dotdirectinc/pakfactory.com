@@ -32,7 +32,7 @@ export function BookmarkIconButton({
 }: BookmarkIconButtonProps) {
     const accessibleLabel =
         ariaLabel ?? (pressed ? 'Remove bookmark' : 'Bookmark');
-    const tooltipLabel = pressed ? 'Remove' : 'Save';
+    const tooltipLabel = pressed ? 'Bookmarked' : 'Bookmark';
 
     return (
         <Tooltip>

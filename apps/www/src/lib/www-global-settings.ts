@@ -11,6 +11,10 @@ import { sanityCache, sanityReadFailed } from "@/lib/sanity/sanity-cache";
 export type WwwGlobalSettings = {
   /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
   gtmId?: string | null;
+  /** Global Settings → Integrations → Show Intercom chat. */
+  intercomEnabled?: boolean | null;
+  /** Global Settings → Integrations → Intercom App ID (public). */
+  intercomAppId?: string | null;
   /**
    * Global Settings → Company → Organization → Company name (`organization.legalName`).
    * The shared query already returned it; this type simply never declared it, which is

@@ -960,7 +960,9 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   },
   additionalEmbedHosts,
   gtmId,
-  indexNowKey
+  indexNowKey,
+  intercomEnabled,
+  intercomAppId
 }`;
 
 /**

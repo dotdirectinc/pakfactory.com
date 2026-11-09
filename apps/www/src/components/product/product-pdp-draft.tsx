@@ -137,6 +137,8 @@ type ProductPdpDraftContextValue = {
     setBuilderState: Dispatch<SetStateAction<CustomizationBuilderState>>;
     resetDraft: () => void;
     handleAdd: () => void;
+    /** F24: the preselect query when the builder runs in the Quick configure drawer. */
+    drawerPreselect?: string;
 };
 
 const ProductPdpDraftContext = createContext<ProductPdpDraftContextValue | null>(
@@ -146,11 +148,22 @@ const ProductPdpDraftContext = createContext<ProductPdpDraftContextValue | null>
 type ProductPdpDraftProviderProps = {
     product: Product;
     children: ReactNode;
+    /**
+     * F24 Quick configure: the drawer has no PDP address, so it passes the
+     * compatibility query here (same format as the PDP URL) instead.
+     */
+    inDrawer?: boolean;
+    preselectQuery?: string;
+    /** Called after Add to request (the drawer closes). */
+    onAdded?: () => void;
 };
 
 export function ProductPdpDraftProvider({
     product,
     children,
+    inDrawer = false,
+    preselectQuery,
+    onAdded,
 }: ProductPdpDraftProviderProps) {
     const {addLine, draft} = useRequest();
     const pathname = usePathname();
@@ -201,9 +214,9 @@ export function ProductPdpDraftProvider({
     // PDP still applies (useSearchParams can stay empty on the first pass).
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        const search = window.location.search.startsWith('?')
-            ? window.location.search.slice(1)
-            : window.location.search;
+        // F24: in the Quick configure drawer the preselect comes from the opener, not the page address.
+        const raw = inDrawer ? (preselectQuery ?? '') : window.location.search;
+        const search = raw.startsWith('?') ? raw.slice(1) : raw;
         if (!search) return;
         if (appliedCompatibilitySearchRef.current === search) return;
 
@@ -217,7 +230,7 @@ export function ProductPdpDraftProvider({
         appliedCompatibilitySearchRef.current = search;
         setBuilderState(result.state);
         setCompatibilityPreselect(result.notice);
-    }, [product, pathname]);
+    }, [product, pathname, inDrawer, preselectQuery]);
 
     const clearCompatibilityPreselect = useCallback(() => {
         setCompatibilityPreselect(null);
@@ -340,7 +353,9 @@ export function ProductPdpDraftProvider({
                 ? seedFromCustomizations(preselected)
                 : createEmptyBuilderState(),
         );
+        onAdded?.();
     }, [
+        onAdded,
         ready,
         builderState,
         product,
@@ -378,8 +393,11 @@ export function ProductPdpDraftProvider({
             setBuilderState,
             resetDraft,
             handleAdd,
+            ...(inDrawer ? {drawerPreselect: preselectQuery ?? ''} : {}),
         }),
         [
+            inDrawer,
+            preselectQuery,
             product,
             volumes,
             contents,

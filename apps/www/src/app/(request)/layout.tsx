@@ -1,7 +1,7 @@
 import type {ReactNode} from 'react';
 import {accountIdentity, type AccountIdentity} from '@pakfactory/supabase/session';
 import {createClient} from '@pakfactory/supabase/server';
-import {RequestRoot} from '@/lib/request/request-root';
+import {RequestViewerSync} from '@/lib/request/request-root';
 import './request.css';
 
 /**
@@ -13,6 +13,9 @@ import './request.css';
  * their own name appear a beat late, or starts typing into a field that is
  * about to be overwritten. Resolving it before the tree renders removes the
  * race entirely.
+ *
+ * `RequestRoot` lives on the root layout; this layout only syncs the viewer
+ * into that provider via {@link RequestViewerSync}.
  *
  * Failure is not fatal: an anonymous visitor and a Supabase blip both mean "no
  * prefill", and the form is fully usable either way.
@@ -27,5 +30,10 @@ export default async function RequestLayout({children}: {children: ReactNode}) {
         viewer = null;
     }
 
-    return <RequestRoot viewer={viewer}>{children}</RequestRoot>;
+    return (
+        <>
+            <RequestViewerSync viewer={viewer} />
+            {children}
+        </>
+    );
 }

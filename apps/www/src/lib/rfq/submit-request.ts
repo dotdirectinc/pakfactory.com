@@ -11,6 +11,7 @@ import {
     isExpressQuantityReady,
     isNotesReady,
     isShippingReady,
+    type RequestFormRules,
 } from '@/lib/request/validation';
 import {toWireSubmission} from '@/lib/rfq/to-wire-payload';
 import {getUser} from '@pakfactory/supabase/session';
@@ -20,6 +21,13 @@ export type SubmitRequestInput = {
     lines: RequestLine[];
     /** Studio titles aligned with `draft.services` (same order). */
     serviceTitles?: string[];
+    /** PROD-3181 form rules (lib/request/request-rules). */
+    rules?: RequestFormRules;
+    /**
+     * Spam / bot protection (c46): a hidden field people never
+     * see, and how long the brief was open. Production can add a captcha later.
+     */
+    botCheck?: {honeypot: string; elapsedMs: number};
 };
 
 export type SubmitRequestResult =
@@ -74,11 +82,22 @@ export async function submitRequest(
     input: SubmitRequestInput,
 ): Promise<SubmitRequestResult> {
     const {draft, lines, serviceTitles} = input;
+    const rules = input.rules ?? {};
+
+    // Bot check first: a filled hidden field or a brief sent within 3 seconds of
+    // opening is not a person. Same generic error, so a bot learns nothing.
+    if (input.botCheck && (input.botCheck.honeypot.trim() || input.botCheck.elapsedMs < 3000)) {
+        console.warn('[submitRequest] bot check failed; not submitted', {
+            honeypot: Boolean(input.botCheck.honeypot.trim()),
+            elapsedMs: input.botCheck.elapsedMs,
+        });
+        return {ok: false, error: GENERIC_ERROR};
+    }
 
     // Client-side gate first, so an incomplete draft never becomes a network
     // round trip. These messages name the specific field; the server's 422s are
     // still the authority, and are surfaced below when the two disagree.
-    if (!isNotesReady(draft)) {
+    if (!isNotesReady(draft, lines, rules)) {
         return {ok: false, error: 'Tell us what you\'re packaging before submitting.'};
     }
     if (!isContentsReady(draft, lines)) {
@@ -90,10 +109,10 @@ export async function submitRequest(
     if (!isShippingReady(draft)) {
         return {ok: false, error: 'Add a shipping location.'};
     }
-    if (!isContactReady(draft)) {
+    if (!isContactReady(draft, rules)) {
         return {ok: false, error: 'Add your name and work email.'};
     }
-    if (!canSubmitRequest(draft, lines)) {
+    if (!canSubmitRequest(draft, lines, rules)) {
         return {ok: false, error: 'Finish required fields before submitting.'};
     }
 

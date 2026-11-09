@@ -979,6 +979,7 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   _id,
   title,
   shortName,
+  shortDescription,
   "slug": slug.current,
   status,
   ${OPTION_CARD_IMAGE},
@@ -1009,6 +1010,7 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _id,
   title,
   shortName,
+  shortDescription,
   "slug": slug.current,
   ${OPTION_CARD_IMAGE},
   ${OPTION_MEDIA_FIELDS},
@@ -1634,6 +1636,8 @@ export type CatalogLibraryOptionDoc = {
   title: string;
   /** Customer-facing label. Empty falls back to `title` on the card. */
   shortName?: string | null;
+  /** One-line option summary — compare peek / card blurb. */
+  shortDescription?: string | null;
   slug: string | null;
   status?: string | null;
   /** Primary still alias (ADR-024 / legacy featuredImage). */

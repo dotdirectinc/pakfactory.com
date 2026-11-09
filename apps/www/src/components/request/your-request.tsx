@@ -13,6 +13,7 @@ import {ProductRequestCard} from '@/components/request/product-request-card';
 import {StartRequestButton} from '@/components/request/start-request-button';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
+import {useRequestLineAccordion} from '@/lib/request/use-request-line-accordion';
 import type {RequestLine} from '@/lib/request/request.storage';
 import {WWW_ROUTES} from '@/lib/www-routes';
 import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
@@ -84,6 +85,7 @@ export function YourRequest() {
     }, []);
 
     const lineIds = useMemo(() => lines.map((line) => line.id), [lines]);
+    const accordion = useRequestLineAccordion(lineIds);
 
     useEffect(() => {
         setDeselectedIds((prev) => {
@@ -219,6 +221,11 @@ export function YourRequest() {
                                         }
                                         onRemove={removeLine}
                                         onUpdate={updateLine}
+                                        collapsible={accordion.collapsible}
+                                        expanded={accordion.isExpanded(line.id)}
+                                        onExpandedChange={(open) =>
+                                            accordion.setExpanded(line.id, open)
+                                        }
                                     />
                                 ))}
                             </ul>
