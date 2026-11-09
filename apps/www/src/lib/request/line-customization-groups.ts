@@ -7,9 +7,15 @@ import {
 } from '@/lib/customization-builder';
 import type {RequestLine} from '@/lib/request/request.storage';
 
+export type LineCustomizationSwatch = {label: string; color?: string; imageUrl?: string};
+
 export type LineCustomizationPick = {
     label: string;
     properties?: string[];
+    /** Owner Nov 3 (R42): the option's catalog image, when it has one. */
+    imageUrl?: string;
+    /** Owner Nov 3 (R42): colour / image property values (shown on product cards only). */
+    swatches?: LineCustomizationSwatch[];
 };
 
 export type LineCustomizationGroup = {
@@ -45,6 +51,23 @@ function propertiesForOption(
         .map((item) => item.label.trim())
         .filter(Boolean);
     return chips.length > 0 ? chips : undefined;
+}
+
+function swatchesForOption(optionId: string, line: RequestLine): LineCustomizationSwatch[] | undefined {
+    const summaries = line.customizationBuilder?.propertySelectionSummaries?.[optionId];
+    const swatches = visiblePropertySummaries(summaries)
+        .filter((item) => item.kind === 'swatch' && item.label.trim())
+        .map((item) => ({
+            label: item.label.trim(),
+            ...(item.color ? {color: item.color} : {}),
+            ...(item.imageUrl ? {imageUrl: item.imageUrl} : {}),
+        }));
+    return swatches.length > 0 ? swatches : undefined;
+}
+
+function imageForOption(optionId: string, line: RequestLine): string | undefined {
+    const url = line.availableCustomizations?.find((o) => o.id === optionId)?.imageUrl;
+    return typeof url === 'string' && url.trim() ? url : undefined;
 }
 
 /**
@@ -108,9 +131,13 @@ export function lineCustomizationGroups(
             continue;
         }
         const properties = propertiesForOption(customization.id, line);
+        const imageUrl = imageForOption(customization.id, line);
+        const swatches = swatchesForOption(customization.id, line);
         byCategory.get(key)!.push({
             label: customization.label,
             ...(properties ? {properties} : {}),
+            ...(imageUrl ? {imageUrl} : {}),
+            ...(swatches ? {swatches} : {}),
         });
     }
 
@@ -126,4 +153,20 @@ export function lineCustomizationGroups(
         categoryTitle: categoryTitleFor(key, line),
         picks: byCategory.get(key) ?? [],
     }));
+}
+
+/**
+ * Product cards (owner Nov 3): every customization category the product offers, even when
+ * nothing is picked, so the card shows each one with "Specialist to advise". The review paper
+ * keeps lineCustomizationGroups (one specialist line when nothing is picked).
+ */
+export function lineCustomizationGroupsForCard(line: RequestLine): LineCustomizationGroup[] {
+    const groups = lineCustomizationGroups(line);
+    if (groups.length > 0) return groups;
+    const order: string[] = [];
+    for (const option of line.availableCustomizations ?? []) {
+        const key = option.category?.trim();
+        if (key && !order.includes(key)) order.push(key);
+    }
+    return order.map((key) => ({categoryTitle: categoryTitleFor(key, line), picks: []}));
 }

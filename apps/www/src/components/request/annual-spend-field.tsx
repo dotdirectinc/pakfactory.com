@@ -36,9 +36,7 @@ export function AnnualSpendField({
     return (
         <div className={className}>
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <Label className="text-xs font-medium">
-                    {REQUEST_COPY.annualSpendLabel}
-                </Label>
+                <Label className="text-xs font-medium">{REQUEST_COPY.annualSpendLabel}</Label>
                 {showPrevious ? (
                     <Button
                         type="button"

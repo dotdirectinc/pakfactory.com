@@ -1,3 +1,5 @@
+import {hasNeed, NEED_PACKAGING, NEED_SERVICE} from '@/lib/intake/needs';
+import {OTHER_SERVICE_ID} from '@/lib/request/service-label';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
 import {hasShippingLocation} from '@/lib/request/shipping-address';
 
@@ -13,11 +15,26 @@ export function isExpressRequirementsOnly(draft: RequestDraft): boolean {
     return draft.express && !draft.productsExpanded;
 }
 
+/** R36: does this quote request ask for packaging / a service? (Non-express: packaging as today.) */
+export function needsPackaging(draft: RequestDraft): boolean {
+    return !draft.express || hasNeed(draft, NEED_PACKAGING);
+}
+export function needsService(draft: RequestDraft): boolean {
+    return draft.express && hasNeed(draft, NEED_SERVICE);
+}
+export function isServicesReady(draft: RequestDraft): boolean {
+    if (!needsService(draft)) return true;
+    if (draft.services.length === 0) return false;
+    // "Something else" needs the buyer's words (step intake, Nov 2).
+    return !draft.services.includes(OTHER_SERVICE_ID) || Boolean(draft.serviceOther?.trim());
+}
+
 export function isExpressQuantityReady(
     draft: RequestDraft,
     _lines: RequestLine[],
 ): boolean {
     if (!isExpressRequirementsOnly(draft)) return true;
+    if (!needsPackaging(draft)) return true;
     const quantities = draft.expressQuantities ?? [];
     if (quantities.length === 0) return false;
     return quantities.every((n) => n > 0 && n % 100 === 0);
@@ -29,16 +46,68 @@ export function isContentsReady(
 ): boolean {
     if (!draft.express) return true;
     if (isExpressRequirementsOnly(draft)) {
+        if (!needsPackaging(draft)) return true;
+        // Website PRD v4.7 (R36, owner Nov 6): the general step intake doesn't ask what's going
+        // inside this phase; the field stays in the payload (empty) for Sales or a later phase.
+        if (draft.shipToOptional) return true;
         return draft.packagingContents.trim().length > 0;
     }
     return lines.every((line) => line.contents.trim().length > 0);
 }
 
-export function isNotesReady(draft: RequestDraft): boolean {
+/**
+ * PROD-3181 (POC round 1): request form rules. Absent = round 0 rules.
+ * MIGRATION: make these the defaults, drop the parameter, and confirm the
+ * backend's 422 contract accepts an empty brief / company address.
+ */
+export type RequestFormRules = {
+    /** Brief optional once the request has a configured product. */
+    briefOptionalWithProducts?: boolean;
+    /** Company address optional. */
+    companyAddressOptional?: boolean;
+};
+
+export function hasConfiguredProduct(lines: RequestLine[]): boolean {
+    return lines.some(
+        (line) =>
+            line.quantities.some((n) => n > 0) && line.contents.trim().length > 0,
+    );
+}
+
+export function isNotesReady(
+    draft: RequestDraft,
+    lines: RequestLine[] = [],
+    rules: RequestFormRules = {},
+): boolean {
+    if (rules.briefOptionalWithProducts && hasConfiguredProduct(lines)) {
+        return true;
+    }
+    // Owner Nov 2: the step intakes (Type | Upload) accept a brief OR uploaded files — general,
+    // and product/service requests opened on v2/v3. The one-page form still needs the brief.
+    if (hasUploadedFile(draft) && (isStepIntake(draft) || draft.stepIntake === true)) {
+        return true;
+    }
     return draft.notes.trim().length > 0;
 }
 
+/** The general quote request on the step intakes (v2/v3): no ship-to, brief or files. */
+export function isStepIntake(draft: RequestDraft): boolean {
+    return Boolean(draft.express && draft.shipToOptional);
+}
+
+/** At least one file finished uploading (a file still uploading or failed doesn't count). */
+export function hasUploadedFile(draft: RequestDraft): boolean {
+    return (draft.referenceImages ?? []).some((i) => Boolean(i.key) || i.status === 'uploaded');
+}
+
 export function isShippingReady(draft: RequestDraft): boolean {
+    // R36: ship-to is optional for a service-only quote request.
+    if (draft.express && !hasNeed(draft, NEED_PACKAGING)) return true;
+    // Nov 1: the general quote intake (step shell) doesn't ask for ship-to; nor does the
+    // service request on the step intake (Nov 2). The product request does.
+    if (draft.shipToOptional && (draft.express || draft.entryKind === 'services')) return true;
+    // RFQ v2 (owner Nov 6): the product request doesn't ask ship-to either (step intake only).
+    if (draft.shipToOptional && draft.stepIntake && draft.entryKind === 'products') return true;
     return hasShippingLocation(draft.shippingAddress);
 }
 
@@ -53,12 +122,36 @@ export function isCompanyOfficeReady(draft: RequestDraft): boolean {
     );
 }
 
-export function isContactReady(draft: RequestDraft): boolean {
+export function isContactReady(
+    draft: RequestDraft,
+    rules: RequestFormRules = {},
+): boolean {
     return (
         draft.contactFirstName.trim().length > 0 &&
         draft.contactLastName.trim().length > 0 &&
         isValidEmail(draft.contactEmail) &&
-        isCompanyOfficeReady(draft)
+        (rules.companyAddressOptional === true || isCompanyOfficeReady(draft))
+    );
+}
+
+/** A company website as typed: a host with a dot, scheme optional (e.g. acme.com, https://www.acme.co). */
+export function isValidWebsite(value: string | undefined): boolean {
+    const v = (value ?? '').trim().replace(/^https?:\/\//i, '');
+    return /^[^\s/.]+(\.[^\s/.]+)+(\/\S*)?$/.test(v);
+}
+
+/**
+ * Step intake Contact (owner Nov 2): first and last name and email are needed;
+ * phone, company website, and yearly packaging spend are optional. (No company address here.)
+ * A filled website still has to look like a host.
+ */
+export function isIntakeContactReady(draft: RequestDraft): boolean {
+    const website = (draft.contactWebsite ?? '').trim();
+    return (
+        draft.contactFirstName.trim().length > 0 &&
+        draft.contactLastName.trim().length > 0 &&
+        isValidEmail(draft.contactEmail) &&
+        (website.length === 0 || isValidWebsite(website))
     );
 }
 
@@ -74,14 +167,16 @@ export function isItemsReady(draft: RequestDraft, lines: RequestLine[]): boolean
 export function canSubmitRequest(
     draft: RequestDraft,
     lines: RequestLine[],
+    rules: RequestFormRules = {},
 ): boolean {
     return (
         isItemsReady(draft, lines) &&
-        isNotesReady(draft) &&
+        isNotesReady(draft, lines, rules) &&
         isShippingReady(draft) &&
-        isContactReady(draft) &&
+        isContactReady(draft, rules) &&
         isContentsReady(draft, lines) &&
-        isExpressQuantityReady(draft, lines)
+        isExpressQuantityReady(draft, lines) &&
+        isServicesReady(draft)
     );
 }
 
@@ -109,7 +204,7 @@ export function showProductsSection(draft: RequestDraft, lines: RequestLine[]): 
 
 export function showServicesSection(draft: RequestDraft, lines: RequestLine[]): boolean {
     if (draft.entryKind === 'express' && !draft.productsExpanded) {
-        return false;
+        return needsService(draft);
     }
     if (draft.entryKind === 'services') return true;
     // Products entry: services always present as upsell toggle.

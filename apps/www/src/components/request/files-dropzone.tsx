@@ -40,7 +40,7 @@ export function FilesDropzone({
                 <span className="text-sm font-medium text-foreground">
                     {dropTitle}
                 </span>
-                <span className="text-[11px]">
+                <span className="text-xs">
                     PNG · JPG · WEBP · GIF · PDF — up to 25MB each
                 </span>
                 <input
