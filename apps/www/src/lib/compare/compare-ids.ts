@@ -4,10 +4,10 @@ const MAX = 3;
 
 export const COMPARE_CUSTOMIZATION_MAX = MAX;
 
-/** Default max columns in one comparison group (Website PRD R44); the live max is getCompareBehavior().maxPerGroup. */
+/** Default visible columns on /compare (empty Add slots included). Hard ceiling is COMPARE_GROUP_LIMIT. */
 export const COMPARE_GROUP_MAX = 4;
-/** Hard ceiling for any configured max (and for parsing /compare?ids=). */
-export const COMPARE_GROUP_LIMIT = 10;
+/** Soft ceiling for any configured max (and for parsing /compare?ids=). */
+export const COMPARE_GROUP_LIMIT = 20;
 
 export function buildCompareSearch(ids: string[]): string {
     const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];

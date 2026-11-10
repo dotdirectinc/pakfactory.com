@@ -1654,6 +1654,9 @@ export type CatalogLibraryOptionDoc = {
   type?: CatalogLibraryTypeDoc | null;
   properties?: (CatalogPropertyValueDoc | null)[] | null;
   productLines?: (CatalogLineRefDoc | null)[] | null;
+  /** Optional — compare Why use it (PROD-3307); absent on catalog list cards. */
+  benefitsTitle?: string | null;
+  benefitsBody?: unknown[] | null;
 };
 
 export type CatalogPropertyControl =

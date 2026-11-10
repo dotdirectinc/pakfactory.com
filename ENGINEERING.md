@@ -156,6 +156,7 @@ Until [ADR-015](docs/adr/0015-page-composition-sections-terminology.md) is **Acc
 | “Optimize re-renders.” | Narrow state; Context value identity only when providing Context | Blanket `useMemo` on every derived string |
 | “Reuse the topic chips on 404.” | Extract/use props-only `ui/` primitive | Copy-paste `TopicRelatedPills` wiring |
 | “Add a card that links to a detail page.” | `CatalogCard` / `MediaTileCard` (pointer prefetch built in) or `usePointerPrefetch` on transactional tiles | Viewport-prefetch a grid of `Link`s; copy-paste `router.prefetch` |
+| “Add / change a Sanity still (hero, card, thumb).” | [`ADR-027`](docs/adr/0027-front-end-sanity-image-rendering.md): `SanityImage`; `priority` if above-the-fold LCP; `square`/`portrait` to match the box; settle via `useSanityImageSettle` | Raw `<img>` / bare `next/image` for CDN URLs; lazy heroes; CSS size one axis without `auto` on the other |
 
 ---
 
@@ -165,6 +166,7 @@ Until [ADR-015](docs/adr/0015-page-composition-sections-terminology.md) is **Acc
 | --- | --- |
 | [`DESIGN.md`](DESIGN.md) | Visual language + tokens |
 | [`docs/adr/README.md`](docs/adr/README.md) | Decisions by domain + Applies to |
+| [`docs/adr/0027-front-end-sanity-image-rendering.md`](docs/adr/0027-front-end-sanity-image-rendering.md) | `SanityImage`, LCP `priority`, crop, settle |
 | [`AGENTS.md`](AGENTS.md) | Stack, domain, JIRA, Sanity guardrails |
 | [`apps/blog/CLAUDE.md`](apps/blog/CLAUDE.md) | Blog routes / SEO |
 | [`apps/www/CLAUDE.md`](apps/www/CLAUDE.md) | www rebuild |

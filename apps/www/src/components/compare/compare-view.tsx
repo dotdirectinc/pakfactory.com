@@ -2,18 +2,21 @@
 
 /**
  * /compare (Website PRD v4.6 R27, R44, R46, R47): one comparison at a time — a product line
- * or a customization option type — up to 4 columns. Products / Customizations toggle and one
- * tab per group come from the visitor's own compare set; a shared link (`shared=1`) is
- * read-only and never changes the viewer's set ("Add these to my compare").
+ * or a customization option type. Default rail is 4 fluid columns (empty Add slots included);
+ * tracks fill the viewport, never shrink below catalog-card min, then scroll with scrubbers.
+ * The group grows with one Add hole up to COMPARE_GROUP_LIMIT (20). Products / Customizations
+ * toggle and one tab per group come from the visitor's own compare set; a shared link
+ * (`shared=1`) is read-only and never changes the viewer's set ("Add these to my compare").
  *
  * Heroes paint from localStorage immediately; the spec matrix fills in from a slim API.
  */
 import Link from 'next/link';
 import {usePathname, useRouter, useSearchParams} from 'next/navigation';
-import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type UIEvent} from 'react';
 import {createPortal} from 'react-dom';
+import {PortableText, type PortableTextComponents} from '@portabletext/react';
 import {setChatContext} from '@/lib/chat/chat-context';
-import {Bookmark, Check, ChevronDown, Columns2, HelpCircle, Share2, X} from 'lucide-react';
+import {Bookmark, Check, ChevronDown, ChevronLeft, ChevronRight, Columns2, HelpCircle, Share2, X} from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,11 +26,13 @@ import {
     DropdownMenuTrigger,
 } from '@pakfactory/ui/components/dropdown-menu';
 import {Button} from '@pakfactory/ui/components/button';
-import {PageDielineSection, pageDielineContentClass, pageDielineOuterClass} from '@pakfactory/ui/components/page-dieline-section';
+import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {ToggleGroup, ToggleGroupItem} from '@pakfactory/ui/components/toggle-group';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
 
 import {ComparePageHeadingSection} from '@/components/compare/compare-page-heading-section';
+import {CompareSettlingImage} from '@/components/compare/compare-settling-image';
 import {TAB_TRIGGER_CLASS} from '@/components/ui/catalog-tab-bar';
 import {CloseButton} from '@/components/ui/close-button';
 import {serializeCompatibilityQuery} from '@/lib/catalog/compatibility-query';
@@ -39,7 +44,7 @@ import {trackCompare} from '@/lib/compare/compare-events';
 import {runBookmarkToggle} from '@/lib/bookmarks/bookmark-actions';
 import {toggleBookmark, useBookmarks} from '@/lib/bookmarks/bookmarks';
 import {useBookmarkAuth} from '@/lib/bookmarks/use-bookmark-auth';
-import {parseCompareIds} from '@/lib/compare/compare-ids';
+import {COMPARE_GROUP_LIMIT, COMPARE_GROUP_MAX, parseCompareIds} from '@/lib/compare/compare-ids';
 import {getCompareBehavior} from '@/lib/compare/compare-behavior';
 import {leaveToolShell} from '@/lib/ui/tool-shell-return';
 import {productHref, WWW_ROUTES} from '@/lib/www-routes';
@@ -67,6 +72,45 @@ const SHOW_KEY_DIFFERENCES = false;
 const SHOW_VIEW_TOGGLE = false;
 /** Owner Nov 9: the Works with summary row (options by type / product lines) is hidden. */
 const SHOW_COMPAT_SUMMARY = false;
+
+/** Matches `--motion-fast` for column exit commit. */
+const COLUMN_EXIT_MS = 200;
+
+const whyUseItBodyComponents: PortableTextComponents = {
+    block: {
+        normal: ({children}) => (
+            <p className="mb-2 text-sm leading-snug text-muted-foreground last:mb-0">{children}</p>
+        ),
+    },
+    list: {
+        bullet: ({children}) => (
+            <ul className="mb-2 list-disc space-y-1 pl-4 text-sm leading-snug text-muted-foreground last:mb-0">{children}</ul>
+        ),
+        number: ({children}) => (
+            <ol className="mb-2 list-decimal space-y-1 pl-4 text-sm leading-snug text-muted-foreground last:mb-0">{children}</ol>
+        ),
+    },
+    listItem: {
+        bullet: ({children}) => <li>{children}</li>,
+        number: ({children}) => <li>{children}</li>,
+    },
+    marks: {
+        strong: ({children}) => <strong className="font-semibold text-foreground">{children}</strong>,
+        em: ({children}) => <em>{children}</em>,
+        link: ({value, children}) => {
+            const href: string = value?.href ?? '#';
+            return (
+                <a href={href} className="font-medium text-primary underline underline-offset-4 hover:no-underline" {...externalLinkAttributes(href)}>
+                    {children}
+                </a>
+            );
+        },
+    },
+};
+
+function columnHasBenefits(c: CompareColumn): boolean {
+    return Boolean(c.benefitsBody && c.benefitsBody.length > 0);
+}
 
 const kindOf = (type: 'products' | 'customizations'): CompareKind => (type === 'products' ? 'product' : 'customization');
 const sameIds = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
@@ -219,31 +263,38 @@ export function CompareView({
     // URL deep-links start loading so the first paint is not empty “+ Add” slots.
     const [matrixLoading, setMatrixLoading] = useState(() => Boolean(ids.length));
 
+    const matrixKey = ids.length ? `${type}|${idsKey(ids)}` : '';
+    const matrixAppliedKeyRef = useRef('');
     useEffect(() => {
-        if (!ids.length) {
+        if (!matrixKey) {
+            matrixAppliedKeyRef.current = '';
             setMatrix(null);
             setMatrixLoading(false);
             return;
         }
-        let off = false;
+        if (matrixAppliedKeyRef.current === matrixKey) return;
+        const ac = new AbortController();
         setMatrixLoading(true);
         const q = new URLSearchParams({type, ids: ids.join(',')});
-        fetch(`/api/compare/matrix?${q.toString()}`)
+        fetch(`/api/compare/matrix?${q.toString()}`, {signal: ac.signal})
             .then((r) => (r.ok ? r.json() : {data: null}))
             .then((j: {data: CompareData | null}) => {
-                if (off) return;
+                if (ac.signal.aborted) return;
+                matrixAppliedKeyRef.current = matrixKey;
                 setMatrix(j.data ?? null);
                 setMatrixLoading(false);
             })
-            .catch(() => {
-                if (off) return;
+            .catch((err: unknown) => {
+                if (ac.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return;
                 setMatrix(null);
                 setMatrixLoading(false);
             });
         return () => {
-            off = true;
+            ac.abort();
         };
-    }, [type, idsKey(ids)]);
+        // matrixKey encodes type + ids; avoid `ids` array identity retriggers.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- matrixKey
+    }, [matrixKey]);
 
     // R47: compare_view once per comparison when matrix columns arrive.
     useEffect(() => {
@@ -254,15 +305,28 @@ export function CompareView({
     const otherCustomizations = items.filter((i) => i.kind === 'customization');
     const otherProductIds = items.filter((i) => i.kind === 'product').map((i) => i.id).join(',');
     const [otherProducts, setOtherProducts] = useState<OtherProduct[]>([]);
+    const productsAppliedKeyRef = useRef('');
     useEffect(() => {
-        if (type !== 'customizations' || !otherProductIds) return setOtherProducts([]);
-        let off = false;
-        fetch(`/api/compare/products?ids=${encodeURIComponent(otherProductIds)}`)
+        if (type !== 'customizations' || !otherProductIds) {
+            productsAppliedKeyRef.current = '';
+            setOtherProducts([]);
+            return;
+        }
+        if (productsAppliedKeyRef.current === otherProductIds) return;
+        const ac = new AbortController();
+        fetch(`/api/compare/products?ids=${encodeURIComponent(otherProductIds)}`, {signal: ac.signal})
             .then((r) => (r.ok ? r.json() : {products: []}))
-            .then((j: {products: OtherProduct[]}) => !off && setOtherProducts(j.products ?? []))
-            .catch(() => !off && setOtherProducts([]));
+            .then((j: {products: OtherProduct[]}) => {
+                if (ac.signal.aborted) return;
+                productsAppliedKeyRef.current = otherProductIds;
+                setOtherProducts(j.products ?? []);
+            })
+            .catch((err: unknown) => {
+                if (ac.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return;
+                setOtherProducts([]);
+            });
         return () => {
-            off = true;
+            ac.abort();
         };
     }, [type, otherProductIds]);
 
@@ -297,7 +361,7 @@ export function CompareView({
             // Null the index in place first so neighbors do not slide when the store compacts.
             nullRailId(id);
             remove(id);
-        }, 200);
+        }, COLUMN_EXIT_MS);
         return () => window.clearTimeout(t);
         // Intentionally only re-run when exitingId changes — remove closes over current ids/kind.
         // eslint-disable-next-line react-hooks/exhaustive-deps -- exit commit once per exitingId
@@ -389,11 +453,15 @@ export function CompareView({
         trackCompare('compare_action', {action: 'add_with', id: c.id, options: list.length, shared});
         openQuote(c, list);
     };
-    // CDP-style rail: fixed track count while editable; local railSlots keep holes so remove does not slide neighbors.
+    // CDP-style rail: default COMPARE_GROUP_MAX slots with one Add hole until the hard ceiling;
+    // local railSlots keep holes so remove does not slide neighbors.
     // Use `shared` (not transient `readOnly`) for length/layout — store updates before the URL on remove and
     // would otherwise flip readOnly, change railLen, and left-pack (slide glitch).
     const max = getCompareBehavior().maxPerGroup;
-    const railLen = shared ? Math.max(cols.length, 1) : max;
+    const atLimit = cols.length >= Math.min(max, COMPARE_GROUP_LIMIT);
+    const railLen = shared
+        ? Math.max(cols.length, 1)
+        : Math.min(COMPARE_GROUP_LIMIT, Math.max(COMPARE_GROUP_MAX, cols.length + (atLimit ? 0 : 1)));
     // Live store group overlapping URL ids (survives the store/URL gap when `active` exact-match fails).
     const railGroup = useMemo(() => {
         if (shared) return null;
@@ -433,19 +501,26 @@ export function CompareView({
     useEffect(() => {
         prevColIdsRef.current = railSlots.filter((c): c is CompareColumn => Boolean(c)).map((c) => c.id);
     }, [railSlots]);
-    const tpl = {gridTemplateColumns: `var(--cmp-label) repeat(${railLen}, minmax(0, 1fr))`};
-    const railMinStyle = {minWidth: `calc(var(--cmp-label) + var(--cmp-col) * ${railLen})`};
-    const tableVars = '[--cmp-label:8.5rem] [--cmp-col:42vw] sm:[--cmp-label:13rem] sm:[--cmp-col:13.5rem]';
+    // Fluid tracks: fill the scroller while four fit; never shrink below catalog 4-up card min.
+    const tpl = {
+        gridTemplateColumns: `var(--cmp-label) repeat(${railLen}, minmax(var(--cmp-col-min), 1fr))`,
+    };
+    const railMinStyle = {minWidth: `calc(var(--cmp-label) + var(--cmp-col-min) * ${railLen})`};
+    const colTracks = `repeat(${railLen}, minmax(var(--cmp-col-min), 1fr))`;
+    const colTracksMin = `calc(var(--cmp-col-min) * ${railLen})`;
+    const tableVars =
+        '[--cmp-label:8.5rem] [--cmp-col-min:min(42vw,calc((var(--layout-max)-2*var(--layout-gutter-inner)-4.5rem)/4))] sm:[--cmp-label:13rem] sm:[--cmp-col-min:calc((var(--layout-max)-2*var(--layout-gutter-inner)-4.5rem)/4)]';
     const cell = 'border-r border-border px-4 py-3 text-sm last:border-r-0';
     const labelCell = (node: ReactNode, tint = false) => (
         <div className={cn('sticky left-0 z-10 border-r border-border py-3 pl-layout-gutter-inner pr-3', tint ? 'bg-muted' : 'bg-background')}>{node}</div>
     );
-    /** Section title row — one cell spanning label + all rail columns (no empty vertical rules). */
-    const sectionHeader = (title: string) => (
-        <div className="grid border-b border-border" style={tpl}>
-            <div className="sticky left-0 z-10 col-span-full bg-background py-3 pl-layout-gutter-inner pr-3">
-                <span className="text-sm font-semibold">{title}</span>
-            </div>
+    /** Full scroller width — not the capped tpl band — so trailing controls sit on the window right. */
+    const sectionHeader = (title: string, trailing?: ReactNode) => (
+        <div className="flex w-full items-center justify-between gap-4 border-b border-border bg-background py-3">
+            <span className="sticky left-0 z-10 bg-background pl-layout-gutter-inner text-sm font-semibold">{title}</span>
+            {trailing ? (
+                <div className="sticky right-0 z-10 ml-auto bg-background pr-layout-gutter-inner">{trailing}</div>
+            ) : null}
         </div>
     );
     const groupHref = active ? (kind === 'product' ? productHref(active.key) : WWW_ROUTES.customizations) : type === 'products' ? WWW_ROUTES.products : WWW_ROUTES.customizations;
@@ -454,31 +529,69 @@ export function CompareView({
     // Suggestions for the empty slots (Guided): the closest items from the same line / option type.
     const [slotSugg, setSlotSugg] = useState<AddInput[]>([]);
     const firstId = cols[0]?.id ?? '';
+    const slotSuggestKey =
+        guided && !readOnly && firstId && cols.length < max
+            ? `${kind}|${firstId}|${idsKey(ids)}|${max}`
+            : '';
+    const slotSuggestAppliedRef = useRef('');
     useEffect(() => {
-        if (!guided || readOnly || !firstId || cols.length >= max) return setSlotSugg([]);
-        let off = false;
-        fetch(`/api/compare/suggest?kind=${kind}&id=${encodeURIComponent(firstId)}&exclude=${encodeURIComponent(ids.join(','))}`)
+        if (!slotSuggestKey) {
+            slotSuggestAppliedRef.current = '';
+            setSlotSugg([]);
+            return;
+        }
+        if (slotSuggestAppliedRef.current === slotSuggestKey) return;
+        const ac = new AbortController();
+        fetch(
+            `/api/compare/suggest?kind=${kind}&id=${encodeURIComponent(firstId)}&exclude=${encodeURIComponent(ids.join(','))}`,
+            {signal: ac.signal},
+        )
             .then((r) => (r.ok ? r.json() : {items: []}))
-            .then((j: {items: AddInput[]}) => !off && setSlotSugg(j.items ?? []))
-            .catch(() => !off && setSlotSugg([]));
+            .then((j: {items: AddInput[]}) => {
+                if (ac.signal.aborted) return;
+                slotSuggestAppliedRef.current = slotSuggestKey;
+                setSlotSugg(j.items ?? []);
+            })
+            .catch((err: unknown) => {
+                if (ac.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return;
+                setSlotSugg([]);
+            });
         return () => {
-            off = true;
+            ac.abort();
         };
-    }, [guided, readOnly, firstId, kind, idsKey(ids), max]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- slotSuggestKey
+    }, [slotSuggestKey]);
     // Owner Nov 9 (as the original compare): the column title is a dropdown to switch that column to
     // another item of the same line / option type.
     const [groupItems, setGroupItems] = useState<AddInput[]>([]);
+    const groupSuggestKey = !readOnly && firstId ? `${kind}|${firstId}|group` : '';
+    const groupSuggestAppliedRef = useRef('');
     useEffect(() => {
-        if (readOnly || !firstId) return setGroupItems([]);
-        let off = false;
-        fetch(`/api/compare/suggest?kind=${kind}&id=${encodeURIComponent(firstId)}&scope=group`)
+        if (!groupSuggestKey) {
+            groupSuggestAppliedRef.current = '';
+            setGroupItems([]);
+            return;
+        }
+        if (groupSuggestAppliedRef.current === groupSuggestKey) return;
+        const ac = new AbortController();
+        fetch(`/api/compare/suggest?kind=${kind}&id=${encodeURIComponent(firstId)}&scope=group`, {
+            signal: ac.signal,
+        })
             .then((r) => (r.ok ? r.json() : {items: []}))
-            .then((j: {items: AddInput[]}) => !off && setGroupItems(j.items ?? []))
-            .catch(() => !off && setGroupItems([]));
+            .then((j: {items: AddInput[]}) => {
+                if (ac.signal.aborted) return;
+                groupSuggestAppliedRef.current = groupSuggestKey;
+                setGroupItems(j.items ?? []);
+            })
+            .catch((err: unknown) => {
+                if (ac.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return;
+                setGroupItems([]);
+            });
         return () => {
-            off = true;
+            ac.abort();
         };
-    }, [readOnly, firstId, kind]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- groupSuggestKey
+    }, [groupSuggestKey]);
     // Empty-slot add menu: group's free items, suggested first (Guided).
     const freeGroupItems = groupItems.filter((g) => !ids.includes(g.id));
     const sugIds = new Set(slotSugg.map((x) => x.id));
@@ -493,29 +606,127 @@ export function CompareView({
         router.replace(`/compare?type=${type}&ids=${encodeURIComponent([...ids, s.id].join(','))}`);
     };
     // Sticky column heads: once the image row scrolls away, a slim strip (thumb + name) pins to the top.
+    // scrollX stays in a ref so horizontal scrub does not re-render the whole matrix.
     const scrollerRef = useRef<HTMLDivElement>(null);
     const heroRef = useRef<HTMLDivElement>(null);
-    const [scrollX, setScrollX] = useState(0);
+    const stickyGridRef = useRef<HTMLDivElement>(null);
+    const scrollXRef = useRef(0);
+    const scrubLeftRef = useRef(false);
+    const scrubRightRef = useRef(false);
+    const scrollRafRef = useRef(0);
+    const scrubRafRef = useRef(0);
+    const [canScrubLeft, setCanScrubLeft] = useState(false);
+    const [canScrubRight, setCanScrubRight] = useState(false);
     const [stuck, setStuck] = useState(false);
     const [headTop, setHeadTop] = useState(0);
     const showHeroesKey = `${ids.join(',')}|${Boolean(matrix)}`;
+
+    const applyStickyTransform = () => {
+        const el = stickyGridRef.current;
+        if (el) el.style.transform = `translateX(-${scrollXRef.current}px)`;
+    };
+
+    const updateScrubberFlags = (el: HTMLElement) => {
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        const x = el.scrollLeft;
+        const left = x > 1;
+        const right = maxScroll > 1 && x < maxScroll - 1;
+        if (left !== scrubLeftRef.current) {
+            scrubLeftRef.current = left;
+            setCanScrubLeft(left);
+        }
+        if (right !== scrubRightRef.current) {
+            scrubRightRef.current = right;
+            setCanScrubRight(right);
+        }
+    };
+
+    const syncScrubbers = () => {
+        const el = scrollerRef.current;
+        if (!el) {
+            if (scrubLeftRef.current) {
+                scrubLeftRef.current = false;
+                setCanScrubLeft(false);
+            }
+            if (scrubRightRef.current) {
+                scrubRightRef.current = false;
+                setCanScrubRight(false);
+            }
+            return;
+        }
+        updateScrubberFlags(el);
+    };
+
+    const scheduleScrubSync = () => {
+        if (scrubRafRef.current) return;
+        scrubRafRef.current = window.requestAnimationFrame(() => {
+            scrubRafRef.current = 0;
+            syncScrubbers();
+        });
+    };
+
+    const scrubBy = (dir: -1 | 1) => {
+        const el = scrollerRef.current;
+        if (!el) return;
+        const firstCol = heroRef.current?.children[1] as HTMLElement | undefined;
+        const step = firstCol?.getBoundingClientRect().width || el.clientWidth * 0.8;
+        el.scrollBy({left: dir * step, behavior: 'smooth'});
+    };
+
+    const onScrollerScroll = (e: UIEvent<HTMLDivElement>) => {
+        const el = e.currentTarget;
+        scrollXRef.current = el.scrollLeft;
+        if (scrollRafRef.current) return;
+        scrollRafRef.current = window.requestAnimationFrame(() => {
+            scrollRafRef.current = 0;
+            applyStickyTransform();
+            updateScrubberFlags(el);
+        });
+    };
+
+    useEffect(() => {
+        scheduleScrubSync();
+        const el = scrollerRef.current;
+        if (!el) return;
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => scheduleScrubSync()) : null;
+        ro?.observe(el);
+        window.addEventListener('resize', scheduleScrubSync);
+        return () => {
+            ro?.disconnect();
+            window.removeEventListener('resize', scheduleScrubSync);
+            if (scrubRafRef.current) window.cancelAnimationFrame(scrubRafRef.current);
+            scrubRafRef.current = 0;
+        };
+    }, [railLen, showHeroesKey]);
+
+    useLayoutEffect(() => {
+        if (stuck) applyStickyTransform();
+    }, [stuck, railLen, showHeroesKey]);
+
     // A scroll listener (capture: also scrolls inside any scrolling ancestor): pinned once the image row's
     // bottom passes the top of the viewport (or the bottom of a sticky bar above it, if there is one).
     // On ids/matrix change: clear stuck immediately and remeasure after layout — a mid-reflow check can
     // flash the fixed mini-header between the group tabs and the heroes.
     useEffect(() => {
-        setStuck(false);
+        setStuck((s) => (s ? false : s));
         let raf2 = 0;
         const check = () => {
             const el = heroRef.current;
-            if (!el) return setStuck(false);
+            if (!el) {
+                setStuck((s) => (s ? false : s));
+                return;
+            }
             const bar = document.querySelector('[aria-label="Products or customizations"]')?.closest('.sticky') as HTMLElement | null;
             const top = bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0;
             setHeadTop((t) => (t === top ? t : top));
             const rect = el.getBoundingClientRect();
             // Ignore collapsed/mid-layout heroes so add/remove cannot false-trigger the portal.
-            if (rect.height <= 48) return setStuck(false);
-            setStuck(rect.bottom < top + 8);
+            if (rect.height <= 48) {
+                setStuck((s) => (s ? false : s));
+                return;
+            }
+            const next = rect.bottom < top + 8;
+            setStuck((s) => (s === next ? s : next));
         };
         const raf1 = window.requestAnimationFrame(() => {
             raf2 = window.requestAnimationFrame(check);
@@ -546,6 +757,14 @@ export function CompareView({
         ids.length > 0 && (matrixLoading || (cols.length > 0 && !railSlots.some((c) => c != null)));
     const empty = setEmpty && !ids.length && !awaitingRedirect;
     const showHeroes = cols.length > 0;
+    const showWhyUseIt = type === 'customizations' && cols.some(columnHasBenefits);
+    const diffOnlyControl =
+        showHeroes && cols.length > 1 ? (
+            <label className="flex shrink-0 items-center gap-2 text-sm">
+                <input type="checkbox" checked={diffOnly} onChange={(e) => setDiffOnly(e.target.checked)} className="size-4" />
+                Show differences only
+            </label>
+        ) : null;
     const heading =
         active?.label ??
         matrix?.columns[0]?.groupLabel ??
@@ -554,7 +773,7 @@ export function CompareView({
 
     return (
         <div className="relative min-h-svh bg-background">
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end p-5">
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end p-4">
                 {/* Owner Nov 9: Close (✕) top-right — /compare is a tool you close back to where you were. */}
                 <CloseButton
                     className="pointer-events-auto"
@@ -566,7 +785,7 @@ export function CompareView({
             <ComparePageHeadingSection
                 title={heading}
                 settle
-                borderBottom
+                borderBottom={mine.length === 0}
                 nav={
                     <>
                         <div className="flex items-center gap-2">
@@ -585,7 +804,7 @@ export function CompareView({
                                         key={k}
                                         value={k}
                                         disabled={!count(k) && kind !== k}
-                                        className="gap-1.5 rounded-md px-3 data-[spacing=0]:rounded-md data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                                        className="gap-2 rounded-md px-3 data-[spacing=0]:rounded-md data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
                                     >
                                         <span>{k === 'product' ? 'Products' : 'Customizations'}</span>
                                         <span className="font-normal tabular-nums text-muted-foreground/50">{count(k)}</span>
@@ -618,11 +837,14 @@ export function CompareView({
                     </>
                 }
             />
-            <PageDielineSection paddingBlock="none">
-                {mine.length > 0 ? (
-                    <div className="-mx-layout-gutter-inner flex items-stretch justify-between gap-x-4 border-b border-dashed border-border px-layout-gutter-inner sm:gap-x-6">
-                    {/* Owner Nov 9: group tabs — solid active underline; dashed strip rule. */}
-                    <div className="-mb-px flex min-w-0 flex-1 gap-x-4 overflow-x-auto sm:gap-x-6" role="tablist" aria-label="Your comparisons">
+            {mine.length > 0 ? (
+                <PageDielineSection paddingBlock="none" borderTop>
+                    {/* Dashed top under Products/Customizations; no strip bottom — items rail has its own. */}
+                    <div
+                        className="flex min-w-0 gap-x-4 overflow-x-auto sm:gap-x-6"
+                        role="tablist"
+                        aria-label="Your comparisons"
+                    >
                         {mine.map((g) => {
                             const on = active && groupId(active.kind, active.key) === groupId(g.kind, g.key);
                             return (
@@ -633,7 +855,7 @@ export function CompareView({
                                     aria-selected={Boolean(on)}
                                     data-state={on ? 'active' : 'inactive'}
                                     onClick={() => openGroup(g)}
-                                    className={cn('-mb-px flex shrink-0 items-center', TAB_TRIGGER_CLASS)}
+                                    className={cn('flex shrink-0 items-center', TAB_TRIGGER_CLASS)}
                                 >
                                     <span>{g.label}</span>
                                     <span className="font-normal tabular-nums text-muted-foreground/50">{g.items.length}</span>
@@ -641,15 +863,10 @@ export function CompareView({
                             );
                         })}
                     </div>
-                    {showHeroes && cols.length > 1 ? (
-                        <label className="flex shrink-0 items-center gap-2 py-2 text-sm">
-                            <input type="checkbox" checked={diffOnly} onChange={(e) => setDiffOnly(e.target.checked)} className="size-4" />
-                            Show differences only
-                        </label>
-                    ) : null}
-                    </div>
-                ) : null}
+                </PageDielineSection>
+            ) : null}
 
+            <PageDielineSection paddingBlock="none">
                 {readOnly && showHeroes ? (
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm">
                         <span>Shared comparison · read-only. Your own compare list isn't changed.</span>
@@ -675,11 +892,13 @@ export function CompareView({
                             {awaitingRedirect ? 'Opening your comparison…' : 'Loading comparison…'}
                         </p>
                     </div>
-                ) : showHeroes ? (
+                ) : null}
+            </PageDielineSection>
+            {showHeroes && !empty && !awaitingRedirect && !awaitingColumns && !awaitingRail ? (
                     <div>
                         {/* Owner Nov 9: Key differences hidden for now (CMP-11); flip SHOW_KEY_DIFFERENCES to bring it back. */}
                         {SHOW_KEY_DIFFERENCES && guided && keyDiff ? (
-                            <p className="rounded-r-xl border-l-[3px] border-primary bg-primary/5 px-4 py-3 text-sm">
+                            <p className="mx-layout-gutter-outer rounded-r-xl border-l-[3px] border-primary bg-primary/5 px-4 py-3 text-sm">
                                 <span className="font-semibold">Key differences:</span> {keyDiff}
                             </p>
                         ) : null}
@@ -687,16 +906,25 @@ export function CompareView({
                         {/* Portal: the page's enter animation sets a transform, which would pin a fixed strip to the page instead of the viewport. */}
                         {stuck && typeof document !== 'undefined'
                             ? createPortal(
-                            <div className={pageDielineOuterClass('fixed inset-x-0 z-40 border-b border-border bg-background/95 backdrop-blur')} style={{top: headTop}}>
-                                <div className={pageDielineContentClass(cn('flex', tableVars))}>
-                                    <div className="-mx-layout-gutter-inner flex min-w-0 flex-1">
+                            <div className="fixed inset-x-0 z-40 border-b border-border bg-background/95 backdrop-blur" style={{top: headTop}}>
+                                <div className={cn('flex w-full', tableVars)}>
+                                    <div className="flex min-w-0 flex-1">
                                     <div className="w-[var(--cmp-label)] shrink-0" />
                                     <div className="min-w-0 flex-1 overflow-hidden">
-                                        <div className="grid" style={{gridTemplateColumns: `repeat(${railLen}, minmax(0, 1fr))`, minWidth: `calc(var(--cmp-col) * ${railLen})`, transform: `translateX(-${scrollX}px)`}}>
+                                        <div
+                                            ref={stickyGridRef}
+                                            className="grid"
+                                            style={{
+                                                gridTemplateColumns: colTracks,
+                                                minWidth: colTracksMin,
+                                                width: `max(100%, ${colTracksMin})`,
+                                                transform: `translateX(-${scrollXRef.current}px)`,
+                                            }}
+                                        >
                                             {railSlots.map((c, i) =>
                                                 c ? (
                                                     <div key={c.id} className="flex items-center gap-2 px-4 py-2">
-                                                        <span className="size-8 shrink-0 overflow-hidden rounded-md bg-muted">{c.imageUrl ? <img src={c.imageUrl} alt="" className="size-full object-cover" /> : null}</span>
+                                                        {c.imageUrl ? <CompareSettlingImage src={c.imageUrl} alt="" /> : <span className="size-8 shrink-0 rounded-md bg-muted" />}
                                                         <span className="truncate text-[13px] font-semibold">{c.title}</span>
                                                     </div>
                                                 ) : (
@@ -712,8 +940,45 @@ export function CompareView({
                               )
                             : null}
 
-                        {/* Owner Nov 9: rows run to the dieline's edges, so every grid line connects. */}
-                        <div ref={scrollerRef} onScroll={(e) => setScrollX(e.currentTarget.scrollLeft)} className={cn('-mx-layout-gutter-inner overflow-x-auto', tableVars)}>
+                        {/* Full-viewport column rail — fluid while four fit; min card width then scroll (PROD-3307). */}
+                        <div className={cn('relative w-full border-t border-dashed border-border', tableVars)}>
+                            {(canScrubLeft || canScrubRight) && (
+                                <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 flex -translate-y-1/2 items-center justify-between px-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className={cn(
+                                            'pointer-events-auto size-9 rounded-full bg-background/95 shadow-sm backdrop-blur',
+                                            !canScrubLeft && 'invisible',
+                                        )}
+                                        disabled={!canScrubLeft}
+                                        aria-label="Scroll columns left"
+                                        onClick={() => scrubBy(-1)}
+                                    >
+                                        <ChevronLeft className="size-4" aria-hidden />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className={cn(
+                                            'pointer-events-auto size-9 rounded-full bg-background/95 shadow-sm backdrop-blur',
+                                            !canScrubRight && 'invisible',
+                                        )}
+                                        disabled={!canScrubRight}
+                                        aria-label="Scroll columns right"
+                                        onClick={() => scrubBy(1)}
+                                    >
+                                        <ChevronRight className="size-4" aria-hidden />
+                                    </Button>
+                                </div>
+                            )}
+                        <div
+                            ref={scrollerRef}
+                            onScroll={onScrollerScroll}
+                            className="w-full overflow-x-auto"
+                        >
                             <div className="min-w-full" style={railMinStyle}>
                                 {/* Column heads: image, name, remove. Empty slots invite one more (Guided: a suggestion). */}
                                 <div ref={heroRef} className="grid border-b border-border" style={tpl}>
@@ -727,7 +992,7 @@ export function CompareView({
                                             return (
                                                 <div
                                                     key={`e${i}`}
-                                                    className="border-r border-border px-4 pb-5 pt-4 last:border-r-0"
+                                                    className="border-r border-border px-4 pb-4 pt-4 last:border-r-0"
                                                 >
                                                     <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-xl border border-border px-3 text-center">
                                                         {emptyChoices.length ? (
@@ -741,7 +1006,7 @@ export function CompareView({
                                                                     {emptyChoices.map((o) => (
                                                                         <DropdownMenuItem key={o.id} onSelect={() => addHere(o)}>
                                                                             <span className="flex min-w-0 items-center gap-2">
-                                                                                <span className="size-8 shrink-0 overflow-hidden rounded-md bg-muted">{o.imageUrl ? <img src={o.imageUrl} alt="" className="size-full object-cover" /> : null}</span>
+                                                                                {o.imageUrl ? <CompareSettlingImage src={o.imageUrl} alt="" /> : <span className="size-8 shrink-0 rounded-md bg-muted" />}
                                                                                 <span className="line-clamp-2">{o.title}</span>
                                                                                 {guided && sugIds.has(o.id) ? <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">Suggested</span> : null}
                                                                             </span>
@@ -763,11 +1028,11 @@ export function CompareView({
                                             <div
                                                 key={c.id}
                                                 className={cn(
-                                                    'relative flex flex-col gap-2 border-r border-border px-4 pb-5 pt-4 last:border-r-0 motion-reduce:animate-none',
+                                                    'relative flex flex-col gap-2 border-r border-border px-4 pb-4 pt-4 last:border-r-0 motion-reduce:animate-none',
                                                     exitingId === c.id
-                                                        ? 'animate-out fade-out duration-200 fill-mode-forwards'
+                                                        ? 'animate-out fade-out duration-(--motion-fast) fill-mode-forwards'
                                                         : enter
-                                                          ? 'animate-in fade-in duration-200'
+                                                          ? 'animate-in fade-in duration-(--motion-fast)'
                                                           : null,
                                                 )}
                                             >
@@ -783,9 +1048,9 @@ export function CompareView({
                                                     </button>
                                                 ) : null}
                                                 <Link href={c.href} className="block aspect-square w-full overflow-hidden rounded-xl bg-muted" aria-label={c.title}>
-                                                    {c.imageUrl ? <img src={c.imageUrl} alt="" className="size-full object-cover" /> : null}
+                                                    {c.imageUrl ? <CompareSettlingImage src={c.imageUrl} alt="" variant="hero" priority /> : null}
                                                 </Link>
-                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                <div className="flex flex-wrap items-center gap-2">
                                                     {c.eyebrow ? <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{c.eyebrow}</span> : null}
                                                     {c.inspiration ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10.5px] font-medium text-primary">Inspiration</span> : null}
                                                 </div>
@@ -802,9 +1067,38 @@ export function CompareView({
                                     </p>
                                 ) : null}
 
+                                {showWhyUseIt ? (
+                                    <div>
+                                        {sectionHeader('Why use it')}
+                                        <div className="grid border-b border-border" style={tpl}>
+                                            {labelCell(
+                                                <span className="block text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                                    Benefits
+                                                </span>,
+                                            )}
+                                            {railSlots.map((c, i) =>
+                                                c ? (
+                                                    <div key={c.id} className={cell}>
+                                                        {columnHasBenefits(c) ? (
+                                                            <PortableText
+                                                                value={c.benefitsBody as Parameters<typeof PortableText>[0]['value']}
+                                                                components={whyUseItBodyComponents}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-muted-foreground">-</span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div key={`e${i}`} className={cell} />
+                                                ),
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : null}
+
                                 {/* Rows: label on the left (sticky when the table scrolls sideways), values across. */}
                                 <div>
-                                    {shownRows.length > 0 ? sectionHeader('Properties') : null}
+                                    {shownRows.length > 0 ? sectionHeader('Key Properties', diffOnlyControl) : null}
                                     {shownRows.map((r) => {
                                         const differs = cols.length > 1 && new Set(cols.map((c) => r.values[c.id]?.trim() ?? '')).size > 1;
                                         const def = guided ? defineRow(r.label) : undefined;
@@ -821,7 +1115,7 @@ export function CompareView({
                                                 {railSlots.map((c, i) =>
                                                     c ? (
                                                         <div key={c.id} className={cell}>
-                                                            {r.values[c.id]?.trim() || <span className="text-muted-foreground">? Check with us</span>}
+                                                            {r.values[c.id]?.trim() || <span className="text-muted-foreground">-</span>}
                                                         </div>
                                                     ) : (
                                                         <div key={`e${i}`} className={cell} />
@@ -933,7 +1227,7 @@ export function CompareView({
                                                     )}
                                                 </CompareActions>
                                                 {type === 'products' && withOptions(c).length ? (
-                                                    <Button type="button" variant="outline" className="mt-2 h-auto w-full whitespace-normal py-2.5 text-sm" onClick={() => addWith(c)}>
+                                                    <Button type="button" variant="outline" className="mt-2 h-auto w-full whitespace-normal py-2 text-sm" onClick={() => addWith(c)}>
                                                         Add to Quote with {withLabel(c)}
                                                     </Button>
                                                 ) : null}
@@ -945,19 +1239,9 @@ export function CompareView({
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ) : (
-                    <div className="mx-auto mt-16 max-w-md text-center">
-                        <Columns2 className="mx-auto size-8 text-muted-foreground" aria-hidden />
-                        <h2 className="mt-3 text-lg font-semibold">Nothing to compare yet</h2>
-                        <p className="mt-1 text-sm text-muted-foreground">Use “Add to compare” on any product or customization. Items group themselves; open a group here to see it side by side.</p>
-                        <div className="mt-5 flex justify-center gap-2">
-                            <Button asChild variant="outline"><Link href="/products">Browse products</Link></Button>
-                            <Button asChild variant="outline"><Link href="/customizations">Browse customizations</Link></Button>
                         </div>
                     </div>
-                )}
-            </PageDielineSection>
+            ) : null}
             {sheet ? (
                 <CompareSheet
                     sheet={sheet}
@@ -1004,7 +1288,7 @@ function ColumnTitle({col, options, onPick}: {col: CompareColumn; options: AddIn
                     {options.map((o) => (
                         <DropdownMenuRadioItem key={o.id} value={o.id}>
                             <span className="flex min-w-0 items-center gap-2">
-                                <span className="size-8 shrink-0 overflow-hidden rounded-md bg-muted">{o.imageUrl ? <img src={o.imageUrl} alt="" className="size-full object-cover" /> : null}</span>
+                                {o.imageUrl ? <CompareSettlingImage src={o.imageUrl} alt="" /> : <span className="size-8 shrink-0 rounded-md bg-muted" />}
                                 <span className="line-clamp-2">{o.title}</span>
                             </span>
                         </DropdownMenuRadioItem>
@@ -1019,9 +1303,11 @@ function ColumnTitle({col, options, onPick}: {col: CompareColumn; options: AddIn
 function WorksWithLabel({title, imageUrl}: {title: string; imageUrl?: string | null}) {
     return (
         <span className="flex items-center gap-3">
-            <span className="size-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
-                {imageUrl ? <img src={imageUrl} alt="" className="size-full object-cover" /> : null}
-            </span>
+            {imageUrl ? (
+                <CompareSettlingImage src={imageUrl} alt="" thumbClassName="size-10 rounded-lg border border-border" />
+            ) : (
+                <span className="size-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted" />
+            )}
             <span className="min-w-0 text-[13px] leading-snug">
                 {title}
                 <span className="block text-[11px] text-muted-foreground">in your compare</span>
@@ -1076,7 +1362,7 @@ function CompareSheet({
     const picks = options.filter((o) => picked[o.category] === o.id);
     return (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-            <div role="dialog" aria-modal="true" aria-label={sheet.mode === 'choose' ? `Go with ${sheet.col.title}?` : 'Choose options'} className="flex w-full max-w-md flex-col gap-4 rounded-2xl bg-background p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div role="dialog" aria-modal="true" aria-label={sheet.mode === 'choose' ? `Go with ${sheet.col.title}?` : 'Choose options'} className="flex w-full max-w-md flex-col gap-4 rounded-2xl bg-background p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
                 <div>
                     <h2 className="text-lg font-semibold">{sheet.mode === 'choose' ? `Go with ${sheet.col.title}?` : `Add ${sheet.col.title} with…`}</h2>
                     <p className="mt-1 text-sm text-muted-foreground">

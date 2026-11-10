@@ -142,8 +142,8 @@ function markFirstShown(): void {
 
 /**
  * Add one item (R43, never refused). Compare spec CMP-1/CMP-3: confirms with a snackbar instead of
- * opening the bar (the first add of a session opens it once); a fifth item in a full group
- * replaces the oldest with Undo, or asks "Replace which?" (getCompareBehavior).
+ * opening the bar (the first add of a session opens it once). When the group is at maxPerGroup
+ * (COMPARE_GROUP_LIMIT), replaces the oldest with Undo, or asks "Replace which?" (getCompareBehavior).
  */
 export function addToCompare(input: AddInput, page?: string): AddResult {
     load();

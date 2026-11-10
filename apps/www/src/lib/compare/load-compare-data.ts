@@ -34,6 +34,31 @@ import {
 
 export {parseCompareIds} from '@/lib/compare/compare-ids';
 
+/**
+ * Library option by category + handle, plus Studio benefits for Why use it (PROD-3307).
+ * Built from the catalog single-option query so card/attrs stay in sync.
+ */
+const COMPARE_CUSTOMIZATION_QUERY = CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY.replace(
+    /\}\s*$/,
+    `,\n  "benefitsTitle": benefits.title,\n  "benefitsBody": benefits.body\n}`,
+);
+
+/**
+ * Batch matrix load: one GROQ for all category/handle pairs (filter exact ids in JS).
+ * Same projection as {@link COMPARE_CUSTOMIZATION_QUERY}.
+ */
+const COMPARE_CUSTOMIZATIONS_BATCH_QUERY = COMPARE_CUSTOMIZATION_QUERY.replace(
+    /slug\.current == \$handle &&\s*type->category->slug\.current == \$category\s*\]\[0\]\{/,
+    'slug.current in $handles &&\n  type->category->slug.current in $categories\n]{',
+);
+
+if (
+    COMPARE_CUSTOMIZATIONS_BATCH_QUERY.includes('][0]{') ||
+    !COMPARE_CUSTOMIZATIONS_BATCH_QUERY.includes('in $handles')
+) {
+    throw new Error('[compare] COMPARE_CUSTOMIZATIONS_BATCH_QUERY rewrite failed');
+}
+
 /** Card fields + PLP properties + the product's own customization list (no rules expand). */
 const COMPARE_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
@@ -103,26 +128,41 @@ function getCachedCompareProducts(slugs: string[]) {
     )();
 }
 
-async function fetchCompareCustomization(
-    category: string,
-    handle: string,
-): Promise<CustomizationLibraryItem | null> {
-    if (!isSanityConfigured()) return null;
+async function fetchCompareCustomizations(ids: string[]): Promise<CustomizationLibraryItem[]> {
+    const parsed = ids.flatMap((id) => {
+        const p = parseCustomizationBookmarkId(id);
+        return p ? [p] : [];
+    });
+    if (!parsed.length || !isSanityConfigured()) return [];
+    const handles = [...new Set(parsed.map((p) => p.slug))];
+    const categories = [...new Set(parsed.map((p) => p.category))];
+    const want = new Set(parsed.map((p) => `${p.category}/${p.slug}`));
     try {
-        const doc = await (await draftAwareClient()).fetch<CatalogLibraryOptionDoc | null>(
-            CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY,
-            {category, handle},
+        const docs = await (await draftAwareClient()).fetch<CatalogLibraryOptionDoc[]>(
+            COMPARE_CUSTOMIZATIONS_BATCH_QUERY,
+            {handles, categories},
         );
-        return doc ? mapSanityLibraryOption(doc) : null;
+        const byId = new Map<string, CustomizationLibraryItem>();
+        for (const doc of docs ?? []) {
+            const item = mapSanityLibraryOption(doc);
+            if (!item) continue;
+            const id = `${item.categoryValue}/${item.slug}`;
+            if (want.has(id)) byId.set(id, item);
+        }
+        return ids.flatMap((id) => {
+            const item = byId.get(id);
+            return item ? [item] : [];
+        });
     } catch (err) {
-        throw sanityReadFailed('[compare] Sanity customization fetch failed:', err);
+        throw sanityReadFailed('[compare] Sanity customizations batch fetch failed:', err);
     }
 }
 
-function getCachedCompareCustomization(category: string, handle: string) {
+function getCachedCompareCustomizations(ids: string[]) {
+    const key = ids.map((s) => s.trim().toLowerCase()).filter(Boolean).join(',');
     return sanityCache(
-        () => fetchCompareCustomization(category, handle),
-        [`www-compare-customization:${category}:${handle}`],
+        () => fetchCompareCustomizations(ids),
+        [`www-compare-customizations:${key}`],
         {
             revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
             tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
@@ -145,24 +185,9 @@ export async function loadCompareData(
         return products.length ? productCompareData(products) : null;
     }
 
-    const loaded = await Promise.all(
-        ids.map(async (id) => {
-            const parsed = parseCustomizationBookmarkId(id);
-            if (!parsed) return null;
-            return readThrough(
-                () => fetchCompareCustomization(parsed.category, parsed.slug),
-                () => getCachedCompareCustomization(parsed.category, parsed.slug),
-            );
-        }),
+    const ordered = await readThrough(
+        () => fetchCompareCustomizations(ids),
+        () => getCachedCompareCustomizations(ids),
     );
-    const byId = new Map(
-        loaded
-            .filter((item): item is CustomizationLibraryItem => Boolean(item))
-            .map((item) => [`${item.categoryValue}/${item.slug}`, item]),
-    );
-    const ordered = ids.flatMap((id) => {
-        const item = byId.get(id);
-        return item ? [item] : [];
-    });
     return ordered.length ? customizationLibraryCompareData(ordered) : null;
 }
