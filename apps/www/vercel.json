@@ -3,5 +3,5 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm turbo run build --filter=@pakfactory/www",
-  "ignoreCommand": "bash \"$(git rev-parse --show-toplevel)/scripts/ci/vercel-ignore-build.sh\" main staging www-new-release"
+  "ignoreCommand": "bash \"$(git rev-parse --show-toplevel)/scripts/ci/vercel-ignore-build.sh\" main staging www-new-release backup/www-new-release-2026-11-09"
 }
