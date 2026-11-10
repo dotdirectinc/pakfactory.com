@@ -28,6 +28,9 @@ export type CompareColumn = {
     /** Customizations: for Apply. */
     category?: string;
     slug?: string;
+    /** Customization Studio `benefits` — Why use it row (PROD-3307). */
+    benefitsTitle?: string;
+    benefitsBody?: unknown[];
 };
 export type CompareData = {
     type: 'products' | 'customizations';
@@ -118,19 +121,25 @@ export function customizationCompareData(details: CustomizationDetail[]): Compar
  * Attribute rows come from each option's attrs + value titles.
  */
 export function customizationLibraryCompareData(items: CustomizationLibraryItem[]): CompareData {
-    const cols: CompareColumn[] = items.map((item) => ({
-        id: `${item.categoryValue}/${item.slug}`,
-        title: item.shortName?.trim() || item.title,
-        href: customizationCategoryHref(item.categoryValue, item.slug),
-        imageUrl: item.featuredImageUrl ?? item.imageUrl ?? null,
-        eyebrow: item.typeTitle,
-        groupKey: item.categoryValue,
-        groupLabel: item.categoryLabel?.trim() || item.categoryValue,
-        compatIds: item.productLines.map((l) => l.slug),
-        compatSummary: item.productLines.map((l) => l.title).join(' · '),
-        category: item.categoryValue,
-        slug: item.slug,
-    }));
+    const cols: CompareColumn[] = items.map((item) => {
+        const benefitsTitle = item.benefitsTitle?.trim();
+        const benefitsBody = item.benefitsBody?.length ? item.benefitsBody : undefined;
+        return {
+            id: `${item.categoryValue}/${item.slug}`,
+            title: item.shortName?.trim() || item.title,
+            href: customizationCategoryHref(item.categoryValue, item.slug),
+            imageUrl: item.featuredImageUrl ?? item.imageUrl ?? null,
+            eyebrow: item.typeTitle,
+            groupKey: item.categoryValue,
+            groupLabel: item.categoryLabel?.trim() || item.categoryValue,
+            compatIds: item.productLines.map((l) => l.slug),
+            compatSummary: item.productLines.map((l) => l.title).join(' · '),
+            category: item.categoryValue,
+            slug: item.slug,
+            ...(benefitsTitle ? {benefitsTitle} : {}),
+            ...(benefitsBody ? {benefitsBody} : {}),
+        };
+    });
 
     const propKeys: string[] = [];
     const seen = new Set<string>();

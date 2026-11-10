@@ -75,7 +75,7 @@ function Thumb({
     return (
         <span
             className={cn(
-                'group/thumb relative block size-11 shrink-0 rounded-lg border border-border bg-muted outline-none transition-[opacity,box-shadow] duration-150',
+                'group/thumb relative block size-11 shrink-0 rounded-lg border border-border bg-muted outline-none transition-[opacity,box-shadow] duration-(--motion-fast)',
                 relation === 'match' && 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-background',
                 relation === 'unknown' && 'ring-2 ring-amber-500 ring-offset-2 ring-offset-background',
                 relation === 'dim' && 'opacity-35',
@@ -169,7 +169,7 @@ export function CompareBar({guided}: {guided: boolean}) {
             return () => cancelAnimationFrame(id);
         }
         setShown(false);
-        const t = setTimeout(() => setMounted(false), 320);
+        const t = setTimeout(() => setMounted(false), 300);
         return () => clearTimeout(t);
     }, [open]);
     // Escape collapses the dock (same as Done); does not clear items. No outside-click dismiss.
@@ -222,17 +222,32 @@ export function CompareBar({guided}: {guided: boolean}) {
     const productIds = items.filter((i) => i.kind === 'product').map((i) => i.id).join(',');
     const hasCustomizations = items.some((i) => i.kind === 'customization');
     const [fits, setFits] = useState<ProductFit[]>([]);
+    const fitsKey = open && productIds && hasCustomizations ? productIds : '';
+    const fitsAppliedRef = useRef('');
     useEffect(() => {
-        if (!open || !productIds || !hasCustomizations) return setFits([]);
-        let off = false;
-        fetch(`/api/compare/products?ids=${encodeURIComponent(productIds)}`)
+        if (!fitsKey) {
+            fitsAppliedRef.current = '';
+            setFits([]);
+            return;
+        }
+        if (fitsAppliedRef.current === fitsKey) return;
+        const ac = new AbortController();
+        fetch(`/api/compare/products?ids=${encodeURIComponent(productIds)}`, {signal: ac.signal})
             .then((r) => (r.ok ? r.json() : {products: []}))
-            .then((j: {products: ProductFit[]}) => !off && setFits(j.products ?? []))
-            .catch(() => !off && setFits([]));
+            .then((j: {products: ProductFit[]}) => {
+                if (ac.signal.aborted) return;
+                fitsAppliedRef.current = fitsKey;
+                setFits(j.products ?? []);
+            })
+            .catch((err: unknown) => {
+                if (ac.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return;
+                setFits([]);
+            });
         return () => {
-            off = true;
+            ac.abort();
         };
-    }, [open, productIds, hasCustomizations]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- fitsKey encodes productIds
+    }, [fitsKey]);
     /** Does option `cid` work on product `slug`? A product with no list = no data yet (unknown, never "no"). */
     const fitOf = (cid: string, slug: string): Fit | null => {
         const p = fits.find((f) => f.slug === slug);
@@ -271,31 +286,40 @@ export function CompareBar({guided}: {guided: boolean}) {
     const singlesKey = singles.map((i) => `${i.kind}:${i.id}`).join('|');
     const [suggest, setSuggest] = useState<Record<string, SuggestItem[]>>({});
     const [suggestLoading, setSuggestLoading] = useState<Record<string, boolean>>({});
+    const excludeIds = items.map((i) => i.id).join(',');
+    const barSuggestKey = guided && open && singles.length ? `${singlesKey}|${excludeIds}` : '';
+    const barSuggestAppliedRef = useRef('');
     useEffect(() => {
-        if (!guided || !open || !singles.length) {
+        if (!barSuggestKey) {
+            barSuggestAppliedRef.current = '';
             setSuggestLoading({});
             return;
         }
-        let off = false;
+        if (barSuggestAppliedRef.current === barSuggestKey) return;
+        const ac = new AbortController();
         const keys = singles.map((it) => groupId(it.kind, it.groupKey));
         setSuggestLoading(Object.fromEntries(keys.map((k) => [k, true])));
-        const exclude = items.map((i) => i.id).join(',');
         Promise.all(
             singles.map((it) =>
-                fetch(`/api/compare/suggest?kind=${it.kind}&id=${encodeURIComponent(it.id)}&exclude=${encodeURIComponent(exclude)}`)
+                fetch(
+                    `/api/compare/suggest?kind=${it.kind}&id=${encodeURIComponent(it.id)}&exclude=${encodeURIComponent(excludeIds)}`,
+                    {signal: ac.signal},
+                )
                     .then((r) => (r.ok ? r.json() : {items: []}))
                     .then((j: {items: SuggestItem[]}) => [groupId(it.kind, it.groupKey), j.items ?? []] as const)
                     .catch(() => [groupId(it.kind, it.groupKey), [] as SuggestItem[]] as const),
             ),
         ).then((pairs) => {
-            if (off) return;
+            if (ac.signal.aborted) return;
+            barSuggestAppliedRef.current = barSuggestKey;
             setSuggest(Object.fromEntries(pairs));
             setSuggestLoading(Object.fromEntries(pairs.map(([k]) => [k, false])));
         });
         return () => {
-            off = true;
+            ac.abort();
         };
-    }, [guided, open, singlesKey]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- barSuggestKey
+    }, [barSuggestKey]);
 
     if (hidden || !hasItems) return null;
 
@@ -316,7 +340,7 @@ export function CompareBar({guided}: {guided: boolean}) {
                         {isC ? 'Customization' : 'Product line'} · {n}/{getCompareBehavior().maxPerGroup}
                     </p>
                 </div>
-                <div className="col-span-2 row-start-2 flex items-center gap-2.5 overflow-x-auto pb-1 pt-1.5 sm:col-span-1 sm:row-start-auto">
+                <div className="col-span-2 row-start-2 flex items-center gap-2 overflow-x-auto py-1 sm:col-span-1 sm:row-start-auto">
                     {g.items.map((it) => (
                         <Thumb key={it.id} item={it} relation={relationOf(it)} onHover={onHoverFor(it)} onRemove={() => removeFromCompare(it.kind, it.id)} />
                     ))}
@@ -338,7 +362,7 @@ export function CompareBar({guided}: {guided: boolean}) {
                         </Button>
                     ) : loadingSugg ? (
                         <div
-                            className="flex flex-wrap items-center justify-end gap-1.5"
+                            className="flex flex-wrap items-center justify-end gap-2"
                             aria-busy="true"
                             aria-live="polite"
                         >
@@ -347,7 +371,7 @@ export function CompareBar({guided}: {guided: boolean}) {
                             <Skeleton className="h-7 w-32 rounded-full" />
                         </div>
                     ) : sugg.length ? (
-                        <div className="flex flex-wrap items-center justify-end gap-1.5 text-[12px] text-muted-foreground">
+                        <div className="flex flex-wrap items-center justify-end gap-2 text-[12px] text-muted-foreground">
                             <span>Also compare:</span>
                             {sugg.map((s) => {
                                 const {shortDescription, ...addInput} = s;
@@ -364,7 +388,7 @@ export function CompareBar({guided}: {guided: boolean}) {
                                         <button
                                             type="button"
                                             onClick={() => addToCompare(addInput)}
-                                            className="inline-flex items-center gap-1 rounded-full border border-dashed border-primary px-2.5 py-1 font-medium text-primary hover:bg-primary/5"
+                                            className="inline-flex items-center gap-1 rounded-full border border-dashed border-primary px-2 py-1 font-medium text-primary hover:bg-primary/5"
                                         >
                                             <Plus className="size-3" aria-hidden /> {label}
                                         </button>
@@ -427,7 +451,7 @@ export function CompareBar({guided}: {guided: boolean}) {
                     aria-label="Compare"
                     className={cn(
                         'fixed inset-x-0 bottom-0 z-[55] flex max-h-[60vh] flex-col rounded-t-2xl border border-b-0 border-border bg-background shadow-[0_-12px_40px_rgba(0,0,0,0.12)] sm:max-h-[50vh]',
-                        'transition-transform duration-300 ease-out motion-reduce:transition-none',
+                        'transition-transform duration-(--motion-base) ease-out motion-reduce:transition-none',
                         shown ? 'translate-y-0' : 'translate-y-full',
                     )}
                 >
@@ -455,7 +479,7 @@ export function CompareBar({guided}: {guided: boolean}) {
             {/* Owner Nov 9: the round button fades out while the bar is open (the bar has its own Close). */}
             <div
                 className={cn(
-                    'fixed right-5 z-[60] transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none',
+                    'fixed right-5 z-[60] transition-[opacity,transform] duration-(--motion-base) ease-out motion-reduce:transition-none',
                     open ? 'pointer-events-none translate-y-2 opacity-0' : 'translate-y-0 opacity-100',
                 )}
                 style={{bottom: 'var(--chat-fab-offset, 1.25rem)'}}

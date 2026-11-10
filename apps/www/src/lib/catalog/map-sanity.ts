@@ -1194,6 +1194,11 @@ export function mapSanityLibraryOption(
     const shortName = doc.shortName?.trim();
     const shortDescription = doc.shortDescription?.trim();
     const typeTitle = doc.type?.title?.trim();
+    const benefitsTitle = doc.benefitsTitle?.trim() || undefined;
+    const benefitsBody =
+        Array.isArray(doc.benefitsBody) && doc.benefitsBody.length > 0
+            ? (doc.benefitsBody as PortableTextBlock[])
+            : undefined;
 
     return {
         _id: doc._id,
@@ -1222,6 +1227,8 @@ export function mapSanityLibraryOption(
         attrs,
         propertyTitles,
         valueTitles,
+        ...(benefitsTitle ? {benefitsTitle} : {}),
+        ...(benefitsBody ? {benefitsBody} : {}),
     };
 }
 

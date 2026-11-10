@@ -447,6 +447,9 @@ export type CustomizationLibraryItem = {
     /** propertyValue.slug → display title */
     valueTitles: Record<string, string>;
     status?: CatalogLifecycle;
+    /** Studio `benefits` — compare Why use it (PROD-3307); absent on catalog list cards. */
+    benefitsTitle?: string;
+    benefitsBody?: PortableTextBlock[];
 };
 
 export type CustomizationLibraryResult = {
