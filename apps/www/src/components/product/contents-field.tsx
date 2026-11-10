@@ -100,13 +100,7 @@ export function ContentsField({
                 htmlFor={id}
                 className="flex flex-col items-start gap-1 font-semibold text-brand-blue"
             >
-                <span className="text-base">
-                    {PRODUCT_DETAIL_COPY.contentsLabel}
-                    <span className="text-destructive" aria-hidden>
-                        {' '}
-                        *
-                    </span>
-                </span>
+                <span className="text-base">{PRODUCT_DETAIL_COPY.contentsLabel}</span>
                 <span className="text-sm font-normal leading-snug text-muted-foreground">
                     {PRODUCT_DETAIL_COPY.contentsHelp}
                 </span>
@@ -116,7 +110,6 @@ export function ContentsField({
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={PRODUCT_DETAIL_COPY.contentsPlaceholder}
-                aria-required="true"
                 className="h-11 rounded-sm bg-background shadow-none"
             />
 

@@ -4,6 +4,7 @@ import {useEffect, useState, type ReactNode} from 'react';
 import {Badge} from '@pakfactory/ui/components/badge';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {PdpDescription} from '@/components/product/pdp-description';
 import {ProductConfigurationBar} from '@/components/product/product-configuration-bar';
 import {ProductGallery} from '@/components/product/product-gallery';
 import {
@@ -61,9 +62,7 @@ function ProductOverviewChrome({
                         </div>
                     ) : null}
                     {product.description ? (
-                        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                            {product.description}
-                        </p>
+                        <PdpDescription text={product.description} />
                     ) : null}
                     {configure}
                 </div>

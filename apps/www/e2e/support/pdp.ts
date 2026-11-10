@@ -1,5 +1,4 @@
 import {expect, type Locator, type Page} from '@playwright/test';
-import {BUYER} from './fixtures';
 
 /** The shared quantity picker (PDP rail, express form): take the first preset. */
 export async function pickFirstQuantity(page: Page, scope: Locator): Promise<void> {
@@ -9,26 +8,24 @@ export async function pickFirstQuantity(page: Page, scope: Locator): Promise<voi
 }
 
 /**
- * On a PDP: pick a preset quantity, say what goes in the box, Add to Quote Request.
- * Asserts the confirmation toast and that the nav's Quote request count rose.
+ * On a PDP: pick a preset quantity and Add to quote (packaging is optional).
+ * Asserts the confirmation toast.
  */
 export async function addCurrentPdpToRequest(page: Page): Promise<void> {
     // The PDP has no <main> landmark; the request rail lives in the product article.
     const rail = page.getByRole('article').filter({has: page.getByRole('heading', {level: 1})});
-    const addButton = rail.getByRole('button', {name: 'Add to Quote Request'});
+    const addButton = rail.getByRole('button', {name: 'Add to quote'});
     await expect(addButton).toBeDisabled();
 
     await pickFirstQuantity(page, rail);
 
-    await rail
-        .getByRole('textbox', {name: /What are you packaging/})
-        .fill(BUYER.contents);
-
+    // Packaging contents are optional — quantity alone enables Add.
     await expect(addButton).toBeEnabled();
     await addButton.click();
 
-    // Earlier toasts may still be stacked; the newest one is ours.
-    await expect(page.getByText('Added to quote request').last()).toBeVisible();
+    // Quote pool drawer confirms the add (replaces the old toast).
+    await expect(page.getByRole('heading', {name: 'Your quote'})).toBeVisible();
+    await expect(page.getByRole('button', {name: 'Create quote request'})).toBeVisible();
 }
 
 /** The nav's request link; its count is the number of lines in the pool. */

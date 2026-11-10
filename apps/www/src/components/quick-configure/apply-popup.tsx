@@ -13,6 +13,7 @@ import {
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {applyCompatibilityQuery} from '@/components/product/compatibility-preselect';
+import {useQuotePoolDrawer} from '@/components/request/quote-pool-drawer';
 import {showToastCard} from '@/components/ui/toast-card';
 import {useBookmarks} from '@/lib/bookmarks/bookmarks';
 import {useBookmarkAuth} from '@/lib/bookmarks/use-bookmark-auth';
@@ -27,7 +28,7 @@ import {
 } from '@/lib/customization-builder';
 import {useRequest} from '@/lib/request/request-provider';
 import type {RequestLine} from '@/lib/request/request.storage';
-import {customizationCompatibilityHref, WWW_ROUTES} from '@/lib/www-routes';
+import {customizationCompatibilityHref} from '@/lib/www-routes';
 import {checkApplyTargets, loadQuickProduct, type ApplyCheck} from '@/lib/catalog/load-quick-product';
 import {useLockPageScroll, type QuickTarget} from '@/components/quick-configure/quick-configure';
 
@@ -66,6 +67,7 @@ export function ApplyPopup({
         serializeCompatibilityQuery({selections: [{category: option.category, optionSlug: option.slug}], properties}),
     );
     const {lines, savedDrafts, activeDraftId, tabs, switchTo, updateLine} = useRequest();
+    const {openQuotePoolDrawer} = useQuotePoolDrawer();
     const {canBookmark} = useBookmarkAuth();
     const {bookmarks} = useBookmarks();
     const [checks, setChecks] = useState<Record<string, ApplyCheck>>({});
@@ -116,7 +118,6 @@ export function ApplyPopup({
             return;
         }
         const {product} = data;
-        const before = {customizationBuilder: line.customizationBuilder, customizations: line.customizations};
         const result = applyCompatibilityQuery(product, line.customizationBuilder ?? createEmptyBuilderState(), new URLSearchParams(queryFor(product.slug)));
         if (!result) {
             showToastCard({title: `Couldn’t apply ${option.title}`, description: `Not available on ${title}.`, dismissLabel: REQUEST_COPY.close});
@@ -128,19 +129,9 @@ export function ApplyPopup({
             buildStepsFromCatalog(product.availableCustomizations),
             resolvePrintableSides(product.properties),
         );
-        // "replaces <option>": what this kind of customization was before, if it changed.
-        const cat = option.category.toLowerCase();
-        const keptIds = new Set(customizations.map((c) => c.id));
-        const replaced = (line.customizations ?? []).filter((c) => (c.category ?? '').toLowerCase() === cat && !keptIds.has(c.id)).map((c) => c.label);
         updateLine(line.id, {customizationBuilder: result.state, customizations});
         onClose();
-        showToastCard({
-            title: `${option.title} applied to ${title}`,
-            ...(replaced.length ? {description: `Replaces ${replaced.join(', ')}`} : {}),
-            secondaryAction: {label: 'Undo', onClick: () => updateLine(line.id, before)},
-            action: {label: REQUEST_COPY.viewYourRequest, href: WWW_ROUTES.request},
-            dismissLabel: REQUEST_COPY.close,
-        });
+        openQuotePoolDrawer();
     }
 
     // An item in another draft: open that request first, then apply once its lines are loaded.

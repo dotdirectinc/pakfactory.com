@@ -5,8 +5,7 @@ import {Button} from '@pakfactory/ui/components/button';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {applyCompatibilityQuery} from '@/components/product/compatibility-preselect';
 import {useProductPdpDraft} from '@/components/product/product-pdp-draft';
-import {showToastCard} from '@/components/ui/toast-card';
-import {REQUEST_COPY} from '@/lib/copy/request';
+import {useQuotePoolDrawer} from '@/components/request/quote-pool-drawer';
 import {
     buildStepsFromCatalog,
     createEmptyBuilderState,
@@ -14,7 +13,6 @@ import {
     toRequestCustomizations,
 } from '@/lib/customization-builder';
 import {useRequest} from '@/lib/request/request-provider';
-import {WWW_ROUTES} from '@/lib/www-routes';
 
 /**
  * PROD-3180: Apply chooser.
@@ -26,6 +24,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
  */
 export function ApplyChooser() {
     const {lines, updateLine} = useRequest();
+    const {openQuotePoolDrawer} = useQuotePoolDrawer();
     const {product, compatibilityPreselect, clearCompatibilityPreselect, drawerPreselect} =
         useProductPdpDraft();
     const [dismissedFor, setDismissedFor] = useState<string | null>(null);
@@ -60,17 +59,7 @@ export function ApplyChooser() {
         });
         setDismissedFor(key);
         clearCompatibilityPreselect();
-        showToastCard({
-            title: CUSTOMIZATION_BUILDER_COPY.applyChooserUpdated.replace(
-                '{options}',
-                options,
-            ),
-            action: {
-                label: REQUEST_COPY.viewYourRequest,
-                href: WWW_ROUTES.request,
-            },
-            dismissLabel: REQUEST_COPY.close,
-        });
+        openQuotePoolDrawer();
     }
 
     return (

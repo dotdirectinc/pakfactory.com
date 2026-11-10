@@ -18,8 +18,8 @@ import {
     applyCompatibilityQuery,
     type CompatibilityPreselectNotice,
 } from '@/components/product/compatibility-preselect';
-import {showToastCard} from '@/components/ui/toast-card';
 import type {Product} from '@/lib/catalog/types';
+import {useQuotePoolDrawer} from '@/components/request/quote-pool-drawer';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {
     buildStepsFromCatalog,
@@ -32,7 +32,6 @@ import {
 } from '@/lib/customization-builder';
 import {useRequest} from '@/lib/request/request-provider';
 import type {RequestReferenceImage} from '@/lib/request/request.storage';
-import {WWW_ROUTES} from '@/lib/www-routes';
 
 export type MissingRequestField = 'quantity' | 'contents';
 
@@ -166,6 +165,7 @@ export function ProductPdpDraftProvider({
     onAdded,
 }: ProductPdpDraftProviderProps) {
     const {addLine, draft} = useRequest();
+    const {openQuotePoolDrawer} = useQuotePoolDrawer();
     const pathname = usePathname();
     const isInspiration = product.kind === 'inspiration';
 
@@ -238,19 +238,17 @@ export function ProductPdpDraftProvider({
         appliedCompatibilitySearchRef.current = null;
     }, []);
 
-    const contentsReady = Boolean(contents.trim());
-    const ready = volumes.length > 0 && contentsReady;
     const hasQuantity = volumes.length > 0;
-    const hasContents = contentsReady;
+    // Quantity alone unlocks Add — packaging contents are optional.
+    const ready = hasQuantity;
     // Sticky bar only after quantity — contents / DIY preselect do not open it.
     const showStickyBar = hasQuantity;
 
     const missingForRequest = useMemo(() => {
         const missing: MissingRequestField[] = [];
         if (!hasQuantity) missing.push('quantity');
-        if (!hasContents) missing.push('contents');
         return missing;
-    }, [hasQuantity, hasContents]);
+    }, [hasQuantity]);
 
     const summaryParts = useMemo(
         () =>
@@ -325,14 +323,7 @@ export function ProductPdpDraftProvider({
                 ? {referenceImages}
                 : {}),
         });
-        showToastCard({
-            title: REQUEST_COPY.addedToYourRequest,
-            action: {
-                label: REQUEST_COPY.viewYourRequest,
-                href: WWW_ROUTES.request,
-            },
-            dismissLabel: REQUEST_COPY.close,
-        });
+        openQuotePoolDrawer();
         if (!detailsOptIn) {
             for (const image of referenceImages) {
                 if (image.url.startsWith('blob:')) {
@@ -360,6 +351,7 @@ export function ProductPdpDraftProvider({
         builderState,
         product,
         addLine,
+        openQuotePoolDrawer,
         volumes,
         contents,
         detailsOptIn,
