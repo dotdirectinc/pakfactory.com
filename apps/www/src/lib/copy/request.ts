@@ -2,6 +2,14 @@ export const REQUEST_COPY = {
     addToRequest: 'Add to Quote',
     addedToYourRequest: 'Added to your quote request',
     viewYourRequest: 'View Quote Request',
+    /** Quote pool side drawer after Add to quote. */
+    quotePoolTitle: 'Your quote',
+    quotePoolCountOne: '1 item',
+    quotePoolCountMany: '{n} items',
+    quotePoolEmpty: 'No products in your quote yet.',
+    quotePoolCreate: 'Create quote request',
+    quotePoolContinue: 'Continue',
+    quotePoolRemoveAria: 'Remove {title} from quote',
     /** Sticky PDP configuration bar */
     yourConfiguration: 'YOUR CONFIGURATION',
     clear: 'Clear',

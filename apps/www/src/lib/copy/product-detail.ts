@@ -47,11 +47,13 @@ export const PRODUCT_DETAIL_COPY = {
     revertToSpecialist: 'Clear my choices and let a specialist advise',
 
     // 1.5 Request button
-    addToRequest: 'Add to Quote Request',
-    addToRequestDisabledHelp:
-        'Select at least one quantity and tell us what you’re packaging to continue.',
+    addToRequest: 'Add to quote',
     addToRequestEnabledHelp:
         'Adds to your request — keep browsing and create your request later.',
+
+    // Hero description clamp
+    descriptionReadMore: 'Read more',
+    descriptionShowLess: 'Show less',
 
     // Section 2 — Specifications
     specsHeading: 'Built into this design',
