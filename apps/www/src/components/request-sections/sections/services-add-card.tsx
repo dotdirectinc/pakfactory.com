@@ -8,7 +8,7 @@ import type {RequestDraft} from '@/lib/request/request.storage';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 
 /**
- * RFQ v2 decision 3: services join a product request from Project details, as the same
+ * Sectioned request — decision 3: services join a product request from Project details, as the same
  * "Add packaging services" card the general request uses. PORTABLE.
  */
 export function ServicesAddCard({

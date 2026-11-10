@@ -41,11 +41,10 @@ import {toggleBookmark, useBookmarks} from '@/lib/bookmarks/bookmarks';
 import {useBookmarkAuth} from '@/lib/bookmarks/use-bookmark-auth';
 import {parseCompareIds} from '@/lib/compare/compare-ids';
 import {getCompareBehavior} from '@/lib/compare/compare-behavior';
-import {markSkipSoftPageEnter} from '@/lib/ui/skip-soft-page-enter';
+import {leaveToolShell} from '@/lib/ui/tool-shell-return';
 import {productHref, WWW_ROUTES} from '@/lib/www-routes';
 import {
     addManyToCompare,
-    compareReturnHref,
     addToCompare,
     replaceInCompare,
     compareGroups,
@@ -316,16 +315,10 @@ export function CompareView({
     const closeCompare = () => {
         // Collapse the dock too — return to the previous page with the round button only.
         setDockOpen(false);
-        // Skip the next site SoftPageTransition rise + scroll so Close feels like dismissing a sheet.
-        markSkipSoftPageEnter();
-        // Owner Nov 9: back to the page compare was opened from, however many tabs were switched here.
-        const back = compareReturnHref();
-        // Prefer history.back — group switches use replace, so the stack is typically [origin, /compare].
-        if (back && typeof window !== 'undefined' && window.history.length > 1) {
-            router.back();
-            return;
-        }
-        router.push(back ?? (type === 'customizations' ? '/customizations' : '/products'));
+        // Owner Nov 9: back to the page compare was opened from (scroll preserved via leaveToolShell).
+        leaveToolShell(router, {
+            fallback: type === 'customizations' ? '/customizations' : '/products',
+        });
     };
     const addTheseToMine = () => {
         const source = matrix?.columns.length ? matrix.columns : storeColumns;

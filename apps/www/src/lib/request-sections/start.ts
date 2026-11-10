@@ -1,5 +1,5 @@
 /**
- * RFQ v2: the one open request (decisions 1, 5, 6; prd-website-rfq-v2 §5–§6). `/request` opens it,
+ * Sectioned request: the one open request (decisions 1, 5, 6). `/request` opens it,
  * or starts one — a product request when items are waiting, otherwise a general one. Entry hints
  * fill what's still empty and never overwrite. PORTABLE.
  */
@@ -12,7 +12,7 @@ import {
     updateRequestDraft,
     type RequestDraft,
 } from '@/lib/request/request.storage';
-import type {EntryHints} from '@/lib/request-v2/entry';
+import type {EntryHints} from '@/lib/request-sections/entry';
 
 export type OpenRequest = {flow: 'product' | 'general'; id: string};
 
@@ -126,7 +126,7 @@ export function ensureRequest(kind: 'product' | 'general', h: EntryHints): (Open
     const {lines} = getRequestStateSnapshot();
     if (!lines.length) return null; // nothing to quote yet — the page shows the empty state
     startRequestFromSelection(lines.map((l) => l.id));
-    // The section page is a step intake for validation. Owner Nov 6: RFQ v2 doesn't ask ship-to.
+    // The section page is a step intake for validation. Owner Nov 6: the sectioned request doesn't ask ship-to.
     updateRequestDraft({stepIntake: true, shipToOptional: true});
     applyHints(h);
     const now = openRequest();

@@ -270,7 +270,7 @@ export const REQUEST_COPY = {
     intakeRequirementsHelper: 'Upload your brief or describe your project. Either is enough.',
     intakeFilesLabel: 'Upload your brief if you have one',
     intakeDetailsLabel: 'Or describe your project',
-    /** Project details input v2 (owner Nov 2): describe first, files supporting. */
+    /** Project details input (owner Nov 2): describe first, files supporting. */
     intakeUploadDocLink: 'Have a brief? Upload it',
     intakeUploadDialogTitle: 'Upload your brief',
     intakeUploadDialogHelp: 'A brief, dieline, artwork or photo. We’ll read it with your description.',

@@ -232,22 +232,11 @@ export function addManyToCompare(inputs: AddInput[]): void {
     for (const i of inputs) if (addToCompare(i) === 'pending') break;
 }
 
-/** Where Close on /compare returns to: the last page outside /compare (set by the compare bar on every page). */
-const RETURN_KEY = 'pf_compare_return';
-export function rememberCompareReturn(href: string): void {
-    try {
-        window.sessionStorage.setItem(RETURN_KEY, href);
-    } catch {
-        /* storage blocked */
-    }
-}
-export function compareReturnHref(): string | null {
-    try {
-        return window.sessionStorage.getItem(RETURN_KEY);
-    } catch {
-        return null;
-    }
-}
+/** Where Close on /compare returns to — shared tool-shell return (set by the compare bar on site pages). */
+export {
+    rememberToolShellReturn as rememberCompareReturn,
+    toolShellReturnHref as compareReturnHref,
+} from '@/lib/ui/tool-shell-return';
 
 export function clearCompare(): void {
     load();

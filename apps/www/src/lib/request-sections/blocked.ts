@@ -1,5 +1,5 @@
 /**
- * RFQ v2 (owner Nov 6): why the next step's Continue is off — one short line shown beside it,
+ * Sectioned request (owner Nov 6): why the next step's Continue is off — one short line shown beside it,
  * naming the first thing still missing in the open step. PORTABLE (pure, no UI).
  */
 import {draftNeeds, NEED_PACKAGING} from '@/lib/intake/needs';
@@ -9,7 +9,7 @@ import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
 import {OTHER_SERVICE_ID} from '@/lib/request/service-label';
 import {isIntakeContactReady, isNotesReady, isValidEmail, isValidWebsite} from '@/lib/request/validation';
 import type {IntakeContext} from '@/lib/intake/types';
-import type {SectionKey} from '@/lib/request-v2/flow';
+import type {SectionKey} from '@/lib/request-sections/flow';
 
 export function blockedReason(
     k: SectionKey,

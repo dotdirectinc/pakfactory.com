@@ -1,10 +1,10 @@
 /**
- * RFQ v2 funnel events (R34; prd-website-rfq-v2 §4): each section opening and completing is a
- * step, so the funnel stays comparable with the step intake. No "v2" in event names. PORTABLE.
+ * Sectioned request funnel events (R34): each section opening and completing is a
+ * step, so the funnel stays comparable with the step intake. PORTABLE.
  */
 import {trackFunnel} from '@/lib/request/funnel';
 import type {RequestFlow} from '@/lib/intake/routes';
-import type {SectionKey} from '@/lib/request-v2/flow';
+import type {SectionKey} from '@/lib/request-sections/flow';
 
 export function trackSectionOpen(flow: RequestFlow, leadId: string, step: SectionKey) {
     trackFunnel('rfq_step_view', {flow, lead_id: leadId, step, layout: 'sections'});

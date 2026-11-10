@@ -30,7 +30,11 @@ on:
       - 'apps/www/src/app/(request)/**'
       - 'apps/www/src/app/(site)/request/**'
       - 'apps/www/src/components/request/**'
+      - 'apps/www/src/components/request-sections/**'
+      - 'apps/www/src/components/intake/**'
       - 'apps/www/src/lib/request/**'
+      - 'apps/www/src/lib/request-sections/**'
+      - 'apps/www/src/lib/intake/**'
       - 'apps/www/src/lib/rfq/**'
       - 'apps/www/src/lib/places/**'
       # entrances the specs click through: nav, products, PDP, solutions

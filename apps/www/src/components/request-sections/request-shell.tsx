@@ -4,8 +4,7 @@ import type {ReactNode} from 'react';
 import {useRouter} from 'next/navigation';
 import {IntakeSignIn} from '@/components/intake/fields/intake-sign-in';
 import {RequestTopBar} from '@/components/request/request-top-bar';
-import {markSkipSoftPageEnter} from '@/lib/ui/skip-soft-page-enter';
-import {WWW_ROUTES} from '@/lib/www-routes';
+import {leaveToolShell} from '@/lib/ui/tool-shell-return';
 
 /** The request's own shell: Logo | Quote Request … Sign in | Close (no site menus). */
 /** PORTABLE. */
@@ -19,12 +18,11 @@ export function RequestShell({
     const router = useRouter();
 
     function leave() {
-        markSkipSoftPageEnter();
         if (onClose) {
             onClose();
             return;
         }
-        router.push(WWW_ROUTES.home);
+        leaveToolShell(router);
     }
 
     return (

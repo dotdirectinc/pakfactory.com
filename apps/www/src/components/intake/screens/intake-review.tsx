@@ -31,7 +31,7 @@ type IntakeReviewProps = {
     sections: {key: SectionKey; title: string}[];
     onSubmitted: (ref: string) => void;
     shell: string | null;
-    /** Sticky quick-submit when the in-page CTA is off-screen (default on). RFQ v2 sections keeps this on. */
+    /** Sticky quick-submit when the in-page CTA is off-screen (default on). sectioned request keeps this on. */
     stickyBar?: boolean;
 };
 
@@ -200,7 +200,7 @@ export function IntakeReview({flow, lines, draft, onPatch, serviceOptions, secti
                 </section>
             ))}
 
-            {/* Bottom CTA. Sections (RFQ v2): consent left + Submit right. Step intake: stacked. */}
+            {/* Bottom CTA. Sections shell: consent left + Submit right. Step intake: stacked. */}
             {shell === 'sections' ? (
                 <div
                     ref={ctaRef}

@@ -1,5 +1,5 @@
 /**
- * RFQ v2 (vault prd-website-rfq-v2.md): which sections each request has, in order.
+ * Sectioned request: which sections each request has, in order.
  * Data, not screens — a new request type (e.g. service, later) is one entry here.
  * PORTABLE: no POC imports.
  */

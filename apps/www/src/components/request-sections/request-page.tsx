@@ -5,13 +5,13 @@ import {useRouter, useSearchParams} from 'next/navigation';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {SectionReveal} from '@/components/common/section-reveal';
-import {RequestShell} from '@/components/request-v2/request-shell';
+import {RequestShell} from '@/components/request-sections/request-shell';
 import {IntakeContactScreen} from '@/components/intake/screens/intake-contact-screen';
 import {IntakeReview} from '@/components/intake/screens/intake-review';
 import {ProjectDetailsScreen} from '@/components/intake/screens/project-details-screen';
-import {ProductsSection} from '@/components/request-v2/sections/products-section';
-import {ServicesAddCard} from '@/components/request-v2/sections/services-add-card';
-import {SectionShell, type SectionState} from '@/components/request-v2/section-shell';
+import {ProductsSection} from '@/components/request-sections/sections/products-section';
+import {ServicesAddCard} from '@/components/request-sections/sections/services-add-card';
+import {SectionShell, type SectionState} from '@/components/request-sections/section-shell';
 import {GENERAL_REQUEST_FLOW} from '@/lib/intake/flows/general';
 import {isServicesStepReady} from '@/lib/intake/flows/services-ready';
 import {draftNeeds} from '@/lib/intake/needs';
@@ -22,19 +22,19 @@ import {useRequest} from '@/lib/request/request-provider';
 import type {RequestLine} from '@/lib/request/request.storage';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 import {isIntakeContactReady, isItemsReady} from '@/lib/request/validation';
-import {WWW_ROUTES} from '@/lib/www-routes';
-import {REQUEST_SECTIONS, SECTION_TITLE, type SectionKey} from '@/lib/request-v2/flow';
-import {trackSectionDone, trackSectionOpen} from '@/lib/request-v2/events';
-import {requestHref, stepFromParam, submittedHref} from '@/lib/request-v2/url';
-import {blockedReason} from '@/lib/request-v2/blocked';
+import {REQUEST_SECTIONS, SECTION_TITLE, type SectionKey} from '@/lib/request-sections/flow';
+import {trackSectionDone, trackSectionOpen} from '@/lib/request-sections/events';
+import {requestHref, stepFromParam, submittedHref} from '@/lib/request-sections/url';
+import {blockedReason} from '@/lib/request-sections/blocked';
+import {leaveToolShell} from '@/lib/ui/tool-shell-return';
 
 /**
- * RFQ v2 request page (vault prd-website-rfq-v2 §2, URLs §5): `/request`, one page in the focused shell, filled
+ * Sectioned request page: `/request`, one page in the focused shell, filled
  * section by section — Products (product request) → Project details → Contact → Submit.
  * Each finished section collapses to a summary with Edit; no Review step. Everything
  * autosaves (the draft store); Save & exit keeps the request. PORTABLE: rules come in as a prop.
  */
-export function RequestPageV2({
+export function RequestPage({
     serviceOptions = [],
     rules = {},
 }: {
@@ -135,7 +135,7 @@ export function RequestPageV2({
     const saveAndExit = () => {
         leaving.current = true;
         if (flow === 'general') discardDraft();
-        router.push(WWW_ROUTES.home);
+        leaveToolShell(router);
     };
 
     function onSubmitted(ref: string) {

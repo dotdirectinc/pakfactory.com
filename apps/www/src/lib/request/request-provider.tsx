@@ -191,8 +191,7 @@ export function RequestProvider({
         // Keyed on the DRAFT ID, not a boolean.
         //
         // `startExpressDraft()` replaces the draft wholesale with a fresh
-        // `EMPTY_DRAFT` and a new id, and it does so from `ExpressEntry`'s
-        // passive effect — which runs AFTER this layout effect. A one-shot
+        // `EMPTY_DRAFT` and a new id after this layout effect can run. A one-shot
         // boolean therefore seeds the draft that is about to be thrown away and
         // then refuses to seed the one that replaces it, leaving the buyer
         // looking at a "Signed in as …" banner above three empty fields.

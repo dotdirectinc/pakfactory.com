@@ -10,8 +10,8 @@ for (const start of ['/', '/products/folding-cartons']) {
         await page.goto(start);
         // Home renders more than one "Get a Quote" (heroes); the nav's is the one under test.
         await page.getByRole('banner').getByRole('link', {name: 'Get a Quote'}).click();
-        await expect(page).toHaveURL(/\/request\/general$/);
-        await expect(page.getByRole('alert').filter({hasText: 'Get a quote'})).toBeAttached();
+        await expect(page).toHaveURL(/\/request\/general/);
+        await expect(page.getByRole('heading', {level: 1, name: 'Get a Quote'})).toBeVisible();
 
         await completeExpressRequest(page);
     });

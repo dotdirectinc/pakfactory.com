@@ -1,10 +1,10 @@
 /**
- * RFQ v2 URLs (prd-website-rfq-v2 §5, v0.4): the kind is in the path, the open step in `?step=`, and
+ * Sectioned request URLs: the kind is in the path, the open step in `?step=`, and
  * no lead id. `/request/products` (the clipboard icon: items) · `/request/general` (Get a Quote) ·
- * `/request/services` later. No "v2" in any URL. PORTABLE.
+ * `/request/services` later. PORTABLE.
  */
 import {WWW_ROUTES} from '@/lib/www-routes';
-import {isSectionKey, REQUEST_SECTIONS, type SectionKey} from '@/lib/request-v2/flow';
+import {isSectionKey, REQUEST_SECTIONS, type SectionKey} from '@/lib/request-sections/flow';
 import type {RequestFlow} from '@/lib/intake/routes';
 
 export type RequestKind = 'product' | 'general';

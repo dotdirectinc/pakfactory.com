@@ -19,7 +19,7 @@ type ProjectDetailsScreenProps = {
     draft: RequestDraft;
     onPatch: (patch: Partial<RequestDraft>) => void;
     serviceOptions: RequestServiceOption[];
-    /** Product request only. Default on. RFQ v2 hides it to save space. */
+    /** Product request only. Default on. sectioned request hides it to save space. */
     showShipTo?: boolean;
     /** Describe-first brief: description and Add files side by side. Default off (stacked). */
     columns?: boolean;

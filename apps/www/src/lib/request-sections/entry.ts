@@ -1,5 +1,5 @@
 /**
- * RFQ v2 entry hints (prd-website-rfq-v2 §6). Doors inside the site pass their context with the
+ * Sectioned request entry hints. Doors inside the site pass their context with the
  * click (kept for this tab) and land on plain `/request`; links from outside use `?need=` (+ utm_*).
  * Hints are read once, when the request page opens. PORTABLE.
  */

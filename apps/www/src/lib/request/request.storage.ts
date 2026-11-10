@@ -170,7 +170,7 @@ export type RequestDraft = {
     needFromDoor?: boolean;
     /** Step intake Contact (Nov 2): the buyer's company website. Backend field still needed. */
     contactWebsite?: string;
-    /** Product/service request opened on the step intake (v2/v3), not the one-page form (Nov 2). */
+    /** Product/service request opened on the sectioned or step intake, not the one-page form (Nov 2). */
     stepIntake?: boolean;
     /** General quote intake on the step shell (Nov 1): ship-to is not asked. */
     shipToOptional?: boolean;
@@ -181,7 +181,7 @@ export type RequestDraft = {
      * ids. `null` means all lines (express / legacy / services).
      */
     builderLineIds: string[] | null;
-    /** RFQ v2: items the buyer unticked in the request's Items section (new items join ticked). */
+    /** Sectioned request: items the buyer unticked in the request's Items section (new items join ticked). */
     excludedLineIds?: string[];
     submittedAt: string | null;
     ref: string | null;

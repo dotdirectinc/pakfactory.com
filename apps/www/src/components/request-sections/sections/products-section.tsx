@@ -3,11 +3,12 @@
 import {useEffect, useMemo} from 'react';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {ProductRequestCard} from '@/components/request/product-request-card';
+import {RequestAddProducts} from '@/components/request/request-add-products';
 import {useRequest} from '@/lib/request/request-provider';
 import {useRequestLineAccordion} from '@/lib/request/use-request-line-accordion';
 
 /**
- * RFQ v2 Items section: the items in the request, each with a tick (decision 6: the
+ * Items section: the items in the request, each with a tick (decision 6: the
  * selection is live — what's ticked is the request), edit and remove. PORTABLE.
  */
 export function ProductsSection() {
@@ -55,6 +56,7 @@ export function ProductsSection() {
                     />
                 ))}
             </ul>
+            <RequestAddProducts variant="more" />
         </div>
     );
 }

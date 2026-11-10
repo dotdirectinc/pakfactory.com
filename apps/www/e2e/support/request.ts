@@ -4,119 +4,39 @@ import {RFQ_REF_PATTERN} from '../../src/lib/request/contract.rules';
 import {pickFirstQuantity} from './pdp';
 
 /**
- * Nav Quote request → /request → every pooled item is selected → Start.
- * Lands on /request/products.
+ * Nav Quote request → /request redirects to /request/products when items are waiting.
  */
 export async function startRequestFromPool(page: Page, expected: number): Promise<void> {
     await page
         .getByRole('banner')
         .getByRole('link', {name: new RegExp(`^Quote request, ${expected} items?$`)})
         .click();
-    await expect(page).toHaveURL(/\/request$/);
-    await expect(page.getByRole('heading', {level: 3, name: `Items (${expected})`})).toBeVisible();
+    await expect(page).toHaveURL(/\/request\/products/);
+    await expect(page.getByRole('heading', {level: 1, name: 'Quote Request'})).toBeVisible();
+    await expect(page.locator('#section-products')).toContainText(/Items/);
+}
 
-    const start = page.getByRole('button', {name: `Start quote request (${expected})`});
-    await expect(start).toBeEnabled();
-    await start.click();
-    await expect(page).toHaveURL(/\/request\/products$/);
+/** Advance from the open section by clicking Continue on the next section's row. */
+async function continueFrom(page: Page, openSection: Locator): Promise<void> {
+    const continueBtn = page.getByRole('button', {name: 'Continue'}).filter({visible: true}).first();
+    await expect(continueBtn).toBeEnabled();
+    await continueBtn.click();
+    await expect(openSection).toHaveAttribute('data-state', 'done');
 }
 
 /**
- * Pick from a Radix dropdown: open it, focus the item, press Enter.
- *
- * Not a click — the menu repositions while the long form scrolls, so Playwright
- * waits forever for the item to be "stable". Not typeahead either — on the
- * production build focus does not always move into the menu when it opens, so
- * typed keys land nowhere (seen on staging 2026-10-13). Focusing the item
- * directly depends on neither.
+ * Contact fields use Label htmlFor on the intake screen — role + name works.
  */
-async function pickFromDropdown(page: Page, trigger: Locator, label: string) {
-    const item = page.getByRole('menuitemradio', {name: label, exact: true});
-    await expect(async () => {
-        if (!(await item.isVisible())) await trigger.click();
-        await item.focus({timeout: 2_000});
-        await item.press('Enter', {timeout: 2_000});
-        await expect(item).toBeHidden({timeout: 2_000});
-    }).toPass({timeout: 20_000});
-}
-
-/** Country, then the region dropdown it reveals. */
-async function pickCountryAndRegion(page: Page, scope: Locator, country: string, region?: string) {
-    await pickFromDropdown(page, scope.getByRole('button', {name: 'Select country'}), country);
-    await expect(scope.getByRole('button', {name: country})).toBeVisible();
-    if (!region) return;
-    await pickFromDropdown(page, scope.getByRole('button', {name: /^Select (province|state|region)/i}), region);
-    await expect(scope.getByRole('button', {name: region})).toBeVisible();
-}
-
-/**
- * Address line 1 is a Places autocomplete over a free-text input: the typed value
- * is kept, so no suggestion needs picking. Escape closes the suggestion list.
- */
-async function fillAddress(
-    page: Page,
-    scope: Locator,
-    address: {line1?: string; city: string; region?: string; country: string},
-) {
-    await pickCountryAndRegion(page, scope, address.country, address.region);
-    if (address.line1) {
-        const line1 = scope.getByRole('combobox', {name: 'Address'});
-        await line1.fill(address.line1);
-        await line1.press('Escape');
-    }
-    await scope.getByRole('textbox', {name: 'City', exact: true}).fill(address.city);
-}
-
-/**
- * Contact fields' <label>s are not associated with their inputs (no accessible
- * name), so target the input that follows the label text.
- */
-function contactInput(section: Locator, label: string): Locator {
-    return section.locator(`label:has-text("${label}") + input`).first();
-}
-
-/** Brief + ship-to, then contact + company office. Shared by every form. */
-async function fillBriefShippingAndContact(page: Page): Promise<void> {
-    const requirements = page.locator('#section-requirements');
-    const information = page.locator('#section-information');
-
-    await requirements
-        .getByRole('textbox', {name: /What you’re launching/})
-        .fill(BUYER.brief);
-    await fillAddress(page, requirements, BUYER.shipTo);
-
-    await contactInput(information, 'First name').fill(BUYER.firstName);
-    await contactInput(information, 'Last name').fill(BUYER.lastName);
-    await contactInput(information, 'Email').fill(BUYER.email);
-    await contactInput(information, 'Company').fill(BUYER.company);
-    await fillAddress(page, information, BUYER.office);
-}
-
-/**
- * The Review "paper" echoes what was typed. Match by text, not table cells: the
- * Item cell holds the title plus a `Product: <contents>` line, and the paper's
- * layout has changed before (2026-10-06 — Configuration → Customization).
- */
-async function expectReviewPaper(page: Page, products: string[]): Promise<void> {
-    const review = page.locator('#section-review');
-
-    await expect(review).toContainText(`${BUYER.firstName} ${BUYER.lastName}`);
-    await expect(review).toContainText(BUYER.email);
-    await expect(review).toContainText(BUYER.brief);
-    await expect(review).toContainText(BUYER.shipTo.city);
-
-    if (products.length === 0) return;
-    const rows = review.getByRole('table').getByRole('rowgroup').last().getByRole('row');
-    await expect(rows).toHaveCount(products.length);
-    for (const title of products) {
-        const row = rows.filter({hasText: title});
-        await expect(row).toHaveCount(1);
-        await expect(row).toContainText(BUYER.contents);
-    }
+async function fillContact(page: Page): Promise<void> {
+    const contact = page.locator('#section-contact');
+    await expect(contact).toHaveAttribute('data-state', 'open');
+    await contact.getByRole('textbox', {name: 'First name'}).fill(BUYER.firstName);
+    await contact.getByRole('textbox', {name: 'Last name'}).fill(BUYER.lastName);
+    await contact.getByRole('textbox', {name: 'Email'}).fill(BUYER.email);
 }
 
 function submitButton(page: Page): Locator {
-    return page.getByRole('button', {name: 'Request a quote'});
+    return page.getByRole('button', {name: 'Submit quote request'});
 }
 
 /** Submits only with E2E_SUBMIT=1; otherwise stops with the button enabled. */
@@ -126,54 +46,60 @@ async function finish(page: Page): Promise<void> {
 }
 
 export type ProductRequestOptions = {
-    /** Product titles expected in the form and on the Review paper. */
+    /** Product titles expected in the Items section. */
     products: string[];
 };
 
 /**
- * /request/products: check the pooled products, fill Requirements and Your
- * Information, then check the Review paper lists every product.
+ * /request/products: confirm pooled products, Continue through Project details and
+ * Contact, then stop when Submit is enabled (or submit when E2E_SUBMIT=1).
  */
 export async function completeProductRequest(page: Page, opts: ProductRequestOptions): Promise<void> {
     const products = page.locator('#section-products');
+    await expect(products).toHaveAttribute('data-state', 'open');
     for (const title of opts.products) {
         await expect(products.getByRole('link', {name: title, exact: true})).toBeVisible();
     }
-    await expect(submitButton(page)).toBeDisabled();
+    await expect(submitButton(page)).toHaveCount(0);
 
-    await fillBriefShippingAndContact(page);
+    await continueFrom(page, products);
 
-    await expectReviewPaper(page, opts.products);
+    const details = page.locator('#section-details');
+    await expect(details).toHaveAttribute('data-state', 'open');
+    // Product project details are optional; move on.
+    await continueFrom(page, details);
+
+    await fillContact(page);
     await finish(page);
 }
 
 /**
- * /request/general (express): requirements only — contents and quantity are
- * asked up front instead of per product, and there is no products table.
+ * /request/general: pick Custom packaging, quantity + brief, then Contact.
  */
 export async function completeExpressRequest(page: Page): Promise<void> {
-    const requirements = page.locator('#section-requirements');
+    const details = page.locator('#section-details');
+    await expect(details).toHaveAttribute('data-state', 'open');
     await expect(page.locator('#section-products')).toHaveCount(0);
-    await expect(submitButton(page)).toBeDisabled();
+    await expect(submitButton(page)).toHaveCount(0);
 
-    await requirements
-        .getByRole('textbox', {name: /e\.g\. 750ml spirit bottles/})
-        .fill(BUYER.contents);
-    await pickFirstQuantity(page, requirements);
-    await fillBriefShippingAndContact(page);
+    await details.getByRole('checkbox', {name: /Custom packaging/}).check();
+    await pickFirstQuantity(page, details);
+    await details.getByRole('textbox', {name: 'Describe your project'}).fill(BUYER.brief);
 
-    await expectReviewPaper(page, []);
+    await continueFrom(page, details);
+    await fillContact(page);
     await finish(page);
 }
 
-/** Submit, then the success dialog with a real RFQ ref. Opt-in only. */
+/** Submit, then the confirmation page with a real RFQ ref. Opt-in only. */
 export async function submitAndConfirm(page: Page): Promise<string> {
     await submitButton(page).click();
-    const dialog = page.getByRole('dialog').filter({hasText: 'Request submitted'});
-    await expect(dialog).toBeVisible({timeout: 30_000});
-    // Take the whole token, then hold it to the backend's format (RFQ-2026-00042).
-    const ref = (await dialog.textContent())?.match(/RFQ-[\d-]+/)?.[0];
-    expect(ref, 'success dialog shows an RFQ ref').toMatch(RFQ_REF_PATTERN);
+    await expect(page).toHaveURL(/\/request\/(?:products|general)\/submitted/);
+    await expect(page.getByRole('heading', {level: 1, name: 'Quote request submitted'})).toBeVisible({
+        timeout: 30_000,
+    });
+    const ref = (await page.locator('body').textContent())?.match(/RFQ-[\d-]+/)?.[0];
+    expect(ref, 'confirmation shows an RFQ ref').toMatch(RFQ_REF_PATTERN);
     console.log(`submitted ${ref}`);
     return ref!;
 }

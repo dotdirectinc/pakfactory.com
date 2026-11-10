@@ -44,6 +44,7 @@ import {
     showServicesSection,
 } from '@/lib/request/validation';
 import {WWW_ROUTES} from '@/lib/www-routes';
+import {leaveToolShell} from '@/lib/ui/tool-shell-return';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 
 type BriefBuilderProps = {
@@ -276,7 +277,7 @@ export function BriefBuilder({
 
     function leave() {
         startLeaving(() => {
-            router.push(WWW_ROUTES.home);
+            leaveToolShell(router);
         });
     }
 

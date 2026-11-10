@@ -32,7 +32,7 @@ export function RequestRoot({
                 {/* Site chat (Intercom at launch; Global Settings → Integrations). */}
                 <ChatFab />
             </QuickConfigureProvider>
-            <Toaster richColors closeButton position="bottom-center" />
+            <Toaster richColors closeButton position="bottom-right" style={{zIndex: 100}} />
         </RequestProvider>
     );
 }
