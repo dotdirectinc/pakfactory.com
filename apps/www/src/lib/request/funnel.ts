@@ -10,7 +10,7 @@ import {captureEvent} from '@/lib/analytics';
  *                    step names for every shell, so shells compare like for like)
  *   rfq_need_selected {flow, lead_id, needs, set_by: 'buyer' | 'door'}  first tick on Project
  *                    details' choice, or the door setting it (Website PRD v4.7, R34)
- *   rfq_section_done {flow, lead_id, step, layout: 'sections'}  RFQ v2: a section completed
+ *   rfq_section_done {flow, lead_id, step, layout: 'sections'}  Sectioned request: a section completed
  *   rfq_submit_click {entry_kind}
  *   rfq_submitted    {entry_kind, ref} (+ flow, lead_id, shell)
  */

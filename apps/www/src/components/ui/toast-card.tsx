@@ -47,18 +47,18 @@ export function ToastCard({
         <div
             role="status"
             className={cn(
-                'flex w-[356px] max-w-[calc(100vw-2rem)] items-start gap-3 rounded-2xl border border-border bg-background p-4 shadow-lg',
+                'flex w-[356px] max-w-[calc(100vw-2rem)] items-start gap-3 rounded-2xl border border-transparent bg-foreground p-4 text-background shadow-lg',
                 className,
             )}
         >
-            <span className="mt-0.5 shrink-0 text-foreground" aria-hidden>
+            <span className="mt-0.5 shrink-0 text-background" aria-hidden>
                 {icon ?? <CircleCheck className="size-5" strokeWidth={1.75} />}
             </span>
 
             <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{title}</p>
                 {description ? (
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 text-sm text-background/70">
                         {description}
                     </p>
                 ) : null}
@@ -69,7 +69,7 @@ export function ToastCard({
                             secondaryAction.onClick();
                             onDismiss();
                         }}
-                        className="mt-2 mr-4 inline-flex items-center text-sm font-medium text-foreground underline underline-offset-4"
+                        className="mt-2 mr-4 inline-flex items-center text-sm font-medium text-background underline underline-offset-4"
                     >
                         {secondaryAction.label}
                     </button>
@@ -78,7 +78,7 @@ export function ToastCard({
                     <Link
                         href={action.href}
                         onClick={onDismiss}
-                        className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-foreground underline underline-offset-4"
+                        className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-background underline underline-offset-4"
                     >
                         {action.label}
                         <ArrowRight className="size-4" aria-hidden />
@@ -90,7 +90,7 @@ export function ToastCard({
                 type="button"
                 onClick={onDismiss}
                 aria-label={dismissLabel}
-                className="-m-1 shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                className="-m-1 shrink-0 rounded-full p-1 text-background/60 transition-colors hover:text-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
                 <X className="size-4" aria-hidden />
             </button>

@@ -20,6 +20,7 @@ import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Columns2, Plus, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {pageDielineContentClass, pageDielineOuterClass} from '@pakfactory/ui/components/page-dieline-section';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {SneakPeek} from '@pakfactory/ui/components/sneak-peek';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -30,7 +31,6 @@ import {
     compareGroups,
     compareHref,
     dismissCompareSnack,
-    rememberCompareReturn,
     groupId,
     removeFromCompare,
     resolvePending,
@@ -41,6 +41,7 @@ import {
     type CompareGroup,
     type CompareItem,
 } from '@/lib/compare/compare-set';
+import {isToolShellPath, rememberToolShellReturn} from '@/lib/ui/tool-shell-return';
 
 /** Suggest payload may include a peek blurb that is not stored on the compare set. */
 type SuggestItem = AddInput & {shortDescription?: string};
@@ -194,9 +195,11 @@ export function CompareBar({guided}: {guided: boolean}) {
         [],
     );
 
-    // Remember the last page outside /compare, so Close on /compare returns there (owner Nov 9).
+    // Remember the last site page (not /request or /compare) so tool-shell Close returns there.
     useEffect(() => {
-        if (!pathname.startsWith('/compare')) rememberCompareReturn(window.location.pathname + window.location.search);
+        if (!isToolShellPath(pathname)) {
+            rememberToolShellReturn(window.location.pathname + window.location.search);
+        }
     }, [pathname]);
 
     // Page change closes the bar back to the round button.
@@ -267,9 +270,15 @@ export function CompareBar({guided}: {guided: boolean}) {
     const singles = groups.filter((g) => g.items.length === 1).map((g) => g.items[0]!);
     const singlesKey = singles.map((i) => `${i.kind}:${i.id}`).join('|');
     const [suggest, setSuggest] = useState<Record<string, SuggestItem[]>>({});
+    const [suggestLoading, setSuggestLoading] = useState<Record<string, boolean>>({});
     useEffect(() => {
-        if (!guided || !open || !singles.length) return;
+        if (!guided || !open || !singles.length) {
+            setSuggestLoading({});
+            return;
+        }
         let off = false;
+        const keys = singles.map((it) => groupId(it.kind, it.groupKey));
+        setSuggestLoading(Object.fromEntries(keys.map((k) => [k, true])));
         const exclude = items.map((i) => i.id).join(',');
         Promise.all(
             singles.map((it) =>
@@ -278,7 +287,11 @@ export function CompareBar({guided}: {guided: boolean}) {
                     .then((j: {items: SuggestItem[]}) => [groupId(it.kind, it.groupKey), j.items ?? []] as const)
                     .catch(() => [groupId(it.kind, it.groupKey), [] as SuggestItem[]] as const),
             ),
-        ).then((pairs) => !off && setSuggest(Object.fromEntries(pairs)));
+        ).then((pairs) => {
+            if (off) return;
+            setSuggest(Object.fromEntries(pairs));
+            setSuggestLoading(Object.fromEntries(pairs.map(([k]) => [k, false])));
+        });
         return () => {
             off = true;
         };
@@ -292,6 +305,7 @@ export function CompareBar({guided}: {guided: boolean}) {
         const n = g.items.length;
         const pending = dock.pending && groupId(dock.pending.kind, dock.pending.groupKey) === key ? dock.pending : null;
         const sugg = guided && n === 1 ? suggest[key] ?? [] : [];
+        const loadingSugg = guided && n === 1 && Boolean(suggestLoading[key]) && sugg.length === 0;
         const isC = g.kind === 'customization';
         return (
             <div key={key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-t border-dashed border-border py-3 first:border-t-0 sm:grid-cols-[10rem_minmax(0,1fr)_auto]">
@@ -322,6 +336,16 @@ export function CompareBar({guided}: {guided: boolean}) {
                                 Compare ({n})
                             </Link>
                         </Button>
+                    ) : loadingSugg ? (
+                        <div
+                            className="flex flex-wrap items-center justify-end gap-1.5"
+                            aria-busy="true"
+                            aria-live="polite"
+                        >
+                            <span className="sr-only">Loading suggestions</span>
+                            <Skeleton className="h-7 w-28 rounded-full" />
+                            <Skeleton className="h-7 w-32 rounded-full" />
+                        </div>
                     ) : sugg.length ? (
                         <div className="flex flex-wrap items-center justify-end gap-1.5 text-[12px] text-muted-foreground">
                             <span>Also compare:</span>

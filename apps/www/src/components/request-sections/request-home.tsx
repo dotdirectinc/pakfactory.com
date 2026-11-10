@@ -6,25 +6,27 @@ import {useRouter, useSearchParams} from 'next/navigation';
 import {Button} from '@pakfactory/ui/components/button';
 import {LeadConfirmation} from '@/components/request/lead-confirmation';
 import {RequestConfirmation} from '@/components/request/request-confirmation';
-import {RequestPageV2} from '@/components/request-v2/request-page';
-import {RequestShell} from '@/components/request-v2/request-shell';
+import {RequestPage} from '@/components/request-sections/request-page';
+import {RequestShell} from '@/components/request-sections/request-shell';
 import type {IntakeContext} from '@/lib/intake/types';
 import {useRequest} from '@/lib/request/request-provider';
 import {getRequestStateSnapshot} from '@/lib/request/request.storage';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 import {WWW_ROUTES} from '@/lib/www-routes';
-import {hasHintParams, takeEntryHints} from '@/lib/request-v2/entry';
-import {trackRequestOpen} from '@/lib/request-v2/events';
-import {defaultKind, ensureRequest} from '@/lib/request-v2/start';
-import {KIND_PATH, requestHref, stepFromParam, type RequestKind} from '@/lib/request-v2/url';
+import {markSkipSoftPageEnter} from '@/lib/ui/skip-soft-page-enter';
+import {toolShellReturnHref} from '@/lib/ui/tool-shell-return';
+import {hasHintParams, takeEntryHints} from '@/lib/request-sections/entry';
+import {trackRequestOpen} from '@/lib/request-sections/events';
+import {defaultKind, ensureRequest} from '@/lib/request-sections/start';
+import {KIND_PATH, requestHref, stepFromParam, type RequestKind} from '@/lib/request-sections/url';
 
 /**
- * RFQ v2 `/request/products` and `/request/general` (prd-website-rfq-v2 §5, v0.4): opens that kind's
+ * Sectioned `/request/products` and `/request/general`: opens that kind's
  * request (the other kind is kept aside), or starts one, applies the visit's entry hints once, then
  * tidies the address to `?step=…`. `?draft={id}` resumes that request when it's this browser's;
  * otherwise says the link has expired. An items request with no items shows an empty state. PORTABLE.
  */
-export function RequestHomeV2({
+export function RequestHome({
     kind,
     serviceOptions = [],
     rules = {},
@@ -105,11 +107,11 @@ export function RequestHomeV2({
             </RequestShell>
         );
     }
-    return <RequestPageV2 serviceOptions={serviceOptions} rules={rules} />;
+    return <RequestPage serviceOptions={serviceOptions} rules={rules} />;
 }
 
 /** `/request` (the clipboard icon): opens the items request if there are items, else the general one. */
-export function RequestRootV2() {
+export function RequestRoot() {
     const router = useRouter();
     useEffect(() => {
         router.replace(KIND_PATH[defaultKind()]);
@@ -119,10 +121,10 @@ export function RequestRootV2() {
 }
 
 /**
- * RFQ v2 `/request/{products|general}/submitted?ref=…` (§5): the confirmation in the request's shell. The full
+ * Sectioned `/request/{products|general}/submitted?ref=…`: the confirmation in the request's shell. The full
  * confirmation (with the request document) in the browser that sent it; elsewhere the reference.
  */
-export function RequestSubmittedV2({
+export function RequestSubmitted({
     reference,
     signedIn,
     serviceOptions = [],
@@ -131,10 +133,16 @@ export function RequestSubmittedV2({
     signedIn: boolean;
     serviceOptions?: RequestServiceOption[];
 }) {
+    const router = useRouter();
     const {draft} = useRequest();
     const mine = Boolean(draft.submittedAt) && (!reference || draft.ref === reference);
+    // After submit, do not history.back() onto the form — push the remembered site page (or home).
+    const leaveSubmitted = () => {
+        markSkipSoftPageEnter();
+        router.push(toolShellReturnHref() ?? WWW_ROUTES.home);
+    };
     return (
-        <RequestShell>
+        <RequestShell onClose={leaveSubmitted}>
             {mine ? (
                 <LeadConfirmation flow={draft.express ? 'general' : 'product'} leadId={draft.id} signedIn={signedIn} serviceOptions={serviceOptions} />
             ) : (

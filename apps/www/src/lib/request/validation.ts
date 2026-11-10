@@ -83,14 +83,14 @@ export function isNotesReady(
         return true;
     }
     // Owner Nov 2: the step intakes (Type | Upload) accept a brief OR uploaded files — general,
-    // and product/service requests opened on v2/v3. The one-page form still needs the brief.
+    // and product/service requests opened on the sectioned or step intake. The one-page form still needs the brief.
     if (hasUploadedFile(draft) && (isStepIntake(draft) || draft.stepIntake === true)) {
         return true;
     }
     return draft.notes.trim().length > 0;
 }
 
-/** The general quote request on the step intakes (v2/v3): no ship-to, brief or files. */
+/** The general quote request on the sectioned or step intakes: no ship-to, brief or files. */
 export function isStepIntake(draft: RequestDraft): boolean {
     return Boolean(draft.express && draft.shipToOptional);
 }
@@ -106,7 +106,7 @@ export function isShippingReady(draft: RequestDraft): boolean {
     // Nov 1: the general quote intake (step shell) doesn't ask for ship-to; nor does the
     // service request on the step intake (Nov 2). The product request does.
     if (draft.shipToOptional && (draft.express || draft.entryKind === 'services')) return true;
-    // RFQ v2 (owner Nov 6): the product request doesn't ask ship-to either (step intake only).
+    // Sectioned request (owner Nov 6): the product request doesn't ask ship-to either (step intake only).
     if (draft.shipToOptional && draft.stepIntake && draft.entryKind === 'products') return true;
     return hasShippingLocation(draft.shippingAddress);
 }

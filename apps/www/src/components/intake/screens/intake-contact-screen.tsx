@@ -26,7 +26,7 @@ export function IntakeContactScreen({
 }: {
     draft: RequestDraft;
     onPatch: (patch: Partial<RequestDraft>) => void;
-    /** RFQ v2 turns this off — privacy line on Submit covers it. Default on for Current. */
+    /** sectioned request turns this off — privacy line on Submit covers it. Default on for Current. */
     showReplyNote?: boolean;
 }) {
     const {viewer} = useRequest();

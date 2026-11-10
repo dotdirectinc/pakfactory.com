@@ -66,8 +66,8 @@ a `test-` slug as a fixture, and never assert exact menu counts.
 ## Path catalogue
 
 Three forms are the destinations: **A** product request (`/request/products`,
-via PDP → Add to request → `/request` → Start), **B** express (`/request/general`),
-**C** services (`/request/services`).
+via PDP → Add to request → `/request` redirects when items are waiting), **B** general
+(`/request/general`), **C** services (`/request/services`, still the classic builder).
 
 | ID | Path | Spec |
 |---|---|---|
@@ -97,11 +97,8 @@ post-submit `/account/requests/[id]`, and the request appearing in admin.
 - **Mega-menu** opens on pointer *move* and only after hydration; clicking the
   trigger is a no-op. `openMegaMenu()` re-hovers until the sheet shows.
 - **PDP has no `<main>` landmark**; the request rail is scoped by `article`.
-- **Contact fields** (First/Last name, Email) have labels not tied to their
-  inputs, so they have no accessible name; selected as `label + input`.
-- **Ship-to and company address** share field names; always scope to
-  `#section-requirements` / `#section-information`.
-- Address line 1 is a Places autocomplete over free text — typed, not picked.
-- **Review paper** is asserted by text inside `#section-review` (contact, brief,
-  ship-to, one row per product with its contents), not by exact table cells —
-  its columns changed on 2026-10-06.
+- Product and general requests use section steps `#section-products` /
+  `#section-details` / `#section-contact`. Continue lives on the next section's
+  row; Submit is **Submit quote request** (no Review paper).
+- Contact fields on the intake screen have associated labels (`First name`,
+  `Last name`, `Email`).

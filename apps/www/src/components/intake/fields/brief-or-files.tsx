@@ -20,12 +20,12 @@ type BriefOrFilesProps = {
     images: RequestReferenceImage[];
     rejected: string[];
     onPick: (files: File[]) => void;
-    /** Remove a file from the draft list (RFQ v2 columns list cards). */
+    /** Remove a file from the draft list (sectioned columns list cards). */
     onRemove?: (id: string) => void;
-    /** Picks the example text and the "Good to include" hint (v2). */
+    /** Picks the example text and the "Good to include" hint (sectioned layout). */
     flow?: RequestFlow;
     /**
-     * RFQ v2: description and Add files on one row (description wider left, files right).
+     * Sectioned request: description and Add files on one row (description wider left, files right).
      * Hides "Have a brief? Upload it" — the tile is the upload. Default stacked Describe-first.
      */
     columns?: boolean;
@@ -60,7 +60,7 @@ function DescribeFirst({notes, onNotes, images, rejected, onPick, onRemove, flow
             }}
         />
     );
-    // RFQ v2 columns: one dashed panel — list cards inside when files exist; empty = Add files.
+    // Sectioned request columns: one dashed panel — list cards inside when files exist; empty = Add files.
     const files = columns ? (
         <div
             className={cn(
@@ -137,7 +137,7 @@ function DescribeFirst({notes, onNotes, images, rejected, onPick, onRemove, flow
             <Label htmlFor="intake-brief" className="text-base font-medium">
                 {'label' in copy ? copy.label : REQUEST_COPY.intakeDescribeLabel}
             </Label>
-            {/* columns (RFQ v2): the Add files tile is the upload — no duplicate link. */}
+            {/* sectioned columns: the Add files tile is the upload — no duplicate link. */}
             {columns ? null : (
                 <button
                     type="button"
@@ -154,7 +154,7 @@ function DescribeFirst({notes, onNotes, images, rejected, onPick, onRemove, flow
             id="intake-brief"
             className={cn(
                 'rounded-sm bg-background text-sm',
-                // RFQ v2 columns: taller field, stretches with the files panel.
+                // Sectioned request columns: taller field, stretches with the files panel.
                 columns ? 'min-h-48 h-full' : 'min-h-36',
                 dragging && 'border-foreground bg-muted/40',
             )}
@@ -250,7 +250,7 @@ function FileThumb({image}: {image: RequestReferenceImage}) {
     );
 }
 
-/** RFQ v2 columns: one file as a horizontal list card inside the dashed panel. */
+/** Sectioned request columns: one file as a horizontal list card inside the dashed panel. */
 function FileListCard({image, onRemove}: {image: RequestReferenceImage; onRemove?: (id: string) => void}) {
     const isPdf = /\.pdf$/i.test(image.name);
     const status =

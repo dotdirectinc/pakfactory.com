@@ -8,7 +8,7 @@ import {cn} from '@pakfactory/ui/lib/utils';
 export type SectionState = 'open' | 'done' | 'todo';
 
 /**
- * RFQ v2: one section of the request page (prd-website-rfq-v2 §2). Open: the fields and
+ * One section of the sectioned request page. Open: the fields and
  * Continue. Done: a summary under the title; the row opens the step. To do: just the title. PORTABLE.
  */
 export function SectionShell({

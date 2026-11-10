@@ -3,7 +3,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 /**
  * Request URLs (Website PRD R40): everything that can become a lead lives at
  * /request/{flow}/{leadId}/{screen}. The entry page gives the request a lead id and forwards.
- * Screen slugs are words, never numbers, and never renamed. Every intake shell (v2, v3) uses
+ * Screen slugs are words, never numbers, and never renamed. Every intake shell uses
  * the same URLs; the shell is an analytics field.
  */
 export const REQUEST_FLOWS = ['general', 'product', 'service'] as const;
