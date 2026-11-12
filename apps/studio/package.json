@@ -24,6 +24,7 @@
     "seed:newsroom-default-pages": "node scripts/seed-newsroom-default-pages.mjs",
     "seed:static-pages": "node scripts/seed-static-pages.mjs",
     "seed:home-page": "node scripts/seed-home-page.mjs",
+    "seed:website-footer": "node scripts/seed-website-footer.mjs",
     "seed:finder-general": "node scripts/seed-finder-general-rail.mjs",
     "import:notion-customization-demo": "node scripts/import-notion-customization-demo.mjs",
     "fill:catalog": "node scripts/fill-catalog-from-review.mjs",
