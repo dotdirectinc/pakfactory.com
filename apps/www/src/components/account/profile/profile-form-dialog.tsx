@@ -16,7 +16,8 @@ type ProfileFormDialogProps = {
     onOpenChange: (open: boolean) => void;
     title: string;
     children: ReactNode;
-    onSave: () => void;
+    /** Return `false` to keep the dialog open (e.g. validation failed). */
+    onSave: () => boolean | void | Promise<boolean | void>;
 };
 
 export function ProfileFormDialog({
@@ -44,8 +45,11 @@ export function ProfileFormDialog({
                     <Button
                         type="button"
                         onClick={() => {
-                            onSave();
-                            onOpenChange(false);
+                            void (async () => {
+                                const ok = await onSave();
+                                if (ok === false) return;
+                                onOpenChange(false);
+                            })();
                         }}
                     >
                         {ACCOUNT_COPY.save}

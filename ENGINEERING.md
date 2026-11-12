@@ -73,6 +73,16 @@ Choose the **narrowest** store that works:
 
 ADR-013: feature **controllers** in `modules/` own URL/data wiring; shared `ui/` primitives stay props-only.
 
+### Forms & validation (binding)
+
+New **forms** (credential screens, RFQ contact, email capture, profile dialogs, etc.) use:
+
+1. **`zod`** schema (user-facing messages on the schema)
+2. **`react-hook-form`** + **`zodResolver`** — prefer `mode: 'onBlur'` (revalidate on change after first error)
+3. **`@pakfactory/ui` Form kit** — `Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormDescription`, `FormMessage` (`role="alert"`)
+
+Do **not** invent a second Form kit, hand-roll per-field error markup, or gate Submit only with silent readiness and no field feedback. Domain schemas stay with the domain (auth → `@pakfactory/auth-ui`; www request → `apps/www/src/lib/request/schemas/`). Draft-backed RFQ keeps `RequestDraft` + `onPatch` as persistence and syncs field groups into RHF. Out of scope: search boxes, sign-out buttons, customization `PropertyController` rails. Detail for www: [`apps/www/CLAUDE.md`](apps/www/CLAUDE.md) § Forms & validation.
+
 ---
 
 ## 4. Memoization and re-renders

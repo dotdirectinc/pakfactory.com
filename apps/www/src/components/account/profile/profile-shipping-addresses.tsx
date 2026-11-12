@@ -1,8 +1,11 @@
 'use client';
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {MapPin} from 'lucide-react';
-import {ProfileAddressFields} from '@/components/account/profile/profile-address-fields';
+import {
+    ProfileAddressFields,
+    type ProfileAddressFieldsHandle,
+} from '@/components/account/profile/profile-address-fields';
 import {ProfileFormDialog} from '@/components/account/profile/profile-form-dialog';
 import {ProfileSection} from '@/components/account/profile/profile-section';
 import type {ProfileAddress} from '@/lib/account/profile-mock';
@@ -28,6 +31,7 @@ export function ProfileShippingAddressesSection({
     const [open, setOpen] = useState(false);
     const [addresses, setAddresses] = useState(initialAddresses);
     const [draft, setDraft] = useState(EMPTY_ADDRESS);
+    const fieldsRef = useRef<ProfileAddressFieldsHandle>(null);
 
     function openDialog() {
         setDraft({...EMPTY_ADDRESS, id: `ship-${Date.now()}`});
@@ -50,9 +54,7 @@ export function ProfileShippingAddressesSection({
                             >
                                 <div className="text-sm text-foreground">
                                     <p>{address.line1}</p>
-                                    {address.line2 ? (
-                                        <p>{address.line2}</p>
-                                    ) : null}
+                                    {address.line2 ? <p>{address.line2}</p> : null}
                                     <p className="text-muted-foreground">
                                         {[
                                             address.city,
@@ -88,20 +90,25 @@ export function ProfileShippingAddressesSection({
                 open={open}
                 onOpenChange={setOpen}
                 title={ACCOUNT_COPY.addAddressTitle}
-                onSave={() => {
-                    if (!draft.line1.trim()) {
-                        return;
-                    }
+                onSave={async () => {
+                    const ok = await fieldsRef.current?.trigger();
+                    if (!ok) return false;
+                    const values = fieldsRef.current?.getValues();
+                    if (!values) return false;
                     setAddresses((prev) => [
                         ...prev,
                         {
                             ...draft,
+                            ...values,
+                            line2: values.line2 ?? '',
+                            postalCode: values.postalCode ?? '',
                             isDefault: prev.length === 0,
                         },
                     ]);
                 }}
             >
                 <ProfileAddressFields
+                    ref={fieldsRef}
                     idPrefix="shipping-dialog"
                     value={draft}
                     onChange={setDraft}

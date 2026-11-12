@@ -88,6 +88,8 @@ These rules align with [`.cursor/rules/workspace-instructions.mdc`](.cursor/rule
 
 For `apps/blog`, prefer `@pakfactory/ui` tokens and `className`; do not add blog-local tokens for a one-off feature. If blog and www need the same token, put it in `@pakfactory/ui`.
 
+**Forms (binding):** new forms use **`react-hook-form` + `zod` + `@pakfactory/ui` Form kit** — see [`ENGINEERING.md`](ENGINEERING.md) § Forms & validation. www detail: [`apps/www/CLAUDE.md`](apps/www/CLAUDE.md).
+
 ## Sanity and GROQ
 
 - Use **`defineQuery`** for all GROQ strings; colocate reusable queries in `packages/sanity` and import from `@pakfactory/sanity/queries` in apps.

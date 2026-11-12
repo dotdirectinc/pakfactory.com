@@ -255,3 +255,35 @@ describe('toWireSubmission — services', () => {
         assert.equal(wire.serviceTitles, undefined);
     });
 });
+
+describe('toWireSubmission — yearly packaging budget', () => {
+    it('sends amount, CAD, and the legacy band string when the buyer enters CAD', () => {
+        const withSpend = {
+            ...draft,
+            annualSpend: '50,000',
+            annualSpendCurrency: 'CAD',
+        } as RequestDraft;
+        const wire = toWireSubmission(withSpend, [], 'sub-spend-cad');
+        assert.equal(wire.requirements.annualSpendBand, '50,000');
+        assert.equal(wire.requirements.annualSpendAmount, 50000);
+        assert.equal(wire.requirements.annualSpendCurrency, 'CAD');
+    });
+
+    it('defaults missing currency to USD when an amount is present', () => {
+        const withSpend = {
+            ...draft,
+            annualSpend: '50,000',
+        } as RequestDraft;
+        const wire = toWireSubmission(withSpend, [], 'sub-spend-usd');
+        assert.equal(wire.requirements.annualSpendBand, '50,000');
+        assert.equal(wire.requirements.annualSpendAmount, 50000);
+        assert.equal(wire.requirements.annualSpendCurrency, 'USD');
+    });
+
+    it('sends none of the spend fields when the amount is empty', () => {
+        const wire = toWireSubmission(draft, [], 'sub-spend-empty');
+        assert.equal(wire.requirements.annualSpendBand, undefined);
+        assert.equal(wire.requirements.annualSpendAmount, undefined);
+        assert.equal(wire.requirements.annualSpendCurrency, undefined);
+    });
+});

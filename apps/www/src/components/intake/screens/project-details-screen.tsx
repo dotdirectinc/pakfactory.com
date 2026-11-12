@@ -19,7 +19,7 @@ type ProjectDetailsScreenProps = {
     draft: RequestDraft;
     onPatch: (patch: Partial<RequestDraft>) => void;
     serviceOptions: RequestServiceOption[];
-    /** Product request only. Default on. sectioned request hides it to save space. */
+    /** Ship-to on Project summary. Default on (required on sectioned request). */
     showShipTo?: boolean;
     /** Describe-first brief: description and Add files side by side. Default off (stacked). */
     columns?: boolean;
@@ -28,9 +28,8 @@ type ProjectDetailsScreenProps = {
 /**
  * Project details (owner Nov 2, option 1): everything about the job, in sections.
  * - General (v4.7): What can we help you with? first (hidden when the door set the need), then
- *   Describe your project, Which services, A few specifics; the other need as an add-on card.
- * - Product: Describe your project (a description or files, either is enough), then ship-to.
- * - Service: Describe your project (a description or files, either is enough). No ship-to.
+ *   quantities / specifics, Describe your project, Which services; the other need as an add-on card.
+ * - Product / service: Describe your project (a description or files, either is enough), then ship-to.
  * Product and service pick services on their own Services step (ServicesScreen).
  */
 export function ProjectDetailsScreen({flow, draft, onPatch, serviceOptions, showShipTo = true, columns = false}: ProjectDetailsScreenProps) {
@@ -40,17 +39,20 @@ export function ProjectDetailsScreen({flow, draft, onPatch, serviceOptions, show
     // it: the page heading already says it.
     // v4.7 (owner Nov 6): no section headings on the general request either — fields with labels only.
     const describe = describeBody;
-    if (flow === 'product') {
-        if (!showShipTo) return describe;
+    const shipTo = showShipTo ? (
+        <ShippingToAddress value={draft.shippingAddress} onChange={(shippingAddress) => onPatch({shippingAddress})} />
+    ) : null;
+
+    if (flow === 'product' || flow === 'service') {
+        if (!shipTo) return describe;
         return (
             <div className="flex flex-col gap-12">
                 {/* The project first, then where it ships (ship-to carries its own label). */}
                 {describe}
-                <ShippingToAddress value={draft.shippingAddress} onChange={(shippingAddress) => onPatch({shippingAddress})} />
+                {shipTo}
             </div>
         );
     }
-    if (flow === 'service') return describe;
     // General (Website PRD v4.7, R36, owner Nov 6): the choice leads ("What can we help you with?");
     // only it shows until a box is ticked. Then Describe your project, the services and the packaging
     // specifics. A door that set the need hides the choice and offers the other need as an add-on card
@@ -80,11 +82,9 @@ export function ProjectDetailsScreen({flow, draft, onPatch, serviceOptions, show
     return (
         <div className="flex flex-col gap-12">
             {choice}
-            {/* Describe first, then quantities / services (owner Nov 6). */}
-            <div className="flex flex-col gap-3">
-                {describe}
-            </div>
+            {/* Quantities first, then describe / services. */}
             {needsPackaging(draft) && doorNeed !== NEED_SERVICE ? specifics : null}
+            <div className="flex flex-col gap-3">{describe}</div>
             {needsService(draft) && doorNeed !== NEED_PACKAGING ? (
                 <Field label={REQUEST_COPY.intakeServicesLabel} description={REQUEST_COPY.intakeServicesHelp}>
                     <ServicesField hideHelp draft={draft} onPatch={onPatch} serviceOptions={serviceOptions} />
@@ -112,6 +112,7 @@ export function ProjectDetailsScreen({flow, draft, onPatch, serviceOptions, show
                     {specifics}
                 </AddNeedCard>
             ) : null}
+            {shipTo}
         </div>
     );
 }
@@ -155,4 +156,3 @@ function Field({label, description, children}: {label: string; description?: str
         </div>
     );
 }
-

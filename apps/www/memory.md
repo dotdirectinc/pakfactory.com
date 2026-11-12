@@ -19,11 +19,22 @@ Staging is **never indexable** — `X-Robots-Tag: noindex, nofollow` on non-prod
 ## Local dev
 
 ```bash
-pnpm dev:www    # http://localhost:3003
+pnpm dev:www    # http://localhost:3003 (www only — prefer this)
+pnpm --filter @pakfactory/www dev:webpack   # same port; webpack when /request HMR runs for hours
 pnpm build:www && pnpm --filter @pakfactory/www start   # port 3000
 ```
 
-Running `pnpm dev` from the repo root starts all apps via Turbo; www alone is `pnpm dev:www` → **3003**. Port **3000** is only `next start` after a production build.
+Running `pnpm run dev` from the repo root starts **all** apps via Turbo (www + blog + admin + studio). That multiplies Next memory on a laptop. For www work — especially `/request` — use **`pnpm dev:www` only** → **3003**. Port **3000** is only `next start` after a production build.
+
+### Turbopack / `.next` memory (dev OOM)
+
+Long `next dev` sessions can grow `apps/www/.next` into tens of GB (Turbopack FS cache) and eventually OOM. After a heavy `/request` edit session or if the process dies with `JavaScript heap out of memory`:
+
+1. Stop the www process (port 3003).
+2. `rm -rf apps/www/.next`
+3. Restart with `pnpm dev:www` (not bare `pnpm run dev`).
+
+Do **not** raise `--max-old-space-size` as the fix — Turbopack native RSS sits outside V8. Next **16.3+** enables Turbopack memory eviction by default (`experimental.turbopackMemoryEviction: 'auto'`). For multi-hour request-flow HMR, `pnpm --filter @pakfactory/www dev:webpack` is the escape hatch.
 
 ## Environment
 

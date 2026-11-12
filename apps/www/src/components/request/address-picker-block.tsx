@@ -11,6 +11,7 @@ import {
     DialogTitle,
 } from '@pakfactory/ui/components/dialog';
 import {Label} from '@pakfactory/ui/components/label';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {LoginDialog} from '@/components/login/login-dialog';
 import {AddressFormFields} from '@/components/request/address-form-fields';
 import {REQUEST_COPY} from '@/lib/copy/request';
@@ -34,6 +35,8 @@ type AddressPickerBlockProps = {
     helpText?: string;
     /** When true, show Sign in for anonymous viewers (ship-to). */
     showSignInWhenSignedOut?: boolean;
+    /** Override title Label classes (default field-scale text-xs). */
+    titleClassName?: string;
     className?: string;
 };
 
@@ -54,6 +57,7 @@ export function AddressPickerBlock({
     required = false,
     helpText,
     showSignInWhenSignedOut = false,
+    titleClassName,
     className,
 }: AddressPickerBlockProps) {
     const {viewer} = useRequest();
@@ -100,7 +104,7 @@ export function AddressPickerBlock({
     return (
         <div className={className}>
             <div className="mb-4 flex items-baseline justify-between gap-4">
-                <Label className="text-xs font-medium">
+                <Label className={cn('text-xs font-medium', titleClassName)}>
                     {title}
                     {required ? (
                         <span className="ml-0.5 text-amber-600">*</span>

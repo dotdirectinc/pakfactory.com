@@ -1,10 +1,10 @@
 /**
- * Close on chrome-less tool shells (`(request)` / `(compare)`): skip soft enter,
- * prefer history.back() so the origin page keeps scroll, fall back to the last
- * remembered site href. See SoftPageTransition + DESIGN.md § Motion.
+ * Close on chrome-less tool shells (`(request)` / `(compare)`): prefer
+ * history.back() so the origin page keeps scroll context where possible, fall
+ * back to the last remembered site href. SoftPageTransition plays page-enter
+ * on return (same family as other site navigations). See DESIGN.md § Motion.
  */
 
-import {markSkipSoftPageEnter} from '@/lib/ui/skip-soft-page-enter';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 const RETURN_KEY = 'pf_tool_shell_return';
@@ -46,7 +46,6 @@ type LeaveOpts = {
 /** Dismiss a tool shell: keep origin scroll via back(), else push remembered href. */
 export function leaveToolShell(router: ShellRouter, opts: LeaveOpts = {}): void {
     const fallback = opts.fallback ?? WWW_ROUTES.home;
-    markSkipSoftPageEnter();
     const back = toolShellReturnHref();
     if (back && typeof window !== 'undefined' && window.history.length > 1) {
         router.back();

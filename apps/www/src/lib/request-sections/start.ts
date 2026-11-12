@@ -89,26 +89,49 @@ function writeParked(p: Parked): void {
     }
 }
 
+/**
+ * In-tab general draft id. Step changes use history.replaceState → useSearchParams can
+ * remount RequestHome; without this, ensureRequest would wipe the form mid-flow.
+ * Cleared on Close / when opening a product request (true new visit starts fresh).
+ */
+let activeGeneralId: string | null = null;
+
+/** Drop the in-tab general session (Close, or switching to a product request). */
+export function releaseGeneralSession(): void {
+    activeGeneralId = null;
+}
+
 /** Open this kind's request (swapping the other kind aside), or start one; then apply the visit's hints. */
 export function ensureRequest(kind: 'product' | 'general', h: EntryHints): (OpenRequest & {resumed: boolean}) | null {
-    // General is ephemeral: every visit to /request/general starts fresh (never resume open or parked).
+    // General: fresh on a real visit; resume the same draft if RequestHome remounts mid-flow.
     if (kind === 'general') {
         const open = openRequest();
+        if (open?.flow === 'general' && activeGeneralId === open.id) {
+            if (getRequestStateSnapshot().draft.shipToOptional) {
+                updateRequestDraft({shipToOptional: false});
+            }
+            applyHints(h);
+            return {...open, resumed: true};
+        }
         const parked = readParked();
         if (open?.flow === 'product') parked.product = getRequestStateSnapshot().draft;
         delete parked.general;
         writeParked(parked);
         startExpressDraft();
-        updateRequestDraft({shipToOptional: true, needPicked: false, needFromDoor: false});
+        updateRequestDraft({shipToOptional: false, needPicked: false, needFromDoor: false});
         applyHints(h);
         const now = openRequest();
+        activeGeneralId = now?.id ?? null;
         return now ? {...now, resumed: false} : null;
     }
 
+    activeGeneralId = null;
     const open = openRequest();
     if (open && open.flow === kind) {
-        // Requests started before ship-to was dropped (owner Nov 6) stop asking for it too.
-        if (!getRequestStateSnapshot().draft.shipToOptional) updateRequestDraft({stepIntake: true, shipToOptional: true});
+        // Sectioned Project summary requires ship-to — normalize resumes that still had it optional.
+        if (getRequestStateSnapshot().draft.shipToOptional) {
+            updateRequestDraft({stepIntake: true, shipToOptional: false});
+        }
         applyHints(h);
         return {...open, resumed: true};
     }
@@ -126,8 +149,8 @@ export function ensureRequest(kind: 'product' | 'general', h: EntryHints): (Open
     const {lines} = getRequestStateSnapshot();
     if (!lines.length) return null; // nothing to quote yet — the page shows the empty state
     startRequestFromSelection(lines.map((l) => l.id));
-    // The section page is a step intake for validation. Owner Nov 6: the sectioned request doesn't ask ship-to.
-    updateRequestDraft({stepIntake: true, shipToOptional: true});
+    // Sectioned request is a step intake; Project summary requires a shipping location.
+    updateRequestDraft({stepIntake: true, shipToOptional: false});
     applyHints(h);
     const now = openRequest();
     return now ? {...now, resumed: false} : null;

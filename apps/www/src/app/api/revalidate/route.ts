@@ -16,9 +16,11 @@ import {
   WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
   WWW_CATALOG_LINES_CACHE_TAG,
   WWW_CATALOG_PRODUCTS_CACHE_TAG,
+  WWW_CONTENT_PAGES_CACHE_TAG,
   WWW_EXPERTISE_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
   WWW_HOME_PAGE_CACHE_TAG,
+  WWW_LEGAL_PAGES_CACHE_TAG,
   WWW_NEWSROOM_CACHE_TAG,
   WWW_SOLUTIONS_CACHE_TAG,
   WWW_WEBSITE_NAVIGATION_CACHE_TAG,
@@ -43,6 +45,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "product", "productStyle", "customizationCategory", "customizationType",
  *     "productCatalogPage", "productStylePage", "productDetailPage", "customizationCatalogPage", "customizationCompatibilityPage", "customizationDetailPage",
  *     "pressRelease", "newsroomCatalogPage", "newsroomDetailPage",
+ *     "contentPage", "legalPage",
  *     "faq", "websiteNavigation", "settings",
  *     "property", "propertyValue"
  *   ]
@@ -330,6 +333,40 @@ export async function POST(request: Request) {
   // query, so bust it on every webhook rather than risk a stale Home.
   tags.add(WWW_HOME_PAGE_CACHE_TAG);
 
+  // Content Pages — About, Contact, and slugged company pages (Sustainability…).
+  if (!type || type === "contentPage") {
+    tags.add(WWW_CONTENT_PAGES_CACHE_TAG);
+    revalidatePath("/about");
+    revalidatePath("/contact");
+    revalidated.push("/about", "/contact");
+    if (type === "contentPage" && slug) {
+      revalidatePath(`/${slug}`);
+      revalidated.push(`/${slug}`);
+    } else {
+      revalidatePath("/[slug]", "page");
+      revalidated.push("/[slug]");
+    }
+  }
+
+  // Legal Pages — Privacy / Terms + the /policies index.
+  if (!type || type === "legalPage") {
+    tags.add(WWW_LEGAL_PAGES_CACHE_TAG);
+    revalidatePath("/policies");
+    revalidatePath("/policies/privacy-policy");
+    revalidatePath("/policies/terms-of-service");
+    revalidated.push(
+      "/policies",
+      "/policies/privacy-policy",
+      "/policies/terms-of-service",
+    );
+  }
+
+  // Contact details (phone, email, address, hours) live on Global Settings.
+  if (!type || type === "settings") {
+    revalidatePath("/contact");
+    revalidated.push("/contact");
+  }
+
   // Nav links are gated on their targets' status and parents (isCatalogTargetVisible),
   // so a catalog edit can add or drop a nav entry — not only a websiteNavigation edit.
   if (
@@ -411,7 +448,9 @@ export async function POST(request: Request) {
     type === FAQ_TYPE ||
     type === "websiteNavigation" ||
     type === "settings" ||
-    type === "homePage";
+    type === "homePage" ||
+    type === "contentPage" ||
+    type === "legalPage";
 
   return NextResponse.json({
     revalidated: true,

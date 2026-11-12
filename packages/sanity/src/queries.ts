@@ -293,6 +293,21 @@ export {
     type WebsiteNavLinkTarget,
 } from './queries/website-navigation';
 
+export {
+    CONTENT_PAGE_PINNED_IDS,
+    CONTENT_PAGE_BY_ID_QUERY,
+    CONTENT_PAGE_BY_SLUG_QUERY,
+    CONTENT_PAGE_SLUGS_QUERY,
+    CONTENT_PAGE_SITEMAP_QUERY,
+    LEGAL_PAGE_BY_ID_QUERY,
+    LEGAL_PAGES_LIST_QUERY,
+    type ContentPagePinnedId,
+    type ContentPageDoc,
+    type ContentPageSitemapEntry,
+    type LegalPageDoc,
+    type LegalPageListItem,
+} from './queries/content-pages';
+
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
   description,

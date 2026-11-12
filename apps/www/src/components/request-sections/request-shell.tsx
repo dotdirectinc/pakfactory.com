@@ -6,7 +6,7 @@ import {IntakeSignIn} from '@/components/intake/fields/intake-sign-in';
 import {RequestTopBar} from '@/components/request/request-top-bar';
 import {leaveToolShell} from '@/lib/ui/tool-shell-return';
 
-/** The request's own shell: Logo | Quote Request … Sign in | Close (no site menus). */
+/** The request's own shell: Logo | Quote Request … Sign in | Close. */
 /** PORTABLE. */
 export function RequestShell({
     children,

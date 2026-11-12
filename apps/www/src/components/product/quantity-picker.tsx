@@ -11,6 +11,7 @@ import {
     PRODUCT_DETAIL_COPY,
     withMoq,
 } from '@/lib/copy/product-detail';
+import {expressQuantitySchema} from '@/lib/request/schemas/details';
 
 function formatVolume(n: number): string {
     return n.toLocaleString('en-US');
@@ -74,12 +75,16 @@ export function QuantityPicker({
     const typedValue = Number(String(customVolume).replace(/[^0-9]/g, ''));
     const hasTypedValue =
         customVolume !== '' && Number.isFinite(typedValue) && typedValue > 0;
-    const isMultiple = hasTypedValue && typedValue % 100 === 0;
+    const quantityParsed = hasTypedValue
+        ? expressQuantitySchema.safeParse(typedValue)
+        : null;
     const meetsMoq = !hasMoq || typedValue >= moq;
-    const customValid = hasTypedValue && isMultiple && meetsMoq;
+    const customValid = Boolean(quantityParsed?.success) && meetsMoq;
     let customError: string | null = null;
-    if (hasTypedValue && !isMultiple) {
-        customError = PRODUCT_DETAIL_COPY.quantityIncrementError;
+    if (hasTypedValue && !quantityParsed?.success) {
+        customError =
+            quantityParsed?.error.issues[0]?.message ??
+            PRODUCT_DETAIL_COPY.quantityIncrementError;
     } else if (hasTypedValue && !meetsMoq) {
         customError = withMoq(
             PRODUCT_DETAIL_COPY.quantityBelowMoqError,
@@ -89,9 +94,8 @@ export function QuantityPicker({
 
     function addCustomVolume() {
         const value = Number(String(customVolume).replace(/[^0-9]/g, ''));
-        const isMultipleOf100 = value > 0 && value % 100 === 0;
-        const meetsMinimum = !hasMoq || value >= moq;
-        if (!(isMultipleOf100 && meetsMinimum)) return;
+        if (!expressQuantitySchema.safeParse(value).success) return;
+        if (hasMoq && value < moq) return;
         onAdd(value);
         setCustomVolume('');
     }

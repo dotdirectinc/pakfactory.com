@@ -1,32 +1,26 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
-import {usePathname} from 'next/navigation';
 import {MessageCircle, X} from 'lucide-react';
 import {useChatSettings} from '@/components/chat/chat-settings';
 import {useChatContext} from '@/lib/chat/chat-context';
+import {OPEN_CHAT_EVENT} from '@/lib/chat/open-chat';
 import {createIntercomProvider} from '@/lib/chat/intercom';
 import type {ChatProvider} from '@/lib/chat/chat-provider';
 
-/** Fire this to open the chat from anywhere (e.g. a "Start chat" link). */
-export const OPEN_CHAT_EVENT = 'pf:open-chat';
-export function openChat() {
-    window.dispatchEvent(new CustomEvent(OPEN_CHAT_EVENT));
-}
+export {OPEN_CHAT_EVENT, openChat} from '@/lib/chat/open-chat';
 
 /**
  * Site chat button (bottom-right). Launch: opens the Intercom Messenger (Global Settings →
  * Integrations → Show Intercom chat + App ID). Later the AI Sidekick replaces the provider,
  * not this button. Sits above the round compare button and lifts above the open compare bar
  * (reads `--compare-fab-stack` / `--compare-drawer-lift` from compare-bar.tsx).
- * Hidden on /request/* (the request has its own submit bar).
+ * On /request, `--chat-fab-offset` lifts it above the sticky submit strip.
  */
 export function ChatFab() {
     const {intercomEnabled, intercomAppId} = useChatSettings();
     const appId = intercomEnabled ? intercomAppId?.trim() || null : null;
     const provider = useMemo<ChatProvider | null>(() => (appId ? createIntercomProvider(appId) : null), [appId]);
-    const pathname = usePathname() || '';
-    const hidden = pathname.startsWith('/request');
     const context = useChatContext();
     const [open, setOpen] = useState(false);
     const [unread, setUnread] = useState(0);
@@ -51,11 +45,7 @@ export function ChatFab() {
         return () => window.removeEventListener(OPEN_CHAT_EVENT, onOpen);
     }, [provider]);
 
-    useEffect(() => {
-        if (hidden && open) provider?.close();
-    }, [hidden, open, provider]);
-
-    if (!provider || hidden) return null;
+    if (!provider) return null;
 
     return (
         <div

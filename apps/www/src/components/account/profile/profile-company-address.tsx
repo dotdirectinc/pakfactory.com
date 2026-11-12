@@ -1,8 +1,11 @@
 'use client';
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {MapPin} from 'lucide-react';
-import {ProfileAddressFields} from '@/components/account/profile/profile-address-fields';
+import {
+    ProfileAddressFields,
+    type ProfileAddressFieldsHandle,
+} from '@/components/account/profile/profile-address-fields';
 import {ProfileFormDialog} from '@/components/account/profile/profile-form-dialog';
 import {ProfileSection} from '@/components/account/profile/profile-section';
 import type {ProfileAddress} from '@/lib/account/profile-mock';
@@ -41,6 +44,7 @@ export function ProfileCompanyAddressSection({
     const [open, setOpen] = useState(false);
     const [saved, setSaved] = useState(address);
     const [draft, setDraft] = useState(address ?? EMPTY_ADDRESS);
+    const fieldsRef = useRef<ProfileAddressFieldsHandle>(null);
 
     function openDialog() {
         setDraft(saved ?? EMPTY_ADDRESS);
@@ -72,9 +76,22 @@ export function ProfileCompanyAddressSection({
                 open={open}
                 onOpenChange={setOpen}
                 title={ACCOUNT_COPY.editCompanyAddressTitle}
-                onSave={() => setSaved({...draft, id: 'company'})}
+                onSave={async () => {
+                    const ok = await fieldsRef.current?.trigger();
+                    if (!ok) return false;
+                    const values = fieldsRef.current?.getValues();
+                    if (!values) return false;
+                    setSaved({
+                        ...draft,
+                        ...values,
+                        line2: values.line2 ?? '',
+                        postalCode: values.postalCode ?? '',
+                        id: 'company',
+                    });
+                }}
             >
                 <ProfileAddressFields
+                    ref={fieldsRef}
                     idPrefix="company-dialog"
                     value={draft}
                     onChange={setDraft}

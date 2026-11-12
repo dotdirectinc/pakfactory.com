@@ -948,6 +948,7 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "companyFoundingDate": organization.foundingDate,
   "companyEmail": organization.contact.email,
   "companyPhone": organization.contact.phone,
+  "companyHours": organization.contact.hours,
   "companyPostalAddress": organization.contact.postalAddress,
   // 🔴 Retired free-text address (PROD-3231). Still projected only because the
   // blog types it; nothing renders it. Goes when the field does.

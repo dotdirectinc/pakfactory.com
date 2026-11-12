@@ -238,6 +238,27 @@ html {
 }
 
 /*
+  Section body open — opacity only (no rise). Used when a request step unfolds
+  so fields don’t slide up with heading-settle. Keep www-only.
+*/
+@keyframes section-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@utility animate-section-fade-in {
+  animation: section-fade-in var(--motion-reveal)
+    cubic-bezier(0.45, 0, 0.55, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-section-fade-in {
+    animation: none;
+  }
+}
+
+/*
   Chrome-less tool shells — `(request)` / `(compare)` modal settle enter.
   Scale from PRODUCT_MEDIA_SCALE (0.98) toward the viewer + fade from `md` up.
   Keyframes define only `from` so the element’s own styles are the end state.

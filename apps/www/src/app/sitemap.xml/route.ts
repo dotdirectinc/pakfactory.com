@@ -1,13 +1,6 @@
-import { getPublishedSanityClient } from "@/lib/sanity/client";
-import { isSanityConfigured } from "@/lib/sanity/env";
-import {
-  CASE_STUDY_SITEMAP_QUERY,
-  type CaseStudySitemapEntry,
-} from "@pakfactory/sanity/queries";
-import { absoluteUrl } from "@/lib/site";
-import { listNewsSitemapEntries } from "@/lib/newsroom/newsroom";
-import { WWW_ROUTES, newsItemHref } from "@/lib/www-routes";
-import { buildUrlset, type SitemapUrlEntry } from "@pakfactory/sitemap";
+import {absoluteUrl} from '@/lib/site';
+import {buildWwwSitemapGroups} from '@/lib/www-sitemap';
+import {buildUrlset, type SitemapUrlEntry} from '@pakfactory/sitemap';
 
 export const revalidate = 300;
 
@@ -18,41 +11,23 @@ export const revalidate = 300;
 // Response headers are deliberately kept as-is rather than switching to the
 // package's `xmlResponse`: this route uses `stale-while-revalidate=600`, which
 // that helper does not emit. Escaping is the only intended behaviour change.
-
-function lastmodDate(value: string | null | undefined) {
-  return value ? { lastmod: new Date(value).toISOString().split("T")[0] } : {};
-}
+//
+// PROD-3235 expands coverage beyond case studies / newsroom to the full
+// marketing catalog + company pages. Category landings stay out (PROD-2848).
 
 export async function GET() {
-  const newsEntries = await listNewsSitemapEntries();
-  const slugEntries = isSanityConfigured()
-    ? await getPublishedSanityClient()
-        .fetch<CaseStudySitemapEntry[]>(CASE_STUDY_SITEMAP_QUERY)
-        .catch(() => [] as CaseStudySitemapEntry[])
-    : ([] as CaseStudySitemapEntry[]);
-
-  const urls: SitemapUrlEntry[] = [
-    {
-      loc: absoluteUrl("/case-studies"),
-    },
-    ...slugEntries.map((entry) => ({
-      loc: absoluteUrl(`/case-studies/${entry.slug}`),
-      ...(entry.lastmod
-        ? { lastmod: new Date(entry.lastmod).toISOString().split("T")[0] }
-        : {}),
+  const groups = await buildWwwSitemapGroups();
+  const urls: SitemapUrlEntry[] = groups.flatMap((group) =>
+    group.links.map((link) => ({
+      loc: absoluteUrl(link.href),
+      ...(link.lastmod ? {lastmod: link.lastmod} : {}),
     })),
-    // Newsroom (PROD-2913 / PROD-2918) — published, past-release-time only.
-    { loc: absoluteUrl(WWW_ROUTES.newsroom) },
-    ...newsEntries.map((entry) => ({
-      loc: absoluteUrl(newsItemHref(entry.slug)),
-      ...lastmodDate(entry.lastmod),
-    })),
-  ];
+  );
 
   return new Response(buildUrlset(urls), {
     headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
     },
   });
 }

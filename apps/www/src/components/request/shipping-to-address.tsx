@@ -23,6 +23,7 @@ export function ShippingToAddress({
             title={REQUEST_COPY.shipToLabel}
             dialogTitle={REQUEST_COPY.shipToLabel}
             fallbackLabel={REQUEST_COPY.shippingAddressFallbackLabel}
+            titleClassName="text-base font-medium"
             showSignInWhenSignedOut
         />
     );

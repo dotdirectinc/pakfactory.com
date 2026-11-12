@@ -39,6 +39,11 @@ type AddressLineAutocompleteProps = {
     onAddressFill: (patch: Partial<ShippingAddress>) => void;
     className?: string;
     inputClassName?: string;
+    /** Merged onto the street input (Form kit / RHF blur + a11y). */
+    id?: string;
+    'aria-invalid'?: boolean;
+    'aria-describedby'?: string;
+    onBlur?: () => void;
 };
 
 export function AddressLineAutocomplete({
@@ -48,6 +53,10 @@ export function AddressLineAutocomplete({
     onAddressFill,
     className,
     inputClassName,
+    id,
+    'aria-invalid': ariaInvalid,
+    'aria-describedby': ariaDescribedBy,
+    onBlur,
 }: AddressLineAutocompleteProps) {
     const listId = useId();
     const rootRef = useRef<HTMLDivElement>(null);
@@ -162,9 +171,13 @@ export function AddressLineAutocomplete({
     return (
         <div ref={rootRef} className={cn('relative', className)}>
             <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedBy}
                 className={inputClassName}
                 value={value}
                 onBlur={() => {
+                    onBlur?.();
                     // Delay so option mousedown can fire first.
                     window.setTimeout(() => {
                         if (selectingRef.current) return;

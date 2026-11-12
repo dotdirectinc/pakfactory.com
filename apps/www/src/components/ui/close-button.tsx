@@ -21,9 +21,8 @@ type CloseButtonProps = {
 };
 
 /**
- * Shell close control — 48px solid foreground circle, light X, no shadow.
- * Same size and color as the compare page close and the chat FAB.
- * Props-only: callers supply the label and leave handler.
+ * Shell close control — ghost Button + 36px muted circle, foreground X, no shadow.
+ * Shared by request top bar and compare. Props-only: callers supply the label and leave handler.
  */
 export function CloseButton({
     'aria-label': ariaLabel,
@@ -36,9 +35,10 @@ export function CloseButton({
     return (
         <Button
             type="button"
+            variant="ghost"
             size="icon"
             className={cn(
-                'size-12 rounded-full border-0 bg-foreground text-background shadow-none hover:bg-foreground hover:opacity-90',
+                'size-9 rounded-full border-0 bg-muted text-foreground shadow-none hover:bg-muted/80 hover:text-foreground',
                 className,
             )}
             onClick={onClick}

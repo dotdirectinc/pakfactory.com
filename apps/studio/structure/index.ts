@@ -1347,16 +1347,92 @@ export const mainWebsiteStructure = (
                                 ),
                         ]),
                 ),
+            // Pinned Content / Legal pages (PROD-2292). Open the exact document
+            // id so editors cannot create a duplicate About or Privacy page.
             S.listItem()
                 .title('Content Pages')
                 .icon(DocumentTextIcon)
-                .schemaType('contentPage')
-                .child(S.documentTypeList('contentPage').title('Content Pages')),
+                .child(
+                    S.list()
+                        .title('Content Pages')
+                        .items([
+                            S.listItem()
+                                .title('About Page')
+                                .icon(DocumentTextIcon)
+                                .child(
+                                    S.editor()
+                                        .id('aboutPage')
+                                        .schemaType('contentPage')
+                                        .documentId('aboutPage'),
+                                ),
+                            S.listItem()
+                                .title('Contact Page')
+                                .icon(DocumentTextIcon)
+                                .child(
+                                    S.editor()
+                                        .id('contactPage')
+                                        .schemaType('contentPage')
+                                        .documentId('contactPage'),
+                                ),
+                            // Reserved pins — www has no App Router pages for these yet.
+                            S.listItem()
+                                .title('Search Page')
+                                .icon(DocumentTextIcon)
+                                .child(
+                                    S.editor()
+                                        .id('searchPage')
+                                        .schemaType('contentPage')
+                                        .documentId('searchPage'),
+                                ),
+                            S.listItem()
+                                .title('404 Page')
+                                .icon(DocumentTextIcon)
+                                .child(
+                                    S.editor()
+                                        .id('notFoundPage')
+                                        .schemaType('contentPage')
+                                        .documentId('notFoundPage'),
+                                ),
+                            S.listItem()
+                                .title('More Content Pages')
+                                .icon(DocumentTextIcon)
+                                .schemaType('contentPage')
+                                .child(
+                                    S.documentTypeList('contentPage')
+                                        .title('More Content Pages')
+                                        .filter(
+                                            '_type == "contentPage" && !(_id in ["aboutPage", "contactPage", "searchPage", "notFoundPage", "drafts.aboutPage", "drafts.contactPage", "drafts.searchPage", "drafts.notFoundPage"])',
+                                        ),
+                                ),
+                        ]),
+                ),
             S.listItem()
                 .title('Legal Pages')
                 .icon(LockIcon)
-                .schemaType('legalPage')
-                .child(S.documentTypeList('legalPage').title('Legal Pages')),
+                .child(
+                    S.list()
+                        .title('Legal Pages')
+                        .items([
+                            S.listItem()
+                                .title('Privacy Policy')
+                                .icon(LockIcon)
+                                .child(
+                                    S.editor()
+                                        .id('privacyPage')
+                                        .schemaType('legalPage')
+                                        .documentId('privacyPage'),
+                                ),
+                            S.listItem()
+                                .title('Terms of Service')
+                                .icon(LockIcon)
+                                .child(
+                                    S.editor()
+                                        .id('termsPage')
+                                        .schemaType('legalPage')
+                                        .documentId('termsPage'),
+                                ),
+                        ]),
+                ),
             S.listItem()
                 .title('Navigation')
                 .icon(ThLargeIcon)

@@ -24,12 +24,14 @@ export function MarketingOptIn({
     onOptInChange,
     idSuffix = '',
     compact: _compact = false,
+    className,
 }: {
     optIn: boolean;
     onOptInChange: (value: boolean) => void;
     idSuffix?: string;
     /** Kept for call sites; opt-in is always text-sm on the intake scale. */
     compact?: boolean;
+    className?: string;
 }) {
     void _compact;
     const subscribed = useMarketingSubscribed();
@@ -38,7 +40,7 @@ export function MarketingOptIn({
     return (
         <label
             htmlFor={id}
-            className="flex cursor-pointer items-center gap-2 text-left text-sm text-foreground"
+            className={cn('flex cursor-pointer items-center gap-2 text-left text-sm text-foreground', className)}
         >
             <Checkbox id={id} checked={optIn} onCheckedChange={(value) => onOptInChange(value === true)} />
             <span>Email me packaging ideas and offers (optional)</span>

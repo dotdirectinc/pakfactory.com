@@ -33,6 +33,8 @@ export type WwwGlobalSettings = {
   companyEmail?: string | null;
   /** `Organization.telephone`. */
   companyPhone?: string | null;
+  /** Global Settings → Company → Contact → Hours. Shown on the Contact page. */
+  companyHours?: string | null;
   /** Structured address — the parts a `PostalAddress` node needs. */
   companyPostalAddress?: {
     streetAddress?: string | null;

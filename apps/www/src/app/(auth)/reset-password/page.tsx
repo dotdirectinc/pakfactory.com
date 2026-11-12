@@ -1,11 +1,9 @@
 import Link from 'next/link';
 import type {Metadata} from 'next';
+import {AuthCard} from '@/components/auth/auth-card';
+import {ResetPasswordForm} from '@/components/auth/reset-password-form';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
 import {WWW_ROUTES} from '@/lib/www-routes';
-import {AuthCard} from '@/components/auth/auth-card';
-import {AuthField} from '@/components/auth/auth-field';
-import {AuthForm} from '@/components/auth/auth-form';
-import {resetPassword} from '@/lib/auth/actions';
 
 export const metadata: Metadata = {
     title: 'Choose a new password',
@@ -57,23 +55,7 @@ export default async function ResetPasswordPage({
                 </>
             }
         >
-            <AuthForm action={resetPassword} submitLabel="Update password">
-                <input type="hidden" name="email" value={email} />
-                <AuthField
-                    name="token"
-                    label="Code"
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    // Not capped — see the note in verify/page.tsx.
-                />
-                <AuthField
-                    name="password"
-                    label="New password"
-                    type="password"
-                    autoComplete="new-password"
-                    hint="At least 8 characters."
-                />
-            </AuthForm>
+            <ResetPasswordForm email={email} />
         </AuthCard>
     );
 }
