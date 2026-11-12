@@ -65,7 +65,7 @@ export function QuickConfigureProvider({children}: {children: ReactNode}) {
     return (
         <QuickConfigureContext.Provider value={value}>
             {children}
-            {enabled && apply ? <ApplyPopup request={apply} onClose={() => setApply(null)} openQuick={open} /> : null}
+            {enabled && apply ? <ApplyPopup request={apply} onClose={() => setApply(null)} /> : null}
             {enabled && target ? <QuickConfigureDrawer key={`${target.slug}?${target.query ?? ''}`} target={target} onClose={() => setTarget(null)} /> : null}
         </QuickConfigureContext.Provider>
     );

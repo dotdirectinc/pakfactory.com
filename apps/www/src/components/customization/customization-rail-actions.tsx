@@ -59,12 +59,22 @@ export function CustomizationRailActions({
                 selectedAchievesId: host.selectedAchievesId,
             }) ?? pageOption;
         quick.openApply({
-            option: {...option, title: host.detail.shortName?.trim() || host.detail.title},
+            option: {
+                ...option,
+                title: host.detail.shortName?.trim() || host.detail.title,
+            },
+            categoryTitle: host.detail.categoryLabel?.trim() || undefined,
+            lines: host.worksWith.lines.map((line) => ({
+                slug: line.slug,
+                title: line.title,
+            })),
             suggestions: host.worksWith.products.map((p) => ({
                 slug: p.slug,
                 title: p.title,
                 imageUrl: p.imageUrl,
-                lineTitle: p.productLineTitle,
+                sku: p.sku,
+                productLineSlug: p.productLineSlug,
+                productLineTitle: p.productLineTitle,
             })),
         });
     };

@@ -32,6 +32,11 @@ type ProductCapabilityCardProps = {
      * `elevated` — white media well on a muted band (`MediaCardFrame` surface).
      */
     surface?: 'default' | 'elevated';
+    /**
+     * When set, the Apply control runs this instead of navigating to `data.href`
+     * (title / media still link to the product). Used by Works with → apply popup.
+     */
+    onApply?: () => void;
 };
 
 /**
@@ -45,6 +50,7 @@ export function ProductCapabilityCard({
     priority = false,
     applyWatermark = false,
     surface = 'default',
+    onApply,
 }: ProductCapabilityCardProps) {
     // Strip ?query so compatibility handoff hrefs don't pollute the slug.
     const pathOnly = data.href.split('?')[0] ?? '';
@@ -93,21 +99,36 @@ export function ProductCapabilityCard({
                     'motion-reduce:opacity-100',
                 )}
             >
-                <Button
-                    asChild
-                    size="sm"
-                    className="pointer-events-auto h-9 px-6 shadow-sm"
-                >
-                    <Link
-                        href={data.href}
-                        prefetch={prefetch}
-                        onPointerEnter={enablePrefetch}
-                        onPointerDown={enablePrefetch}
-                        onFocus={enablePrefetch}
+                {onApply ? (
+                    <Button
+                        type="button"
+                        size="sm"
+                        className="pointer-events-auto h-9 px-6 shadow-sm"
+                        onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onApply();
+                        }}
                     >
                         Apply
-                    </Link>
-                </Button>
+                    </Button>
+                ) : (
+                    <Button
+                        asChild
+                        size="sm"
+                        className="pointer-events-auto h-9 px-6 shadow-sm"
+                    >
+                        <Link
+                            href={data.href}
+                            prefetch={prefetch}
+                            onPointerEnter={enablePrefetch}
+                            onPointerDown={enablePrefetch}
+                            onFocus={enablePrefetch}
+                        >
+                            Apply
+                        </Link>
+                    </Button>
+                )}
             </div>
         </>
     );
