@@ -2,8 +2,9 @@
 
 import type {MouseEvent} from 'react';
 import {usePathname} from 'next/navigation';
-import {Bookmark, Columns2, Download} from 'lucide-react';
+import {ArrowLeftRight, Bookmark, Download} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
 import {CUSTOMIZATION_REFERENCE_WORKS_WITH_ID} from '@/components/customization/customization-reference-works-with';
 import {useOptionalCustomizationDetailHost} from '@/components/customization/customization-detail-host';
@@ -30,8 +31,8 @@ export type CustomizationRailActionsProps = {
 };
 
 /**
- * Apply / Bookmark / spec sheet stack shared by standard and learn-first
- * overview rails (PROD-3127).
+ * Apply + Compare/Bookmark row + spec sheet, shared by standard and
+ * learn-first overview rails (PROD-3127 / PROD-3312 layout).
  */
 export function CustomizationRailActions({
     showCta,
@@ -135,6 +136,11 @@ export function CustomizationRailActions({
         return null;
     }
 
+    const showCompare = Boolean(detail);
+    const showBookmarkButton = Boolean(showBookmark && detail);
+    const secondaryCount =
+        Number(showCompare) + Number(showBookmarkButton);
+
     return (
         <div className="flex flex-col gap-2">
             {showCta ? (
@@ -164,29 +170,42 @@ export function CustomizationRailActions({
                     </Button>
                 )
             ) : null}
-            {showBookmark && detail ? (
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="h-auto w-full px-6 py-3 text-base shadow-none"
-                    onClick={onBookmark}
-                    aria-pressed={bookmarked}
+            {secondaryCount > 0 ? (
+                <div
+                    className={cn(
+                        'grid gap-2',
+                        secondaryCount === 2 ? 'grid-cols-2' : 'grid-cols-1',
+                    )}
                 >
-                    <Icon icon={Bookmark} size="sm" />
-                    {bookmarked ? 'Bookmarked' : 'Bookmark'}
-                </Button>
-            ) : null}
-            {detail ? (
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="group/cmp h-auto w-full px-6 py-3 text-base shadow-none"
-                    onClick={compareToggle.onClick}
-                    aria-pressed={compareToggle.inCompare}
-                >
-                    <Icon icon={Columns2} size="sm" />
-                    <CompareToggleLabel inCompare={compareToggle.inCompare} />
-                </Button>
+                    {showCompare ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="group/cmp h-auto w-full px-4 py-3 text-base shadow-none sm:px-6"
+                            onClick={compareToggle.onClick}
+                            aria-pressed={compareToggle.inCompare}
+                        >
+                            <Icon icon={ArrowLeftRight} size="sm" />
+                            {compareToggle.inCompare ? (
+                                <CompareToggleLabel inCompare />
+                            ) : (
+                                'Compare options'
+                            )}
+                        </Button>
+                    ) : null}
+                    {showBookmarkButton ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-auto w-full px-4 py-3 text-base shadow-none sm:px-6"
+                            onClick={onBookmark}
+                            aria-pressed={bookmarked}
+                        >
+                            <Icon icon={Bookmark} size="sm" />
+                            {bookmarked ? 'Bookmarked' : 'Bookmark'}
+                        </Button>
+                    ) : null}
+                </div>
             ) : null}
             {showSpecSheet ? (
                 <div className="flex justify-end">
