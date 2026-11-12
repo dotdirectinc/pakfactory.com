@@ -13,18 +13,18 @@ import {useRequest} from '@/lib/request/request-provider';
 import {getRequestStateSnapshot} from '@/lib/request/request.storage';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 import {WWW_ROUTES} from '@/lib/www-routes';
-import {markSkipSoftPageEnter} from '@/lib/ui/skip-soft-page-enter';
 import {toolShellReturnHref} from '@/lib/ui/tool-shell-return';
 import {hasHintParams, takeEntryHints} from '@/lib/request-sections/entry';
 import {trackRequestOpen} from '@/lib/request-sections/events';
 import {defaultKind, ensureRequest} from '@/lib/request-sections/start';
-import {KIND_PATH, requestHref, stepFromParam, type RequestKind} from '@/lib/request-sections/url';
+import {KIND_PATH, requestHref, type RequestKind} from '@/lib/request-sections/url';
 
 /**
  * Sectioned `/request/products` and `/request/general`: opens that kind's
  * request (the other kind is kept aside), or starts one, applies the visit's entry hints once, then
- * tidies the address to `?step=…`. `?draft={id}` resumes that request when it's this browser's;
- * otherwise says the link has expired. An items request with no items shows an empty state. PORTABLE.
+ * tidies the address (bare kind path — no `?step=`). `?draft={id}` resumes that request when it's
+ * this browser's; otherwise says the link has expired. An items request with no items shows an empty
+ * state. PORTABLE.
  */
 export function RequestHome({
     kind,
@@ -55,13 +55,15 @@ export function RequestHome({
             return;
         }
         trackRequestOpen(r.flow, r.id, lines.length, r.resumed, hints.from);
-        const rawStep = params.get('step');
-        const step = stepFromParam(rawStep);
-        // Tidy: drop entry hints; bare /request/products → ?step=items (Items always opens on entry).
-        const tidyHints = hasHintParams(new URLSearchParams(params.toString()));
-        const tidyItems = kind === 'product' && rawStep === null;
-        if (tidyHints || tidyItems) {
-            router.replace(requestHref(kind, step ?? (kind === 'product' ? 'products' : undefined)), {scroll: false});
+        const sp = new URLSearchParams(params.toString());
+        const tidyHints = hasHintParams(sp);
+        const bare = requestHref(kind);
+        // Drop door hints via Next (needed so takeEntryHints is not re-read). Strip legacy ?step=
+        // with History API so useSearchParams does not remount this page.
+        if (tidyHints) {
+            router.replace(bare, {scroll: false});
+        } else if (sp.has('step')) {
+            window.history.replaceState(window.history.state, '', bare);
         }
         setState('ready');
         // Once per visit to this kind.
@@ -138,7 +140,6 @@ export function RequestSubmitted({
     const mine = Boolean(draft.submittedAt) && (!reference || draft.ref === reference);
     // After submit, do not history.back() onto the form — push the remembered site page (or home).
     const leaveSubmitted = () => {
-        markSkipSoftPageEnter();
         router.push(toolShellReturnHref() ?? WWW_ROUTES.home);
     };
     return (

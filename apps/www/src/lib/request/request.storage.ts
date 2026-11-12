@@ -122,6 +122,8 @@ export type RequestDraft = {
     packagingContents: string;
     expressQuantities: number[];
     annualSpend: string;
+    /** ISO 4217 for `annualSpend`. Absent on drafts saved before currency existed (treat as USD). */
+    annualSpendCurrency?: 'USD' | 'CAD';
     shippingAddress: ShippingAddress | null;
     companyAddress: ShippingAddress | null;
     contactFirstName: string;
@@ -408,6 +410,9 @@ function parseDraft(value: unknown): RequestDraft {
             (d as {expressQuantity?: unknown}).expressQuantity,
         ),
         annualSpend: asString(d.annualSpend),
+        ...(d.annualSpendCurrency === 'USD' || d.annualSpendCurrency === 'CAD'
+            ? {annualSpendCurrency: d.annualSpendCurrency}
+            : {}),
         shippingAddress: parseShipping(d.shippingAddress),
         companyAddress: parseShipping(d.companyAddress),
         contactFirstName: asString(d.contactFirstName),

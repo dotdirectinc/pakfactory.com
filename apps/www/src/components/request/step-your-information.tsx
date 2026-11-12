@@ -1,7 +1,9 @@
 'use client';
 
 import {useState} from 'react';
+import {zodResolver} from '@hookform/resolvers/zod';
 import {Check, ChevronDownIcon, Pencil} from 'lucide-react';
+import {useForm} from 'react-hook-form';
 import {Button} from '@pakfactory/ui/components/button';
 import {
     DropdownMenu,
@@ -10,14 +12,26 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from '@pakfactory/ui/components/dropdown-menu';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@pakfactory/ui/components/form';
 import {Input} from '@pakfactory/ui/components/input';
-import {Label} from '@pakfactory/ui/components/label';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {AnnualSpendField} from '@/components/request/annual-spend-field';
 import {AddressPickerBlock} from '@/components/request/address-picker-block';
 import {INDUSTRY_OPTIONS, REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
 import type {RequestDraft} from '@/lib/request/request.storage';
+import {
+    contactBriefBuilderFromDraft,
+    contactBriefBuilderSchema,
+    type ContactBriefBuilderValues,
+} from '@/lib/request/schemas/contact';
 import {isContactReady} from '@/lib/request/validation';
 
 const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
@@ -32,33 +46,6 @@ type StepYourInformationProps = {
     sectionRef?: React.Ref<HTMLElement>;
 };
 
-function LabeledInput({
-    label,
-    required,
-    optional,
-    ...props
-}: {
-    label: string;
-    required?: boolean;
-    optional?: boolean;
-} & React.ComponentProps<'input'>) {
-    return (
-        <div>
-            <Label className="mb-1 block text-xs font-medium">
-                {label}
-                {required ? (
-                    <span className="ml-0.5 text-amber-600">*</span>
-                ) : optional ? (
-                    <span className="ml-1 font-normal text-muted-foreground">
-                        {REQUEST_COPY.optional}
-                    </span>
-                ) : null}
-            </Label>
-            <Input className={FIELD_CLASS} {...props} />
-        </div>
-    );
-}
-
 export function StepYourInformation({
     draft,
     onPatch,
@@ -67,13 +54,19 @@ export function StepYourInformation({
     const {viewer} = useRequest();
     const [editing, setEditing] = useState(false);
 
+    const form = useForm<ContactBriefBuilderValues>({
+        resolver: zodResolver(contactBriefBuilderSchema),
+        mode: 'onBlur',
+        reValidateMode: 'onChange',
+        values: contactBriefBuilderFromDraft(draft),
+    });
+
     /**
      * Collapse only when the contact step is fully ready (names, email, and
      * company office). Collapsing earlier hides required company address behind
      * a card that reads as complete.
      */
-    const collapsed =
-        Boolean(viewer) && !editing && isContactReady(draft);
+    const collapsed = Boolean(viewer) && !editing && isContactReady(draft);
 
     const officeLine = [
         draft.companyAddress?.line1,
@@ -126,11 +119,11 @@ export function StepYourInformation({
                             <p className="truncate text-sm font-medium text-foreground">
                                 {fullName}
                             </p>
-                            <p className="truncate text-[13px] text-muted-foreground">
-                                {[draft.contactEmail, draft.contactCompany]
-                                    .filter(Boolean)
-                                    .join(' · ')}
-                            </p>
+                            {draft.contactEmail ? (
+                                <p className="truncate text-[13px] text-muted-foreground">
+                                    {draft.contactEmail}
+                                </p>
+                            ) : null}
                             {officeLine ? (
                                 <p className="truncate text-[13px] text-muted-foreground">
                                     {officeLine}
@@ -153,155 +146,240 @@ export function StepYourInformation({
                     </p>
                 </div>
             ) : (
-            <div className="space-y-3">
-                {viewer ? (
-                    <div className="rounded-md border border-border bg-muted/40 px-4 py-3">
-                        <p className="flex items-center gap-1 text-[13px] font-medium text-foreground">
-                            <Check
-                                className="size-4 text-emerald-600"
-                                aria-hidden
+                <Form {...form}>
+                    <div className="space-y-3">
+                        {viewer ? (
+                            <div className="rounded-md border border-border bg-muted/40 px-4 py-3">
+                                <p className="flex items-center gap-1 text-[13px] font-medium text-foreground">
+                                    <Check
+                                        className="size-4 text-emerald-600"
+                                        aria-hidden
+                                    />
+                                    {REQUEST_COPY.contactSignedInAs} {viewer.email}
+                                </p>
+                                <p className="mt-0.5 pl-[22px] text-[12.5px] text-muted-foreground">
+                                    {REQUEST_COPY.contactPrefilledNote}
+                                </p>
+                            </div>
+                        ) : null}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField
+                                control={form.control}
+                                name="contactFirstName"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-medium">
+                                            {REQUEST_COPY.firstName}
+                                            <span className="ml-0.5 text-amber-600">*</span>
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className={FIELD_CLASS}
+                                                placeholder={REQUEST_COPY.firstNamePlaceholder}
+                                                {...field}
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    onPatch({contactFirstName: e.target.value});
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                            {REQUEST_COPY.contactSignedInAs} {viewer.email}
-                        </p>
-                        <p className="mt-0.5 pl-[22px] text-[12.5px] text-muted-foreground">
-                            {REQUEST_COPY.contactPrefilledNote}
-                        </p>
-                    </div>
-                ) : null}
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <LabeledInput
-                        label={REQUEST_COPY.firstName}
-                        required
-                        value={draft.contactFirstName}
-                        onChange={(e) =>
-                            onPatch({contactFirstName: e.target.value})
-                        }
-                    />
-                    <LabeledInput
-                        label={REQUEST_COPY.lastName}
-                        required
-                        value={draft.contactLastName}
-                        onChange={(e) =>
-                            onPatch({contactLastName: e.target.value})
-                        }
-                    />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <LabeledInput
-                        label={REQUEST_COPY.workEmail}
-                        required
-                        type="email"
-                        value={draft.contactEmail}
-                        onChange={(e) =>
-                            onPatch({contactEmail: e.target.value})
-                        }
-                        /*
-                         * Locked to the account address for a signed-in buyer.
-                         * `readOnly`, NOT `disabled`: a disabled input is skipped
-                         * by form serialisation and is not reachable by keyboard
-                         * or announced by a screen reader, so the one field the
-                         * quote is sent to would become invisible to anyone not
-                         * using a mouse. readOnly keeps it focusable, copyable
-                         * and announced, and still refuses edits.
-                         */
-                        readOnly={Boolean(viewer)}
-                        aria-readonly={Boolean(viewer) || undefined}
-                        title={
-                            viewer ? REQUEST_COPY.contactEmailLocked : undefined
-                        }
-                        className={
-                            viewer
-                                ? `${FIELD_CLASS} cursor-not-allowed bg-muted/60 text-muted-foreground`
-                                : FIELD_CLASS
-                        }
-                    />
-                    <LabeledInput
-                        label={REQUEST_COPY.phone}
-                        optional
-                        value={draft.contactPhone}
-                        onChange={(e) =>
-                            onPatch({contactPhone: e.target.value})
-                        }
-                    />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <LabeledInput
-                        label={REQUEST_COPY.company}
-                        optional
-                        value={draft.contactCompany}
-                        onChange={(e) =>
-                            onPatch({contactCompany: e.target.value})
-                        }
-                    />
-                    <div>
-                        <Label className="mb-1 block text-xs font-medium">
-                            {REQUEST_COPY.industry}
-                            <span className="ml-1 font-normal text-muted-foreground">
-                                {REQUEST_COPY.optional}
-                            </span>
-                        </Label>
-                        {/*
-                         * Non-modal DropdownMenu — Radix Select RemoveScroll
-                         * breaks the Brief Builder sticky shell (same fix as
-                         * country/region pickers).
-                         */}
-                        <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger asChild>
-                                <button
-                                    type="button"
-                                    className={cn(
-                                        INDUSTRY_TRIGGER_CLASS,
-                                        !draft.contactIndustry &&
-                                            'text-muted-foreground',
-                                    )}
-                                >
-                                    <span className="truncate">
-                                        {draft.contactIndustry ||
-                                            'Select an industry'}
-                                    </span>
-                                    <ChevronDownIcon className="size-4 shrink-0 opacity-50" />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                align="start"
-                                className={INDUSTRY_MENU_CLASS}
-                            >
-                                <DropdownMenuRadioGroup
-                                    value={draft.contactIndustry || undefined}
-                                    onValueChange={(v) =>
-                                        onPatch({contactIndustry: v})
-                                    }
-                                >
-                                    {INDUSTRY_OPTIONS.map((opt) => (
-                                        <DropdownMenuRadioItem
-                                            key={opt}
-                                            value={opt}
-                                        >
-                                            {opt}
-                                        </DropdownMenuRadioItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
+                            <FormField
+                                control={form.control}
+                                name="contactLastName"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-medium">
+                                            {REQUEST_COPY.lastName}
+                                            <span className="ml-0.5 text-amber-600">*</span>
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className={FIELD_CLASS}
+                                                placeholder={REQUEST_COPY.lastNamePlaceholder}
+                                                {...field}
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    onPatch({contactLastName: e.target.value});
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField
+                                control={form.control}
+                                name="contactEmail"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-medium">
+                                            {REQUEST_COPY.workEmail}
+                                            <span className="ml-0.5 text-amber-600">*</span>
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="email"
+                                                className={
+                                                    viewer
+                                                        ? `${FIELD_CLASS} cursor-not-allowed bg-muted/60 text-muted-foreground`
+                                                        : FIELD_CLASS
+                                                }
+                                                placeholder={REQUEST_COPY.workEmailPlaceholder}
+                                                readOnly={Boolean(viewer)}
+                                                aria-readonly={Boolean(viewer) || undefined}
+                                                title={
+                                                    viewer
+                                                        ? REQUEST_COPY.contactEmailLocked
+                                                        : undefined
+                                                }
+                                                {...field}
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    onPatch({contactEmail: e.target.value});
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contactPhone"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-medium">
+                                            {REQUEST_COPY.phone}
+                                            <span className="ml-1 font-normal text-muted-foreground">
+                                                {REQUEST_COPY.optional}
+                                            </span>
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className={FIELD_CLASS}
+                                                placeholder={REQUEST_COPY.phonePlaceholder}
+                                                {...field}
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    onPatch({contactPhone: e.target.value});
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField
+                                control={form.control}
+                                name="contactCompany"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-medium">
+                                            {REQUEST_COPY.company}
+                                            <span className="ml-1 font-normal text-muted-foreground">
+                                                {REQUEST_COPY.optional}
+                                            </span>
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                className={FIELD_CLASS}
+                                                {...field}
+                                                value={field.value ?? ''}
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    onPatch({contactCompany: e.target.value});
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contactIndustry"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-medium">
+                                            {REQUEST_COPY.industry}
+                                            <span className="ml-1 font-normal text-muted-foreground">
+                                                {REQUEST_COPY.optional}
+                                            </span>
+                                        </FormLabel>
+                                        <DropdownMenu modal={false}>
+                                            <DropdownMenuTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    className={cn(
+                                                        INDUSTRY_TRIGGER_CLASS,
+                                                        !field.value && 'text-muted-foreground',
+                                                    )}
+                                                >
+                                                    <span className="truncate">
+                                                        {field.value || 'Select an industry'}
+                                                    </span>
+                                                    <ChevronDownIcon className="size-4 shrink-0 opacity-50" />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent
+                                                align="start"
+                                                className={INDUSTRY_MENU_CLASS}
+                                            >
+                                                <DropdownMenuRadioGroup
+                                                    value={field.value || undefined}
+                                                    onValueChange={(v) => {
+                                                        field.onChange(v);
+                                                        onPatch({contactIndustry: v});
+                                                    }}
+                                                >
+                                                    {INDUSTRY_OPTIONS.map((opt) => (
+                                                        <DropdownMenuRadioItem
+                                                            key={opt}
+                                                            value={opt}
+                                                        >
+                                                            {opt}
+                                                        </DropdownMenuRadioItem>
+                                                    ))}
+                                                </DropdownMenuRadioGroup>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
-                <AddressPickerBlock
-                    className="pt-4"
-                    value={draft.companyAddress}
-                    onChange={(companyAddress) => onPatch({companyAddress})}
-                    title={REQUEST_COPY.companyOffice}
-                    required
-                    dialogTitle={REQUEST_COPY.companyOffice}
-                    fallbackLabel={REQUEST_COPY.companyOffice}
-                />
+                        <AddressPickerBlock
+                            className="pt-4"
+                            value={draft.companyAddress}
+                            onChange={(companyAddress) => onPatch({companyAddress})}
+                            title={REQUEST_COPY.companyOffice}
+                            required
+                            dialogTitle={REQUEST_COPY.companyOffice}
+                            fallbackLabel={REQUEST_COPY.companyOffice}
+                        />
 
-                <AnnualSpendField
-                    className="pt-4"
-                    value={draft.annualSpend}
-                    onChange={(annualSpend) => onPatch({annualSpend})}
-                />
-            </div>
+                        <AnnualSpendField
+                            className="pt-4"
+                            value={draft.annualSpend}
+                            currency={
+                                draft.annualSpendCurrency === 'CAD' ? 'CAD' : 'USD'
+                            }
+                            onChange={(annualSpend) => onPatch({annualSpend})}
+                            onCurrencyChange={(annualSpendCurrency) =>
+                                onPatch({annualSpendCurrency})
+                            }
+                        />
+                    </div>
+                </Form>
             )}
         </section>
     );

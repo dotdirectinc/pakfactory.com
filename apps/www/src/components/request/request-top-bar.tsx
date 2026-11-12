@@ -30,7 +30,7 @@ export function RequestTopBar({
         <header
             className={cn(
                 'sticky top-0 z-20 flex h-[68px] items-center gap-4 border-b border-border bg-background px-4 sm:px-6 lg:px-8',
-                // Close matches chat FAB (size-12 / 48px); pr-5 = right-5 so it lines up with the FAB.
+                // pr-5 = right-5 so the close control lines up with the chat FAB edge.
                 'pr-5 sm:pr-5 lg:pr-5',
             )}
         >

@@ -1,13 +1,32 @@
 'use client';
 
-import {useState, type FormEvent} from 'react';
+import {zodResolver} from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import {useState} from 'react';
+import {useForm} from 'react-hook-form';
+import {z} from 'zod';
 import {Button} from '@pakfactory/ui/components/button';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@pakfactory/ui/components/form';
 import {Input} from '@pakfactory/ui/components/input';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {showToastCard} from '@/components/ui/toast-card';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const notifyMeSchema = z.object({
+    email: z
+        .string()
+        .trim()
+        .min(1, 'Enter a valid email address.')
+        .email('Enter a valid email address.'),
+});
+
+type NotifyMeValues = z.infer<typeof notifyMeSchema>;
 
 export type NotifyMeCaptureProps = {
     title: string;
@@ -47,18 +66,16 @@ export function NotifyMeCapture({
     onSubmit,
     className,
 }: NotifyMeCaptureProps) {
-    const [email, setEmail] = useState('');
-    const [error, setError] = useState<string | null>(null);
     const [pending, setPending] = useState(false);
+    const form = useForm<NotifyMeValues>({
+        resolver: zodResolver(notifyMeSchema),
+        mode: 'onBlur',
+        reValidateMode: 'onChange',
+        defaultValues: {email: ''},
+    });
 
-    async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        const trimmed = email.trim().toLowerCase();
-        if (!EMAIL_PATTERN.test(trimmed)) {
-            setError('Enter a valid email address.');
-            return;
-        }
-        setError(null);
+    async function handleSubmit(data: NotifyMeValues) {
+        const trimmed = data.email.trim().toLowerCase();
         setPending(true);
         try {
             if (onSubmit) {
@@ -69,7 +86,7 @@ export function NotifyMeCapture({
                 description: successDescription,
                 dismissLabel: 'Dismiss',
             });
-            setEmail('');
+            form.reset({email: ''});
         } catch {
             showToastCard({
                 title: "Couldn't subscribe",
@@ -90,48 +107,37 @@ export function NotifyMeCapture({
         >
             <p className="text-sm font-semibold text-foreground">{title}</p>
             <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-            <form
-                className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-start"
-                onSubmit={handleSubmit}
-                noValidate
-            >
-                <div className="min-w-0 flex-1">
-                    <label className="sr-only" htmlFor="notify-me-email">
-                        {emailLabel}
-                    </label>
-                    <Input
-                        id="notify-me-email"
-                        type="email"
-                        name="email"
-                        autoComplete="email"
-                        value={email}
-                        onChange={(event) => {
-                            setEmail(event.target.value);
-                            if (error) setError(null);
-                        }}
-                        placeholder={emailPlaceholder}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={error ? 'notify-me-email-error' : undefined}
-                        className="bg-background"
-                        disabled={pending}
-                    />
-                    {error ? (
-                        <p
-                            id="notify-me-email-error"
-                            className="mt-1 text-xs text-destructive"
-                        >
-                            {error}
-                        </p>
-                    ) : null}
-                </div>
-                <Button
-                    type="submit"
-                    className="shrink-0"
-                    disabled={pending}
+            <Form {...form}>
+                <form
+                    className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-start"
+                    onSubmit={form.handleSubmit(handleSubmit)}
+                    noValidate
                 >
-                    {submitLabel}
-                </Button>
-            </form>
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({field}) => (
+                            <FormItem className="min-w-0 flex-1 gap-1">
+                                <FormLabel className="sr-only">{emailLabel}</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="email"
+                                        autoComplete="email"
+                                        placeholder={emailPlaceholder}
+                                        className="bg-background"
+                                        disabled={pending}
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <Button type="submit" className="shrink-0" disabled={pending}>
+                        {submitLabel}
+                    </Button>
+                </form>
+            </Form>
             {specialistHref ? (
                 <Link
                     href={specialistHref}

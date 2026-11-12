@@ -1,12 +1,11 @@
 import type {Metadata} from 'next';
+import Link from 'next/link';
+import {AuthCard} from '@/components/auth/auth-card';
+import {ResendCodeForm} from '@/components/auth/resend-code-form';
+import {VerifyEmailForm} from '@/components/auth/verify-email-form';
+import {VERIFY_COPY} from '@/lib/copy/verify';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
 import {WWW_ROUTES} from '@/lib/www-routes';
-import {AuthCard} from '@/components/auth/auth-card';
-import {AuthField} from '@/components/auth/auth-field';
-import {AuthForm} from '@/components/auth/auth-form';
-import Link from 'next/link';
-import {resendCode, verifyEmail} from '@/lib/auth/actions';
-import {VERIFY_COPY} from '@/lib/copy/verify';
 
 export const metadata: Metadata = {
     title: VERIFY_COPY.title,
@@ -37,9 +36,7 @@ export default async function VerifyPage({
     return (
         <AuthCard
             title={VERIFY_COPY.title}
-            description={
-                email ? VERIFY_COPY.sentTo(email) : VERIFY_COPY.sent
-            }
+            description={email ? VERIFY_COPY.sentTo(email) : VERIFY_COPY.sent}
             footer={
                 <>
                     {VERIFY_COPY.haveAccount}{' '}
@@ -47,61 +44,14 @@ export default async function VerifyPage({
                         {VERIFY_COPY.signIn}
                     </Link>
                     {VERIFY_COPY.separator}
-                    <Link
-                        href={WWW_ROUTES.forgotPassword}
-                        className="underline"
-                    >
+                    <Link href={WWW_ROUTES.forgotPassword} className="underline">
                         {VERIFY_COPY.forgotPassword}
                     </Link>
                 </>
             }
         >
-            <AuthForm action={verifyEmail} submitLabel={VERIFY_COPY.confirm}>
-                {/*
-                  Without ?email= this page used to be a dead end: the hidden field
-                  was empty, so both buttons failed with "Enter your email first"
-                  and there was nothing to type into. Landing here directly is not
-                  exotic — it happens on a bookmark, a reload after the query is
-                  stripped, or a link shared between devices.
-                */}
-                {email ? (
-                    <input type="hidden" name="email" value={email} />
-                ) : (
-                    <AuthField
-                        name="email"
-                        label={VERIFY_COPY.emailLabel}
-                        type="email"
-                        autoComplete="username"
-                    />
-                )}
-                <AuthField
-                    name="token"
-                    label={VERIFY_COPY.codeLabel}
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    // Deliberately NOT capped at 6. Supabase's OTP length is a
-                    // dashboard setting — this project issues EIGHT digits — and a
-                    // maxLength of 6 silently truncated the pasted code, which
-                    // Supabase then rejected as "expired". The input must not
-                    // encode an assumption the dashboard owns.
-                    hint={VERIFY_COPY.codeHint}
-                />
-            </AuthForm>
-
-            {/* Separate form: resending must not submit the code field, and a
-                nested form is invalid HTML. */}
-            <AuthForm action={resendCode} submitLabel={VERIFY_COPY.resend}>
-                {email ? (
-                    <input type="hidden" name="email" value={email} />
-                ) : (
-                    <AuthField
-                        name="email"
-                        label={VERIFY_COPY.emailLabel}
-                        type="email"
-                        autoComplete="username"
-                    />
-                )}
-            </AuthForm>
+            <VerifyEmailForm email={email} />
+            <ResendCodeForm email={email} />
         </AuthCard>
     );
 }

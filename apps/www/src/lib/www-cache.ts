@@ -21,6 +21,10 @@ export const WWW_SOLUTIONS_CACHE_TAG = 'www-solutions';
 export const WWW_EXPERTISE_CACHE_TAG = 'www-expertise';
 /** `homePage` singleton plus everything its heroes and sections dereference. */
 export const WWW_HOME_PAGE_CACHE_TAG = 'www-home-page';
+/** Content Pages — About, Contact, and slugged company pages. */
+export const WWW_CONTENT_PAGES_CACHE_TAG = 'www-content-pages';
+/** Legal Pages — Privacy Policy and Terms of Service. */
+export const WWW_LEGAL_PAGES_CACHE_TAG = 'www-legal-pages';
 /** Case-study listing, listing page doc and every detail (related studies cross-reference). */
 export const WWW_CASE_STUDIES_CACHE_TAG = 'www-case-studies';
 /**

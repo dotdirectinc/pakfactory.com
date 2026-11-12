@@ -1,7 +1,13 @@
 import type {IntakeFlowDef} from '@/lib/intake/types';
 import {draftNeeds} from '@/lib/intake/needs';
 import type {IntakeScreenKey} from '@/lib/intake/routes';
-import {isIntakeContactReady, isNotesReady, isServicesReady, needsPackaging} from '@/lib/request/validation';
+import {
+    isIntakeContactReady,
+    isNotesReady,
+    isServicesReady,
+    isShippingReady,
+    needsPackaging,
+} from '@/lib/request/validation';
 
 /**
  * General request screens, shared by every shell.
@@ -22,7 +28,8 @@ export const GENERAL_REQUEST_FLOW: IntakeFlowDef<IntakeScreenKey> = {
                 (!needsPackaging(draft) ||
                     (draft.expressQuantities.length > 0 && draft.expressQuantities.every((n) => n > 0 && n % 100 === 0))) &&
                 isServicesReady(draft) &&
-                isNotesReady(draft, [], rules),
+                isNotesReady(draft, [], rules) &&
+                isShippingReady(draft),
         },
         {
             key: 'contact',

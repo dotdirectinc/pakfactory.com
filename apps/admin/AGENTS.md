@@ -18,6 +18,8 @@ Operational surface for www request data and internal staff login. Part of epic 
 
 Next.js 16, React 19, Tailwind 4, port **4000**. PR base: `www-new-release`.
 
+**Forms:** same house standard as www — `react-hook-form` + `zod` + `@pakfactory/ui` Form kit ([`ENGINEERING.md`](../../ENGINEERING.md) § Forms & validation). Login already uses `@pakfactory/auth-ui`; any new admin form follows that stack (no hand-rolled silent gates).
+
 ## Packages
 
 | Package | Role |

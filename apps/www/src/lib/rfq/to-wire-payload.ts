@@ -21,6 +21,7 @@ import {
     visiblePropertySummaries,
     type FaceMeasurements,
 } from '@/lib/customization-builder';
+import {digitsOnlySpend} from '@/lib/request/annual-spend';
 import {
     defaultDraftTitle,
     type RequestCustomization,
@@ -62,6 +63,10 @@ export type WireSubmission = {
         packagingContents?: string;
         expressQuantities?: number[];
         annualSpendBand?: string;
+        /** Integer dollars when the buyer entered a yearly budget. */
+        annualSpendAmount?: number;
+        /** ISO 4217 for `annualSpendAmount`. Sent with the amount only. */
+        annualSpendCurrency?: 'USD' | 'CAD';
     };
     shipTo: WireAddress | null;
     companyOffice: WireAddress | null;
@@ -95,6 +100,24 @@ export type WireSubmission = {
 function trimmed(value: string | undefined | null): string | undefined {
     const next = (value ?? '').trim();
     return next || undefined;
+}
+
+/** Amount + currency when the buyer typed digits; keep the legacy band string for the current API. */
+function annualSpendRequirements(draft: RequestDraft): {
+    annualSpendBand?: string;
+    annualSpendAmount?: number;
+    annualSpendCurrency?: 'USD' | 'CAD';
+} {
+    const band = trimmed(draft.annualSpend);
+    const digits = digitsOnlySpend(draft.annualSpend);
+    if (!digits) return {};
+    const amount = Number(digits);
+    if (!Number.isFinite(amount) || amount <= 0) return {};
+    return {
+        ...(band ? {annualSpendBand: band} : {}),
+        annualSpendAmount: amount,
+        annualSpendCurrency: draft.annualSpendCurrency === 'CAD' ? 'CAD' : 'USD',
+    };
 }
 
 /** The builder's address and the contract's differ only in optionality, so this
@@ -275,7 +298,7 @@ export function toWireSubmission(
             ...(draft.expressQuantities.length
                 ? {expressQuantities: [...draft.expressQuantities]}
                 : {}),
-            ...(trimmed(draft.annualSpend) ? {annualSpendBand: draft.annualSpend.trim()} : {}),
+            ...annualSpendRequirements(draft),
         },
         shipTo: toWireAddress(draft.shippingAddress),
         companyOffice: toWireAddress(draft.companyAddress),

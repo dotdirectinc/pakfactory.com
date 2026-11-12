@@ -1,7 +1,10 @@
 "use client";
 
 import type { CSSProperties, ReactNode, Ref } from "react";
-import { formatAnnualSpendDisplay } from "@pakfactory/request/annual-spend";
+import {
+  formatAnnualSpendDisplay,
+  resolveAnnualSpendCurrency,
+} from "@pakfactory/request/annual-spend";
 import type { RequestDraft, RequestLine } from "@pakfactory/request/request";
 import { formatAddressLines } from "@pakfactory/request/shipping-address";
 import { Button } from "@pakfactory/ui/components/button";
@@ -611,7 +614,10 @@ export function RequestReviewPaper({
     `${draft.contactFirstName} ${draft.contactLastName}`.trim() || "—";
   const shippingLines = formatAddressLines(draft.shippingAddress);
   const officeLines = formatAddressLines(draft.companyAddress);
-  const spendDisplay = formatAnnualSpendDisplay(draft.annualSpend);
+  const spendDisplay = formatAnnualSpendDisplay(
+    draft.annualSpend,
+    resolveAnnualSpendCurrency(draft.annualSpend, draft.annualSpendCurrency),
+  );
   const briefText = draft.notes.trim();
 
   const displayLines = pageSlice?.lines ?? lines;

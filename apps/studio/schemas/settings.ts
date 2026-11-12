@@ -206,7 +206,15 @@ export const settings = defineType({
               type: 'string',
               description:
                 'The main phone number, in international format (+1 …). Sent to Google ' +
-                'as part of the company record — it does not appear anywhere on the site.',
+                'as part of the company record and shown on the Contact page.',
+            }),
+            defineField({
+              name: 'hours',
+              title: 'Hours',
+              type: 'string',
+              description:
+                'Business hours shown on the Contact page, e.g. "Mon–Fri 9am–5pm ET". ' +
+                'Leave blank to hide hours on the site.',
             }),
             // 🔴 Retired in favour of `postalAddress` (PROD-3231). A single string
             // cannot be split reliably into the parts a footer, a contact page and
@@ -230,8 +238,7 @@ export const settings = defineType({
               type: 'object',
               description:
                 'The company address, split into parts so a footer, a contact page and ' +
-                'Google can each use the pieces they need. Nothing on the site renders ' +
-                'it yet — it is held here ready for when one does.',
+                'Google can each use the pieces they need. Rendered on the Contact page.',
               options: { collapsible: true, collapsed: false },
               fields: [
                 defineField({

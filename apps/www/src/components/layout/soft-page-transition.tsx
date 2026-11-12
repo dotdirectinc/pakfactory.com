@@ -10,8 +10,8 @@ import {consumeSkipSoftPageEnter} from '@/lib/ui/skip-soft-page-enter';
  * On pathname change: scroll to top, then play page-enter
  * (`animate-page-enter` / `--motion-slow`). See DESIGN.md § Motion.
  *
- * After leaving a chrome-less tool shell, enter is skipped once so content
- * does not rise under the sticky site nav.
+ * One-shot skip via `consumeSkipSoftPageEnter` is opt-in for rare cases;
+ * tool-shell Close does not set it by default.
  */
 export function SoftPageTransition({children}: {children: ReactNode}) {
     const pathname = usePathname();

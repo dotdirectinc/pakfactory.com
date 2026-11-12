@@ -6,7 +6,7 @@ import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {HoneypotField, MarketingOptIn, PrivacyLine} from '@/components/request/review-consent';
 import {REQUEST_COPY} from '@/lib/copy/request';
-import {formatAnnualSpendDisplay} from '@/lib/request/annual-spend';
+import {formatAnnualSpendDisplay, resolveAnnualSpendCurrency} from '@/lib/request/annual-spend';
 import {trackFunnel} from '@/lib/request/funnel';
 import type {RequestFlow} from '@/lib/intake/routes';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
@@ -31,7 +31,7 @@ type IntakeReviewProps = {
     sections: {key: SectionKey; title: string}[];
     onSubmitted: (ref: string) => void;
     shell: string | null;
-    /** Sticky quick-submit when the in-page CTA is off-screen (default on). sectioned request keeps this on. */
+    /** Sticky quick-submit when the in-page CTA is off-screen (default on). */
     stickyBar?: boolean;
 };
 
@@ -40,8 +40,20 @@ type IntakeReviewProps = {
  * question with the buyer's answer (no Change links). No paper here (the paper
  * is on the thank-you page, with the real reference) and no Back button. A sticky submit bar
  * shows until the bottom CTA is on screen.
+ *
+ * Sectioned request Submit lives in `RequestSectionsSubmit` under open Contact.
  */
-export function IntakeReview({flow, lines, draft, onPatch, serviceOptions, sections, onSubmitted, shell, stickyBar = true}: IntakeReviewProps) {
+export function IntakeReview({
+    flow,
+    lines,
+    draft,
+    onPatch,
+    serviceOptions,
+    sections,
+    onSubmitted,
+    shell,
+    stickyBar = true,
+}: IntakeReviewProps) {
     const [error, setError] = useState('');
     const [pending, startTransition] = useTransition();
     const [honeypot, setHoneypot] = useState('');
@@ -51,24 +63,19 @@ export function IntakeReview({flow, lines, draft, onPatch, serviceOptions, secti
     const rules = REQUEST_FORM_RULES;
 
     // Sticky submit bar (owner Nov 2, R35): lets a buyer submit without scrolling the whole
-    // review; it steps aside once the bottom CTA is on screen. Sections: max-w-5xl column.
-    // Step intake: spans the whole right panel (<main>).
+    // review; it steps aside once the bottom CTA is on screen. Spans the right panel (<main>).
     const rootRef = useRef<HTMLDivElement>(null);
     const ctaRef = useRef<HTMLDivElement>(null);
     // Assume the in-page CTA is on screen until measured — otherwise the sticky flashes as soon as
     // the request becomes complete (ctaInView started false).
     const [ctaInView, setCtaInView] = useState(true);
     const [box, setBox] = useState<{left: number; width: number} | null>(null);
-    const sectionsShell = shell === 'sections';
     useEffect(() => {
         const cta = ctaRef.current;
         const root = rootRef.current;
         if (!cta || !root) return;
         const io = new IntersectionObserver(([e]) => setCtaInView(Boolean(e?.isIntersecting)), {threshold: 0.25});
         io.observe(cta);
-        if (sectionsShell) {
-            return () => io.disconnect();
-        }
         const panel = root.closest('main') ?? root;
         const measure = () => {
             const p = panel.getBoundingClientRect();
@@ -84,24 +91,24 @@ export function IntakeReview({flow, lines, draft, onPatch, serviceOptions, secti
             ro.disconnect();
             window.removeEventListener('resize', measure);
         };
-    }, [sectionsShell]);
-    // Sections: IntakeReview only mounts when the request is complete (request-page showSubmit).
-    // Sticky then only after the in-page Submit scrolls out of view.
-    const barShown = stickyBar && !ctaInView && (sectionsShell || box !== null);
+    }, []);
+    const barShown = stickyBar && !ctaInView && box !== null;
     useEffect(() => {
         const rootEl = document.documentElement;
-        // Sections bar is taller (~closed section band); step intake stays ~104px.
-        if (barShown) rootEl.style.setProperty('--chat-fab-offset', sectionsShell ? '120px' : '104px');
+        if (barShown) rootEl.style.setProperty('--chat-fab-offset', '104px');
         else rootEl.style.removeProperty('--chat-fab-offset');
         return () => {
             rootEl.style.removeProperty('--chat-fab-offset');
         };
-    }, [barShown, sectionsShell]);
+    }, [barShown]);
 
     // R36 list (owner Nov 3): each ticked option's label, in the order shown on the screen.
     const typeLabel = REQUEST_COPY.intakeNeedChoices.filter((o) => draftNeeds(draft).includes(o.value)).map((o) => o.label).join(' · ') || '—';
     const files = (draft.referenceImages ?? []).filter((f) => f.key || f.status === 'uploaded').map((f) => f.name);
-    const spend = formatAnnualSpendDisplay(draft.annualSpend);
+    const spend = formatAnnualSpendDisplay(
+        draft.annualSpend,
+        resolveAnnualSpendCurrency(draft.annualSpend, draft.annualSpendCurrency),
+    );
 
     const serviceAnswer = draft.services.map((id) => resolveServiceLabel(id, serviceOptions, draft.serviceOther)).join(' · ');
     const rows: Record<SectionKey, Row[]> = {
@@ -200,117 +207,50 @@ export function IntakeReview({flow, lines, draft, onPatch, serviceOptions, secti
                 </section>
             ))}
 
-            {/* Bottom CTA. Sections shell: consent left + Submit right. Step intake: stacked. */}
-            {shell === 'sections' ? (
-                <div
-                    ref={ctaRef}
-                    id="section-submit"
-                    className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between sm:gap-8"
-                >
-                    <div className="flex min-w-0 flex-1 flex-col gap-2">
-                        <MarketingOptIn compact optIn={Boolean(draft.marketingOptIn)} onOptInChange={(v) => onPatch({marketingOptIn: v})} />
-                        {/* pl-6 = checkbox (size-4) + gap-2 — aligns with “Email me…” */}
-                        <PrivacyLine className="pl-6" />
-                        {error ? (
-                            <p role="alert" className="text-sm text-destructive">
-                                {error}
-                            </p>
-                        ) : null}
-                    </div>
-                    <Button
-                        type="button"
-                        size="xl"
-                        className="h-14 w-full shrink-0 px-10 text-lg sm:w-auto"
-                        disabled={pending}
-                        onClick={submit}
-                    >
-                        {pending ? REQUEST_COPY.submitting : REQUEST_COPY.requestAQuote}
-                    </Button>
-                </div>
-            ) : (
-                <div ref={ctaRef} className="flex flex-col gap-3">
-                    <MarketingOptIn compact optIn={Boolean(draft.marketingOptIn)} onOptInChange={(v) => onPatch({marketingOptIn: v})} />
-                    {error ? (
-                        <p role="alert" className="text-sm text-destructive">
-                            {error}
-                        </p>
-                    ) : null}
-                    <Button
-                        type="button"
-                        size="xl"
-                        className="w-full"
-                        disabled={pending}
-                        onClick={submit}
-                    >
-                        {pending ? REQUEST_COPY.submitting : REQUEST_COPY.requestAQuote}
-                    </Button>
-                    <PrivacyLine className="pl-6" />
-                </div>
-            )}
+            <div ref={ctaRef} className="flex flex-col gap-3">
+                <MarketingOptIn compact optIn={Boolean(draft.marketingOptIn)} onOptInChange={(v) => onPatch({marketingOptIn: v})} />
+                {error ? (
+                    <p role="alert" className="text-sm text-destructive">
+                        {error}
+                    </p>
+                ) : null}
+                <Button type="button" size="xl" className="w-full" disabled={pending} onClick={submit}>
+                    {pending ? REQUEST_COPY.submitting : REQUEST_COPY.requestAQuote}
+                </Button>
+                <PrivacyLine className="pl-6" />
+            </div>
 
             {stickyBar ? (
-                sectionsShell ? (
-                    <div
-                        aria-hidden={!barShown}
-                        className={cn(
-                            'fixed bottom-0 left-1/2 z-40 flex min-h-28 w-full max-w-5xl -translate-x-1/2 items-center border border-border bg-background/95 px-layout-gutter-inner pt-8 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur transition-[transform,opacity] duration-300 supports-[backdrop-filter]:bg-background/85 pb-[max(2rem,env(safe-area-inset-bottom))] sm:rounded-t-lg',
-                            barShown ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-full opacity-0',
-                        )}
-                    >
-                        <div className="flex w-full items-center justify-between gap-8">
-                            <div className="hidden min-w-0 flex-1 flex-col gap-2 sm:flex">
-                                <MarketingOptIn
-                                    compact
-                                    idSuffix="-bar"
-                                    optIn={Boolean(draft.marketingOptIn)}
-                                    onOptInChange={(v) => onPatch({marketingOptIn: v})}
-                                />
-                                <PrivacyLine className="pl-6" />
-                            </div>
-                            <Button
-                                type="button"
-                                size="xl"
-                                className="h-14 w-full shrink-0 px-10 text-lg sm:w-auto"
-                                disabled={pending}
-                                tabIndex={barShown ? 0 : -1}
-                                onClick={submit}
-                            >
-                                {pending ? REQUEST_COPY.submitting : REQUEST_COPY.requestAQuote}
-                            </Button>
+                <div
+                    aria-hidden={!barShown}
+                    style={box ? {left: box.left, width: box.width} : undefined}
+                    className={cn(
+                        'fixed bottom-0 z-40 border-t border-border bg-background/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur transition-[transform,opacity] duration-300 supports-[backdrop-filter]:bg-background/85',
+                        barShown ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-full opacity-0',
+                    )}
+                >
+                    <div className="flex items-center gap-6 px-6 pt-3 sm:px-10">
+                        <div className="hidden min-w-0 flex-1 flex-col gap-1.5 sm:flex">
+                            <MarketingOptIn
+                                compact
+                                idSuffix="-bar"
+                                optIn={Boolean(draft.marketingOptIn)}
+                                onOptInChange={(v) => onPatch({marketingOptIn: v})}
+                            />
+                            <PrivacyLine className="pl-6" />
                         </div>
+                        <Button
+                            type="button"
+                            size="xl"
+                            className="w-full sm:w-auto sm:min-w-[280px]"
+                            disabled={pending}
+                            tabIndex={barShown ? 0 : -1}
+                            onClick={submit}
+                        >
+                            {pending ? REQUEST_COPY.submitting : REQUEST_COPY.requestAQuote}
+                        </Button>
                     </div>
-                ) : (
-                    <div
-                        aria-hidden={!barShown}
-                        style={box ? {left: box.left, width: box.width} : undefined}
-                        className={cn(
-                            'fixed bottom-0 z-40 border-t border-border bg-background/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur transition-[transform,opacity] duration-300 supports-[backdrop-filter]:bg-background/85',
-                            barShown ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-full opacity-0',
-                        )}
-                    >
-                        <div className="flex items-center gap-6 px-6 pt-3 sm:px-10">
-                            <div className="hidden min-w-0 flex-1 flex-col gap-1.5 sm:flex">
-                                <MarketingOptIn
-                                    compact
-                                    idSuffix="-bar"
-                                    optIn={Boolean(draft.marketingOptIn)}
-                                    onOptInChange={(v) => onPatch({marketingOptIn: v})}
-                                />
-                                <PrivacyLine className="pl-6" />
-                            </div>
-                            <Button
-                                type="button"
-                                size="xl"
-                                className="w-full sm:w-auto sm:min-w-[280px]"
-                                disabled={pending}
-                                tabIndex={barShown ? 0 : -1}
-                                onClick={submit}
-                            >
-                                {pending ? REQUEST_COPY.submitting : REQUEST_COPY.requestAQuote}
-                            </Button>
-                        </div>
-                    </div>
-                )
+                </div>
             ) : null}
         </div>
     );

@@ -382,18 +382,11 @@ export const siteLocations: DocumentLocationResolvers = {
   }),
 
   customizationCategory: defineLocations({
-    select: { title: 'title', slug: 'slug.current' },
-    resolve: (doc) =>
-      doc?.slug
-        ? {
-            locations: [
-              {
-                title: doc.title || 'Customization category',
-                href: `/customizations/${doc.slug}`,
-              },
-            ],
-          }
-        : notOnSite('Add a slug to give this category a URL.'),
+    select: { title: 'title' },
+    resolve: () =>
+      notOnSite(
+        'Categories have no page — they filter /customizations. Option URLs keep the category slug segment (PROD-2848).',
+      ),
   }),
   // The site query is gated, not just slugged:
   //   _type == "customizationOption" && HAS_DETAIL_PAGE && status == "active"
@@ -558,8 +551,33 @@ export const siteLocations: DocumentLocationResolvers = {
     resolve: () => reservedRoute('/bundles/{slug}'),
   }),
   legalPage: defineLocations({
-    select: { title: 'title' },
-    resolve: () => reservedRoute('/policies/{slug}'),
+    select: { _id: '_id', title: 'title' },
+    resolve: (doc) => {
+      const id = doc?._id?.replace(/^drafts\./, '')
+      if (id === 'privacyPage') {
+        return {
+          locations: [
+            {
+              title: doc?.title || 'Privacy Policy',
+              href: '/policies/privacy-policy',
+            },
+          ],
+        }
+      }
+      if (id === 'termsPage') {
+        return {
+          locations: [
+            {
+              title: doc?.title || 'Terms of Service',
+              href: '/policies/terms-of-service',
+            },
+          ],
+        }
+      }
+      return notOnSite(
+        'Only the pinned Privacy Policy and Terms of Service have public URLs.',
+      )
+    },
   }),
   expertiseStage: defineLocations({
     select: { title: 'title', slug: 'slug.current' },
@@ -630,11 +648,32 @@ export const siteLocations: DocumentLocationResolvers = {
     resolve: () => notOnSite('Resources routes are not built on the site yet.'),
   }),
   contentPage: defineLocations({
-    select: { title: 'title', slug: 'slug.current' },
-    resolve: () =>
-      notOnSite(
-        'The site has no catch-all page route; /about and /contact are stubs.',
-      ),
+    select: { _id: '_id', title: 'title', slug: 'slug.current' },
+    resolve: (doc) => {
+      const id = doc?._id?.replace(/^drafts\./, '')
+      if (id === 'aboutPage') {
+        return {
+          locations: [{ title: doc?.title || 'About', href: '/about' }],
+        }
+      }
+      if (id === 'contactPage') {
+        return {
+          locations: [{ title: doc?.title || 'Contact', href: '/contact' }],
+        }
+      }
+      if (id === 'searchPage' || id === 'notFoundPage') {
+        return notOnSite(
+          'Search and 404 Content Pages are reserved; they are not previewable from this list yet.',
+        )
+      }
+      return doc?.slug
+        ? {
+            locations: [
+              { title: doc.title || 'Content page', href: `/${doc.slug}` },
+            ],
+          }
+        : notOnSite('Add a slug to give this Content Page a URL.')
+    },
   }),
   videoPost: defineLocations({
     select: { title: 'title' },

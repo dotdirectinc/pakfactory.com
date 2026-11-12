@@ -3,8 +3,15 @@ import {OTHER_SERVICE_ID} from '@/lib/request/service-label';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
 import {hasShippingLocation} from '@/lib/request/shipping-address';
 
+import {isAddressFieldsValid} from '@/lib/request/schemas/address';
+import {
+    contactEmailSchema,
+    isContactIntakeValid,
+    isValidWebsiteHost,
+} from '@/lib/request/schemas/contact';
+
 export function isValidEmail(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    return contactEmailSchema.safeParse(email).success;
 }
 
 /**
@@ -101,25 +108,18 @@ export function hasUploadedFile(draft: RequestDraft): boolean {
 }
 
 export function isShippingReady(draft: RequestDraft): boolean {
-    // R36: ship-to is optional for a service-only quote request.
-    if (draft.express && !hasNeed(draft, NEED_PACKAGING)) return true;
-    // Nov 1: the general quote intake (step shell) doesn't ask for ship-to; nor does the
-    // service request on the step intake (Nov 2). The product request does.
-    if (draft.shipToOptional && (draft.express || draft.entryKind === 'services')) return true;
-    // Sectioned request (owner Nov 6): the product request doesn't ask ship-to either (step intake only).
-    if (draft.shipToOptional && draft.stepIntake && draft.entryKind === 'products') return true;
+    if (draft.shipToOptional) {
+        // Optional shells may skip ship-to (service-only, express step intake, products step intake).
+        if (draft.express && !hasNeed(draft, NEED_PACKAGING)) return true;
+        if (draft.express || draft.entryKind === 'services') return true;
+        if (draft.stepIntake && draft.entryKind === 'products') return true;
+    }
+    // Sectioned Project summary (and any shell with shipToOptional false): city + country required.
     return hasShippingLocation(draft.shippingAddress);
 }
 
 export function isCompanyOfficeReady(draft: RequestDraft): boolean {
-    const address = draft.companyAddress;
-    if (!address || typeof address !== 'object') return false;
-    return (
-        String(address.line1 ?? '').trim().length > 0 &&
-        String(address.city ?? '').trim().length > 0 &&
-        String(address.region ?? '').trim().length > 0 &&
-        String(address.country ?? '').trim().length > 0
-    );
+    return isAddressFieldsValid(draft.companyAddress);
 }
 
 export function isContactReady(
@@ -136,23 +136,16 @@ export function isContactReady(
 
 /** A company website as typed: a host with a dot, scheme optional (e.g. acme.com, https://www.acme.co). */
 export function isValidWebsite(value: string | undefined): boolean {
-    const v = (value ?? '').trim().replace(/^https?:\/\//i, '');
-    return /^[^\s/.]+(\.[^\s/.]+)+(\/\S*)?$/.test(v);
+    return isValidWebsiteHost(value ?? '');
 }
 
 /**
  * Step intake Contact (owner Nov 2): first and last name and email are needed;
  * phone, company website, and yearly packaging spend are optional. (No company address here.)
- * A filled website still has to look like a host.
+ * A filled website still has to look like a host. Source of truth: `contactIntakeSchema`.
  */
 export function isIntakeContactReady(draft: RequestDraft): boolean {
-    const website = (draft.contactWebsite ?? '').trim();
-    return (
-        draft.contactFirstName.trim().length > 0 &&
-        draft.contactLastName.trim().length > 0 &&
-        isValidEmail(draft.contactEmail) &&
-        (website.length === 0 || isValidWebsite(website))
-    );
+    return isContactIntakeValid(draft);
 }
 
 export function isItemsReady(draft: RequestDraft, lines: RequestLine[]): boolean {

@@ -2,9 +2,9 @@
 
 import {Info} from 'lucide-react';
 import {Checkbox} from '@pakfactory/ui/components/checkbox';
-import {Input} from '@pakfactory/ui/components/input';
 import {Tooltip, TooltipContent, TooltipTrigger} from '@pakfactory/ui/components/tooltip';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {ServiceOtherField} from '@/components/intake/fields/service-other-field';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestDraft} from '@/lib/request/request.storage';
 import {OTHER_SERVICE_ID} from '@/lib/request/service-label';
@@ -39,12 +39,9 @@ export function ServicesField({
     }
 
     const otherInput = otherOn ? (
-        <Input
-            aria-label={REQUEST_COPY.serviceOtherLabel}
-            className="mt-2 h-11 rounded-sm bg-background text-sm"
-            placeholder={REQUEST_COPY.serviceOtherPlaceholder}
+        <ServiceOtherField
             value={draft.serviceOther ?? ''}
-            onChange={(e) => onPatch({serviceOther: e.target.value})}
+            onChange={(serviceOther) => onPatch({serviceOther})}
         />
     ) : null;
 

@@ -28,6 +28,23 @@ Use **Server Components** by default. Do not add cart or checkout UX unless expl
 - Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` in **repo root** `.env.local`
 - Auth email templates: [`docs/auth-emails/README.md`](./docs/auth-emails/README.md)
 
+## Forms & validation (binding)
+
+House stack for every real form on www (auth, RFQ contact, notify-me, profile dialogs, verify/reset):
+
+| Layer | Rule |
+| ----- | ---- |
+| Schema | Zod object per form or field group; messages are user-facing copy |
+| Wiring | `useForm` + `zodResolver`; prefer `mode: 'onBlur'` |
+| UI | `@pakfactory/ui` Form kit (`Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage`) |
+| RFQ draft | `RequestDraft` + `onPatch` stay the persistence source; sync field-group values into RHF — do not replace the draft store with a single page-level `useForm` |
+| Readiness | Prefer `schema.safeParse` (or helpers wrapping it) for Continue/Submit gates so invalid fields are not silent |
+
+- Request schemas: [`src/lib/request/schemas/`](src/lib/request/schemas/) (`contact.ts`, `address.ts`, `details.ts`)
+- Auth schemas: `@pakfactory/auth-ui` / [`src/lib/auth/auth-form-schema.ts`](src/lib/auth/auth-form-schema.ts)
+- **Out of scope:** search inputs, sign-out buttons, customization `PropertyController` rails
+- Monorepo pointer: root [`ENGINEERING.md`](../../ENGINEERING.md) § Forms & validation
+
 ## Sanity
 
 - Queries from `@pakfactory/sanity/queries`; `getSanityClient()` pattern in `src/lib/sanity/`

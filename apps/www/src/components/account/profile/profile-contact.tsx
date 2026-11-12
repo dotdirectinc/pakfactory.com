@@ -1,10 +1,23 @@
 'use client';
 
 import {useState} from 'react';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {useForm} from 'react-hook-form';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@pakfactory/ui/components/form';
 import {Input} from '@pakfactory/ui/components/input';
-import {Label} from '@pakfactory/ui/components/label';
 import {ProfileFormDialog} from '@/components/account/profile/profile-form-dialog';
 import {ProfileSection} from '@/components/account/profile/profile-section';
+import {
+    profileContactSchema,
+    type ProfileContactValues,
+} from '@/lib/account/profile-schemas';
 import type {ProfileContact} from '@/lib/account/profile-mock';
 import {ACCOUNT_COPY} from '@/lib/copy/account';
 
@@ -15,10 +28,15 @@ type ProfileContactSectionProps = {
 export function ProfileContactSection({contact}: ProfileContactSectionProps) {
     const [open, setOpen] = useState(false);
     const [saved, setSaved] = useState(contact);
-    const [draft, setDraft] = useState(contact);
+    const form = useForm<ProfileContactValues>({
+        resolver: zodResolver(profileContactSchema),
+        mode: 'onBlur',
+        reValidateMode: 'onChange',
+        values: saved,
+    });
 
     function openDialog() {
-        setDraft(saved);
+        form.reset(saved);
         setOpen(true);
     }
 
@@ -43,12 +61,8 @@ export function ProfileContactSection({contact}: ProfileContactSectionProps) {
                             key={label}
                             className="flex items-center justify-between gap-4 px-4 py-3"
                         >
-                            <span className="text-sm text-muted-foreground">
-                                {label}
-                            </span>
-                            <span className="text-sm text-foreground">
-                                {value}
-                            </span>
+                            <span className="text-sm text-muted-foreground">{label}</span>
+                            <span className="text-sm text-foreground">{value}</span>
                         </div>
                     ))}
                 </div>
@@ -58,38 +72,46 @@ export function ProfileContactSection({contact}: ProfileContactSectionProps) {
                 open={open}
                 onOpenChange={setOpen}
                 title={ACCOUNT_COPY.editContactTitle}
-                onSave={() => setSaved(draft)}
+                onSave={async () => {
+                    const ok = await form.trigger();
+                    if (!ok) return false;
+                    setSaved(form.getValues());
+                }}
             >
-                {(
-                    [
-                        ['name', ACCOUNT_COPY.fieldName, false],
-                        ['email', ACCOUNT_COPY.fieldEmail, true],
-                        ['phone', ACCOUNT_COPY.fieldPhone, false],
-                        ['company', ACCOUNT_COPY.fieldCompany, false],
-                        ['industry', ACCOUNT_COPY.fieldIndustry, false],
-                    ] as const
-                ).map(([key, label, readOnly]) => (
-                    <div key={key} className="flex flex-col gap-2">
-                        <Label
-                            htmlFor={`profile-dialog-${key}`}
-                            className="text-xs font-medium"
-                        >
-                            {label}
-                        </Label>
-                        <Input
-                            id={`profile-dialog-${key}`}
-                            value={draft[key]}
-                            readOnly={readOnly}
-                            onChange={(event) =>
-                                setDraft((prev) => ({
-                                    ...prev,
-                                    [key]: event.target.value,
-                                }))
-                            }
-                            className="h-11 rounded-sm"
-                        />
+                <Form {...form}>
+                    <div className="flex flex-col gap-4">
+                        {(
+                            [
+                                ['name', ACCOUNT_COPY.fieldName, false],
+                                ['email', ACCOUNT_COPY.fieldEmail, true],
+                                ['phone', ACCOUNT_COPY.fieldPhone, false],
+                                ['company', ACCOUNT_COPY.fieldCompany, false],
+                                ['industry', ACCOUNT_COPY.fieldIndustry, false],
+                            ] as const
+                        ).map(([key, label, readOnly]) => (
+                            <FormField
+                                key={key}
+                                control={form.control}
+                                name={key}
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-medium">
+                                            {label}
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                readOnly={readOnly}
+                                                className="h-11 rounded-sm"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        ))}
                     </div>
-                ))}
+                </Form>
             </ProfileFormDialog>
         </>
     );

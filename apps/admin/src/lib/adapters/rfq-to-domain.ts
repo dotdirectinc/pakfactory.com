@@ -1,3 +1,4 @@
+import { formatSpendInput } from "@pakfactory/request/annual-spend";
 import type {
   Request,
   RequestDraft,
@@ -39,6 +40,8 @@ type StoredSubmission = {
     expressQuantity?: number;
     expressQuantities?: number[];
     annualSpendBand?: string;
+    annualSpendAmount?: number;
+    annualSpendCurrency?: "USD" | "CAD";
   };
   shipTo?: ShippingAddress | null;
   companyOffice?: ShippingAddress | null;
@@ -121,6 +124,16 @@ function expressQuantities(r: StoredSubmission["requirements"]): number[] {
   return [...new Set([...one, ...many])];
 }
 
+function annualSpendFromRequirements(
+  r: StoredSubmission["requirements"],
+): string {
+  const amount = r?.annualSpendAmount;
+  if (typeof amount === "number" && Number.isFinite(amount) && amount > 0) {
+    return formatSpendInput(amount);
+  }
+  return r?.annualSpendBand ?? "";
+}
+
 export function toRequestSummary(row: RfqRow): RequestSummary {
   const s = asSubmission(row.payload);
   const first = s.contact?.firstName?.trim() ?? "";
@@ -149,9 +162,12 @@ function toDraft(row: RfqRow, s: StoredSubmission): RequestDraft {
     timeline: s.requirements?.timeline ?? "",
     packagingContents: s.requirements?.packagingContents ?? "",
     expressQuantities: expressQuantities(s.requirements),
-    // The builder collects a band label ("under-50k"); the domain field is a
-    // free-text string, so the label passes through unchanged.
-    annualSpend: s.requirements?.annualSpendBand ?? "",
+    // Prefer the numeric amount when present; fall back to the legacy band string.
+    annualSpend: annualSpendFromRequirements(s.requirements),
+    ...(s.requirements?.annualSpendCurrency === "USD" ||
+    s.requirements?.annualSpendCurrency === "CAD"
+      ? {annualSpendCurrency: s.requirements.annualSpendCurrency}
+      : {}),
     shippingAddress: s.shipTo ?? null,
     companyAddress: s.companyOffice ?? null,
     contactFirstName: s.contact?.firstName ?? "",

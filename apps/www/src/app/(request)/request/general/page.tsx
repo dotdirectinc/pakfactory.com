@@ -10,6 +10,6 @@ export const metadata: Metadata = {
 
 export default async function RequestExpressPage() {
     const serviceOptions = await listRequestServiceOptions();
-    // Door hints are read from the URL on the general request page (/request/general?step=…).
+    // Door hints are read from the URL on the general request page (/request/general?from=…).
     return <RequestHomeEntry kind="general" serviceOptions={serviceOptions} rules={REQUEST_FORM_RULES} />;
 }

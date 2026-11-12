@@ -7,6 +7,10 @@ import { RequestDetailCustomerPaperStack } from "@/components/requests/request-d
 import { RequestAttachments } from "@/components/requests/request-attachments";
 import { RequestDetailHeader } from "@/components/requests/request-detail-header";
 import { RequestDetailTimeline } from "@/components/requests/request-detail-timeline";
+import {
+  formatAnnualSpendDisplay,
+  resolveAnnualSpendCurrency,
+} from "@pakfactory/request/annual-spend";
 import type { Request, ShippingAddress } from "@pakfactory/request/request";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { LogoMark } from "@/components/layout/logo-mark";
@@ -204,7 +208,15 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
               />
               <DetailField
                 label={ADMIN_REQUESTS_COPY.annualSpendLabel}
-                value={draft.annualSpend || ADMIN_REQUESTS_COPY.emptyValue}
+                value={
+                  formatAnnualSpendDisplay(
+                    draft.annualSpend,
+                    resolveAnnualSpendCurrency(
+                      draft.annualSpend,
+                      draft.annualSpendCurrency,
+                    ),
+                  ) || ADMIN_REQUESTS_COPY.emptyValue
+                }
               />
             </dl>
           </DetailSection>

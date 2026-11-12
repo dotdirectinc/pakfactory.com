@@ -1,9 +1,19 @@
 'use client';
 
 import {useState} from 'react';
+import {zodResolver} from '@hookform/resolvers/zod';
 import {FileText, Plus, X} from 'lucide-react';
+import {useForm} from 'react-hook-form';
+import {z} from 'zod';
 import {Button} from '@pakfactory/ui/components/button';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from '@pakfactory/ui/components/dialog';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormMessage,
+} from '@pakfactory/ui/components/form';
 import {Label} from '@pakfactory/ui/components/label';
 import {Textarea} from '@pakfactory/ui/components/textarea';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -11,6 +21,7 @@ import {FilesDropzone} from '@/components/request/files-dropzone';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestFlow} from '@/lib/intake/routes';
 import type {RequestReferenceImage} from '@/lib/request/request.storage';
+import {projectNotesSchema, type ProjectNotesValues} from '@/lib/request/schemas/details';
 
 const ACCEPT = '.png,.jpg,.jpeg,.webp,.gif,.pdf,image/png,image/jpeg,image/webp,image/gif,application/pdf';
 
@@ -47,6 +58,7 @@ function DescribeFirst({notes, onNotes, images, rejected, onPick, onRemove, flow
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dragging, setDragging] = useState(false);
     const copy = REQUEST_COPY.intakeDescribeByFlow[flow];
+    const hasUploadedFile = images.some((i) => Boolean(i.key) || i.status === 'uploaded');
     const fileInput = (
         <input
             type="file"
@@ -150,18 +162,14 @@ function DescribeFirst({notes, onNotes, images, rejected, onPick, onRemove, flow
         </div>
     );
     const textarea = (
-        <Textarea
-            id="intake-brief"
-            className={cn(
-                'rounded-sm bg-background text-sm',
-                // Sectioned request columns: taller field, stretches with the files panel.
-                columns ? 'min-h-48 h-full' : 'min-h-36',
-                dragging && 'border-foreground bg-muted/40',
-            )}
+        <ProjectNotesField
+            key={hasUploadedFile ? 'files-ok' : 'notes-required'}
+            notes={notes}
+            onNotes={onNotes}
+            requireNotes={!hasUploadedFile}
             placeholder={copy.placeholder}
-            value={notes}
-            onChange={(e) => onNotes(e.target.value)}
-            // Files dropped on the box are added like any upload.
+            columns={columns}
+            dragging={dragging}
             onDragOver={(e) => {
                 if (!e.dataTransfer.types.includes('Files')) return;
                 e.preventDefault();
@@ -305,5 +313,68 @@ function FileListCard({image, onRemove}: {image: RequestReferenceImage; onRemove
                 </Button>
             ) : null}
         </div>
+    );
+}
+
+function ProjectNotesField({
+    notes,
+    onNotes,
+    requireNotes,
+    placeholder,
+    columns,
+    dragging,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+}: {
+    notes: string;
+    onNotes: (notes: string) => void;
+    requireNotes: boolean;
+    placeholder: string;
+    columns: boolean;
+    dragging: boolean;
+    onDragOver: (e: React.DragEvent) => void;
+    onDragLeave: () => void;
+    onDrop: (e: React.DragEvent) => void;
+}) {
+    const schema = requireNotes ? projectNotesSchema : z.object({notes: z.string()});
+    const form = useForm<ProjectNotesValues>({
+        resolver: zodResolver(schema),
+        mode: 'onBlur',
+        reValidateMode: 'onChange',
+        values: {notes},
+    });
+
+    return (
+        <Form {...form}>
+            <FormField
+                control={form.control}
+                name="notes"
+                render={({field}) => (
+                    <FormItem className={cn(columns ? 'h-full' : undefined, 'gap-1')}>
+                        <FormControl>
+                            <Textarea
+                                id="intake-brief"
+                                className={cn(
+                                    'rounded-sm bg-background text-sm',
+                                    columns ? 'min-h-48 h-full' : 'min-h-36',
+                                    dragging && 'border-foreground bg-muted/40',
+                                )}
+                                placeholder={placeholder}
+                                {...field}
+                                onChange={(e) => {
+                                    field.onChange(e);
+                                    onNotes(e.target.value);
+                                }}
+                                onDragOver={onDragOver}
+                                onDragLeave={onDragLeave}
+                                onDrop={onDrop}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </Form>
     );
 }

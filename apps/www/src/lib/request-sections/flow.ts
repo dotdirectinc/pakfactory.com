@@ -5,14 +5,16 @@
  */
 import type {RequestFlow} from '@/lib/intake/routes';
 
-export type SectionKey = 'products' | 'details' | 'contact';
+export type SectionKey = 'products' | 'details' | 'contact' | 'submit';
 
 export const SECTION_TITLE: Record<SectionKey, string> = {
     products: 'Items',
-    details: 'Project details',
-    contact: 'Contact details',
+    details: 'Project summary',
+    contact: 'Contact Information',
+    submit: 'Submit',
 };
 
+/** Content steps only — Submit lives inside open Contact, not as its own section. */
 export const REQUEST_SECTIONS: Record<RequestFlow, SectionKey[]> = {
     product: ['products', 'details', 'contact'],
     general: ['details', 'contact'],
@@ -21,5 +23,5 @@ export const REQUEST_SECTIONS: Record<RequestFlow, SectionKey[]> = {
 };
 
 export function isSectionKey(v: string | null | undefined): v is SectionKey {
-    return v === 'products' || v === 'details' || v === 'contact';
+    return v === 'products' || v === 'details' || v === 'contact' || v === 'submit';
 }

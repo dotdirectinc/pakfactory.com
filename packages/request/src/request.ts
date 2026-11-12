@@ -1,5 +1,9 @@
 /** Persisted/submitted request contract (PROD-2412). Decoupled from www catalog types. */
 
+import type {AnnualSpendCurrency} from "./annual-spend";
+
+export type {AnnualSpendCurrency} from "./annual-spend";
+
 export type RequestCustomization = {
   id: string;
   label: string;
@@ -77,6 +81,8 @@ export type RequestDraft = {
   packagingContents: string;
   expressQuantities: number[];
   annualSpend: string;
+  /** ISO 4217 code for `annualSpend`. Absent on drafts / rows before currency existed. */
+  annualSpendCurrency?: AnnualSpendCurrency;
   shippingAddress: ShippingAddress | null;
   companyAddress: ShippingAddress | null;
   contactFirstName: string;
