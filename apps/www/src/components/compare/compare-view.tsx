@@ -1213,8 +1213,18 @@ export function CompareView({
                                                             onClick={() => {
                                                                 trackCompare('compare_action', {action: 'apply', id: c.id, shared});
                                                                 quick.openApply({
-                                                                    option: {category: c.category!, slug: c.slug!, title: c.title},
-                                                                    suggestions: otherProducts.map((p) => ({slug: p.slug, title: p.title, imageUrl: p.imageUrl ?? null, lineTitle: p.lineTitle})),
+                                                                    option: {
+                                                                        category: c.category!,
+                                                                        slug: c.slug!,
+                                                                        title: c.title,
+                                                                    },
+                                                                    suggestions: otherProducts.map((p) => ({
+                                                                        slug: p.slug,
+                                                                        title: p.title,
+                                                                        imageUrl: p.imageUrl ?? null,
+                                                                        productLineTitle: p.lineTitle,
+                                                                        lineTitle: p.lineTitle,
+                                                                    })),
                                                                 });
                                                             }}
                                                         >

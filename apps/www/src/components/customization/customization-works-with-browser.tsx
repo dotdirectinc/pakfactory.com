@@ -8,6 +8,7 @@ import {cn} from '@pakfactory/ui/lib/utils';
 
 import {useCustomizationDetailHost} from '@/components/customization/customization-detail-host';
 import {ProductCapabilityCard} from '@/components/product/product-capability-card';
+import {useQuickConfigure} from '@/components/quick-configure/quick-configure';
 import type {
     WorksWithOptionRef,
     WorksWithProductCard,
@@ -55,6 +56,7 @@ export function CustomizationWorksWithBrowser({
     products,
 }: CustomizationWorksWithBrowserProps) {
     const {lines: requestLines} = useRequest();
+    const quick = useQuickConfigure();
     const {
         detail,
         showCta,
@@ -62,6 +64,7 @@ export function CustomizationWorksWithBrowser({
         selectedAchievesId,
         worksWithLine,
         setWorksWithLine,
+        worksWith,
     } = useCustomizationDetailHost();
     const applyOption = resolveWorksWithApplyOption({
         showCta,
@@ -73,6 +76,29 @@ export function CustomizationWorksWithBrowser({
         achieves: detail.achieves,
         selectedAchievesId,
     });
+    const openApplyForProduct = (productSlug: string) => {
+        if (!quick.enabled || !applyOption) return;
+        quick.openApply({
+            option: {
+                ...applyOption,
+                title: detail.shortName?.trim() || detail.title,
+            },
+            categoryTitle: detail.categoryLabel?.trim() || undefined,
+            initialProductSlug: productSlug,
+            lines: worksWith.lines.map((line) => ({
+                slug: line.slug,
+                title: line.title,
+            })),
+            suggestions: worksWith.products.map((p) => ({
+                slug: p.slug,
+                title: p.title,
+                imageUrl: p.imageUrl,
+                sku: p.sku,
+                productLineSlug: p.productLineSlug,
+                productLineTitle: p.productLineTitle,
+            })),
+        });
+    };
 
     const inRequestSlugs = useMemo(() => {
         const slugs = new Set<string>();
@@ -187,6 +213,15 @@ export function CustomizationWorksWithBrowser({
                                                         inRequest={inRequest}
                                                         applyWatermark={false}
                                                         surface="elevated"
+                                                        onApply={
+                                                            quick.enabled &&
+                                                            applyOption
+                                                                ? () =>
+                                                                      openApplyForProduct(
+                                                                          item.slug,
+                                                                      )
+                                                                : undefined
+                                                        }
                                                     />
                                                 </li>
                                             );
