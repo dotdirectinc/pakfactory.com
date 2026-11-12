@@ -706,6 +706,7 @@ export const TASKS = [
   { task: 'repoint:catalog-refs', pkg: '@pakfactory/studio', why: 'repair references after a catalog rebuild' },
   { task: 'populate:faqs', pkg: '@pakfactory/studio', why: 'replace every FAQ with the Notion FAQ table (repeatable)' },
   { task: 'seed:home-page', pkg: '@pakfactory/studio', why: 'idempotent Home layout seed (PROD-2666); stable seed-hero-*/seed-home-* keys, picks real docs' },
+  { task: 'seed:website-footer', pkg: '@pakfactory/studio', why: 'idempotent websiteNavigation.columns launch footer; reuses links by label; Terms of Service path-only; --include-bundles optional' },
   { task: 'seed:static-pages', pkg: '@pakfactory/studio', why: 'create-if-missing About/Contact/Privacy/Terms/Sustainability + reserved search/404 stubs (PROD-2658); never overwrites existing docs' },
   { task: 'seed:catalog-page-copy', pkg: '@pakfactory/studio', why: 'idempotent Product/Customization Catalog Page hero+SEO+UI copy (PROD-3001)' },
   { task: 'seed:cdp-detail-pages', pkg: '@pakfactory/studio', why: 'create-only CDP layout stubs (PROD-3112 / PROD-3127); skips existing docs; single customizationOverview rail' },
