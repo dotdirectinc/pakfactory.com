@@ -21,6 +21,7 @@ import {
     visiblePropertySummaries,
     type FaceMeasurements,
 } from '@/lib/customization-builder';
+import {hasNeed, NEED_PACKAGING} from '@/lib/intake/needs';
 import {digitsOnlySpend} from '@/lib/request/annual-spend';
 import {
     defaultDraftTitle,
@@ -30,6 +31,9 @@ import {
     type RequestReferenceImage,
     type ShippingAddress,
 } from '@/lib/request/request.storage';
+
+/** Server-safe stand-in when the buyer left optional contents / ship-to empty. */
+export const WIRE_PLACEHOLDER = 'N/A';
 
 /** Mirrors the backend contract. Kept structural rather than imported: the
  *  backend's Zod schemas are server-side only and www does not depend on zod. */
@@ -140,6 +144,19 @@ function toWireAddress(address: ShippingAddress | null): WireAddress | null {
             : {}),
     };
     return Object.keys(next).length ? next : null;
+}
+
+/**
+ * Ship-to is optional in the UI; the server still expects city + country.
+ * Preserve whatever the buyer entered and fill missing city/country with N/A.
+ */
+function toWireShipTo(address: ShippingAddress | null): WireAddress {
+    const next = toWireAddress(address) ?? {};
+    return {
+        ...next,
+        city: next.city ?? WIRE_PLACEHOLDER,
+        country: next.country ?? WIRE_PLACEHOLDER,
+    };
 }
 
 export type WireCustomization = {
@@ -289,9 +306,15 @@ export function toWireSubmission(
         requirements: {
             notes: draft.notes.trim(),
             ...(trimmed(draft.timeline) ? {timeline: draft.timeline.trim()} : {}),
-            ...(trimmed(draft.packagingContents)
-                ? {packagingContents: draft.packagingContents.trim()}
-                : {}),
+            // Packaging contents optional in UI; send N/A so the server does not 422.
+            ...(draft.express && hasNeed(draft, NEED_PACKAGING)
+                ? {
+                      packagingContents:
+                          trimmed(draft.packagingContents) ?? WIRE_PLACEHOLDER,
+                  }
+                : trimmed(draft.packagingContents)
+                  ? {packagingContents: draft.packagingContents.trim()}
+                  : {}),
             // ALL tiers, not just the first. The express step lets a buyer add
             // several, and the contract was widened to carry them
             // (pakfactory.com-server#87) rather than have this drop the rest.
@@ -300,7 +323,7 @@ export function toWireSubmission(
                 : {}),
             ...annualSpendRequirements(draft),
         },
-        shipTo: toWireAddress(draft.shippingAddress),
+        shipTo: toWireShipTo(draft.shippingAddress),
         companyOffice: toWireAddress(draft.companyAddress),
         lines: lines.map((line) => ({
             id: line.id,

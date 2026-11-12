@@ -107,8 +107,8 @@ export function ensureRequest(kind: 'product' | 'general', h: EntryHints): (Open
     if (kind === 'general') {
         const open = openRequest();
         if (open?.flow === 'general' && activeGeneralId === open.id) {
-            if (getRequestStateSnapshot().draft.shipToOptional) {
-                updateRequestDraft({shipToOptional: false});
+            if (!getRequestStateSnapshot().draft.shipToOptional) {
+                updateRequestDraft({shipToOptional: true});
             }
             applyHints(h);
             return {...open, resumed: true};
@@ -118,7 +118,8 @@ export function ensureRequest(kind: 'product' | 'general', h: EntryHints): (Open
         delete parked.general;
         writeParked(parked);
         startExpressDraft();
-        updateRequestDraft({shipToOptional: false, needPicked: false, needFromDoor: false});
+        // Ship-to + packaging contents optional in UI; wire fills "N/A" when empty.
+        updateRequestDraft({shipToOptional: true, needPicked: false, needFromDoor: false});
         applyHints(h);
         const now = openRequest();
         activeGeneralId = now?.id ?? null;
@@ -128,9 +129,9 @@ export function ensureRequest(kind: 'product' | 'general', h: EntryHints): (Open
     activeGeneralId = null;
     const open = openRequest();
     if (open && open.flow === kind) {
-        // Sectioned Project summary requires ship-to — normalize resumes that still had it optional.
-        if (getRequestStateSnapshot().draft.shipToOptional) {
-            updateRequestDraft({stepIntake: true, shipToOptional: false});
+        // Sectioned Project summary: ship-to optional; normalize resumes that still required it.
+        if (!getRequestStateSnapshot().draft.shipToOptional) {
+            updateRequestDraft({stepIntake: true, shipToOptional: true});
         }
         applyHints(h);
         return {...open, resumed: true};
@@ -149,8 +150,8 @@ export function ensureRequest(kind: 'product' | 'general', h: EntryHints): (Open
     const {lines} = getRequestStateSnapshot();
     if (!lines.length) return null; // nothing to quote yet — the page shows the empty state
     startRequestFromSelection(lines.map((l) => l.id));
-    // Sectioned request is a step intake; Project summary requires a shipping location.
-    updateRequestDraft({stepIntake: true, shipToOptional: false});
+    // Sectioned request is a step intake; ship-to stays optional (wire fills "N/A").
+    updateRequestDraft({stepIntake: true, shipToOptional: true});
     applyHints(h);
     const now = openRequest();
     return now ? {...now, resumed: false} : null;

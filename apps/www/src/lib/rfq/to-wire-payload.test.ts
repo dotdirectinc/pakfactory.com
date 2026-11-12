@@ -3,7 +3,7 @@ import {describe, it} from 'node:test';
 import {createEmptyBuilderState, seedFromCustomizations, toggleSelection, toRequestCustomizations} from '../customization-builder/state';
 import type {CustomizationBuilderState} from '../customization-builder/types';
 import type {RequestDraft, RequestLine} from '../request/request.storage';
-import {toWireDimensions, toWireSubmission} from './to-wire-payload';
+import {toWireDimensions, toWireSubmission, WIRE_PLACEHOLDER} from './to-wire-payload';
 
 // PROD-2605: the buyer's size, and the Type / Property choices / note on each pick, stayed in the
 // browser — the builder kept them, nothing sent them. Sales saw a flat list of labels and no size.
@@ -253,6 +253,60 @@ describe('toWireSubmission — services', () => {
         });
         assert.deepEqual(wire.services, ['packaging-design']);
         assert.equal(wire.serviceTitles, undefined);
+    });
+});
+
+describe('toWireSubmission — optional contents and ship-to N/A fallbacks', () => {
+    it('fills packagingContents and shipTo city/country with N/A when express packaging left them empty', () => {
+        const express = {
+            ...draft,
+            express: true,
+            entryKind: 'express',
+            needs: ['packaging'],
+            needPicked: true,
+            notes: 'Need boxes',
+            packagingContents: '  ',
+            shippingAddress: null,
+        } as RequestDraft;
+        const wire = toWireSubmission(express, [], 'sub-na');
+        assert.equal(wire.requirements.packagingContents, WIRE_PLACEHOLDER);
+        assert.deepEqual(wire.shipTo, {
+            city: WIRE_PLACEHOLDER,
+            country: WIRE_PLACEHOLDER,
+        });
+    });
+
+    it('keeps buyer-entered contents and ship-to fields, only filling missing city/country', () => {
+        const express = {
+            ...draft,
+            express: true,
+            entryKind: 'express',
+            needs: ['packaging'],
+            needPicked: true,
+            notes: 'Need boxes',
+            packagingContents: 'Candles',
+            shippingAddress: {
+                line1: '123 Main',
+                city: '',
+                country: 'Canada',
+                countryCode: 'CA',
+            },
+        } as RequestDraft;
+        const wire = toWireSubmission(express, [], 'sub-partial');
+        assert.equal(wire.requirements.packagingContents, 'Candles');
+        assert.equal(wire.shipTo?.line1, '123 Main');
+        assert.equal(wire.shipTo?.city, WIRE_PLACEHOLDER);
+        assert.equal(wire.shipTo?.country, 'Canada');
+        assert.equal(wire.shipTo?.countryCode, 'CA');
+    });
+
+    it('does not invent packagingContents for product requests without express packaging', () => {
+        const wire = toWireSubmission(draft, [line()], 'sub-products');
+        assert.equal(wire.requirements.packagingContents, undefined);
+        assert.deepEqual(wire.shipTo, {
+            city: WIRE_PLACEHOLDER,
+            country: WIRE_PLACEHOLDER,
+        });
     });
 });
 

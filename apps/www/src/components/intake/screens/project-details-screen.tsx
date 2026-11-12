@@ -19,7 +19,7 @@ type ProjectDetailsScreenProps = {
     draft: RequestDraft;
     onPatch: (patch: Partial<RequestDraft>) => void;
     serviceOptions: RequestServiceOption[];
-    /** Ship-to on Project summary. Default on (required on sectioned request). */
+    /** Ship-to on Project summary. Default on (optional in UI; wire fills N/A when empty). */
     showShipTo?: boolean;
     /** Describe-first brief: description and Add files side by side. Default off (stacked). */
     columns?: boolean;

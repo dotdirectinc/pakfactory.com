@@ -192,13 +192,16 @@ export function StepRequirements({
                                 }
                             />
                         </div>
-                        {/* v4.7 (owner Nov 6): the step intake doesn't ask what's going inside this
-                            phase; packagingContents stays in the payload (empty) for Sales. */}
-                        {bare ? null : (
-                        <div>
-                            <Label className="mb-1 block text-xs font-medium">
-                                {bare ? REQUEST_COPY.intakeContentsLabel : REQUEST_COPY.contentsLabel}
-                                {bare ? null : <span className="ml-0.5 text-amber-600">*</span>}
+                        {/* Optional on the UI; empty values become "N/A" on the wire payload. */}
+                        <div className={bare ? 'flex flex-col gap-2' : undefined}>
+                            <Label
+                                className={
+                                    bare
+                                        ? 'block text-base font-medium'
+                                        : 'mb-1 block text-xs font-medium'
+                                }
+                            >
+                                {REQUEST_COPY.contentsLabel}
                             </Label>
                             <Input
                                 className={FIELD_CLASS}
@@ -211,7 +214,6 @@ export function StepRequirements({
                                 }
                             />
                         </div>
-                        )}
                     </>
                 ) : null}
 
