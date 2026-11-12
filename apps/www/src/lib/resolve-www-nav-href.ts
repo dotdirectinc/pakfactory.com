@@ -52,9 +52,10 @@ export function normalizeSitePath(
 
 /**
  * Resolve a Studio linkTarget (internal | path | external) for www chrome
- * and in-section card links. Same-origin absolute www URLs become
- * root-relative for Next Link. Site path stays root-relative so the
- * browser uses the current host.
+ * and in-section card links. External URLs stay absolute (editors chose
+ * External — including pakfactory.com/blog). Internal CMS hrefs that resolve
+ * onto the www origin become root-relative for Next Link. Site path stays
+ * root-relative so the browser uses the current host.
  */
 export function resolveWwwNavHref(
   raw: WwwLinkHrefInput | null | undefined,
@@ -70,7 +71,7 @@ export function resolveWwwNavHref(
   if (raw.linkType === 'external') {
     const url = raw.externalUrl?.trim();
     if (!url) return null;
-    return stripWwwOrigin(url);
+    return {href: url, external: true};
   }
 
   if (raw.linkType === 'internal' && raw.internalLink) {

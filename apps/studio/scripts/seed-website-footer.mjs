@@ -3,9 +3,18 @@
  * Seed the launch footer columns onto the `websiteNavigation` singleton.
  *
  * Rewrites only `columns` (up to 3). Leaves items, cta, utility, socialLinks,
- * aiAnswerLinks and legal untouched. Reuses existing footer link objects by
- * label so blog / account destinations stay exactly as today. Creates Terms of
- * Service as a site path when missing. Bundles is behind `--include-bundles`.
+ * aiAnswerLinks and legal untouched.
+ *
+ * Column 1 mirrors primary nav:
+ *   Products  → product lines from the dataset (`/products/{slug}`)
+ *   Solutions → mega-menu grouping labels (Industry, Channel, Focus, Use Case)
+ *               from primary nav, each → `/solutions`
+ *   Expertise → expertise stages (`/expertise/{slug}`)
+ * Column 2: Academy · Blog · Company
+ * Column 3: Orders & Shipment · Support · Legal
+ *
+ * Reuses existing footer link objects by label when the destination matches.
+ * Creates missing links as site paths. Creates Terms of Service when missing.
  *
  * Idempotent: a second run with the same input prints "Nothing to change".
  * Stops if a draft exists — publish or discard it in Studio first.
@@ -25,6 +34,7 @@ import {mkdir, readFile, writeFile} from 'node:fs/promises'
 import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {describeMode, parseScriptArgs} from './lib/script-args.mjs'
+import {stageRank} from './lib/finder-general-buckets.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -33,20 +43,18 @@ loadEnv({path: join(repoRoot, '.env')})
 loadEnv({path: join(repoRoot, 'apps/studio/.env.local'), override: true})
 
 const USAGE = `Usage:
-  pnpm --filter @pakfactory/studio run seed:website-footer -- --dataset <development|production> [--confirm] [--yes-production] [--include-bundles] [--restore <file>]
+  pnpm --filter @pakfactory/studio run seed:website-footer -- --dataset <development|production> [--confirm] [--yes-production] [--restore <file>]
 
   --dataset          REQUIRED. Which dataset to read/write. No env fallback.
   --confirm          Actually write. Without it the run is a dry run.
   --yes-production   Second gate; required to write to production.
-  --include-bundles  Include Bundles under Products (owner decision pending).
   --restore <file>   Restore columns from a backup JSON written by this script.`
 
 const args = parseScriptArgs({
-  flags: ['include-bundles'],
   values: ['restore'],
   usage: USAGE,
 })
-const {confirm: apply, includeBundles, restore: restorePath} = args
+const {confirm: apply, restore: restorePath} = args
 const DATASET = args.dataset
 
 const PROJECT_ID =
@@ -78,91 +86,134 @@ const client = createClient({
 
 const DOC_ID = 'websiteNavigation'
 const BACKUP_DIR = join(__dirname, 'backups')
+const PUBLISHED = '!(_id in path("drafts.**"))'
+const LINE_VISIBLE = '(!defined(status) || status == "active")'
+
+/** Fallback if primary-nav Solutions groups are empty. */
+const DEFAULT_SOLUTION_GROUPINGS = [
+  {label: 'Industry', relativePath: '/solutions'},
+  {label: 'Channel', relativePath: '/solutions'},
+  {label: 'Focus', relativePath: '/solutions'},
+  {label: 'Use Case', relativePath: '/solutions'},
+]
 
 /** Label aliases used when looking up an existing link to reuse. */
 const LABEL_ALIASES = {
   Customizations: ['Customization'],
   Compatibility: ['Product Capability'],
+  Industry: ['By Industry'],
+  Channel: ['By Channel'],
+  Focus: ['By Focus'],
+  'Use Case': ['By Use Case'],
 }
 
+const CANDIDATES_QUERY = /* groq */ `{
+  "productLines": *[_type == "productLine" && ${PUBLISHED} && defined(slug.current) && ${LINE_VISIBLE}]
+    | order(title asc){title, "slug": slug.current},
+  "expertise": *[_type == "expertiseStage" && ${PUBLISHED} && defined(slug.current)
+    && (!defined(status) || status in ["active", "coming-soon"])]
+    {title, "slug": slug.current},
+  "solutionGroups": *[_id == $id][0].items[label == "Solutions"][0].groups[]{label}
+}`
+
 /**
- * Launch footer shape. Paths document intent for new links and for preferring
- * an existing object whose relativePath matches. Reused links keep their own
- * linkType / destination fields.
+ * Static columns 2–3 plus Company. Column 1 is built from the dataset.
+ * Paths document intent for new links; reused links keep their own fields.
  */
-const LAUNCH_FOOTER = [
-  {
-    sections: [
-      {
-        title: 'Products',
-        links: [
-          {label: 'Products', relativePath: '/products'},
-          {label: 'Customizations', relativePath: '/customizations'},
-          {label: 'Compatibility', relativePath: '/customizations/compatibility'},
-          {label: 'Bundles', relativePath: '/bundles', optionalBundles: true},
-        ],
-      },
-      {
-        title: 'Solutions',
-        links: [
-          {label: 'Solutions', relativePath: '/solutions'},
-          {label: 'Expertise', relativePath: '/expertise'},
-        ],
-      },
-      {
-        title: 'Company',
-        links: [
-          {label: 'About', relativePath: '/about'},
-          {label: 'Case Studies', relativePath: '/case-studies'},
-          {label: 'Newsroom', relativePath: '/newsroom'},
-        ],
-      },
-    ],
-  },
-  {
-    sections: [
-      {
-        title: 'Academy',
-        links: [
-          {label: 'Packaging Type'},
-          {label: 'Industry'},
-          {label: 'Sustainability'},
-        ],
-      },
-      {
-        title: 'Blog',
-        links: [{label: 'Blog'}, {label: 'Topics'}, {label: 'Contribute'}],
-      },
-    ],
-  },
-  {
-    sections: [
-      {
-        title: 'Orders & Shipment',
-        links: [
-          {label: 'Account', relativePath: '/account'},
-          {label: 'Account Requests', relativePath: '/account/requests'},
-        ],
-      },
-      {
-        title: 'Support',
-        links: [
-          {label: 'Request a Quote', relativePath: '/request/general'},
-          {label: 'Contact', relativePath: '/contact'},
-          {label: 'Help Center', relativePath: '/contact'},
-        ],
-      },
-      {
-        title: 'Legal',
-        links: [
-          {label: 'Privacy Policy', relativePath: '/policies/privacy-policy'},
-          {label: 'Terms of Service', relativePath: '/policies/terms-of-service'},
-          {label: 'Policies', relativePath: '/policies'},
-        ],
-      },
-    ],
-  },
-]
+function buildStaticTail() {
+  return [
+    {
+      sections: [
+        {
+          title: 'Academy',
+          links: [
+            {label: 'Packaging Type'},
+            {label: 'Industry'},
+            {label: 'Sustainability'},
+          ],
+        },
+        {
+          title: 'Blog',
+          links: [{label: 'Blog'}, {label: 'Topics'}, {label: 'Contribute'}],
+        },
+        {
+          title: 'Company',
+          links: [
+            {label: 'About', relativePath: '/about'},
+            {label: 'Case Studies', relativePath: '/case-studies'},
+            {label: 'Newsroom', relativePath: '/newsroom'},
+          ],
+        },
+      ],
+    },
+    {
+      sections: [
+        {
+          title: 'Orders & Shipment',
+          links: [
+            {label: 'Account', relativePath: '/account'},
+            {label: 'Account Requests', relativePath: '/account/requests'},
+          ],
+        },
+        {
+          title: 'Support',
+          links: [
+            {label: 'Request a Quote', relativePath: '/request/general'},
+            {label: 'Contact', relativePath: '/contact'},
+            {label: 'Help Center', relativePath: '/contact'},
+          ],
+        },
+        {
+          title: 'Legal',
+          links: [
+            {label: 'Privacy Policy', relativePath: '/policies/privacy-policy'},
+            {label: 'Terms of Service', relativePath: '/policies/terms-of-service'},
+            {label: 'Policies', relativePath: '/policies'},
+          ],
+        },
+      ],
+    },
+  ]
+}
+
+function normalizeGroupingLabel(raw) {
+  const label = trimLabel(raw)
+  if (!label) return ''
+  return label.replace(/^by\s+/i, '')
+}
+
+function buildLaunchFooter({productLines, expertise, solutionGroups}) {
+  const productLinks = productLines.map((line) => ({
+    label: line.title,
+    relativePath: `/products/${line.slug}`,
+  }))
+
+  const groupingLinks =
+    solutionGroups.length > 0
+      ? solutionGroups
+          .map((g) => normalizeGroupingLabel(g.label))
+          .filter(Boolean)
+          .map((label) => ({label, relativePath: '/solutions'}))
+      : DEFAULT_SOLUTION_GROUPINGS
+
+  const expertiseLinks = [...expertise]
+    .sort((a, b) => stageRank(a.title) - stageRank(b.title))
+    .map((stage) => ({
+      label: stage.title,
+      relativePath: `/expertise/${stage.slug}`,
+    }))
+
+  return [
+    {
+      sections: [
+        {title: 'Products', links: productLinks},
+        {title: 'Solutions', links: groupingLinks},
+        {title: 'Expertise', links: expertiseLinks},
+      ],
+    },
+    ...buildStaticTail(),
+  ]
+}
 
 function shortKey() {
   return randomUUID().replace(/-/g, '').slice(0, 12)
@@ -170,6 +221,25 @@ function shortKey() {
 
 function trimLabel(value) {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function pathFromExternalUrl(url) {
+  try {
+    const parsed = new URL(url)
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` || '/'
+  } catch {
+    return null
+  }
+}
+
+function linkMatchesPreferredPath(link, preferredPath) {
+  if (!preferredPath) return true
+  if (link.relativePath === preferredPath) return true
+  if (link.externalUrl) {
+    const path = pathFromExternalUrl(link.externalUrl)
+    return path === preferredPath
+  }
+  return false
 }
 
 function linkTargetSummary(link) {
@@ -256,9 +326,11 @@ function pickExistingLink(labelMap, label, preferredPath) {
     if (aliased) candidates.push(...aliased)
   }
   if (candidates.length === 0) return null
+
   if (preferredPath) {
-    const byPath = candidates.find((link) => link.relativePath === preferredPath)
-    if (byPath) return byPath
+    // Do not reuse a same-label link that points somewhere else (e.g. Academy
+    // "Industry" blog URL must not become Solutions "Industry" → /solutions).
+    return candidates.find((link) => linkMatchesPreferredPath(link, preferredPath)) ?? null
   }
   return candidates[0]
 }
@@ -291,17 +363,16 @@ function reuseOrCreateLink(labelMap, spec, created, missing) {
   return createdLink
 }
 
-function buildTargetColumns(currentColumns, {includeBundles}) {
+function buildTargetColumns(currentColumns, launchFooter) {
   const labelMap = indexLinksByLabel(currentColumns)
   const created = []
   const missing = []
 
-  const columns = LAUNCH_FOOTER.map((col) => ({
+  const columns = launchFooter.map((col) => ({
     _key: shortKey(),
     sections: col.sections.map((sec) => {
       const links = []
       for (const spec of sec.links) {
-        if (spec.optionalBundles && !includeBundles) continue
         const link = reuseOrCreateLink(labelMap, spec, created, missing)
         if (link) links.push(link)
       }
@@ -310,10 +381,9 @@ function buildTargetColumns(currentColumns, {includeBundles}) {
   }))
 
   const targetLabels = new Set()
-  for (const col of LAUNCH_FOOTER) {
+  for (const col of launchFooter) {
     for (const sec of col.sections) {
       for (const spec of sec.links) {
-        if (spec.optionalBundles && !includeBundles) continue
         targetLabels.add(spec.label)
         for (const alias of LABEL_ALIASES[spec.label] ?? []) {
           targetLabels.add(alias)
@@ -370,7 +440,7 @@ async function loadRestoreColumns(filePath) {
 
 async function seed() {
   console.log(
-    `\n🌱  Website footer → dataset=${DATASET} (${PROJECT_ID}) · ${describeMode({confirm: apply, dataset: DATASET})}${includeBundles ? ' · include-bundles' : ''}${restorePath ? ` · restore=${restorePath}` : ''}\n`,
+    `\n🌱  Website footer → dataset=${DATASET} (${PROJECT_ID}) · ${describeMode({confirm: apply, dataset: DATASET})}${restorePath ? ` · restore=${restorePath}` : ''}\n`,
   )
 
   const docs = await client.fetch(`*[_id in [$id, "drafts." + $id]]{_id, columns}`, {
@@ -401,7 +471,41 @@ async function seed() {
     nextColumns = restored.columns
     console.log(`  Restoring columns from ${restored.path}`)
   } else {
-    const built = buildTargetColumns(currentColumns, {includeBundles})
+    const candidates = await client.fetch(CANDIDATES_QUERY, {id: DOC_ID})
+    const productLines = candidates.productLines ?? []
+    const expertise = candidates.expertise ?? []
+    const solutionGroups = (candidates.solutionGroups ?? []).filter((g) => trimLabel(g?.label))
+
+    console.log('  Picked from the dataset:')
+    console.log(
+      `    product lines (${productLines.length}): ${productLines.map((d) => d.title).join(' · ') || '—'}`,
+    )
+    console.log(
+      `    solution groupings: ${
+        solutionGroups.map((g) => normalizeGroupingLabel(g.label)).join(' · ') ||
+        DEFAULT_SOLUTION_GROUPINGS.map((g) => g.label).join(' · ') + ' (fallback)'
+      }`,
+    )
+    console.log(
+      `    expertise (${expertise.length}): ${
+        [...expertise]
+          .sort((a, b) => stageRank(a.title) - stageRank(b.title))
+          .map((d) => d.title)
+          .join(' · ') || '—'
+      }`,
+    )
+
+    if (productLines.length === 0) {
+      console.error(`✖  No visible product lines on dataset=${DATASET}. Refusing to seed an empty Products section.\n`)
+      process.exit(1)
+    }
+    if (expertise.length === 0) {
+      console.error(`✖  No expertise stages on dataset=${DATASET}. Refusing to seed an empty Expertise section.\n`)
+      process.exit(1)
+    }
+
+    const launchFooter = buildLaunchFooter({productLines, expertise, solutionGroups})
+    const built = buildTargetColumns(currentColumns, launchFooter)
     nextColumns = built.columns
     created = built.created
     missing = built.missing

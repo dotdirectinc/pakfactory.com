@@ -59,6 +59,26 @@ describe('resolveWwwNavHref', () => {
       {href: 'https://example.com/about', external: true},
     );
   });
+
+  it('keeps same-site blog external URLs absolute', () => {
+    assert.deepEqual(
+      resolveWwwNavHref({
+        linkType: 'external',
+        externalUrl: 'https://pakfactory.com/blog',
+      }),
+      {href: 'https://pakfactory.com/blog', external: true},
+    );
+  });
+
+  it('keeps same-site marketing external URLs absolute', () => {
+    assert.deepEqual(
+      resolveWwwNavHref({
+        linkType: 'external',
+        externalUrl: 'https://pakfactory.com/products',
+      }),
+      {href: 'https://pakfactory.com/products', external: true},
+    );
+  });
 });
 
 describe('resolveSectionLinkHref', () => {
