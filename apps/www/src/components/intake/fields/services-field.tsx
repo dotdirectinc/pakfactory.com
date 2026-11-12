@@ -67,8 +67,13 @@ export function ServicesField({
                                             <span className="text-sm text-muted-foreground">{svc.description}</span>
                                         ) : null}
                                     </span>
-                                    {/* Same design-system checkbox as the card's "Add packaging services" (owner Nov 3). */}
-                                    <Checkbox id={`svc-${svc.id}`} className="mt-0.5 size-5" checked={on} onCheckedChange={() => toggle(svc.id)} />
+                                    {/* Same design-system checkbox as Packaging services / CheckboxCards. */}
+                                    <Checkbox
+                                        id={`svc-${svc.id}`}
+                                        className="mt-1"
+                                        checked={on}
+                                        onCheckedChange={() => toggle(svc.id)}
+                                    />
                                 </label>
                             </li>
                         );
@@ -93,8 +98,16 @@ export function ServicesField({
                                 on ? 'border-foreground bg-muted/40' : 'border-border bg-background hover:bg-muted/30',
                             )}
                         >
-                            <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2">
-                                <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-foreground" checked={on} onChange={() => toggle(svc.id)} />
+                            <label
+                                htmlFor={`svc-${svc.id}`}
+                                className="flex min-w-0 flex-1 cursor-pointer items-start gap-2"
+                            >
+                                <Checkbox
+                                    id={`svc-${svc.id}`}
+                                    className="mt-1"
+                                    checked={on}
+                                    onCheckedChange={() => toggle(svc.id)}
+                                />
                                 <span>{svc.label}</span>
                             </label>
                             {svc.description ? (

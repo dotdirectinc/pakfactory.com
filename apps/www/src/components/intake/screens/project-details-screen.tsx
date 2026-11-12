@@ -39,7 +39,12 @@ export function ProjectDetailsScreen({flow, draft, onPatch, serviceOptions, show
     // it: the page heading already says it.
     // v4.7 (owner Nov 6): no section headings on the general request either — fields with labels only.
     const describe = describeBody;
-    const shipTo = showShipTo ? (
+    // Ship-to is for packaging destinations only — not services-only (or the service flow).
+    const showPackagingShipTo =
+        showShipTo &&
+        flow !== 'service' &&
+        (flow === 'product' || needsPackaging(draft));
+    const shipTo = showPackagingShipTo ? (
         <ShippingToAddress value={draft.shippingAddress} onChange={(shippingAddress) => onPatch({shippingAddress})} />
     ) : null;
 

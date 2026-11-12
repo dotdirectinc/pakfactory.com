@@ -25,6 +25,7 @@ export function ShippingToAddress({
             fallbackLabel={REQUEST_COPY.shippingAddressFallbackLabel}
             titleClassName="text-base font-medium"
             showSignInWhenSignedOut
+            revealAfterCountry
         />
     );
 }

@@ -26,6 +26,7 @@ import type {RequestReferenceImage} from '@/lib/request/request.storage';
 import {ShippingToAddress} from '@/components/request/shipping-to-address';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestDraft} from '@/lib/request/request.storage';
+import {needsPackaging} from '@/lib/request/validation';
 
 const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
@@ -285,7 +286,10 @@ export function StepRequirements({
                     </div>
                 ) : null}
 
-                {draft.express && draft.shipToOptional ? null : (
+                {/* Ship-to only when packaging is in play — not services-only. */}
+                {draft.entryKind === 'services' ||
+                !needsPackaging(draft) ||
+                (draft.express && draft.shipToOptional) ? null : (
                     <ShippingToAddress
                         value={draft.shippingAddress}
                         onChange={(shippingAddress) => onPatch({shippingAddress})}
