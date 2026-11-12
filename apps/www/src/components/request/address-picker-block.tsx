@@ -37,6 +37,11 @@ type AddressPickerBlockProps = {
     showSignInWhenSignedOut?: boolean;
     /** Override title Label classes (default field-scale text-xs). */
     titleClassName?: string;
+    /**
+     * Ship-to: show country first, then slide/fade the rest of the lines open.
+     * Company address leaves this off.
+     */
+    revealAfterCountry?: boolean;
     className?: string;
 };
 
@@ -58,6 +63,7 @@ export function AddressPickerBlock({
     helpText,
     showSignInWhenSignedOut = false,
     titleClassName,
+    revealAfterCountry = false,
     className,
 }: AddressPickerBlockProps) {
     const {viewer} = useRequest();
@@ -172,6 +178,7 @@ export function AddressPickerBlock({
                             regionCode: value?.regionCode,
                         }}
                         onPatch={patch}
+                        revealAfterCountry={revealAfterCountry}
                     />
                 </div>
             )}
@@ -201,6 +208,7 @@ export function AddressPickerBlock({
                                     }),
                                 )
                             }
+                            revealAfterCountry={revealAfterCountry}
                         />
                     </div>
                     <DialogFooter>

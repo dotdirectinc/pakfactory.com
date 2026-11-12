@@ -151,6 +151,10 @@ export async function submitRequest(
     const wire = toWireSubmission(draft, lines, submissionId, {
         ...(serviceTitles?.length ? {serviceTitles} : {}),
     });
+    // Local + staging Preview only — never production (same gate as www robots/headers).
+    if (process.env.VERCEL_ENV !== 'production') {
+        console.info('[submitRequest] wire payload', wire);
+    }
     const body = JSON.stringify(
         customerId ? {...wire, customerId} : wire,
     );

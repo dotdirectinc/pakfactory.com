@@ -22,7 +22,7 @@ import {useRequest} from '@/lib/request/request-provider';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 import {formatAddressSummaryLine} from '@/lib/request/shipping-address';
-import {isIntakeContactReady, isItemsReady} from '@/lib/request/validation';
+import {isIntakeContactReady, isItemsReady, needsPackaging} from '@/lib/request/validation';
 import {REQUEST_SECTIONS, SECTION_TITLE, type SectionKey} from '@/lib/request-sections/flow';
 import {trackSectionDone, trackSectionOpen} from '@/lib/request-sections/events';
 import {submittedHref, type RequestKind} from '@/lib/request-sections/url';
@@ -273,9 +273,10 @@ function GeneralDetailsSummary({draft}: {draft: RequestDraft}) {
     const fileCount = draft.referenceImages?.length ?? 0;
     const briefValue =
         brief || (fileCount > 0 ? `${fileCount} file${fileCount === 1 ? '' : 's'}` : '—');
-    const shipTo = draft.shippingAddress
-        ? formatAddressSummaryLine(draft.shippingAddress)
-        : '';
+    const shipTo =
+        needsPackaging(draft) && draft.shippingAddress
+            ? formatAddressSummaryLine(draft.shippingAddress)
+            : '';
     return (
         <div className="flex flex-col gap-2 text-sm">
             {need ? <p className="text-muted-foreground">{need}</p> : null}
