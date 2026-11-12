@@ -502,13 +502,13 @@ export async function listSolutionsWithPages(): Promise<SolutionCard[]> {
 }
 
 export async function listSolutionPageSlugs(): Promise<
-    Array<{slug: string; lineSlugs: string[]}>
+    Array<{slug: string; title: string; lineSlugs: string[]}>
 > {
     const docs = await readThrough(
         fetchSolutionPageSlugs,
         sanityCache(
             fetchSolutionPageSlugs,
-            [WWW_SOLUTIONS_CACHE_TAG, 'page-slugs'],
+            [WWW_SOLUTIONS_CACHE_TAG, 'page-slugs-titles'],
             {
                 revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
                 tags: [WWW_SOLUTIONS_CACHE_TAG],
@@ -520,24 +520,28 @@ export async function listSolutionPageSlugs(): Promise<
         .map((doc) => {
             const slug = doc.slug?.trim();
             if (!slug) return null;
+            const title = doc.title?.trim() || slug;
             const lineSlugs = (doc.packagingFormats ?? [])
                 .map((format) => format.slug?.trim())
                 .filter((value): value is string => Boolean(value));
-            return {slug, lineSlugs};
+            return {slug, title, lineSlugs};
         })
         .filter(
-            (item): item is {slug: string; lineSlugs: string[]} => item != null,
+            (
+                item,
+            ): item is {slug: string; title: string; lineSlugs: string[]} =>
+                item != null,
         );
 }
 
 export async function listSolutionStylePageParams(): Promise<
-    Array<{slug: string; styleSlug: string}>
+    Array<{slug: string; styleSlug: string; title: string}>
 > {
     const docs = await readThrough(
         fetchSolutionStylePageParams,
         sanityCache(
             fetchSolutionStylePageParams,
-            [WWW_SOLUTIONS_CACHE_TAG, 'style-page-params'],
+            [WWW_SOLUTIONS_CACHE_TAG, 'style-page-params-titles'],
             {
                 revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
                 tags: [WWW_SOLUTIONS_CACHE_TAG],
@@ -550,9 +554,16 @@ export async function listSolutionStylePageParams(): Promise<
             const slug = doc.solutionSlug?.trim();
             const styleSlug = doc.styleSlug?.trim();
             if (!slug || !styleSlug) return null;
-            return {slug, styleSlug};
+            const title =
+                doc.title?.trim() ||
+                [doc.solutionTitle?.trim(), styleSlug].filter(Boolean).join(' / ') ||
+                styleSlug;
+            return {slug, styleSlug, title};
         })
         .filter(
-            (item): item is {slug: string; styleSlug: string} => item != null,
+            (
+                item,
+            ): item is {slug: string; styleSlug: string; title: string} =>
+                item != null,
         );
 }

@@ -24,7 +24,11 @@ type MediaCardFrameProps = {
      * hover so utilities and the brand mark can take that corner.
      */
     statusBadge?: ReactNode;
-    /** When true, desktop utility cluster stays visible without hover. */
+    /**
+     * Force desktop utility / wash / brand-mark reveal without hover
+     * (e.g. Bookmarks grid). Not the bookmarked icon state — catalog cards
+     * must not set this from `saved`, or hover chrome freezes on.
+     */
     bookmarkPressed?: boolean;
     /** Settle-zoom on the media chrome. Default true. */
     settleZoom?: boolean;

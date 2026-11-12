@@ -58,6 +58,7 @@ const PAGE_SINGLETON_ID_PATHS: Record<string, string> = {
   searchPage: "/search",
   privacyPage: "/policies/privacy-policy",
   termsPage: "/policies/terms-of-service",
+  cookiesPage: "/policies/cookies-preference",
   caseStudiesPage: "/case-studies",
   /** @deprecated Prefer `productCatalogPage` (PROD-2589). Kept for old Internal refs. */
   productsPage: "/products",

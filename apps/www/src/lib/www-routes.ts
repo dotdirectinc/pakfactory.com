@@ -19,6 +19,7 @@ export const WWW_ROUTES = {
     policies: '/policies',
     privacyPolicy: '/policies/privacy-policy',
     termsOfService: '/policies/terms-of-service',
+    cookiesPreference: '/policies/cookies-preference',
     sitemap: '/sitemap',
     bundles: '/bundles',
     request: '/request',

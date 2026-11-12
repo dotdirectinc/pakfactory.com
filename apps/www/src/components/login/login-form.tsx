@@ -6,6 +6,11 @@ import {signIn} from '@/lib/auth/actions';
 import {LOGIN_COPY} from '@/lib/copy/login';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
+function signUpHref(next?: string): string {
+    if (!next?.trim()) return WWW_ROUTES.signUp;
+    return `${WWW_ROUTES.signUp}?next=${encodeURIComponent(next.trim())}`;
+}
+
 export function LoginForm({
     next,
     embedded = false,
@@ -21,7 +26,7 @@ export function LoginForm({
             embedded={embedded}
             hrefs={{
                 forgotPassword: WWW_ROUTES.forgotPassword,
-                signUp: WWW_ROUTES.signUp,
+                signUp: signUpHref(next),
                 terms: LOGIN_COPY.termsHref,
                 privacy: LOGIN_COPY.privacyHref,
             }}

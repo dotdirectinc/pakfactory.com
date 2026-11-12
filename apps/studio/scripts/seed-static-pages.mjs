@@ -9,6 +9,7 @@
  *   contactPage   → /contact
  *   privacyPage   → /policies/privacy-policy
  *   termsPage     → /policies/terms-of-service
+ *   cookiesPage   → /policies/cookies-preference
  *   contentPage-sustainability (slug sustainability) → /sustainability
  *   searchPage    → reserved (no www route yet)
  *   notFoundPage  → reserved (no www route yet)
@@ -162,6 +163,25 @@ const PINNED = [
       body: stubParagraph(
         'Replace with approved Terms of Service copy before launch.',
         'terms-stub',
+      ),
+    },
+  },
+  {
+    id: 'cookiesPage',
+    route: '/policies/cookies-preference',
+    doc: {
+      _id: 'cookiesPage',
+      _type: 'legalPage',
+      title: 'Cookies Preference',
+      lastUpdated: '2026-01-01',
+      metaTitle: 'Cookies Preference',
+      metaDescription:
+        'How PakFactory uses cookies and how you can manage your preferences.',
+      allowIndex: true,
+      allowFollow: true,
+      body: stubParagraph(
+        'Replace with approved Cookies Preference copy before launch.',
+        'cookies-stub',
       ),
     },
   },

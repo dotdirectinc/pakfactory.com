@@ -127,6 +127,7 @@ export const PRESS_RELEASE_SLUGS_QUERY = /* groq */ `*[
 export const PRESS_RELEASE_SITEMAP_QUERY = /* groq */ `*[
   ${PRESS_RELEASE_LIVE}
 ] | order(publishedAt desc){
+  title,
   "slug": slug.current,
   "lastmod": coalesce(lastModified, publishedAt, _updatedAt)
 }`
@@ -200,6 +201,7 @@ export type PressReleaseSlugDoc = {slug: string}
 
 export type PressReleaseSitemapEntry = {
   slug: string
+  title?: string | null
   lastmod?: string | null
 }
 

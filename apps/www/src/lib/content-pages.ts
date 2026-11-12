@@ -162,7 +162,7 @@ export const listContentPageSitemapEntries = cache(
     async (): Promise<ContentPageSitemapEntry[]> => {
         const rows = await sanityCache(
             () => fetchContentPageSitemap(),
-            [`${WWW_CONTENT_PAGES_CACHE_TAG}:sitemap`],
+            [`${WWW_CONTENT_PAGES_CACHE_TAG}:sitemap-titles`],
             {
                 revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
                 tags: [WWW_CONTENT_PAGES_CACHE_TAG],

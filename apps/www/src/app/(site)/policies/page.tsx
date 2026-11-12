@@ -1,8 +1,11 @@
 import type {Metadata} from 'next';
-import Link from 'next/link';
 import {formatDateTime} from '@pakfactory/utilities/date-time';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {
+    StaticPageBody,
+    StaticPageLinkList,
+} from '@/components/common/static-page-body';
 import {legalPageHref, listLegalPages} from '@/lib/legal-pages';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -21,10 +24,13 @@ export default async function PoliciesPage() {
         .map((page) => {
             const href = legalPageHref(page._id);
             if (!href) return null;
+            const lastUpdated = page.lastUpdated?.trim() || null;
             return {
                 href,
-                title: page.title?.trim() || 'Policy',
-                lastUpdated: page.lastUpdated?.trim() || null,
+                label: page.title?.trim() || 'Policy',
+                description: lastUpdated
+                    ? `Last updated ${formatDateTime(lastUpdated, 'longDate')}`
+                    : null,
             };
         })
         .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
@@ -41,35 +47,15 @@ export default async function PoliciesPage() {
                 title="Policies"
                 description="Legal documents that apply to using PakFactory."
             />
-            <section className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
+            <StaticPageBody as="section">
                 {links.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                         No policies are published yet.
                     </p>
                 ) : (
-                    <ul className="space-y-4">
-                        {links.map((item) => (
-                            <li key={item.href}>
-                                <Link
-                                    href={item.href}
-                                    className="text-lg font-medium text-foreground underline underline-offset-4 hover:no-underline"
-                                >
-                                    {item.title}
-                                </Link>
-                                {item.lastUpdated ? (
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Last updated{' '}
-                                        {formatDateTime(
-                                            item.lastUpdated,
-                                            'longDate',
-                                        )}
-                                    </p>
-                                ) : null}
-                            </li>
-                        ))}
-                    </ul>
+                    <StaticPageLinkList items={links} />
                 )}
-            </section>
+            </StaticPageBody>
         </main>
     );
 }

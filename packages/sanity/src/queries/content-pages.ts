@@ -4,8 +4,9 @@
  *
  * Pinned Content Pages (`aboutPage`, `contactPage`) are read by `_id`. Other
  * company pages (e.g. Sustainability) are read by `slug.current`. Legal Pages
- * have no slug — the www route maps `privacy-policy` / `terms-of-service` to
- * the pinned ids `privacyPage` / `termsPage`.
+ * have no slug — the www route maps `privacy-policy` / `terms-of-service` /
+ * `cookies-preference` to the pinned ids `privacyPage` / `termsPage` /
+ * `cookiesPage`.
  */
 
 import {PAGE_SECTIONS_PROJECTION, type PageSectionDoc} from './sections'
@@ -50,6 +51,7 @@ export type LegalPageListItem = {
 
 export type ContentPageSitemapEntry = {
   slug: string
+  title?: string | null
   lastmod?: string | null
 }
 
@@ -109,6 +111,7 @@ export const CONTENT_PAGE_SITEMAP_QUERY = /* groq */ `*[
   ${PINNED_CONTENT_ID_FILTER} &&
   allowIndex != false
 ]{
+  title,
   "slug": slug.current,
   "lastmod": _updatedAt
 }`

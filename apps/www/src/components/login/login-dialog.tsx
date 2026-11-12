@@ -13,9 +13,11 @@ import {LOGIN_COPY} from '@/lib/copy/login';
 type LoginDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** Return path after sign-in / Google OAuth (same as full-page login `?next=`). */
+    next?: string;
 };
 
-export function LoginDialog({open, onOpenChange}: LoginDialogProps) {
+export function LoginDialog({open, onOpenChange, next}: LoginDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
@@ -24,7 +26,7 @@ export function LoginDialog({open, onOpenChange}: LoginDialogProps) {
                     <DialogDescription>{LOGIN_COPY.subtitle}</DialogDescription>
                 </DialogHeader>
                 <div className="flex justify-center py-2">
-                    <LoginForm embedded />
+                    <LoginForm embedded next={next} />
                 </div>
             </DialogContent>
         </Dialog>

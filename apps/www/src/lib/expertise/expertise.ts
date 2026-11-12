@@ -104,7 +104,7 @@ export async function listExpertiseStageSlugs(): Promise<
         () => fetchExpertiseStageSlugs(),
         sanityCache(
             () => fetchExpertiseStageSlugs(),
-            ['www-expertise-slugs'],
+            ['www-expertise-slugs-titles'],
             {
                 revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
                 tags: [WWW_EXPERTISE_CACHE_TAG],

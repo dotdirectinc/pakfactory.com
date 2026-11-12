@@ -20,6 +20,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 export const LEGAL_PAGE_SLUG_TO_ID = {
     'privacy-policy': 'privacyPage',
     'terms-of-service': 'termsPage',
+    'cookies-preference': 'cookiesPage',
 } as const;
 
 export type LegalPageSlug = keyof typeof LEGAL_PAGE_SLUG_TO_ID;
@@ -33,6 +34,7 @@ export function isLegalPageSlug(slug: string): slug is LegalPageSlug {
 export function legalPageHref(id: string): string | null {
     if (id === 'privacyPage') return WWW_ROUTES.privacyPolicy;
     if (id === 'termsPage') return WWW_ROUTES.termsOfService;
+    if (id === 'cookiesPage') return WWW_ROUTES.cookiesPreference;
     return null;
 }
 

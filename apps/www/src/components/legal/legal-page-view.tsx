@@ -8,6 +8,7 @@ import {formatDateTime} from '@pakfactory/utilities/date-time';
 import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {StaticPageBody} from '@/components/common/static-page-body';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 const LEGAL_BODY_COMPONENTS: PortableTextComponents = {
@@ -96,12 +97,14 @@ export function LegalPageView({page}: LegalPageViewProps) {
                 }
             />
             {body.length > 0 ? (
-                <article className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
-                    <PortableText
-                        value={body}
-                        components={LEGAL_BODY_COMPONENTS}
-                    />
-                </article>
+                <StaticPageBody as="section">
+                    <article>
+                        <PortableText
+                            value={body}
+                            components={LEGAL_BODY_COMPONENTS}
+                        />
+                    </article>
+                </StaticPageBody>
             ) : null}
         </main>
     );
