@@ -172,7 +172,6 @@ export function ApplyPopup({
         option,
         properties = [],
         choiceSummary,
-        categoryTitle,
         suggestions = [],
         lines: lineFilters = [],
         initialProductSlug,
@@ -573,9 +572,6 @@ export function ApplyPopup({
                     <Step2
                         products={selectedProducts}
                         loaded={loaded}
-                        optionTitle={option.title}
-                        categoryTitle={categoryTitle}
-                        choice={choice}
                         setQuantities={setQuantities}
                         loading={loadingStep2}
                     />
@@ -598,15 +594,6 @@ export function ApplyPopup({
         </div>
     );
 
-    const header = (
-        <div className="flex flex-col gap-1">
-            <span className="text-lg font-semibold tracking-tight text-foreground">
-                {title}
-            </span>
-            <span className="text-sm text-muted-foreground">{description}</span>
-        </div>
-    );
-
     if (belowLg) {
         return (
             <Sheet open onOpenChange={(o) => !o && onClose()}>
@@ -616,11 +603,12 @@ export function ApplyPopup({
                     className="inset-0 flex h-dvh w-full max-w-none flex-col gap-0 rounded-none border-0 bg-background p-0"
                 >
                     <SheetHeader className="shrink-0 gap-1 border-b border-border px-5 py-4 pr-12 text-left sm:px-7">
-                        <SheetTitle className="sr-only">{title}</SheetTitle>
-                        <SheetDescription className="sr-only">
+                        <SheetTitle className="text-lg font-semibold tracking-tight">
+                            {title}
+                        </SheetTitle>
+                        <SheetDescription className="text-sm text-muted-foreground">
                             {description}
                         </SheetDescription>
-                        {header}
                     </SheetHeader>
                     {body}
                     <SheetClose className="absolute top-4 right-4 z-10 flex size-8 cursor-pointer items-center justify-center rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden">
@@ -635,12 +623,13 @@ export function ApplyPopup({
     return (
         <Dialog open onOpenChange={(o) => !o && onClose()}>
             <DialogContent className="flex h-[min(720px,85vh)] max-h-[85vh] w-full max-w-6xl flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl">
-                <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left sm:px-6">
-                    <DialogTitle className="sr-only">{title}</DialogTitle>
-                    <DialogDescription className="sr-only">
+                <DialogHeader className="shrink-0 gap-1 border-b border-border px-5 py-4 pr-12 text-left sm:px-6">
+                    <DialogTitle className="text-lg font-semibold tracking-tight">
+                        {title}
+                    </DialogTitle>
+                    <DialogDescription className="text-sm text-muted-foreground">
                         {description}
                     </DialogDescription>
-                    {header}
                 </DialogHeader>
                 {body}
             </DialogContent>
@@ -676,9 +665,9 @@ function Step1({
     const visibleLines = lineChips.filter((c) => c.count > 0);
 
     const productGrid = filtered.length ? (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((p) => (
-                <li key={p.key}>
+                <li key={p.key} className="h-full">
                     <SelectProductCard
                         product={p}
                         selected={selected.includes(p.slug)}
@@ -775,17 +764,11 @@ function Step1({
 function Step2({
     products,
     loaded,
-    optionTitle,
-    categoryTitle,
-    choice,
     setQuantities,
     loading,
 }: {
     products: SelectableProduct[];
     loaded: Record<string, LoadedProduct>;
-    optionTitle: string;
-    categoryTitle?: string;
-    choice: string | null;
     setQuantities: (slug: string, quantities: number[]) => void;
     loading: boolean;
 }) {
@@ -797,12 +780,8 @@ function Step2({
         );
     }
 
-    const finishingLabel = categoryTitle?.trim()
-        ? `${categoryTitle}: ${optionTitle}`
-        : optionTitle;
-
     return (
-        <ul className="flex flex-col gap-4">
+        <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {products.map((p) => {
                 const entry = loaded[p.slug];
                 const product = entry?.product;
@@ -845,7 +824,7 @@ function Step2({
                                     </span>
                                 )}
                             </div>
-                            <div className="flex min-w-0 flex-1 flex-col gap-3">
+                            <div className="flex min-w-0 flex-1 flex-col gap-4">
                                 <div className="flex flex-col gap-1">
                                     <p className="text-xs text-muted-foreground">
                                         {[lineTitle, sku !== '-' ? sku : null]
@@ -856,18 +835,12 @@ function Step2({
                                         {product?.title ?? p.title}
                                     </p>
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    {inspiration ? (
-                                        <CustomizationRow
-                                            label="As shown"
-                                            value="Inspiration design"
-                                        />
-                                    ) : null}
+                                {inspiration ? (
                                     <CustomizationRow
-                                        label={finishingLabel}
-                                        value={choice ?? 'Selected'}
+                                        label="As shown"
+                                        value="Inspiration design"
                                     />
-                                </div>
+                                ) : null}
                                 <div className="flex flex-col gap-2">
                                     <p className="text-sm font-medium text-foreground">
                                         How many quantities?{' '}
@@ -894,6 +867,7 @@ function Step2({
                                             )
                                         }
                                         moq={moq}
+                                        menuLayout="inFlow"
                                     />
                                 </div>
                             </div>
@@ -913,7 +887,7 @@ function CustomizationRow({
     value: string;
 }) {
     return (
-        <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/60 px-3 py-2 text-sm">
+        <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/60 px-4 py-2 text-sm">
             <span className="min-w-0 truncate text-foreground">{label}</span>
             <span className="shrink-0 font-medium text-foreground">{value}</span>
         </div>
@@ -936,13 +910,13 @@ function SelectProductCard({
             onClick={onToggle}
             aria-pressed={selected}
             className={cn(
-                'flex w-full flex-col overflow-hidden rounded-xl border bg-background text-left transition-colors',
+                'flex h-full w-full flex-col overflow-hidden rounded-xl border bg-background text-left transition-colors',
                 selected
                     ? 'border-foreground ring-1 ring-foreground'
                     : 'border-border hover:border-foreground/40',
             )}
         >
-            <div className="relative aspect-square w-full bg-muted">
+            <div className="relative aspect-square w-full shrink-0 bg-muted">
                 {product.imageUrl ? (
                     <SanityImage
                         src={product.imageUrl}
@@ -962,7 +936,7 @@ function SelectProductCard({
                 )}
                 <span
                     className={cn(
-                        'absolute top-3 right-3 flex size-7 items-center justify-center rounded-full border text-sm font-semibold',
+                        'absolute top-2 right-2 flex size-8 items-center justify-center rounded-full border text-sm font-semibold',
                         selected
                             ? 'border-foreground bg-foreground text-background'
                             : 'border-border bg-background text-muted-foreground',
@@ -976,13 +950,13 @@ function SelectProductCard({
                     )}
                 </span>
             </div>
-            <div className="flex flex-col gap-1 p-3">
+            <div className="flex min-h-[4.5rem] flex-1 flex-col gap-1 p-4">
                 <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     {[product.productLineTitle, sku !== '-' ? sku : null]
                         .filter(Boolean)
                         .join(' · ') || 'Packaging'}
                 </span>
-                <span className="line-clamp-2 text-sm font-semibold text-foreground">
+                <span className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
                     {product.title}
                 </span>
             </div>

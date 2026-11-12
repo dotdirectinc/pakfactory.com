@@ -26,6 +26,7 @@ import {
     DropdownMenuTrigger,
 } from '@pakfactory/ui/components/dropdown-menu';
 import {Button} from '@pakfactory/ui/components/button';
+import {Checkbox} from '@pakfactory/ui/components/checkbox';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {ToggleGroup, ToggleGroupItem} from '@pakfactory/ui/components/toggle-group';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -412,7 +413,6 @@ export function CompareView({
     const differsRow = (r: {values: Record<string, string>}) => cols.length > 1 && new Set(cols.map((c) => r.values[c.id]?.trim() ?? '')).size > 1;
     const shownRows = allRows.filter((r, i) => {
         if (guided && eView === 'essentials' && !isEssentialRow(type, r.label, i)) return false;
-        if (diffOnly && !differsRow(r)) return false;
         return true;
     });
     // CMP-11: one line from the rows — what differs, what's the same.
@@ -510,9 +510,17 @@ export function CompareView({
     const colTracksMin = `calc(var(--cmp-col-min) * ${railLen})`;
     const tableVars =
         '[--cmp-label:8.5rem] [--cmp-col-min:min(42vw,calc((var(--layout-max)-2*var(--layout-gutter-inner)-4.5rem)/4))] sm:[--cmp-label:13rem] sm:[--cmp-col-min:calc((var(--layout-max)-2*var(--layout-gutter-inner)-4.5rem)/4)]';
-    const cell = 'border-r border-border px-4 py-3 text-sm last:border-r-0';
+    const cell =
+        'border-r border-border px-4 py-3 text-sm last:border-r-0 transition-colors duration-(--motion-fast) ease-out motion-reduce:transition-none';
     const labelCell = (node: ReactNode, tint = false) => (
-        <div className={cn('sticky left-0 z-10 border-r border-border py-3 pl-layout-gutter-inner pr-3', tint ? 'bg-muted' : 'bg-background')}>{node}</div>
+        <div
+            className={cn(
+                'sticky left-0 z-20 border-r border-border py-3 pl-layout-gutter-inner pr-3 transition-colors duration-(--motion-fast) ease-out motion-reduce:transition-none',
+                tint ? 'bg-muted' : 'bg-background',
+            )}
+        >
+            {node}
+        </div>
     );
     /** Full scroller width — not the capped tpl band — so trailing controls sit on the window right. */
     const sectionHeader = (title: string, trailing?: ReactNode) => (
@@ -617,6 +625,7 @@ export function CompareView({
     const scrubRafRef = useRef(0);
     const [canScrubLeft, setCanScrubLeft] = useState(false);
     const [canScrubRight, setCanScrubRight] = useState(false);
+    const [heroHeight, setHeroHeight] = useState(0);
     const [stuck, setStuck] = useState(false);
     const [headTop, setHeadTop] = useState(0);
     const showHeroesKey = `${ids.join(',')}|${Boolean(matrix)}`;
@@ -699,6 +708,24 @@ export function CompareView({
         };
     }, [railLen, showHeroesKey]);
 
+    // Scrubbers sit on the product-card row only — measure hero height so arrows center there, not mid-matrix.
+    useEffect(() => {
+        const el = heroRef.current;
+        if (!el) {
+            setHeroHeight(0);
+            return;
+        }
+        const measure = () => setHeroHeight(el.getBoundingClientRect().height);
+        measure();
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+        ro?.observe(el);
+        window.addEventListener('resize', measure);
+        return () => {
+            ro?.disconnect();
+            window.removeEventListener('resize', measure);
+        };
+    }, [railLen, showHeroesKey]);
+
     useLayoutEffect(() => {
         if (stuck) applyStickyTransform();
     }, [stuck, railLen, showHeroesKey]);
@@ -760,9 +787,12 @@ export function CompareView({
     const showWhyUseIt = type === 'customizations' && cols.some(columnHasBenefits);
     const diffOnlyControl =
         showHeroes && cols.length > 1 ? (
-            <label className="flex shrink-0 items-center gap-2 text-sm">
-                <input type="checkbox" checked={diffOnly} onChange={(e) => setDiffOnly(e.target.checked)} className="size-4" />
-                Show differences only
+            <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                    checked={diffOnly}
+                    onCheckedChange={(value) => setDiffOnly(value === true)}
+                />
+                Highlight differences
             </label>
         ) : null;
     const heading =
@@ -943,34 +973,37 @@ export function CompareView({
                         {/* Full-viewport column rail — fluid while four fit; min card width then scroll (PROD-3307). */}
                         <div className={cn('relative w-full border-t border-dashed border-border', tableVars)}>
                             {(canScrubLeft || canScrubRight) && (
-                                <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 flex -translate-y-1/2 items-center justify-between px-2">
+                                <div
+                                    className="pointer-events-none absolute top-0 right-0 left-[var(--cmp-label)] z-30 flex items-center justify-between pr-2"
+                                    style={heroHeight > 0 ? {height: heroHeight} : undefined}
+                                >
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="icon"
                                         className={cn(
-                                            'pointer-events-auto size-9 rounded-full bg-background/95 shadow-sm backdrop-blur',
+                                            'pointer-events-auto size-12 -translate-x-1/2 rounded-full bg-background/95 shadow-sm backdrop-blur',
                                             !canScrubLeft && 'invisible',
                                         )}
                                         disabled={!canScrubLeft}
                                         aria-label="Scroll columns left"
                                         onClick={() => scrubBy(-1)}
                                     >
-                                        <ChevronLeft className="size-4" aria-hidden />
+                                        <ChevronLeft className="size-5" aria-hidden />
                                     </Button>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="icon"
                                         className={cn(
-                                            'pointer-events-auto size-9 rounded-full bg-background/95 shadow-sm backdrop-blur',
+                                            'pointer-events-auto size-12 rounded-full bg-background/95 shadow-sm backdrop-blur',
                                             !canScrubRight && 'invisible',
                                         )}
                                         disabled={!canScrubRight}
                                         aria-label="Scroll columns right"
                                         onClick={() => scrubBy(1)}
                                     >
-                                        <ChevronRight className="size-4" aria-hidden />
+                                        <ChevronRight className="size-5" aria-hidden />
                                     </Button>
                                 </div>
                             )}
@@ -982,11 +1015,7 @@ export function CompareView({
                             <div className="min-w-full" style={railMinStyle}>
                                 {/* Column heads: image, name, remove. Empty slots invite one more (Guided: a suggestion). */}
                                 <div ref={heroRef} className="grid border-b border-border" style={tpl}>
-                                    {labelCell(
-                                        <span className="text-[12px] text-muted-foreground">
-                                            {cols.length} of {max}
-                                        </span>,
-                                    )}
+                                    {labelCell(null)}
                                     {railSlots.map((c, i) => {
                                         if (!c) {
                                             return (
@@ -1100,7 +1129,8 @@ export function CompareView({
                                 <div>
                                     {shownRows.length > 0 ? sectionHeader('Key Properties', diffOnlyControl) : null}
                                     {shownRows.map((r) => {
-                                        const differs = cols.length > 1 && new Set(cols.map((c) => r.values[c.id]?.trim() ?? '')).size > 1;
+                                        const differs = differsRow(r);
+                                        const highlight = diffOnly && differs;
                                         const def = guided ? defineRow(r.label) : undefined;
                                         return (
                                             <div key={r.key} className="grid border-b border-border" style={tpl} data-differs={differs || undefined}>
@@ -1111,14 +1141,21 @@ export function CompareView({
                                                         </span>
                                                         {guided && (!SHOW_VIEW_TOGGLE || eView === 'essentials') && def ? <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">{def}</span> : null}
                                                     </>,
+                                                    highlight,
                                                 )}
                                                 {railSlots.map((c, i) =>
                                                     c ? (
-                                                        <div key={c.id} className={cell}>
+                                                        <div
+                                                            key={c.id}
+                                                            className={cn(cell, highlight && 'bg-muted')}
+                                                        >
                                                             {r.values[c.id]?.trim() || <span className="text-muted-foreground">-</span>}
                                                         </div>
                                                     ) : (
-                                                        <div key={`e${i}`} className={cell} />
+                                                        <div
+                                                            key={`e${i}`}
+                                                            className={cn(cell, highlight && 'bg-muted')}
+                                                        />
                                                     ),
                                                 )}
                                             </div>
