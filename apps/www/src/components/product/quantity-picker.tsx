@@ -31,6 +31,11 @@ type QuantityPickerProps = {
     moq?: number | null;
     unitLabel?: string;
     className?: string;
+    /**
+     * `overlay` (default) floats the menu over content.
+     * `inFlow` expands in place — use inside overflow-clipped dialogs.
+     */
+    menuLayout?: 'overlay' | 'inFlow';
 };
 
 export function QuantityPicker({
@@ -40,6 +45,7 @@ export function QuantityPicker({
     moq = null,
     unitLabel = 'units',
     className,
+    menuLayout = 'overlay',
 }: QuantityPickerProps) {
     const [open, setOpen] = useState(false);
     const [customVolume, setCustomVolume] = useState('');
@@ -173,7 +179,12 @@ export function QuantityPicker({
                     <div
                         role="listbox"
                         aria-multiselectable="true"
-                        className="absolute inset-x-0 z-40 mt-2 overflow-hidden rounded-xl border border-input bg-background shadow-lg"
+                        className={cn(
+                            'overflow-hidden rounded-xl border border-input bg-background shadow-lg',
+                            menuLayout === 'inFlow'
+                                ? 'relative mt-2'
+                                : 'absolute inset-x-0 z-40 mt-2',
+                        )}
                     >
                         <div className="flex flex-col gap-2 border-b border-input px-4 py-6">
                             <p className="text-xs leading-snug text-muted-foreground">

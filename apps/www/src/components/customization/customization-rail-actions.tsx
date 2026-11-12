@@ -2,7 +2,7 @@
 
 import type {MouseEvent} from 'react';
 import {usePathname} from 'next/navigation';
-import {ArrowLeftRight, Bookmark, Download} from 'lucide-react';
+import {Bookmark, Columns2, Download} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
@@ -185,7 +185,7 @@ export function CustomizationRailActions({
                             onClick={compareToggle.onClick}
                             aria-pressed={compareToggle.inCompare}
                         >
-                            <Icon icon={ArrowLeftRight} size="sm" />
+                            <Icon icon={Columns2} size="sm" />
                             {compareToggle.inCompare ? (
                                 <CompareToggleLabel inCompare />
                             ) : (
