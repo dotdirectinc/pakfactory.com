@@ -42,6 +42,10 @@ const NAV_ITEMS = [
         label: ACCOUNT_COPY.requestsTitle,
     },
     {
+        href: WWW_ROUTES.bookmarks,
+        label: ACCOUNT_COPY.bookmarksTitle,
+    },
+    {
         href: WWW_ROUTES.accountProfile,
         label: ACCOUNT_COPY.profileTitle,
     },

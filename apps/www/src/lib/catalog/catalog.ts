@@ -430,13 +430,18 @@ const getCachedProductRelatedIndex = sanityCache(
     },
 );
 
-/** One line's static-param slugs (PROD-3004). */
-export type LineStyleParams = {slug: string; styleSlugs: string[]};
+/** One line's static-param slugs + titles (PROD-3004; titles for HTML sitemap). */
+export type LineStyleParams = {
+    slug: string;
+    title: string;
+    styles: Array<{slug: string; title: string}>;
+};
 
 /**
- * Line + style slugs for `generateStaticParams`, built by the same
- * {@link mapSanityProductLine} as {@link listLines}, so the pages listed match.
- * listLines() carries every product card (~2.8 MB) and can never be cached.
+ * Line + style slugs (and titles) for `generateStaticParams` / sitemap, built by
+ * the same {@link mapSanityProductLine} as {@link listLines}, so the pages
+ * listed match. listLines() carries every product card (~2.8 MB) and can never
+ * be cached.
  */
 async function fetchSanityLineStyleParams(): Promise<LineStyleParams[]> {
     if (!isSanityConfigured()) return [];
@@ -447,7 +452,16 @@ async function fetchSanityLineStyleParams(): Promise<LineStyleParams[]> {
         return (docs ?? []).flatMap((doc) => {
             const line = mapSanityProductLine(doc);
             return line
-                ? [{slug: line.slug, styleSlugs: line.styles.map((style) => style.slug)}]
+                ? [
+                      {
+                          slug: line.slug,
+                          title: line.title,
+                          styles: line.styles.map((style) => ({
+                              slug: style.slug,
+                              title: style.title,
+                          })),
+                      },
+                  ]
                 : [];
         });
     } catch (err) {
@@ -457,7 +471,9 @@ async function fetchSanityLineStyleParams(): Promise<LineStyleParams[]> {
 
 const getCachedLineStyleParams = sanityCache(
     fetchSanityLineStyleParams,
-    [`${WWW_CATALOG_LINES_CACHE_TAG}:params`],
+    // `:titles` — payload gained style titles for the HTML sitemap; bump so
+    // stale `{slug, styleSlugs}` entries are not served without `styles`.
+    [`${WWW_CATALOG_LINES_CACHE_TAG}:params:titles`],
     {
         revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
         tags: [WWW_CATALOG_LINES_CACHE_TAG, WWW_CATALOG_PRODUCTS_CACHE_TAG],

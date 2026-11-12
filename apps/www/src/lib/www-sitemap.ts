@@ -48,9 +48,19 @@ function lastmodIso(value: string | null | undefined): string | undefined {
     }
 }
 
+/** Prefer a CMS title; fall back to the URL slug when title is empty. */
+function titleOrSlug(
+    title: string | null | undefined,
+    slug: string,
+): string {
+    const trimmed = title?.trim();
+    return trimmed || slug;
+}
+
 /**
  * Grouped site URLs for `/sitemap` (HTML) and `/sitemap.xml` (PROD-3235).
  * Category landings are omitted — they 404 (PROD-2848).
+ * Link labels use page titles (not slugs) when Sanity provides them.
  */
 export async function buildWwwSitemapGroups(): Promise<WwwSitemapGroup[]> {
     const [
@@ -84,10 +94,11 @@ export async function buildWwwSitemapGroups(): Promise<WwwSitemapGroup[]> {
         {href: WWW_ROUTES.policies, label: 'Policies'},
         {href: WWW_ROUTES.privacyPolicy, label: 'Privacy Policy'},
         {href: WWW_ROUTES.termsOfService, label: 'Terms of Service'},
+        {href: WWW_ROUTES.cookiesPreference, label: 'Cookies Preference'},
         {href: WWW_ROUTES.sitemap, label: 'Sitemap'},
         ...contentPages.map((entry) => ({
             href: `/${entry.slug}`,
-            label: entry.slug,
+            label: titleOrSlug(entry.title, entry.slug),
             lastmod: lastmodIso(entry.lastmod),
         })),
     ];
@@ -95,10 +106,13 @@ export async function buildWwwSitemapGroups(): Promise<WwwSitemapGroup[]> {
     const products: WwwSitemapLink[] = [
         {href: WWW_ROUTES.products, label: 'Products'},
         ...lineParams.flatMap((line) => [
-            {href: productHref(line.slug), label: line.slug},
-            ...line.styleSlugs.map((styleSlug) => ({
-                href: productStyleHref(line.slug, styleSlug),
-                label: `${line.slug} / ${styleSlug}`,
+            {
+                href: productHref(line.slug),
+                label: titleOrSlug(line.title, line.slug),
+            },
+            ...(line.styles ?? []).map((style) => ({
+                href: productStyleHref(line.slug, style.slug),
+                label: titleOrSlug(style.title, style.slug),
             })),
         ]),
     ];
@@ -111,7 +125,7 @@ export async function buildWwwSitemapGroups(): Promise<WwwSitemapGroup[]> {
         },
         ...customizationLibrary.items.map((item) => ({
             href: customizationCategoryHref(item.categoryValue, item.slug),
-            label: item.title,
+            label: titleOrSlug(item.title, item.slug),
         })),
     ];
 
@@ -119,11 +133,11 @@ export async function buildWwwSitemapGroups(): Promise<WwwSitemapGroup[]> {
         {href: WWW_ROUTES.solutions, label: 'Solutions'},
         ...solutionSlugs.map((entry) => ({
             href: solutionHref(entry.slug),
-            label: entry.slug,
+            label: titleOrSlug(entry.title, entry.slug),
         })),
         ...solutionStyleParams.map((entry) => ({
             href: solutionStyleHref(entry.slug, entry.styleSlug),
-            label: `${entry.slug} / ${entry.styleSlug}`,
+            label: titleOrSlug(entry.title, entry.styleSlug),
         })),
     ];
 
@@ -133,7 +147,10 @@ export async function buildWwwSitemapGroups(): Promise<WwwSitemapGroup[]> {
             .map((entry) => {
                 const slug = entry.slug?.trim();
                 if (!slug) return null;
-                return {href: expertiseHref(slug), label: slug};
+                return {
+                    href: expertiseHref(slug),
+                    label: titleOrSlug(entry.title, slug),
+                };
             })
             .filter((link): link is WwwSitemapLink => link !== null),
     ];
@@ -142,7 +159,7 @@ export async function buildWwwSitemapGroups(): Promise<WwwSitemapGroup[]> {
         {href: WWW_ROUTES.caseStudies, label: 'Case Studies'},
         ...caseStudies.map((entry) => ({
             href: `${WWW_ROUTES.caseStudies}/${entry.slug}`,
-            label: entry.slug,
+            label: titleOrSlug(entry.title, entry.slug),
             lastmod: lastmodIso(entry.lastmod),
         })),
     ];
@@ -151,7 +168,7 @@ export async function buildWwwSitemapGroups(): Promise<WwwSitemapGroup[]> {
         {href: WWW_ROUTES.newsroom, label: 'Newsroom'},
         ...newsEntries.map((entry) => ({
             href: newsItemHref(entry.slug),
-            label: entry.slug,
+            label: titleOrSlug(entry.title, entry.slug),
             lastmod: lastmodIso(entry.lastmod),
         })),
     ];

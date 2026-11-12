@@ -30,7 +30,10 @@ export async function generateStaticParams(): Promise<
     return staticParamsExceptPreview(async () => {
         const lines = await listLineStyleParams();
         return lines.flatMap((line) =>
-            line.styleSlugs.map((styleSlug) => ({slug: line.slug, styleSlug})),
+            line.styles.map((style) => ({
+                slug: line.slug,
+                styleSlug: style.slug,
+            })),
         );
     });
 }

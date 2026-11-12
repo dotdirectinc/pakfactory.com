@@ -268,6 +268,7 @@ export const SOLUTION_PAGE_SLUGS_QUERY = /* groq */ `*[
   ${SOLUTION_ACTIVE} &&
   defined(slug.current)
 ] | order(title asc) {
+  title,
   "slug": slug.current,
   "packagingFormats": packagingFormats[]->{
     "slug": slug.current
@@ -355,6 +356,7 @@ export type SolutionBySlugDoc = {
 };
 
 export type SolutionPageSlugDoc = {
+    title?: string | null;
     slug: string | null;
     packagingFormats?: Array<{slug: string | null}> | null;
 };
@@ -523,7 +525,9 @@ export const SOLUTION_STYLE_PAGE_PARAMS_QUERY = /* groq */ `*[
   defined(solution->slug.current) &&
   solution->status == "active"
 ]{
+  title,
   "solutionSlug": solution->slug.current,
+  "solutionTitle": solution->title,
   "styleSlug": slug.current
 }`;
 
@@ -588,6 +592,8 @@ export type SolutionStylesForBreadcrumbDoc = {
 };
 
 export type SolutionStylePageParamDoc = {
+    title?: string | null;
     solutionSlug: string | null;
+    solutionTitle?: string | null;
     styleSlug: string | null;
 };

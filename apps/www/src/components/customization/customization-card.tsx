@@ -6,6 +6,7 @@ import {
     useRef,
     useState,
     type MouseEvent,
+    type ReactNode,
 } from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
@@ -61,6 +62,13 @@ type CustomizationCardProps = {
     item: CustomizationCardData;
     /** Above-fold catalog tiles — LCP candidates. */
     priority?: boolean;
+    /**
+     * Extra media chrome above the hit link (e.g. Bookmarks selection checkbox).
+     * Catalog grids omit this.
+     */
+    mediaAccessory?: ReactNode;
+    /** Extra block under the standard meta (e.g. Bookmarks Apply CTA). */
+    metaFooter?: ReactNode;
 };
 
 /**
@@ -144,7 +152,12 @@ function resolveCardMedia(item: CustomizationCardData) {
  * Prefetch stays off for the grid; the card under the pointer opts into full route
  * prefetch (PROD-3102 product catalog parity).
  */
-export function CustomizationCard({item, priority = false}: CustomizationCardProps) {
+export function CustomizationCard({
+    item,
+    priority = false,
+    mediaAccessory,
+    metaFooter,
+}: CustomizationCardProps) {
     const href = customizationCategoryHref(item.categoryValue, item.slug);
     const displayTitle = item.shortName?.trim() || item.title;
     const eyebrow = item.typeTitle?.trim().toUpperCase() ?? '';
@@ -306,25 +319,27 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
     );
 
     const mediaOverlay = (
-        <Link
-            href={href}
-            prefetch={prefetch}
-            onPointerEnter={() => {
-                enablePrefetch();
-                startVideo();
-            }}
-            onPointerLeave={stopVideo}
-            onPointerDown={enablePrefetch}
-            onFocus={enablePrefetch}
-            className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={displayTitle}
-        />
+        <>
+            <Link
+                href={href}
+                prefetch={prefetch}
+                onPointerEnter={() => {
+                    enablePrefetch();
+                    startVideo();
+                }}
+                onPointerLeave={stopVideo}
+                onPointerDown={enablePrefetch}
+                onFocus={enablePrefetch}
+                className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={displayTitle}
+            />
+            {mediaAccessory}
+        </>
     );
 
     return (
         <MediaCardFrame
             className="h-full"
-            bookmarkPressed={saved}
             media={media}
             mediaOverlay={mediaOverlay}
             statusBadge={
@@ -359,6 +374,7 @@ export function CustomizationCard({item, priority = false}: CustomizationCardPro
                     >
                         <CustomizationCardTitlePending title={displayTitle} />
                     </Link>
+                    {metaFooter}
                 </div>
             }
         />

@@ -3,8 +3,10 @@
 import type {ReactNode} from 'react';
 import type {AccountIdentity} from '@pakfactory/supabase/session';
 import {Toaster} from '@pakfactory/ui/components/sonner';
+import {BookmarkPendingFlush} from '@/components/bookmarks/bookmark-pending-flush';
 import {ChatFab} from '@/components/chat/chat-fab';
 import {CompareBar} from '@/components/compare/compare-bar';
+import {LoginDialogHost} from '@/components/login/login-dialog-host';
 import {QuickConfigureProvider} from '@/components/quick-configure/quick-configure';
 import {QuotePoolDrawerProvider} from '@/components/request/quote-pool-drawer';
 import {RequestProvider} from '@/lib/request/request-provider';
@@ -34,6 +36,8 @@ export function RequestRoot({
                     {/* Site chat (Intercom at launch; Global Settings → Integrations). */}
                     <ChatFab />
                 </QuickConfigureProvider>
+                <LoginDialogHost />
+                <BookmarkPendingFlush />
                 <Toaster richColors closeButton position="bottom-right" style={{zIndex: 100}} />
             </QuotePoolDrawerProvider>
         </RequestProvider>

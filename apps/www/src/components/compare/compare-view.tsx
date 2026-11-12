@@ -1423,7 +1423,7 @@ function CompareActions({children, bookmark}: {children: ReactNode; bookmark: Re
     );
 }
 
-/** Bookmark a compared item (R26). Signed out: the usual "Sign in to bookmark" toast. */
+/** Bookmark a compared item (R26). Signed out: Welcome-back login dialog. */
 function CompareBookmarkButton({col, kind, shared}: {col: CompareColumn; kind: CompareKind; shared: boolean}) {
     const pathname = usePathname() || '/compare';
     const {canBookmark, loginHref} = useBookmarkAuth();

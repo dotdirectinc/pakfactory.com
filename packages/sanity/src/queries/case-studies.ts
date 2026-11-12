@@ -174,6 +174,7 @@ export const CASE_STUDY_PATHS_QUERY = /* groq */ `*[
 export const CASE_STUDY_SITEMAP_QUERY = /* groq */ `*[
   ${CASE_STUDY_LIVE}
 ] | order(publishedAt desc) {
+  title,
   "slug": slug.current,
   "lastmod": coalesce(lastModified, publishedAt, _updatedAt)
 }`;
@@ -304,7 +305,11 @@ export type CaseStudyDetail = CaseStudyCard & {
 
 export type CaseStudyPath = { slug: string };
 
-export type CaseStudySitemapEntry = { slug: string; lastmod: string | null };
+export type CaseStudySitemapEntry = {
+  slug: string;
+  title?: string | null;
+  lastmod: string | null;
+};
 
 export type CaseStudyFilterOptions = {
   solutions: CaseStudyTaxonomyItem[];

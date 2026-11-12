@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import Link from 'next/link';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {StaticPageWideBody} from '@/components/common/static-page-body';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
 import {buildWwwSitemapGroups} from '@/lib/www-sitemap';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -29,27 +30,29 @@ export default async function HtmlSitemapPage() {
                 title="Sitemap"
                 description="Browse PakFactory pages by section."
             />
-            <div className="mx-auto grid w-full max-w-5xl gap-10 px-4 pb-16 sm:px-6 md:grid-cols-2">
-                {groups.map((group) => (
-                    <section key={group.title}>
-                        <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                            {group.title}
-                        </h2>
-                        <ul className="mt-4 space-y-2">
-                            {group.links.map((link) => (
-                                <li key={link.href}>
-                                    <Link
-                                        href={link.href}
-                                        className="text-sm text-foreground underline underline-offset-4 hover:no-underline"
-                                    >
-                                        {link.label}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                ))}
-            </div>
+            <StaticPageWideBody>
+                <div className="flex flex-col gap-16">
+                    {groups.map((group) => (
+                        <section key={group.title}>
+                            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                                {group.title}
+                            </h2>
+                            <ul className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                                {group.links.map((link) => (
+                                    <li key={link.href}>
+                                        <Link
+                                            href={link.href}
+                                            className="text-sm text-foreground hover:underline hover:underline-offset-4"
+                                        >
+                                            {link.label}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    ))}
+                </div>
+            </StaticPageWideBody>
         </main>
     );
 }

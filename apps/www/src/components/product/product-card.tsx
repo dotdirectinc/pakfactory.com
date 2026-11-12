@@ -3,7 +3,7 @@
 import {StatusBadge} from '@/components/ui/status-badge';
 import type {CatalogLifecycle} from '@/lib/catalog/types';
 import {usePathname} from 'next/navigation';
-import type {MouseEvent} from 'react';
+import type {MouseEvent, ReactNode} from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
 import {Columns2, Package} from 'lucide-react';
@@ -72,6 +72,13 @@ type ProductCardProps = {
      * `elevated` — white media well on a muted band (`MediaCardFrame` surface).
      */
     surface?: 'default' | 'elevated';
+    /**
+     * Extra media chrome above the hit link (e.g. Bookmarks selection checkbox).
+     * Catalog grids omit this.
+     */
+    mediaAccessory?: ReactNode;
+    /** Extra block under the standard meta (e.g. Bookmarks Add to Quote). */
+    metaFooter?: ReactNode;
 };
 
 function resolveGallery(data: ProductCardData): ProductCardImage[] {
@@ -97,6 +104,8 @@ export function ProductCard({
     priority = false,
     applyWatermark = true,
     surface = 'default',
+    mediaAccessory,
+    metaFooter,
 }: ProductCardProps) {
     // Missing SKU shows "-" — never fall back to slug or style/line title.
     // Strip ?query so compatibility handoff hrefs don't pollute the slug.
@@ -204,21 +213,23 @@ export function ProductCard({
     );
 
     const mediaOverlay = (
-        <Link
-            href={data.href}
-            prefetch={prefetch}
-            onPointerEnter={enablePrefetch}
-            onPointerDown={enablePrefetch}
-            onFocus={enablePrefetch}
-            className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={data.title}
-        />
+        <>
+            <Link
+                href={data.href}
+                prefetch={prefetch}
+                onPointerEnter={enablePrefetch}
+                onPointerDown={enablePrefetch}
+                onFocus={enablePrefetch}
+                className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={data.title}
+            />
+            {mediaAccessory}
+        </>
     );
 
     return (
         <MediaCardFrame
             surface={surface}
-            bookmarkPressed={saved}
             media={media}
             mediaOverlay={mediaOverlay}
             statusBadge={
@@ -276,6 +287,7 @@ export function ProductCard({
                             {data.supportNote}
                         </p>
                     ) : null}
+                    {metaFooter}
                 </div>
             }
         />

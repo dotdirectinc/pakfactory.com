@@ -71,6 +71,7 @@ export const EXPERTISE_STAGE_SLUGS_QUERY = /* groq */ `*[
   defined(slug.current) &&
   status != "discontinued"
 ] | order(title asc) {
+  title,
   "slug": slug.current
 }`;
 
@@ -155,6 +156,7 @@ export type ExpertisePageFeaturedDoc = {
 } | null;
 
 export type ExpertiseStageSlugDoc = {
+  title?: string | null;
   slug: string | null;
 };
 

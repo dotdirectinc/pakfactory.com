@@ -3,6 +3,7 @@ export const ACCOUNT_COPY = {
     welcomeBack: 'Welcome back,',
     accountMenu: 'Account menu',
     requestsTitle: 'Your Requests',
+    bookmarksTitle: 'Bookmarks',
     listColRequest: 'Request',
     listColSummary: 'Summary',
     listColRfq: 'RFQ',

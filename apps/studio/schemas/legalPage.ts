@@ -5,9 +5,9 @@ import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 
 /**
- * Legal Page — prose with a revision date (Entities/Legal Page.md). Two
- * documents, one type: the privacy policy (`privacyPage`) and the terms of
- * service (`termsPage`), pinned by semantic ID.
+ * Legal Page — prose with a revision date (Entities/Legal Page.md). Three
+ * documents, one type: privacy (`privacyPage`), terms (`termsPage`), and
+ * cookies preference (`cookiesPage`), pinned by semantic ID.
  *
  * Deliberately NOT Content Page and deliberately NO `sections` field — a legal
  * page must not grow a hero, a featured band or a "Get a quote" banner. Different

@@ -23,6 +23,8 @@
     "seed:cdp-detail-pages": "node scripts/seed-cdp-detail-pages.mjs",
     "seed:newsroom-default-pages": "node scripts/seed-newsroom-default-pages.mjs",
     "seed:static-pages": "node scripts/seed-static-pages.mjs",
+    "seed:terms-of-service": "node scripts/seed-terms-of-service.mjs",
+    "seed:cookies-preference": "node scripts/seed-cookies-preference.mjs",
     "seed:home-page": "node scripts/seed-home-page.mjs",
     "seed:website-footer": "node scripts/seed-website-footer.mjs",
     "seed:finder-general": "node scripts/seed-finder-general-rail.mjs",
