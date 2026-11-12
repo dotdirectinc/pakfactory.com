@@ -5,16 +5,16 @@
  * Rewrites only `columns` (up to 3). Leaves items, cta, utility, socialLinks,
  * aiAnswerLinks and legal untouched.
  *
- * Column 1 mirrors primary nav:
- *   Products  → product lines from the dataset (`/products/{slug}`)
- *   Solutions → mega-menu grouping labels (Industry, Channel, Focus, Use Case)
- *               from primary nav, each → `/solutions`
- *   Expertise → expertise stages (`/expertise/{slug}`)
- * Column 2: Academy · Blog · Company
- * Column 3: Orders & Shipment · Support · Legal
+ * Sitemap packed left → right, then down (schema max 3 columns):
+ *   Col 1: Products · Expertise · Account
+ *   Col 2: Customization · Company · Others
+ *   Col 3: Solutions · Resources
+ *
+ * Products are the four named lines (+ All Products), not every productLine.
+ * Expertise omits Fulfillment. Careers + Blog are external URLs when created.
  *
  * Reuses existing footer link objects by label when the destination matches.
- * Creates missing links as site paths. Creates Terms of Service when missing.
+ * Creates missing links as site paths (or external when specified).
  *
  * Idempotent: a second run with the same input prints "Nothing to change".
  * Stops if a draft exists — publish or discard it in Studio first.
@@ -89,22 +89,74 @@ const BACKUP_DIR = join(__dirname, 'backups')
 const PUBLISHED = '!(_id in path("drafts.**"))'
 const LINE_VISIBLE = '(!defined(status) || status == "active")'
 
-/** Fallback if primary-nav Solutions groups are empty. */
-const DEFAULT_SOLUTION_GROUPINGS = [
-  {label: 'Industry', relativePath: '/solutions'},
-  {label: 'Channel', relativePath: '/solutions'},
-  {label: 'Focus', relativePath: '/solutions'},
-  {label: 'Use Case', relativePath: '/solutions'},
+const CAREERS_URL = 'https://career.pakfactory.com/'
+const BLOG_URL = (
+  process.env.NEXT_PUBLIC_BLOG_SITE_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  'https://www.pakfactory.com'
+).replace(/\/$/, '') + '/blog'
+
+/** Sitemap product lines (label + slug/title hints). Not every productLine. */
+const PRODUCT_LINE_SPECS = [
+  {label: 'Rigid Boxes', slugHints: ['rigid-boxes'], titleHints: ['rigid boxes']},
+  {label: 'Folding Cartons', slugHints: ['folding-cartons'], titleHints: ['folding cartons']},
+  {
+    label: 'Corrugated Boxes',
+    slugHints: ['corrugated-boxes'],
+    titleHints: ['corrugated boxes'],
+  },
+  {
+    label: 'Flexible Pouches',
+    slugHints: ['flexible-pouches', 'pouches'],
+    titleHints: ['flexible pouches', 'pouches'],
+  },
 ]
 
-/** Label aliases used when looking up an existing link to reuse. */
+/** Sitemap expertise stages — omit Fulfillment and anything else. */
+const EXPERTISE_SPECS = [
+  {label: 'Packaging Strategy', titleHints: ['packaging strategy', 'strategy']},
+  {label: 'Packaging Design', titleHints: ['packaging design', 'design']},
+  {label: 'Prototyping', titleHints: ['prototyp']},
+  {label: 'Managed Manufacturing', titleHints: ['managed manufacturing', 'manufactur']},
+  {label: 'Logistics Management', titleHints: ['logistics management', 'logistic']},
+]
+
+/** Customization category tabs under /customizations/{slug}. */
+const CUSTOMIZATION_CATEGORY_SPECS = [
+  {label: 'Materials', slugHints: ['materials'], titleHints: ['materials']},
+  {label: 'Finishing', slugHints: ['finishing', 'finishes'], titleHints: ['finishing', 'finishes']},
+  {label: 'Printing', slugHints: ['printing'], titleHints: ['printing']},
+  {
+    label: 'Additional Customizations',
+    slugHints: ['additional-customization', 'additional'],
+    titleHints: ['additional customization', 'additional'],
+  },
+]
+
+/** Solution grouping labels as in the sitemap diagram. */
+const SOLUTION_GROUPING_LINKS = [
+  {label: 'By Industry', relativePath: '/solutions'},
+  {label: 'By Channel', relativePath: '/solutions'},
+  {label: 'By Focus', relativePath: '/solutions'},
+  {label: 'By Use Case', relativePath: '/solutions'},
+]
+
+/** Label aliases used when looking up an existing link to reuse (new → old). */
 const LABEL_ALIASES = {
-  Customizations: ['Customization'],
-  Compatibility: ['Product Capability'],
-  Industry: ['By Industry'],
-  Channel: ['By Channel'],
-  Focus: ['By Focus'],
-  'Use Case': ['By Use Case'],
+  'About Us': ['About'],
+  'Contact Us': ['Contact'],
+  'By Industry': ['Industry'],
+  'By Channel': ['Channel'],
+  'By Focus': ['Focus'],
+  'By Use Case': ['Use Case'],
+  'Your Request': ['Account Requests'],
+  'All Products': ['Products'],
+  'All Options': ['Customizations', 'Customization'],
+  'All Solutions': ['Solutions'],
+  'Additional Customizations': ['Additional Customization'],
+  'Logistics Management': ['Logistics'],
+  'Artwork Guideline': ['Artwork Guidelines'],
+  'Dieline Templates': ['Dielines'],
 }
 
 const CANDIDATES_QUERY = /* groq */ `{
@@ -113,105 +165,156 @@ const CANDIDATES_QUERY = /* groq */ `{
   "expertise": *[_type == "expertiseStage" && ${PUBLISHED} && defined(slug.current)
     && (!defined(status) || status in ["active", "coming-soon"])]
     {title, "slug": slug.current},
-  "solutionGroups": *[_id == $id][0].items[label == "Solutions"][0].groups[]{label}
+  "customizationCategories": *[_type == "customizationCategory" && ${PUBLISHED} && defined(slug.current)
+    && (!defined(status) || status == "active")]
+    | order(title asc){title, "slug": slug.current}
 }`
 
+function normalizeKey(value) {
+  return trimLabel(value).toLowerCase()
+}
+
 /**
- * Static columns 2–3 plus Company. Column 1 is built from the dataset.
- * Paths document intent for new links; reused links keep their own fields.
+ * Resolve a catalog doc by preferred slug, then title hints.
+ * @returns {{title: string, slug: string} | null}
  */
-function buildStaticTail() {
-  return [
-    {
-      sections: [
-        {
-          title: 'Academy',
-          links: [
-            {label: 'Packaging Type'},
-            {label: 'Industry'},
-            {label: 'Sustainability'},
-          ],
-        },
-        {
-          title: 'Blog',
-          links: [{label: 'Blog'}, {label: 'Topics'}, {label: 'Contribute'}],
-        },
-        {
-          title: 'Company',
-          links: [
-            {label: 'About', relativePath: '/about'},
-            {label: 'Case Studies', relativePath: '/case-studies'},
-            {label: 'Newsroom', relativePath: '/newsroom'},
-          ],
-        },
-      ],
-    },
-    {
-      sections: [
-        {
-          title: 'Orders & Shipment',
-          links: [
-            {label: 'Account', relativePath: '/account'},
-            {label: 'Account Requests', relativePath: '/account/requests'},
-          ],
-        },
-        {
-          title: 'Support',
-          links: [
-            {label: 'Request a Quote', relativePath: '/request/general'},
-            {label: 'Contact', relativePath: '/contact'},
-            {label: 'Help Center', relativePath: '/contact'},
-          ],
-        },
-        {
-          title: 'Legal',
-          links: [
-            {label: 'Privacy Policy', relativePath: '/policies/privacy-policy'},
-            {label: 'Terms of Service', relativePath: '/policies/terms-of-service'},
-            {label: 'Policies', relativePath: '/policies'},
-          ],
-        },
-      ],
-    },
+function resolveCatalogDoc(docs, {slugHints = [], titleHints = []}) {
+  const list = docs ?? []
+  for (const hint of slugHints) {
+    const hit = list.find((d) => normalizeKey(d.slug) === normalizeKey(hint))
+    if (hit) return hit
+  }
+  for (const hint of titleHints) {
+    const exact = list.find((d) => normalizeKey(d.title) === normalizeKey(hint))
+    if (exact) return exact
+  }
+  for (const hint of titleHints) {
+    const partial = list.find((d) => normalizeKey(d.title).includes(normalizeKey(hint)))
+    if (partial) return partial
+  }
+  return null
+}
+
+function requireResolved(kind, specs, docs) {
+  const remaining = [...(docs ?? [])]
+  const resolved = []
+  const missing = []
+  for (const spec of specs) {
+    const doc = resolveCatalogDoc(remaining, spec)
+    if (!doc) {
+      missing.push(spec.label)
+      continue
+    }
+    remaining.splice(remaining.indexOf(doc), 1)
+    resolved.push({spec, doc})
+  }
+  if (missing.length) {
+    const available = (docs ?? []).map((d) => `${d.title} (${d.slug})`).join(' · ') || '—'
+    console.error(
+      `✖  Missing ${kind} on dataset=${DATASET}: ${missing.join(', ')}\n` +
+        `   Available: ${available}\n`,
+    )
+    process.exit(1)
+  }
+  return resolved
+}
+
+/**
+ * Build the sitemap footer target (3 columns). Dataset supplies slugs for
+ * product lines, expertise stages, and customization categories.
+ */
+function buildLaunchFooter({productLines, expertise, customizationCategories}) {
+  const products = requireResolved('product lines', PRODUCT_LINE_SPECS, productLines)
+  const stages = requireResolved('expertise stages', EXPERTISE_SPECS, expertise)
+  const categories = requireResolved(
+    'customization categories',
+    CUSTOMIZATION_CATEGORY_SPECS,
+    customizationCategories,
+  )
+
+  const productLinks = [
+    {label: 'All Products', relativePath: '/products'},
+    ...products.map(({spec, doc}) => ({
+      label: spec.label,
+      relativePath: `/products/${doc.slug}`,
+    })),
   ]
-}
 
-function normalizeGroupingLabel(raw) {
-  const label = trimLabel(raw)
-  if (!label) return ''
-  return label.replace(/^by\s+/i, '')
-}
-
-function buildLaunchFooter({productLines, expertise, solutionGroups}) {
-  const productLinks = productLines.map((line) => ({
-    label: line.title,
-    relativePath: `/products/${line.slug}`,
-  }))
-
-  const groupingLinks =
-    solutionGroups.length > 0
-      ? solutionGroups
-          .map((g) => normalizeGroupingLabel(g.label))
-          .filter(Boolean)
-          .map((label) => ({label, relativePath: '/solutions'}))
-      : DEFAULT_SOLUTION_GROUPINGS
-
-  const expertiseLinks = [...expertise]
-    .sort((a, b) => stageRank(a.title) - stageRank(b.title))
-    .map((stage) => ({
-      label: stage.title,
-      relativePath: `/expertise/${stage.slug}`,
+  const expertiseLinks = [...stages]
+    .sort((a, b) => stageRank(a.spec.label) - stageRank(b.spec.label))
+    .map(({spec, doc}) => ({
+      label: spec.label,
+      relativePath: `/expertise/${doc.slug}`,
     }))
+
+  const customizationLinks = [
+    {label: 'All Options', relativePath: '/customizations'},
+    ...categories.map(({spec, doc}) => ({
+      label: spec.label,
+      relativePath: `/customizations/${doc.slug}`,
+    })),
+  ]
 
   return [
     {
       sections: [
         {title: 'Products', links: productLinks},
-        {title: 'Solutions', links: groupingLinks},
         {title: 'Expertise', links: expertiseLinks},
+        {
+          title: 'Account',
+          links: [
+            {label: 'Your Request', relativePath: '/account/requests'},
+            {label: 'Profile', relativePath: '/account/profile'},
+          ],
+        },
       ],
     },
-    ...buildStaticTail(),
+    {
+      sections: [
+        {title: 'Customization', links: customizationLinks},
+        {
+          title: 'Company',
+          links: [
+            {label: 'About Us', relativePath: '/about'},
+            {label: 'Sustainability', relativePath: '/sustainability'},
+            {label: 'Newsroom', relativePath: '/newsroom'},
+            {label: 'Careers', externalUrl: CAREERS_URL},
+          ],
+        },
+        {
+          title: 'Others',
+          links: [
+            {label: 'Terms of Service', relativePath: '/policies/terms-of-service'},
+            {label: 'Privacy Policy', relativePath: '/policies/privacy-policy'},
+            {label: 'Cookies Preference', relativePath: '/policies/cookies-preference'},
+            {label: 'Sitemap', relativePath: '/sitemap'},
+          ],
+        },
+      ],
+    },
+    {
+      sections: [
+        {
+          title: 'Solutions',
+          links: [
+            {label: 'All Solutions', relativePath: '/solutions'},
+            ...SOLUTION_GROUPING_LINKS,
+          ],
+        },
+        {
+          title: 'Resources',
+          links: [
+            {label: 'Glossary', relativePath: '/glossary'},
+            {label: 'Artwork Guideline', relativePath: '/resources/artwork-guideline'},
+            {label: 'Dieline Templates', relativePath: '/resources/dieline-templates'},
+            {label: 'Blog', externalUrl: BLOG_URL, reuseAnyLabel: true},
+            {label: 'Case Studies', relativePath: '/case-studies'},
+            {label: 'FAQs', relativePath: '/faqs'},
+            {label: 'Contact Us', relativePath: '/contact'},
+          ],
+        },
+      ],
+    },
   ]
 }
 
@@ -232,6 +335,10 @@ function pathFromExternalUrl(url) {
   }
 }
 
+function normalizeUrl(url) {
+  return trimLabel(url).replace(/\/+$/, '')
+}
+
 function linkMatchesPreferredPath(link, preferredPath) {
   if (!preferredPath) return true
   if (link.relativePath === preferredPath) return true
@@ -240,6 +347,18 @@ function linkMatchesPreferredPath(link, preferredPath) {
     return path === preferredPath
   }
   return false
+}
+
+function linkMatchesPreferred(link, preferred) {
+  if (!preferred) return true
+  if (preferred.relativePath) {
+    return linkMatchesPreferredPath(link, preferred.relativePath)
+  }
+  if (preferred.externalUrl) {
+    if (link.linkType !== 'external' || !link.externalUrl) return false
+    return normalizeUrl(link.externalUrl) === normalizeUrl(preferred.externalUrl)
+  }
+  return true
 }
 
 function linkTargetSummary(link) {
@@ -317,7 +436,7 @@ function indexLinksByLabel(columns) {
   return map
 }
 
-function pickExistingLink(labelMap, label, preferredPath) {
+function pickExistingLink(labelMap, label, preferred) {
   const candidates = []
   const exact = labelMap.get(label)
   if (exact) candidates.push(...exact)
@@ -327,16 +446,24 @@ function pickExistingLink(labelMap, label, preferredPath) {
   }
   if (candidates.length === 0) return null
 
-  if (preferredPath) {
+  if (preferred) {
     // Do not reuse a same-label link that points somewhere else (e.g. Academy
-    // "Industry" blog URL must not become Solutions "Industry" → /solutions).
-    return candidates.find((link) => linkMatchesPreferredPath(link, preferredPath)) ?? null
+    // "Industry" blog URL must not become Solutions "By Industry" → /solutions).
+    return candidates.find((link) => linkMatchesPreferred(link, preferred)) ?? null
   }
   return candidates[0]
 }
 
 function reuseOrCreateLink(labelMap, spec, created, missing) {
-  const existing = pickExistingLink(labelMap, spec.label, spec.relativePath)
+  const preferred = spec.reuseAnyLabel
+    ? null
+    : spec.relativePath
+      ? {relativePath: spec.relativePath}
+      : spec.externalUrl
+        ? {externalUrl: spec.externalUrl}
+        : null
+
+  const existing = pickExistingLink(labelMap, spec.label, preferred)
   if (existing) {
     const next = {...existing, label: spec.label}
     if (trimLabel(existing.label) !== spec.label) {
@@ -347,9 +474,20 @@ function reuseOrCreateLink(labelMap, spec, created, missing) {
     return next
   }
 
+  if (spec.externalUrl) {
+    const createdLink = {
+      _key: shortKey(),
+      label: spec.label,
+      linkType: 'external',
+      externalUrl: spec.externalUrl,
+    }
+    created.push({label: spec.label, relativePath: spec.externalUrl})
+    return createdLink
+  }
+
   if (!spec.relativePath) {
     missing.push(spec.label)
-    console.log(`  ⚠  No existing link for "${spec.label}" and no relativePath to create one`)
+    console.log(`  ⚠  No existing link for "${spec.label}" and no relativePath/externalUrl to create one`)
     return null
   }
 
@@ -471,19 +609,18 @@ async function seed() {
     nextColumns = restored.columns
     console.log(`  Restoring columns from ${restored.path}`)
   } else {
-    const candidates = await client.fetch(CANDIDATES_QUERY, {id: DOC_ID})
+    const candidates = await client.fetch(CANDIDATES_QUERY)
     const productLines = candidates.productLines ?? []
     const expertise = candidates.expertise ?? []
-    const solutionGroups = (candidates.solutionGroups ?? []).filter((g) => trimLabel(g?.label))
+    const customizationCategories = candidates.customizationCategories ?? []
 
-    console.log('  Picked from the dataset:')
+    console.log('  Available on the dataset:')
     console.log(
       `    product lines (${productLines.length}): ${productLines.map((d) => d.title).join(' · ') || '—'}`,
     )
     console.log(
-      `    solution groupings: ${
-        solutionGroups.map((g) => normalizeGroupingLabel(g.label)).join(' · ') ||
-        DEFAULT_SOLUTION_GROUPINGS.map((g) => g.label).join(' · ') + ' (fallback)'
+      `    customization categories (${customizationCategories.length}): ${
+        customizationCategories.map((d) => d.title).join(' · ') || '—'
       }`,
     )
     console.log(
@@ -503,8 +640,18 @@ async function seed() {
       console.error(`✖  No expertise stages on dataset=${DATASET}. Refusing to seed an empty Expertise section.\n`)
       process.exit(1)
     }
+    if (customizationCategories.length === 0) {
+      console.error(
+        `✖  No customization categories on dataset=${DATASET}. Refusing to seed an empty Customization section.\n`,
+      )
+      process.exit(1)
+    }
 
-    const launchFooter = buildLaunchFooter({productLines, expertise, solutionGroups})
+    const launchFooter = buildLaunchFooter({
+      productLines,
+      expertise,
+      customizationCategories,
+    })
     const built = buildTargetColumns(currentColumns, launchFooter)
     nextColumns = built.columns
     created = built.created
