@@ -22,7 +22,7 @@ import {useRequest} from '@/lib/request/request-provider';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 import {formatAddressSummaryLine} from '@/lib/request/shipping-address';
-import {isIntakeContactReady, isItemsReady, isShippingReady} from '@/lib/request/validation';
+import {isIntakeContactReady, isItemsReady} from '@/lib/request/validation';
 import {REQUEST_SECTIONS, SECTION_TITLE, type SectionKey} from '@/lib/request-sections/flow';
 import {trackSectionDone, trackSectionOpen} from '@/lib/request-sections/events';
 import {submittedHref, type RequestKind} from '@/lib/request-sections/url';
@@ -69,11 +69,11 @@ export function RequestPage({
         () => ({
             products: lines.length > 0 && isItemsReady(draft, lines),
             details:
-                (flow === 'general'
+                flow === 'general'
                     ? Boolean(GENERAL_REQUEST_FLOW.screens.find((s) => s.key === 'details')?.ready(ctx))
                     : // Owner: describe/files optional on product (Items carry the quote); services still gate.
-                      !draft.servicesEnabled || isServicesStepReady(draft)) &&
-                isShippingReady(draft),
+                      // Ship-to optional — wire fills "N/A" when empty.
+                      !draft.servicesEnabled || isServicesStepReady(draft),
             contact: isIntakeContactReady(draft),
             submit: true,
         }),
@@ -261,13 +261,14 @@ export function RequestPage({
     );
 }
 
-/** Folded Project summary for general: labeled Quantity + Project brief + ship-to. */
+/** Folded Project summary for general: labeled Quantity + contents + Project brief + ship-to. */
 function GeneralDetailsSummary({draft}: {draft: RequestDraft}) {
     const need = REQUEST_COPY.intakeNeedChoices
         .filter((o) => draftNeeds(draft).includes(o.value))
         .map((o) => o.label)
         .join(' + ');
     const qty = draft.expressQuantities.filter((n) => n > 0).map((n) => n.toLocaleString('en-US')).join(', ');
+    const contents = draft.packagingContents.trim();
     const brief = draft.notes.trim();
     const fileCount = draft.referenceImages?.length ?? 0;
     const briefValue =
@@ -282,6 +283,12 @@ function GeneralDetailsSummary({draft}: {draft: RequestDraft}) {
                 <span className="text-muted-foreground">Quantity: </span>
                 <span className="text-foreground">{qty || '—'}</span>
             </p>
+            {contents ? (
+                <p>
+                    <span className="text-muted-foreground">{REQUEST_COPY.contentsLabel}: </span>
+                    <span className="text-foreground">{contents}</span>
+                </p>
+            ) : null}
             <p>
                 <span className="text-muted-foreground">Project brief: </span>
                 <span className="whitespace-pre-line text-foreground">{briefValue}</span>

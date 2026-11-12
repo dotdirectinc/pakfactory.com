@@ -7,7 +7,7 @@ import type {RequestFlow} from '@/lib/intake/routes';
 import {isServicesStepReady} from '@/lib/intake/flows/services-ready';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
 import {OTHER_SERVICE_ID} from '@/lib/request/service-label';
-import {isIntakeContactReady, isNotesReady, isShippingReady} from '@/lib/request/validation';
+import {isIntakeContactReady, isNotesReady} from '@/lib/request/validation';
 import {
     contactIntakeFromDraft,
     contactIntakeSchema,
@@ -56,7 +56,7 @@ export function blockedReason(
             }
             return 'Pick at least one service';
         }
-        if (!isShippingReady(draft)) return 'Add a shipping location';
+        // Ship-to optional — wire fills "N/A" when empty.
         // Product: describe/files optional (Items carry the quote). General still needs a brief or file.
         if (flow !== 'product' && !isNotesReady(draft, lines, rules)) {
             return 'Describe your project or add a file';

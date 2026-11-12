@@ -5,7 +5,6 @@ import {
     isIntakeContactReady,
     isNotesReady,
     isServicesReady,
-    isShippingReady,
     needsPackaging,
 } from '@/lib/request/validation';
 
@@ -24,12 +23,11 @@ export const GENERAL_REQUEST_FLOW: IntakeFlowDef<IntakeScreenKey> = {
             ready: ({draft, rules}) =>
                 Boolean((draft.needPicked || draft.needFromDoor) && draftNeeds(draft).length) &&
                 // Checked directly: the shared helpers pass anything while the draft isn't (yet) express.
-                // v4.7 (owner Nov 6): quantity only; what's going inside isn't asked this phase.
+                // Quantity gates Continue; packaging contents + ship-to are optional (wire fills "N/A").
                 (!needsPackaging(draft) ||
                     (draft.expressQuantities.length > 0 && draft.expressQuantities.every((n) => n > 0 && n % 100 === 0))) &&
                 isServicesReady(draft) &&
-                isNotesReady(draft, [], rules) &&
-                isShippingReady(draft),
+                isNotesReady(draft, [], rules),
         },
         {
             key: 'contact',

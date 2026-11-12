@@ -53,11 +53,8 @@ export function isContentsReady(
 ): boolean {
     if (!draft.express) return true;
     if (isExpressRequirementsOnly(draft)) {
-        if (!needsPackaging(draft)) return true;
-        // Website PRD v4.7 (R36, owner Nov 6): the general step intake doesn't ask what's going
-        // inside this phase; the field stays in the payload (empty) for Sales or a later phase.
-        if (draft.shipToOptional) return true;
-        return draft.packagingContents.trim().length > 0;
+        // Optional on the UI; toWireSubmission fills "N/A" when empty so the server does not 422.
+        return true;
     }
     return lines.every((line) => line.contents.trim().length > 0);
 }
