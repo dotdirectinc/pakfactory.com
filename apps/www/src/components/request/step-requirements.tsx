@@ -193,28 +193,7 @@ export function StepRequirements({
                                 }
                             />
                         </div>
-                        {/* Optional on the UI; empty values become "N/A" on the wire payload. */}
-                        <div className={bare ? 'flex flex-col gap-2' : undefined}>
-                            <Label
-                                className={
-                                    bare
-                                        ? 'block text-base font-medium'
-                                        : 'mb-1 block text-xs font-medium'
-                                }
-                            >
-                                {REQUEST_COPY.contentsLabel}
-                            </Label>
-                            <Input
-                                className={FIELD_CLASS}
-                                placeholder={REQUEST_COPY.contentsPlaceholder}
-                                value={draft.packagingContents}
-                                onChange={(e) =>
-                                    onPatch({
-                                        packagingContents: e.target.value,
-                                    })
-                                }
-                            />
-                        </div>
+                        {/* Contents field hidden for now; empty packagingContents → "N/A" on the wire. */}
                     </>
                 ) : null}
 
