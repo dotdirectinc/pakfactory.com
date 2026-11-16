@@ -101,9 +101,15 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map"].some((p) =>
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map", "/spec/library"].some((p) =>
               path.startsWith(p),
             )),
+      },
+      // Spec Library review (PFP-124): an imported library version, reviewed record by record and approved.
+      {
+        href: "/spec/library",
+        label: "Library review",
+        match: (path) => path.startsWith("/spec/library"),
       },
       {
         href: "/spec/rules",

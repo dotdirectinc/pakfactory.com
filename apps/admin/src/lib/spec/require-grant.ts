@@ -35,3 +35,8 @@ export async function hasRegistryGrant(): Promise<boolean> {
 export function canApprove(me: SpecMe): boolean {
   return me.capabilities.includes("value.approve");
 }
+
+/** Whether this person may review and approve a Spec Library version (PFP-124: approver, admin). */
+export function canReviewLibrary(me: SpecMe): boolean {
+  return me.capabilities.includes("spec.review");
+}

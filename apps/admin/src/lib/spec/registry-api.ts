@@ -574,3 +574,82 @@ export type FrameOverride = { item_id: string; title: string; document: string; 
 export async function getFrameOverrides(id: string) {
   return call<FrameOverride[]>(`/api/v1/changesets/${encodeURIComponent(id)}/overrides`);
 }
+
+// ── Spec Library review (PFP-124) ─────────────────────────────────────────────
+// An imported Spec Library version in spec_production, reviewed record by record and then
+// approved. Reads need a registry grant; decisions and approval need `spec.review`.
+
+export type LibraryReviewState = "pending" | "approve" | "reject" | "defer";
+export type LibraryDecision = Exclude<LibraryReviewState, "pending">;
+
+export type LibraryCollectionProgress = {
+  collection: string;
+  total: number;
+  pending: number;
+  approve: number;
+  reject: number;
+  defer: number;
+};
+
+export type LibraryVersion = {
+  number: number;
+  sourceExportedAt: string;
+  importedAt: string;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  approvedByName: string | null;
+  collections: LibraryCollectionProgress[];
+};
+
+export type LibraryItem = {
+  sourceId: string;
+  label: string | null;
+  state: LibraryReviewState;
+  note: string | null;
+  decidedBy: string | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+};
+
+export type LibraryRecord = {
+  collection: string;
+  record: Record<string, unknown>;
+  children: Record<string, unknown[]>;
+  history: { decision: LibraryDecision; note: string | null; decidedBy: string; decidedByName: string | null; decidedAt: string }[];
+};
+
+export async function listLibraryVersions() {
+  return call<LibraryVersion[]>("/api/v1/library-versions");
+}
+
+export async function listLibraryItems(
+  version: number,
+  q: { collection: string; state?: LibraryReviewState; search?: string; limit: number; offset: number },
+) {
+  const p = new URLSearchParams({ collection: q.collection, limit: String(q.limit), offset: String(q.offset) });
+  if (q.state) p.set("state", q.state);
+  if (q.search) p.set("search", q.search);
+  return call<{ total: number; items: LibraryItem[] }>(`/api/v1/library-versions/${version}/items?${p}`);
+}
+
+export async function getLibraryRecord(version: number, collection: string, sourceId: string) {
+  return call<LibraryRecord>(
+    `/api/v1/library-versions/${version}/items/${encodeURIComponent(collection)}/${encodeURIComponent(sourceId)}`,
+  );
+}
+
+export async function decideLibraryItems(
+  version: number,
+  decision: LibraryDecision,
+  note: string | null,
+  items: { collection: string; sourceId: string }[],
+) {
+  return call<{ recorded: number; decision: LibraryDecision }>(`/api/v1/library-versions/${version}/decisions`, {
+    method: "POST",
+    body: { decision, note, items },
+  });
+}
+
+export async function approveLibraryVersion(version: number) {
+  return call<{ version: number; approved: boolean }>(`/api/v1/library-versions/${version}/approve`, { method: "POST" });
+}
