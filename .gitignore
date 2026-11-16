@@ -62,3 +62,6 @@ backups/
 # Playwright (apps/www e2e)
 apps/www/e2e/.results/
 apps/www/e2e/.report/
+
+# Local perf:baseline output (apps/www/docs/perf-baseline.md)
+apps/www/.perf-baseline*/

@@ -1,8 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import type {HeroCta} from '@/lib/sections/map-hero';
+import {usePointerPrefetch} from '@/lib/ui/use-pointer-prefetch';
 
 export type HeroTone = 'default' | 'inverse';
 
@@ -18,6 +21,9 @@ type HeroCtaGroupProps = {
  * Hero button pair with an optional one-line note under each (PROD-2666).
  * Props-only. Stock `Button` sizes/variants; inverse mirrors the GeneralCta
  * inverse treatment rather than inventing new chrome.
+ *
+ * Viewport prefetch stays off — a CTA to `/products` would otherwise pull the
+ * multi‑MB catalog RSC during LCP (local baseline 2026-11-13).
  */
 export function HeroCtaGroup({
     primary,
@@ -54,6 +60,7 @@ function HeroCtaItem({
 }) {
     const inverse = tone === 'inverse';
     const primary = emphasis === 'primary';
+    const {prefetch, enablePrefetch} = usePointerPrefetch(cta.href);
     return (
         <div className="flex flex-col gap-2">
             <Button
@@ -70,7 +77,15 @@ function HeroCtaItem({
                         'border-background/40 bg-transparent text-background shadow-none hover:bg-background/10 hover:text-background',
                 )}
             >
-                <Link href={cta.href}>{cta.label}</Link>
+                <Link
+                    href={cta.href}
+                    prefetch={prefetch}
+                    onPointerEnter={enablePrefetch}
+                    onPointerDown={enablePrefetch}
+                    onFocus={enablePrefetch}
+                >
+                    {cta.label}
+                </Link>
             </Button>
             {cta.note ? (
                 <p

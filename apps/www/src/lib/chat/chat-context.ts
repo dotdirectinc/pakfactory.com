@@ -5,9 +5,12 @@ import {useSyncExternalStore} from 'react';
 /**
  * What the page is about, for the chat (compare spec CMP-16, owner Nov 9): on /compare the chat
  * opens already asking about the items being compared. A page sets it while mounted and clears it
- * on unmount. The chat provider (lib/chat/chat-provider) passes it on — Intercom at launch, the AI Sidekick later.
+ * on unmount. A product page sets the product the same way. The chat provider (lib/chat/chat-provider) passes it on — Intercom at launch, the AI Sidekick later.
  */
-export type ChatContext = {kind: 'compare'; group: string; items: string[]};
+export type ChatContext =
+    | {kind: 'compare'; group: string; items: string[]}
+    /** A product page: the chat can ask about this product (idle prompt). */
+    | {kind: 'product'; name: string; slug: string};
 
 const EVENT = 'pf:chat-context';
 let current: ChatContext | null = null;

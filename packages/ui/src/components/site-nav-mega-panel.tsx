@@ -10,6 +10,7 @@ import {
   type SiteNavPanelPromo,
 } from "@pakfactory/ui/components/site-nav";
 import {cn} from "@pakfactory/ui/lib/utils";
+import {shouldPrefetchCatalogHref} from "@pakfactory/ui/lib/catalog-index-prefetch";
 
 function GroupHeading({
   label,
@@ -59,7 +60,12 @@ function PanelLink({
     );
   }
   return (
-    <Link href={href} className={className} onClick={onNavigate}>
+    <Link
+      href={href}
+      prefetch={shouldPrefetchCatalogHref(href)}
+      className={className}
+      onClick={onNavigate}
+    >
       {label}
     </Link>
   );
@@ -161,7 +167,12 @@ function FeaturedPromo({
       );
     }
     return (
-      <Link href={promo.href} className={shellClass} onClick={onNavigate}>
+      <Link
+        href={promo.href}
+        prefetch={shouldPrefetchCatalogHref(promo.href)}
+        className={shellClass}
+        onClick={onNavigate}
+      >
         {body}
       </Link>
     );
@@ -193,7 +204,12 @@ function FooterCtaLink({
     );
   }
   return (
-    <Link href={cta.href} className={className} onClick={onNavigate}>
+    <Link
+      href={cta.href}
+      prefetch={shouldPrefetchCatalogHref(cta.href)}
+      className={className}
+      onClick={onNavigate}
+    >
       {cta.label}
     </Link>
   );
