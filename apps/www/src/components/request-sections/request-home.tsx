@@ -97,7 +97,9 @@ export function RequestHome({
                         ) : (
                             <>
                                 <Button asChild variant="outline">
-                                    <Link href={WWW_ROUTES.products}>Browse products</Link>
+                                    <Link href={WWW_ROUTES.products} prefetch={false}>
+                                        Browse products
+                                    </Link>
                                 </Button>
                                 <Button asChild>
                                     <Link href={KIND_PATH.general}>Get a Quote</Link>

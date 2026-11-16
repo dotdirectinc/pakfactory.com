@@ -18,6 +18,7 @@ import {
     type SiteNavPanelLink,
     type SiteNavPanelPromo,
 } from '@pakfactory/ui/components/site-nav';
+import {shouldPrefetchCatalogHref} from '@pakfactory/ui/lib/catalog-index-prefetch';
 import {isSiteNavHrefActive} from '@pakfactory/ui/components/site-nav-links';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -120,6 +121,7 @@ function MobilePromo({
     return (
         <Link
             href={promo.href}
+            prefetch={shouldPrefetchCatalogHref(promo.href)}
             onClick={onNavigate}
             className="block rounded-lg border border-border bg-muted/40 p-3 no-underline"
         >
@@ -161,7 +163,12 @@ function MobileFooterCtaCard({
     }
 
     return (
-        <Link href={cta.href} onClick={onNavigate} className={className}>
+        <Link
+            href={cta.href}
+            prefetch={shouldPrefetchCatalogHref(cta.href)}
+            onClick={onNavigate}
+            className={className}
+        >
             {body}
         </Link>
     );
@@ -203,6 +210,7 @@ function MobileGroupLinks({
                             ) : (
                                 <Link
                                     href={link.href}
+                                    prefetch={shouldPrefetchCatalogHref(link.href)}
                                     onClick={onNavigate}
                                     className="block text-sm font-semibold text-primary no-underline"
                                 >
@@ -402,6 +410,9 @@ export function SiteNavMobile({
                                                       >
                                                           <Link
                                                               href={item.href}
+                                                              prefetch={shouldPrefetchCatalogHref(
+                                                                  item.href,
+                                                              )}
                                                               onClick={close}
                                                               aria-current={
                                                                   isActive
@@ -597,7 +608,13 @@ export function SiteNavMobile({
                                     className="w-full font-semibold"
                                     asChild
                                 >
-                                    <Link href={cta.href} onClick={close}>
+                                    <Link
+                                        href={cta.href}
+                                        prefetch={shouldPrefetchCatalogHref(
+                                            cta.href,
+                                        )}
+                                        onClick={close}
+                                    >
                                         {cta.label}
                                     </Link>
                                 </Button>

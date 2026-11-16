@@ -12,6 +12,7 @@ import {
   externalLinkAttributes,
   isExternalHref,
 } from "@pakfactory/utilities/external-link";
+import {shouldPrefetchCatalogHref} from "@pakfactory/ui/lib/catalog-index-prefetch";
 
 export type FooterLink = { label: string; href: string; external?: boolean };
 export type FooterSection = { title: string; links: FooterLink[] };
@@ -121,7 +122,11 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
   // and external destinations keep plain <a> (new tab when absolute http(s)).
   if (isSameSiteFooterHref(link.href, link.external)) {
     return (
-      <Link href={link.href} className={className}>
+      <Link
+        href={link.href}
+        prefetch={shouldPrefetchCatalogHref(link.href)}
+        className={className}
+      >
         {link.label}
       </Link>
     );

@@ -5,6 +5,7 @@ import type {
     PageSectionTestimonialsRowDoc,
 } from '@pakfactory/sanity/queries';
 
+import {ChatPageContext} from '@/components/chat/chat-page-context';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
@@ -247,6 +248,8 @@ export async function ProductDetailView({product}: ProductDetailViewProps) {
                     __html: buildProductDetailJsonLd(product, company),
                 }}
             />
+            {/* The chat can ask about this product (idle prompt: {current_product} in Intercom). */}
+            <ChatPageContext context={{kind: 'product', name: product.title, slug: product.slug}} />
             <PageBreadcrumbSection items={breadcrumbItems} />
             <ProductPdpShell product={product} displaySku={displaySku}>
                 <div className="relative">

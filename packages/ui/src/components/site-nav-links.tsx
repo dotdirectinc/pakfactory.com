@@ -21,6 +21,7 @@ import {
 } from "@pakfactory/ui/components/navigation-menu";
 import {SiteNavMegaPanel} from "@pakfactory/ui/components/site-nav-mega-panel";
 import {PageDielineSection} from "@pakfactory/ui/components/page-dieline-section";
+import {shouldPrefetchCatalogHref} from "@pakfactory/ui/lib/catalog-index-prefetch";
 
 type SiteNavLinksProps = {
   items: SiteNavItem[];
@@ -176,6 +177,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
               <Link
                 key={item.key}
                 href={item.href}
+                prefetch={shouldPrefetchCatalogHref(item.href)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "py-2 no-underline transition-colors hover:text-muted-foreground",
@@ -325,6 +327,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
                   <NavigationMenuLink asChild>
                     <Link
                       href={item.href}
+                      prefetch={shouldPrefetchCatalogHref(item.href)}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
                         "inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold no-underline transition-colors",
