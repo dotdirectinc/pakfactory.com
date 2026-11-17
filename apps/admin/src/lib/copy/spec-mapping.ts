@@ -34,6 +34,12 @@ export const ADMIN_SPEC_MAPPING_COPY = {
   draftSaid: (s: string) => `Draft: ${s}`,
   states: { pending: "To review", approve: "Approved", reject: "Rejected", defer: "Deferred" } as Record<string, string>,
   selectGroup: (n: number) => `Select ${n}`,
+  expandAll: "Expand all",
+  collapseAll: "Collapse all",
+  expandGroup: (g: string) => `Expand ${g}`,
+  collapseGroup: (g: string) => `Collapse ${g}`,
+  groupDecided: (d: number, n: number) => `${d} of ${n} decided`,
+  groupSelected: (n: number) => `${n} selected`,
   bar: {
     selected: (n: number) => (n === 1 ? "1 map selected" : `${n} maps selected`),
     note: "Note (required to reject or defer)",
