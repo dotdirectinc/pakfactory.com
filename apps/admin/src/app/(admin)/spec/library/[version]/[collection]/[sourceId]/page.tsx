@@ -137,14 +137,14 @@ export default async function SpecLibraryRecordPage({
           ))}
 
           {empty.length + emptyChildren.length > 0 ? (
-            <details className="rounded-md border border-border px-4 py-3 text-sm">
+            <details open className="rounded-md border border-border px-4 py-3 text-sm">
               <summary className="cursor-pointer text-muted-foreground">{COPY.record.emptyFields(empty.length + emptyChildren.length)}</summary>
               <p className="mt-2 text-muted-foreground">{[...empty, ...emptyChildren].map(labelOf).join(" · ")}</p>
             </details>
           ) : null}
 
           {system.length > 0 ? (
-            <details className="rounded-md border border-border px-4 py-3 text-sm">
+            <details open className="rounded-md border border-border px-4 py-3 text-sm">
               <summary className="cursor-pointer text-muted-foreground">{COPY.record.system}</summary>
               <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-[12rem_minmax(0,1fr)]">
                 {system.map(([k, val]) => (
