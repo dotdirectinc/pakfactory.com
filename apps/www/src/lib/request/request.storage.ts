@@ -888,6 +888,8 @@ export function ensureBuilderDraft(
                 entryKind: 'services',
                 productsExpanded: false,
                 servicesEnabled: true,
+                // Ship-to is hidden for services; keep the gate aligned (wire fills N/A).
+                shipToOptional: true,
                 builderLineIds: null,
                 title: defaultDraftTitle(),
                 submittedAt: null,

@@ -32,8 +32,10 @@ import {
     type ShippingAddress,
 } from '@/lib/request/request.storage';
 
-/** Server-safe stand-in when the buyer left optional contents / ship-to empty. */
+/** Server-safe stand-in when the buyer left optional contents / ship-to / notes empty. */
 export const WIRE_PLACEHOLDER = 'N/A';
+/** Valid-looking email when services-only submit leaves contact blank. */
+export const WIRE_EMAIL_PLACEHOLDER = 'na@pakfactory.com';
 
 /** Mirrors the backend contract. Kept structural rather than imported: the
  *  backend's Zod schemas are server-side only and www does not depend on zod. */
@@ -296,15 +298,16 @@ export function toWireSubmission(
         // correctly produces a second RFQ for sales to judge.
         submissionId,
         contact: {
-            firstName: draft.contactFirstName.trim(),
-            lastName: draft.contactLastName.trim(),
-            email: draft.contactEmail.trim(),
+            firstName: trimmed(draft.contactFirstName) ?? WIRE_PLACEHOLDER,
+            lastName: trimmed(draft.contactLastName) ?? WIRE_PLACEHOLDER,
+            email: trimmed(draft.contactEmail) ?? WIRE_EMAIL_PLACEHOLDER,
             ...(trimmed(draft.contactPhone) ? {phone: draft.contactPhone.trim()} : {}),
             ...(trimmed(draft.contactCompany) ? {company: draft.contactCompany.trim()} : {}),
             ...(trimmed(draft.contactIndustry) ? {industry: draft.contactIndustry.trim()} : {}),
         },
         requirements: {
-            notes: draft.notes.trim(),
+            // Brief optional for services-only (and any path that cleared it); N/A keeps the server contract.
+            notes: trimmed(draft.notes) ?? WIRE_PLACEHOLDER,
             ...(trimmed(draft.timeline) ? {timeline: draft.timeline.trim()} : {}),
             // Packaging contents optional in UI; send N/A so the server does not 422.
             ...(draft.express && hasNeed(draft, NEED_PACKAGING)
@@ -328,7 +331,8 @@ export function toWireSubmission(
         lines: lines.map((line) => ({
             id: line.id,
             productSlug: line.productSlug,
-            contents: (line.contents ?? '').trim(),
+            // Packaging contents optional in UI; send N/A so the server does not 422.
+            contents: trimmed(line.contents) ?? WIRE_PLACEHOLDER,
             quantities: line.quantities,
             // 🔴 What the buyer SAW, snapshotted at add-to-request. Without it the
             // server only ever received a slug, so the confirmation receipt, the

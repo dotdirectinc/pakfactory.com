@@ -78,8 +78,12 @@ export function StepRequirements({
     const [rejected, setRejected] = useState<string[]>([]);
     // PROD-3181: brief optional with a configured product (rules); Deadline on every request.
     const {lines} = useRequest();
-    // Owner, Oct 29: the Brief is always required, so it is never labelled optional.
-    const briefOptional = hasConfiguredProduct(lines) && Boolean(REQUEST_FORM_RULES.briefOptionalWithProducts);
+    // Services-only: brief is optional (select a service is enough). Otherwise
+    // PROD-3181 can make it optional once a product line is configured.
+    const briefOptional =
+        draft.entryKind === 'services' ||
+        (hasConfiguredProduct(lines) &&
+            Boolean(REQUEST_FORM_RULES.briefOptionalWithProducts));
     // PROD-3182 (POC round 1): which page the buyer came from.
     const upload = useAttachmentUpload(draft.id, setImages);
 

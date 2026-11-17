@@ -24,6 +24,7 @@ import {lineDimensionDisplay} from '@/lib/request/line-dimension-display';
 import {resolveServiceLabel, serviceTitlesForIds} from '@/lib/request/service-label';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 import {RFQ_REF_PATTERN} from '@/lib/request/contract.rules';
+import {REQUEST_FORM_RULES} from '@/lib/request/request-rules';
 import {canSubmitRequest} from '@/lib/request/validation';
 import {MessageDialog} from '@/components/ui/message-dialog';
 import {formatDateTime} from '@pakfactory/utilities/date-time';
@@ -67,7 +68,8 @@ export function StepReview({
     const [sectionNode, setSectionNode] = useState<HTMLElement | null>(null);
 
     const reviewCopy = getRequestReviewCopy();
-    const ready = canSubmitRequest(draft, lines);
+    const rules = REQUEST_FORM_RULES;
+    const ready = canSubmitRequest(draft, lines, rules);
     const documentDate = formatDateTime(new Date(), 'longDate', useViewerTimeZone());
     const displayRef =
         // The backend's own format (RFQ-2026-00042). The old /^RFQ-\d{5}$/ matched no real
@@ -192,6 +194,7 @@ export function StepReview({
                 const result = await submitRequest({
                     draft,
                     lines,
+                    rules,
                     serviceTitles: serviceTitlesForIds(
                         draft.services,
                         serviceOptions,

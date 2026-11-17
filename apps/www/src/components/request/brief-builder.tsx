@@ -31,6 +31,7 @@ import {
     isDraftEmpty,
     type RequestEntryKind,
 } from '@/lib/request/request.storage';
+import {REQUEST_FORM_RULES} from '@/lib/request/request-rules';
 import {
     canSubmitRequest,
     isContactReady,
@@ -40,6 +41,7 @@ import {
     isItemsReady,
     isNotesReady,
     isShippingReady,
+    isServicesOnlyRequest,
     showProductsSection,
     showServicesSection,
 } from '@/lib/request/validation';
@@ -158,13 +160,14 @@ export function BriefBuilder({
     const showProducts = showProductsSection(viewDraft, builderLines);
     const showServices = showServicesSection(viewDraft, builderLines);
 
+    const rules = REQUEST_FORM_RULES;
     const itemsReady = isItemsReady(draft, builderLines);
-    const notesReady = isNotesReady(draft);
+    const notesReady = isNotesReady(draft, builderLines, rules);
     const shippingReady = isShippingReady(draft);
-    const contactReady = isContactReady(draft);
+    const contactReady = isContactReady(draft, rules);
     const contentsReady = isContentsReady(draft, builderLines);
     const expressQtyReady = isExpressQuantityReady(draft, builderLines);
-    const canSubmit = canSubmitRequest(draft, builderLines);
+    const canSubmit = canSubmitRequest(draft, builderLines, rules);
 
     const railRows: WizardRailRowData[] = useMemo(() => {
         const rows: WizardRailRowData[] = [];
@@ -232,12 +235,15 @@ export function BriefBuilder({
         canSubmit,
     ]);
 
-    const submitHelper =
-        !contactReady || !shippingReady
-            ? !contentsReady || !expressQtyReady
-                ? REQUEST_COPY.submitHelperExpress
-                : REQUEST_COPY.submitHelperContact
-            : '';
+    const submitHelper = isServicesOnlyRequest(viewDraft)
+        ? canSubmit
+            ? ''
+            : REQUEST_COPY.submitHelperServices
+        : !contactReady || !shippingReady
+          ? !contentsReady || !expressQtyReady
+              ? REQUEST_COPY.submitHelperExpress
+              : REQUEST_COPY.submitHelperContact
+          : '';
 
     const sectionRefs: Record<string, React.RefObject<HTMLElement | null>> = {
         products: productsRef,

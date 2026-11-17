@@ -3,7 +3,12 @@ import {describe, it} from 'node:test';
 import {createEmptyBuilderState, seedFromCustomizations, toggleSelection, toRequestCustomizations} from '../customization-builder/state';
 import type {CustomizationBuilderState} from '../customization-builder/types';
 import type {RequestDraft, RequestLine} from '../request/request.storage';
-import {toWireDimensions, toWireSubmission, WIRE_PLACEHOLDER} from './to-wire-payload';
+import {
+    toWireDimensions,
+    toWireSubmission,
+    WIRE_EMAIL_PLACEHOLDER,
+    WIRE_PLACEHOLDER,
+} from './to-wire-payload';
 
 // PROD-2605: the buyer's size, and the Type / Property choices / note on each pick, stayed in the
 // browser — the builder kept them, nothing sent them. Sales saw a flat list of labels and no size.
@@ -307,6 +312,29 @@ describe('toWireSubmission — optional contents and ship-to N/A fallbacks', () 
             city: WIRE_PLACEHOLDER,
             country: WIRE_PLACEHOLDER,
         });
+    });
+
+    it('fills empty product line contents with N/A so qty-only submits do not 422', () => {
+        const wire = toWireSubmission(draft, [line({contents: '  '})], 'sub-qty-only');
+        assert.equal(wire.lines[0]!.contents, WIRE_PLACEHOLDER);
+    });
+
+    it('fills empty notes and contact when services-only left them blank', () => {
+        const servicesOnly = {
+            ...draft,
+            entryKind: 'services',
+            notes: '',
+            contactFirstName: '',
+            contactLastName: '',
+            contactEmail: '',
+            services: ['packaging-design'],
+            servicesEnabled: true,
+        } as RequestDraft;
+        const wire = toWireSubmission(servicesOnly, [], 'sub-svc-na');
+        assert.equal(wire.requirements.notes, WIRE_PLACEHOLDER);
+        assert.equal(wire.contact.firstName, WIRE_PLACEHOLDER);
+        assert.equal(wire.contact.lastName, WIRE_PLACEHOLDER);
+        assert.equal(wire.contact.email, WIRE_EMAIL_PLACEHOLDER);
     });
 });
 

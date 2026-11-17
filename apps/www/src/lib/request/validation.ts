@@ -30,6 +30,14 @@ export function needsService(draft: RequestDraft): boolean {
     return draft.express && hasNeed(draft, NEED_SERVICE);
 }
 export function isServicesReady(draft: RequestDraft): boolean {
+    // Services entry: picking at least one service is the submit gate.
+    if (draft.entryKind === 'services') {
+        if (draft.services.length === 0) return false;
+        return (
+            !draft.services.includes(OTHER_SERVICE_ID) ||
+            Boolean(draft.serviceOther?.trim())
+        );
+    }
     if (!needsService(draft)) return true;
     if (draft.services.length === 0) return false;
     // "Something else" needs the buyer's words (step intake, Nov 2).
@@ -48,15 +56,17 @@ export function isExpressQuantityReady(
 }
 
 export function isContentsReady(
-    draft: RequestDraft,
-    lines: RequestLine[],
+    _draft: RequestDraft,
+    _lines: RequestLine[],
 ): boolean {
-    if (!draft.express) return true;
-    if (isExpressRequirementsOnly(draft)) {
-        // Optional on the UI; toWireSubmission fills "N/A" when empty so the server does not 422.
-        return true;
-    }
-    return lines.every((line) => line.contents.trim().length > 0);
+    // Packaging contents are never a client gate — toWireSubmission fills "N/A"
+    // when a line (or express packagingContents) is empty so the server does not 422.
+    return true;
+}
+
+/** Services entry without a packaging upsell — select a service is enough to submit. */
+export function isServicesOnlyRequest(draft: RequestDraft): boolean {
+    return draft.entryKind === 'services' && !draft.productsExpanded;
 }
 
 /**
@@ -83,6 +93,10 @@ export function isNotesReady(
     lines: RequestLine[] = [],
     rules: RequestFormRules = {},
 ): boolean {
+    if (isServicesOnlyRequest(draft)) {
+        // Services-only: brief optional; wire fills "N/A" when empty.
+        return true;
+    }
     if (rules.briefOptionalWithProducts && hasConfiguredProduct(lines)) {
         return true;
     }
@@ -105,10 +119,12 @@ export function hasUploadedFile(draft: RequestDraft): boolean {
 }
 
 export function isShippingReady(draft: RequestDraft): boolean {
+    // Services never ask for ship-to (step-requirements hides it).
+    if (draft.entryKind === 'services') return true;
     if (draft.shipToOptional) {
-        // Optional shells may skip ship-to (service-only, express step intake, products step intake).
+        // Optional shells may skip ship-to (express step intake, products step intake).
         if (draft.express && !hasNeed(draft, NEED_PACKAGING)) return true;
-        if (draft.express || draft.entryKind === 'services') return true;
+        if (draft.express) return true;
         if (draft.stepIntake && draft.entryKind === 'products') return true;
     }
     // Sectioned Project summary (and any shell with shipToOptional false): city + country required.
@@ -123,6 +139,9 @@ export function isContactReady(
     draft: RequestDraft,
     rules: RequestFormRules = {},
 ): boolean {
+    // Services-only: name/email/address are not gates — select a service enables Submit.
+    // Wire fills N/A for empty contact fields so the server contract still holds.
+    if (isServicesOnlyRequest(draft)) return true;
     return (
         draft.contactFirstName.trim().length > 0 &&
         draft.contactLastName.trim().length > 0 &&

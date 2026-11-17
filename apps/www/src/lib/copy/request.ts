@@ -181,6 +181,7 @@ export const REQUEST_COPY = {
         'Add your name and shipping location to submit request.',
     submitHelperExpress:
         'Add what you\'re packaging, a quantity, your name, and shipping location to submit request.',
+    submitHelperServices: 'Pick at least one service to submit request.',
 
     keepBrowsing: 'Keep browsing products',
     backToYourRequest: 'Back to Quote Request',
