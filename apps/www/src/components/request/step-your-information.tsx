@@ -31,6 +31,7 @@ import {
     contactBriefBuilderSchema,
     type ContactBriefBuilderValues,
 } from '@/lib/request/schemas/contact';
+import {REQUEST_FORM_RULES} from '@/lib/request/request-rules';
 import {isContactReady} from '@/lib/request/validation';
 
 const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
@@ -62,10 +63,12 @@ export function StepYourInformation({
 
     /**
      * Collapse only when the contact step is fully ready (names, email, and
-     * company office). Collapsing earlier hides required company address behind
-     * a card that reads as complete.
+     * company office when still required). Collapsing earlier hides required
+     * fields behind a card that reads as complete.
      */
-    const collapsed = Boolean(viewer) && !editing && isContactReady(draft);
+    const companyAddressRequired = REQUEST_FORM_RULES.companyAddressOptional !== true;
+    const collapsed =
+        Boolean(viewer) && !editing && isContactReady(draft, REQUEST_FORM_RULES);
 
     const officeLine = [
         draft.companyAddress?.line1,
@@ -361,7 +364,7 @@ export function StepYourInformation({
                             value={draft.companyAddress}
                             onChange={(companyAddress) => onPatch({companyAddress})}
                             title={REQUEST_COPY.companyOffice}
-                            required
+                            required={companyAddressRequired}
                             dialogTitle={REQUEST_COPY.companyOffice}
                             fallbackLabel={REQUEST_COPY.companyOffice}
                         />
