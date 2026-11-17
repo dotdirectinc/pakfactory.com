@@ -36,7 +36,29 @@ export type BundleSection = { key: string; title: string; items: LibraryBundleIt
 const TEMPLATE_LEVEL: Record<string, string> = { global: "All products", category: "Product line", type: "Product type" };
 export const templateLevelLabel = (level: string | undefined) => TEMPLATE_LEVEL[level ?? ""] ?? level ?? "";
 
-/** Product type, templates, then one section per capability group, in the backend's order. */
+const COLLECTION_ORDER: Record<LibraryBundleItem["collection"], number> = { product_type: 0, template: 1, capability: 2 };
+const LEVEL_ORDER: Record<string, number> = { global: 0, category: 1, type: 2 };
+const groupSort = (i: LibraryBundleItem) => {
+  const n = Number(i.group?.sort);
+  return i.group?.sort == null || Number.isNaN(n) ? Number.POSITIVE_INFINITY : n;
+};
+
+/**
+ * Display order (the backend returns the records unordered): the product type, its templates from
+ * global to line to type, then capabilities by group sort (numeric, unsorted last), group name, code.
+ */
+export function sortBundle(items: readonly LibraryBundleItem[]): LibraryBundleItem[] {
+  return [...items].sort(
+    (a, b) =>
+      COLLECTION_ORDER[a.collection] - COLLECTION_ORDER[b.collection] ||
+      (LEVEL_ORDER[a.level ?? ""] ?? 9) - (LEVEL_ORDER[b.level ?? ""] ?? 9) ||
+      (groupSort(a) === groupSort(b) ? 0 : groupSort(a) < groupSort(b) ? -1 : 1) ||
+      (a.group?.name ?? "").localeCompare(b.group?.name ?? "") ||
+      a.sourceId.localeCompare(b.sourceId),
+  );
+}
+
+/** Product type, templates, then one section per capability group, in display order. */
 export function bundleSections(items: readonly LibraryBundleItem[]): BundleSection[] {
   const out: BundleSection[] = [];
   const push = (key: string, title: string, i: LibraryBundleItem) => {
@@ -44,7 +66,7 @@ export function bundleSections(items: readonly LibraryBundleItem[]): BundleSecti
     if (!s) out.push((s = { key, title, items: [] }));
     s.items.push(i);
   };
-  for (const i of items) {
+  for (const i of sortBundle(items)) {
     if (i.collection === "product_type") push("product_type", "Product type", i);
     else if (i.collection === "template") push("template", "Templates", i);
     else push(`capability:${i.group?.sourceId ?? "none"}`, i.group?.name ?? "Other capabilities", i);

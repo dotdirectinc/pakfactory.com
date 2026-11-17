@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bundleSections, decisionBatches, defaultSelection, isOpen, keyOf, stateCounts, templateLevelLabel } from "./library-bundle";
+import { bundleSections, decisionBatches, defaultSelection, isOpen, keyOf, sortBundle, stateCounts, templateLevelLabel } from "./library-bundle";
 import type { LibraryBundleItem } from "./registry-api";
 
 const it = (collection: LibraryBundleItem["collection"], sourceId: string, extra: Partial<LibraryBundleItem> = {}): LibraryBundleItem => ({
@@ -38,6 +38,20 @@ test("one decision call per library version, closed records never sent", () => {
 test("sections: product type, templates, then capability groups", () => {
   const s = bundleSections(items);
   assert.deepEqual(s.map((x) => [x.title, x.items.length]), [["Product type", 1], ["Templates", 3], ["Materials", 3], ["Printing", 1]]);
+});
+
+test("display order does not depend on the backend's order", () => {
+  const shuffled = [items[7]!, items[5]!, items[3]!, items[0]!, items[6]!, items[1]!, items[4]!, items[2]!,
+    it("capability", "CAP-ZZ-NOGROUP")];
+  assert.deepEqual(sortBundle(shuffled).map((i) => i.sourceId), [
+    "PT-FC-STE", "TPL-GLOBAL", "TPL-FC", "TPL-FC-STE", "CAP-MAT-CCNB", "CAP-MAT-NO", "CAP-MAT-ONLY", "CAP-PRT-OFF", "CAP-ZZ-NOGROUP",
+  ]);
+  assert.deepEqual(bundleSections(shuffled).map((s) => s.title), ["Product type", "Templates", "Materials", "Printing", "Other capabilities"]);
+});
+
+test("group sort is numeric, not text", () => {
+  const g = (sourceId: string, sort: number) => it("capability", sourceId, { group: { sourceId: `G${sort}`, name: `G${sort}`, sort } });
+  assert.deepEqual(sortBundle([g("CAP-B", 10), g("CAP-A", 9)]).map((i) => i.sourceId), ["CAP-A", "CAP-B"]);
 });
 
 test("counts and labels", () => {

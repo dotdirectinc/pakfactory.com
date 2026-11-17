@@ -8,7 +8,7 @@ import { LibraryBundleApprove } from "@/components/spec/library/library-bundle-a
 import { WARNING_BADGE } from "@/components/spec/library/spec-value";
 import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { getLibraryProductTypeReview, type LibraryBundleItem, type LibraryReviewState } from "@/lib/spec/registry-api";
-import { bundleSections, stateCounts, templateLevelLabel } from "@/lib/spec/library-bundle";
+import { bundleSections, sortBundle, stateCounts, templateLevelLabel } from "@/lib/spec/library-bundle";
 import { listHref, lineOf } from "@/lib/spec/library-review";
 import { ADMIN_SPEC_LIBRARY_COPY } from "@/lib/copy/spec-library";
 
@@ -56,7 +56,7 @@ export default async function SpecLibraryProductTypePage({ params }: { params: P
   }
   const { productType: pt, items } = res.data;
   const self = items.find((i) => i.collection === "product_type");
-  const templates = items.filter((i) => i.collection === "template");
+  const templates = sortBundle(items.filter((i) => i.collection === "template"));
   const capSections = bundleSections(items.filter((i) => i.collection === "capability"));
   const capCount = capSections.reduce((n, s) => n + s.items.length, 0);
   const counts = stateCounts(items);
