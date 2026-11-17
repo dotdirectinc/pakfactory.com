@@ -21,7 +21,10 @@ export type RequestProductCardProps = {
   /** Optional absolute inset wrapper around the image (e.g. media scale). */
   thumbInnerClassName?: string;
   detailRows: RequestProductCardDetailRow[];
-  /** Bottom row inside the body column (e.g. Remove). */
+  /**
+   * Bottom-right card action (e.g. Remove). Always visible — not gated by
+   * expand/collapse — so collapsed Items cards can still remove a line.
+   */
   footer?: ReactNode;
   /** Trailing column (e.g. pool checkbox). */
   trailing?: ReactNode;
@@ -172,12 +175,6 @@ export function RequestProductCard({
                 </div>
               ))
             : null}
-
-          {isExpanded && footer ? (
-            <div className="flex justify-end border-t border-dashed border-border py-4">
-              {footer}
-            </div>
-          ) : null}
         </div>
 
         {collapsible || trailing ? (
@@ -209,6 +206,20 @@ export function RequestProductCard({
           </div>
         ) : null}
       </div>
+
+      {footer ? (
+        <div
+          className={cn(
+            "flex justify-end",
+            isExpanded
+              ? "border-t border-dashed border-border pt-4"
+              : "mt-4",
+          )}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }

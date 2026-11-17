@@ -20,8 +20,8 @@ export const contactEmailSchema = z
     .email('Add a valid email');
 
 /**
- * Sectioned / step intake Contact (names + email required; phone, website, spend optional).
- * A filled website must look like a host.
+ * Sectioned / step intake Contact (names + email required; phone and website optional).
+ * Yearly packaging budget lives on Project summary. A filled website must look like a host.
  */
 export const contactIntakeSchema = z.object({
     contactFirstName: z.string().trim().min(1, 'Add your first name'),
@@ -29,8 +29,6 @@ export const contactIntakeSchema = z.object({
     contactEmail: contactEmailSchema,
     contactPhone: z.string(),
     contactWebsite: optionalWebsiteSchema,
-    annualSpend: z.string().optional(),
-    annualSpendCurrency: z.enum(['USD', 'CAD']).optional(),
 });
 
 export type ContactIntakeValues = z.infer<typeof contactIntakeSchema>;
@@ -39,8 +37,6 @@ export type ContactIntakeValues = z.infer<typeof contactIntakeSchema>;
 export const contactBriefBuilderSchema = contactIntakeSchema
     .omit({
         contactWebsite: true,
-        annualSpend: true,
-        annualSpendCurrency: true,
     })
     .extend({
         contactCompany: z.string().optional(),
@@ -73,8 +69,6 @@ export function contactIntakeFromDraft(draft: {
     contactEmail: string;
     contactPhone: string;
     contactWebsite?: string;
-    annualSpend?: string;
-    annualSpendCurrency?: 'USD' | 'CAD';
 }): ContactIntakeValues {
     return {
         contactFirstName: draft.contactFirstName,
@@ -82,8 +76,6 @@ export function contactIntakeFromDraft(draft: {
         contactEmail: draft.contactEmail,
         contactPhone: draft.contactPhone,
         contactWebsite: draft.contactWebsite ?? '',
-        annualSpend: draft.annualSpend,
-        annualSpendCurrency: draft.annualSpendCurrency,
     };
 }
 

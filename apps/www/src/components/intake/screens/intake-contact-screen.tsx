@@ -14,13 +14,7 @@ import {
     FormMessage,
 } from '@pakfactory/ui/components/form';
 import {Input} from '@pakfactory/ui/components/input';
-import {AnnualSpendField} from '@/components/request/annual-spend-field';
 import {REQUEST_COPY} from '@/lib/copy/request';
-import {
-    digitsOnlySpend,
-    formatSpendLabel,
-    resolveAnnualSpendCurrency,
-} from '@/lib/request/annual-spend';
 import {useRequest} from '@/lib/request/request-provider';
 import type {RequestDraft} from '@/lib/request/request.storage';
 import {
@@ -32,8 +26,8 @@ import {
 const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
 /**
- * Contact on the step intake (owner Nov 2): first and last name and email are needed; phone (c98),
- * company website, and yearly packaging spend are optional — no asterisks.
+ * Contact on the step intake (owner Nov 2): first and last name and email are needed; phone (c98)
+ * and company website are optional — no asterisks. Yearly packaging budget lives on Project summary.
  * Signed in (owner Nov 3): summary card like Brief Builder v1; Edit opens the fields. Email from the account
  * can't be changed here.
  */
@@ -65,11 +59,7 @@ export function IntakeContactScreen({
         (viewer?.email ?? '?').charAt(0).toUpperCase();
     const website = (draft.contactWebsite ?? '').trim();
     const phone = draft.contactPhone.trim();
-    const spendDigits = digitsOnlySpend(draft.annualSpend ?? '');
-    const spendCurrency =
-        resolveAnnualSpendCurrency(draft.annualSpend, draft.annualSpendCurrency) ?? 'USD';
-    const spendLabel = spendDigits ? formatSpendLabel(spendDigits, spendCurrency) : '';
-    const detailLine = [draft.contactEmail, phone || null, spendLabel || null].filter(Boolean).join(' · ');
+    const detailLine = [draft.contactEmail, phone || null].filter(Boolean).join(' · ');
 
     if (collapsed) {
         return (
@@ -157,62 +147,64 @@ export function IntakeContactScreen({
                         )}
                     />
                 </div>
-                <FormField
-                    control={form.control}
-                    name="contactEmail"
-                    render={({field}) => (
-                        <FormItem>
-                            <FormLabel className="text-xs font-medium">
-                                {REQUEST_COPY.workEmail}
-                                {viewer ? (
-                                    <span className="ml-1 font-normal text-muted-foreground">
-                                        · {REQUEST_COPY.contactEmailLocked}
-                                    </span>
-                                ) : null}
-                            </FormLabel>
-                            <FormControl>
-                                <Input
-                                    type="email"
-                                    autoComplete="email"
-                                    className={FIELD_CLASS}
-                                    placeholder={REQUEST_COPY.workEmailPlaceholder}
-                                    // readOnly, not disabled: still focusable and announced (see StepYourInformation).
-                                    readOnly={Boolean(viewer)}
-                                    {...field}
-                                    onChange={(e) => {
-                                        field.onChange(e);
-                                        onPatch({contactEmail: e.target.value});
-                                    }}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="contactPhone"
-                    render={({field}) => (
-                        <FormItem>
-                            <FormLabel className="text-xs font-medium">{REQUEST_COPY.intakePhoneLabel}</FormLabel>
-                            <FormControl>
-                                <Input
-                                    type="tel"
-                                    inputMode="tel"
-                                    autoComplete="tel"
-                                    className={FIELD_CLASS}
-                                    placeholder={REQUEST_COPY.intakePhonePlaceholder}
-                                    {...field}
-                                    onChange={(e) => {
-                                        field.onChange(e);
-                                        onPatch({contactPhone: e.target.value});
-                                    }}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid gap-6 sm:grid-cols-2">
+                    <FormField
+                        control={form.control}
+                        name="contactEmail"
+                        render={({field}) => (
+                            <FormItem>
+                                <FormLabel className="text-xs font-medium">
+                                    {REQUEST_COPY.workEmail}
+                                    {viewer ? (
+                                        <span className="ml-1 font-normal text-muted-foreground">
+                                            · {REQUEST_COPY.contactEmailLocked}
+                                        </span>
+                                    ) : null}
+                                </FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="email"
+                                        autoComplete="email"
+                                        className={FIELD_CLASS}
+                                        placeholder={REQUEST_COPY.workEmailPlaceholder}
+                                        // readOnly, not disabled: still focusable and announced (see StepYourInformation).
+                                        readOnly={Boolean(viewer)}
+                                        {...field}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            onPatch({contactEmail: e.target.value});
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="contactPhone"
+                        render={({field}) => (
+                            <FormItem>
+                                <FormLabel className="text-xs font-medium">{REQUEST_COPY.intakePhoneLabel}</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="tel"
+                                        inputMode="tel"
+                                        autoComplete="tel"
+                                        className={FIELD_CLASS}
+                                        placeholder={REQUEST_COPY.intakePhonePlaceholder}
+                                        {...field}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            onPatch({contactPhone: e.target.value});
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
                 <FormField
                     control={form.control}
                     name="contactWebsite"
@@ -239,12 +231,6 @@ export function IntakeContactScreen({
                             <FormMessage />
                         </FormItem>
                     )}
-                />
-                <AnnualSpendField
-                    value={draft.annualSpend}
-                    currency={spendCurrency}
-                    onChange={(annualSpend) => onPatch({annualSpend})}
-                    onCurrencyChange={(annualSpendCurrency) => onPatch({annualSpendCurrency})}
                 />
             </div>
         </Form>

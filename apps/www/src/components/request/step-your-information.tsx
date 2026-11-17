@@ -22,7 +22,6 @@ import {
 } from '@pakfactory/ui/components/form';
 import {Input} from '@pakfactory/ui/components/input';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {AnnualSpendField} from '@/components/request/annual-spend-field';
 import {AddressPickerBlock} from '@/components/request/address-picker-block';
 import {INDUSTRY_OPTIONS, REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
@@ -365,18 +364,6 @@ export function StepYourInformation({
                             required
                             dialogTitle={REQUEST_COPY.companyOffice}
                             fallbackLabel={REQUEST_COPY.companyOffice}
-                        />
-
-                        <AnnualSpendField
-                            className="pt-4"
-                            value={draft.annualSpend}
-                            currency={
-                                draft.annualSpendCurrency === 'CAD' ? 'CAD' : 'USD'
-                            }
-                            onChange={(annualSpend) => onPatch({annualSpend})}
-                            onCurrencyChange={(annualSpendCurrency) =>
-                                onPatch({annualSpendCurrency})
-                            }
                         />
                     </div>
                 </Form>
