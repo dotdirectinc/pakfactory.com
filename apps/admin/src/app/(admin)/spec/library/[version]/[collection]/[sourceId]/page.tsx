@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
+import { Button } from "@pakfactory/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@pakfactory/ui/components/card";
 import { LocalTime } from "@pakfactory/ui/components/local-time";
 import { cn } from "@pakfactory/ui/lib/utils";
@@ -60,6 +62,13 @@ export default async function SpecLibraryRecordPage({
         }
         back={{ href: listHref({ version, collection, state: "all", search: sourceId }), label: COPY.back }}
         badge={<Badge variant={latest?.decision === "reject" ? "destructive" : latest?.decision === "approve" ? "default" : "outline"}>{COPY.states[latest?.decision ?? "pending"]}</Badge>}
+        aside={
+          collection === "product_type" ? (
+            <Button asChild variant="outline">
+              <Link href={`/spec/library/product-types/${encodeURIComponent(sourceId)}`}>{COPY.productType.reviewTogether}</Link>
+            </Button>
+          ) : undefined
+        }
       />
 
       {facts.length > 0 ? (

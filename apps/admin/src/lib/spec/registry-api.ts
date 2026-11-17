@@ -653,6 +653,34 @@ export async function getLibraryRecord(version: number, collection: string, sour
   );
 }
 
+/** One record in a product type's review group (backend app.spec_review_bundle, PLAT-81). */
+export type LibraryBundleItem = {
+  collection: "product_type" | "template" | "capability";
+  sourceId: string;
+  label: string | null;
+  version: number;
+  state: LibraryReviewState;
+  note: string | null;
+  decidedAt: string | null;
+  decidedByName: string | null;
+  /** How many product types this record applies to; more than 1 = shared. */
+  sharedBy: number;
+  level?: "global" | "category" | "type";
+  entries?: number;
+  group?: { sourceId: string | null; name: string | null; sort: number | null };
+};
+
+export type LibraryBundle = {
+  productType: { sourceId: string; name: string; version: number; line: string; lineName: string };
+  productTypesInLine: number;
+  productTypesTotal: number;
+  items: LibraryBundleItem[];
+};
+
+export async function getLibraryProductTypeReview(sourceId: string) {
+  return call<LibraryBundle>(`/api/v1/library-product-types/${encodeURIComponent(sourceId)}/review`);
+}
+
 export async function decideLibraryItems(
   version: number,
   decision: LibraryDecision,
