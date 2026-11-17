@@ -9,7 +9,8 @@ export async function pickFirstQuantity(page: Page, scope: Locator): Promise<voi
 
 /**
  * On a PDP: pick a preset quantity and Add to quote (packaging is optional).
- * Asserts the confirmation toast.
+ * Confirms the quote pool drawer, then closes it. The sheet is modal, so the
+ * header Quote request link stays hidden until Continue.
  */
 export async function addCurrentPdpToRequest(page: Page): Promise<void> {
     // The PDP has no <main> landmark; the request rail lives in the product article.
@@ -23,9 +24,11 @@ export async function addCurrentPdpToRequest(page: Page): Promise<void> {
     await expect(addButton).toBeEnabled();
     await addButton.click();
 
-    // Quote pool drawer confirms the add (replaces the old toast).
-    await expect(page.getByRole('heading', {name: 'Your quote'})).toBeVisible();
-    await expect(page.getByRole('button', {name: 'Create quote request'})).toBeVisible();
+    const drawer = page.getByRole('dialog', {name: 'Your quote'});
+    await expect(drawer.getByRole('heading', {name: 'Your quote'})).toBeVisible();
+    await expect(drawer.getByRole('button', {name: 'Create quote request'})).toBeVisible();
+    await drawer.getByRole('button', {name: 'Continue'}).click();
+    await expect(drawer).toBeHidden();
 }
 
 /** The nav's request link; its count is the number of lines in the pool. */
