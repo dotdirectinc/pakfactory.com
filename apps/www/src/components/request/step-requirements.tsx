@@ -16,6 +16,7 @@ import {
 } from '@/components/request/brief-assist-upload';
 import {FilesDropzone} from '@/components/request/files-dropzone';
 import {BriefOrFiles} from '@/components/intake/fields/brief-or-files';
+import {PackagingSpendSection} from '@/components/intake/project-summary/packaging-spend-section';
 import type {RequestFlow} from '@/lib/intake/routes';
 import {hasNeed, NEED_PACKAGING} from '@/lib/intake/needs';
 import {
@@ -293,6 +294,11 @@ export function StepRequirements({
                     onPick={onPickFiles}
                 />
                 </>
+                ) : null}
+
+                {/* Brief Builder only (`part === 'all'`): budget at the end of Your Requirements. */}
+                {part === 'all' ? (
+                    <PackagingSpendSection draft={draft} onPatch={onPatch} />
                 ) : null}
             </div>
         </section>

@@ -137,6 +137,8 @@ export const REQUEST_COPY = {
     annualSpendCurrencyUsd: 'USD',
     annualSpendCurrencyCad: 'CAD',
     shipToLabel: 'Where should we ship it to?',
+    /** General Project summary — country only (no street / city yet). */
+    shipCountryLabel: 'Which country are you shipping the Packaging to?',
     shippingAddressFallbackLabel: 'Shipping address',
     shippingAddressCancel: 'Cancel',
     shippingAddressSave: 'Save',

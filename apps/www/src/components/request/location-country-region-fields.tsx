@@ -44,6 +44,8 @@ type LocationCountryFieldProps = {
     value: LocationValue;
     onPatch: (patch: LocationPatch) => void;
     className?: string;
+    /** Hide the nested "Country" label when a section heading already asks the question. */
+    hideLabel?: boolean;
 };
 
 type LocationRegionFieldProps = {
@@ -72,6 +74,7 @@ export function LocationCountryField({
     value,
     onPatch,
     className,
+    hideLabel = false,
 }: LocationCountryFieldProps) {
     const countryCode = value.countryCode?.trim() ?? '';
     const country = value.country ?? '';
@@ -111,7 +114,9 @@ export function LocationCountryField({
 
     return (
         <div className={className}>
-            <Label className="mb-1 block text-xs font-medium">Country</Label>
+            {hideLabel ? null : (
+                <Label className="mb-1 block text-xs font-medium">Country</Label>
+            )}
             {countryOther ? (
                 <div className="space-y-2">
                     <Input

@@ -6,6 +6,7 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {SectionReveal} from '@/components/common/section-reveal';
 import {IntakeContactScreen} from '@/components/intake/screens/intake-contact-screen';
+import {PackagingSpendSection} from '@/components/intake/project-summary/packaging-spend-section';
 import {ProjectDetailsScreen} from '@/components/intake/screens/project-details-screen';
 import {RequestShell} from '@/components/request-sections/request-shell';
 import {RequestSectionsSubmit} from '@/components/request-sections/request-sections-submit';
@@ -17,12 +18,17 @@ import {isServicesStepReady} from '@/lib/intake/flows/services-ready';
 import {draftNeeds} from '@/lib/intake/needs';
 import type {IntakeContext} from '@/lib/intake/types';
 import {REQUEST_COPY} from '@/lib/copy/request';
+import {
+    formatAnnualSpendDisplay,
+    resolveAnnualSpendCurrency,
+} from '@/lib/request/annual-spend';
 import {entryFrom, trackFunnel} from '@/lib/request/funnel';
 import {useRequest} from '@/lib/request/request-provider';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
+import {resolveServiceLabel} from '@/lib/request/service-label';
 import type {RequestServiceOption} from '@/lib/request/service-option';
 import {formatAddressSummaryLine} from '@/lib/request/shipping-address';
-import {isIntakeContactReady, isItemsReady, needsPackaging} from '@/lib/request/validation';
+import {isIntakeContactReady, isItemsReady, needsPackaging, needsService} from '@/lib/request/validation';
 import {REQUEST_SECTIONS, SECTION_TITLE, type SectionKey} from '@/lib/request-sections/flow';
 import {trackSectionDone, trackSectionOpen} from '@/lib/request-sections/events';
 import {submittedHref, type RequestKind} from '@/lib/request-sections/url';
@@ -173,7 +179,7 @@ export function RequestPage({
         products: <ProductsSummary lines={lines} />,
         details:
             flow === 'general' ? (
-                <GeneralDetailsSummary draft={draft} />
+                <GeneralDetailsSummary draft={draft} serviceOptions={serviceOptions} />
             ) : (
                 <ProductDetailsSummary draft={draft} />
             ),
@@ -231,10 +237,19 @@ export function RequestPage({
                             >
                                 {k === 'products' ? <ProductsSection /> : null}
                                 {k === 'details' ? (
-                                    <>
+                                    <div className="flex flex-col gap-12">
                                         <ProjectDetailsScreen flow={flow} draft={draft} onPatch={updateDraft} serviceOptions={serviceOptions} columns />
-                                        {flow === 'product' ? <ServicesAddCard draft={draft} onPatch={updateDraft} serviceOptions={serviceOptions} /> : null}
-                                    </>
+                                        {flow === 'product' ? (
+                                            <PackagingSpendSection draft={draft} onPatch={updateDraft} />
+                                        ) : null}
+                                        {flow === 'product' ? (
+                                            <ServicesAddCard
+                                                draft={draft}
+                                                onPatch={updateDraft}
+                                                serviceOptions={serviceOptions}
+                                            />
+                                        ) : null}
+                                    </div>
                                 ) : null}
                                 {k === 'contact' ? (
                                     <>
@@ -261,8 +276,16 @@ export function RequestPage({
     );
 }
 
-/** Folded Project summary for general: labeled Quantity + contents + Project brief + ship-to. */
-function GeneralDetailsSummary({draft}: {draft: RequestDraft}) {
+/** Folded Project summary for general — same order as the open form. */
+function GeneralDetailsSummary({
+    draft,
+    serviceOptions,
+}: {
+    draft: RequestDraft;
+    serviceOptions: RequestServiceOption[];
+}) {
+    const packaging = needsPackaging(draft);
+    const service = needsService(draft);
     const need = REQUEST_COPY.intakeNeedChoices
         .filter((o) => draftNeeds(draft).includes(o.value))
         .map((o) => o.label)
@@ -273,38 +296,61 @@ function GeneralDetailsSummary({draft}: {draft: RequestDraft}) {
     const fileCount = draft.referenceImages?.length ?? 0;
     const briefValue =
         brief || (fileCount > 0 ? `${fileCount} file${fileCount === 1 ? '' : 's'}` : '—');
-    const shipTo =
-        needsPackaging(draft) && draft.shippingAddress
-            ? formatAddressSummaryLine(draft.shippingAddress)
+    const country =
+        packaging && draft.shippingAddress?.country?.trim()
+            ? draft.shippingAddress.country.trim()
             : '';
+    const spend = formatAnnualSpendDisplay(
+        draft.annualSpend,
+        resolveAnnualSpendCurrency(draft.annualSpend, draft.annualSpendCurrency),
+    );
+    const services = service
+        ? draft.services
+              .map((id) => resolveServiceLabel(id, serviceOptions, draft.serviceOther))
+              .join(' · ')
+        : '';
     return (
         <div className="flex flex-col gap-2 text-sm">
             {need ? <p className="text-muted-foreground">{need}</p> : null}
-            <p>
-                <span className="text-muted-foreground">Quantity: </span>
-                <span className="text-foreground">{qty || '—'}</span>
-            </p>
-            {contents ? (
+            {packaging ? (
+                <p>
+                    <span className="text-muted-foreground">Quantity: </span>
+                    <span className="text-foreground">{qty || '—'}</span>
+                </p>
+            ) : null}
+            {packaging && contents ? (
                 <p>
                     <span className="text-muted-foreground">{REQUEST_COPY.contentsLabel}: </span>
                     <span className="text-foreground">{contents}</span>
+                </p>
+            ) : null}
+            {country ? (
+                <p>
+                    <span className="text-muted-foreground">{REQUEST_COPY.shipCountryLabel}: </span>
+                    <span className="text-foreground">{country}</span>
+                </p>
+            ) : null}
+            {spend ? (
+                <p>
+                    <span className="text-muted-foreground">{REQUEST_COPY.annualSpendLabel}: </span>
+                    <span className="text-foreground">{spend}</span>
+                </p>
+            ) : null}
+            {services ? (
+                <p>
+                    <span className="text-muted-foreground">{REQUEST_COPY.intakeReviewServices}: </span>
+                    <span className="text-foreground">{services}</span>
                 </p>
             ) : null}
             <p>
                 <span className="text-muted-foreground">Project brief: </span>
                 <span className="whitespace-pre-line text-foreground">{briefValue}</span>
             </p>
-            {shipTo ? (
-                <p>
-                    <span className="text-muted-foreground">{REQUEST_COPY.shipToLabel}: </span>
-                    <span className="text-foreground">{shipTo}</span>
-                </p>
-            ) : null}
         </div>
     );
 }
 
-/** Folded Project summary for product: brief + ship-to. */
+/** Folded Project summary for product: brief + ship-to + budget. */
 function ProductDetailsSummary({draft}: {draft: RequestDraft}) {
     const brief = draft.notes.trim();
     const fileCount = draft.referenceImages?.length ?? 0;
@@ -313,7 +359,11 @@ function ProductDetailsSummary({draft}: {draft: RequestDraft}) {
     const shipTo = draft.shippingAddress
         ? formatAddressSummaryLine(draft.shippingAddress)
         : '';
-    if (!briefValue && !shipTo) return null;
+    const spend = formatAnnualSpendDisplay(
+        draft.annualSpend,
+        resolveAnnualSpendCurrency(draft.annualSpend, draft.annualSpendCurrency),
+    );
+    if (!briefValue && !shipTo && !spend) return null;
     return (
         <div className="flex flex-col gap-2 text-sm">
             {briefValue ? (
@@ -326,6 +376,12 @@ function ProductDetailsSummary({draft}: {draft: RequestDraft}) {
                 <p>
                     <span className="text-muted-foreground">{REQUEST_COPY.shipToLabel}: </span>
                     <span className="text-foreground">{shipTo}</span>
+                </p>
+            ) : null}
+            {spend ? (
+                <p>
+                    <span className="text-muted-foreground">{REQUEST_COPY.annualSpendLabel}: </span>
+                    <span className="text-foreground">{spend}</span>
                 </p>
             ) : null}
         </div>
