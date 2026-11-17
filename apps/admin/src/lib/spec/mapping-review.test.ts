@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { groupMappings, mappingHref, mappingParams, targetHref } from "./mapping-review";
+import { groupMappings, mappingHref, mappingParams, settingText, targetHref } from "./mapping-review";
 import type { MappingItem } from "./registry-api";
 
 const item = (id: number, group: string | null): MappingItem =>
@@ -28,4 +28,9 @@ test("groups keep the API order and put items without a group last", () => {
   assert.deepEqual(groups.map((g) => [g.title, g.items.map((i) => i.id)]), [
     ["Lock Bottom Cartons", [1, 3]], ["Tuck End Boxes", [4]], [null, [2]],
   ]);
+});
+
+test("a setting that names its own field is shown as written", () => {
+  assert.equal(settingText("Outside only"), "= Outside only");
+  assert.equal(settingText("Grade = Anti-static"), "Grade = Anti-static");
 });
