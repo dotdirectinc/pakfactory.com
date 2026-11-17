@@ -8,6 +8,8 @@ import { cn } from "@pakfactory/ui/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { LibraryDecisionForm } from "@/components/spec/library/library-decision-form";
 import { RuleLogic } from "@/components/spec/library/rule-logic";
+import { LibraryUsedBy } from "@/components/spec/library/library-used-by";
+import { reachOf } from "@/lib/spec/library-usage-data";
 import { FactBadge, SpecValue, WARNING_BADGE } from "@/components/spec/library/spec-value";
 import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { getLibraryRecord } from "@/lib/spec/registry-api";
@@ -40,6 +42,8 @@ export default async function SpecLibraryRecordPage({
   }
   const { record, children, history, refs } = res.data;
   const latest = history[0];
+  const shared = collection === "template" || collection === "capability";
+  const reach = shared ? await reachOf(version, collection, sourceId, record, refs) : null;
   const isRule = collection === "rule";
   const facts = FACT_KEYS.filter((k) => !isEmpty(record[k]));
   const { lead, content, empty, system } = splitFields(record, [...facts, ...(isRule ? ["body"] : [])]);
@@ -182,6 +186,8 @@ export default async function SpecLibraryRecordPage({
               )}
             </CardContent>
           </Card>
+
+          {shared ? <LibraryUsedBy groups={reach} /> : null}
 
           <Card>
             <CardHeader>

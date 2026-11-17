@@ -9,7 +9,8 @@ import { WARNING_BADGE } from "@/components/spec/library/spec-value";
 import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { getLibraryProductTypeReview, type LibraryBundleItem, type LibraryReviewState } from "@/lib/spec/registry-api";
 import { bundleSections, sortBundle, stateCounts, templateLevelLabel } from "@/lib/spec/library-bundle";
-import { listHref, lineOf } from "@/lib/spec/library-review";
+import { lineOf } from "@/lib/spec/library-review";
+import { productTypesHref } from "@/lib/spec/library-usage";
 import { ADMIN_SPEC_LIBRARY_COPY } from "@/lib/copy/spec-library";
 
 export const metadata = { title: "Product type review" };
@@ -75,7 +76,7 @@ export default async function SpecLibraryProductTypePage({ params }: { params: P
           </span>
         }
         back={{
-          href: listHref({ version: pt.version, collection: "product_type", state: "all", line: lineOf(pt.line) }),
+          href: productTypesHref({ line: lineOf(pt.line) }),
           label: ADMIN_SPEC_LIBRARY_COPY.back,
         }}
         badge={self ? <StateBadge state={self.state} /> : undefined}

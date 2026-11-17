@@ -15,6 +15,21 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
   importSummary: (s: LibraryImportSummary) =>
     `This import: ${s.new} new · ${s.updated} updated · ${s.held} held · ${s.omitted} omitted`,
   lineHeading: "Product line",
+  views: { productTypes: "By product type", records: "All records" },
+  productTypeList: {
+    lead:
+      "Each product type with the records it is built from: its templates and its line's capabilities. Materials, fields and rules are reviewed under All records.",
+    columns: { productType: "Product type", line: "Line", own: "Its decision", progress: "Its records approved", open: "Open" },
+    progress: (approved: number, total: number) => `${approved} of ${total}`,
+    unreadable: "—",
+    empty: "No product types in this line.",
+  },
+  usedBy: {
+    heading: (n: number) => (n === 1 ? "Applies to 1 product type" : `Applies to ${n} product types`),
+    lead: (n: number) =>
+      n === 1 ? "Approving this record approves it for this product type." : `Approving this record approves it for all ${n}.`,
+    unknown: "Could not work out which product types use this record.",
+  },
   heldChangesLink: (n: number) => (n === 0 ? "Held changes" : `Held changes (${n} waiting)`),
   collectionsHeading: "Collections",
   columns: { collection: "Collection", total: "Records", pending: "To review", approve: "Approved", reject: "Rejected", defer: "Deferred" },
