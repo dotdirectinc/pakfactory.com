@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { MappingReviewList } from "@/components/spec/mapping/mapping-review-list";
 import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { listSpecMappings } from "@/lib/spec/registry-api";
+import { websiteLinks } from "@/lib/spec/mapping-links";
 import { LINES } from "@/lib/spec/library-review";
 import { apiState, KINDS, MAP_LABELS, MAP_STATES, mappingHref, mappingParams } from "@/lib/spec/mapping-review";
 import { ADMIN_SPEC_MAPPING_COPY as COPY } from "@/lib/copy/spec-mapping";
@@ -21,10 +22,18 @@ type SP = { kind?: string; line?: string; state?: string; label?: string; search
  */
 export default async function SpecMappingReviewPage({ searchParams }: { searchParams: Promise<SP> }) {
   const p = mappingParams(await searchParams);
-  const [me, res] = await Promise.all([
+  const [me, res, linkMap] = await Promise.all([
     requireRegistryGrant(),
     listSpecMappings({ kind: p.kind, line: p.line, state: apiState(p.state), label: p.label ?? undefined, search: p.search ?? undefined }),
+    websiteLinks(),
   ]);
+  // Only the links this page shows go to the client.
+  const links = Object.fromEntries(
+    (res.ok ? res.data.items : []).flatMap((i) => {
+      const l = linkMap.get(i.subjectId);
+      return l ? [[i.subjectId, { href: l.href, table: l.table, id: l.id }]] : [];
+    }),
+  );
   const canDecide = canReviewLibrary(me);
   const lineName = LINES.find((l) => l.key === p.line)?.label ?? p.line;
   const kind = KINDS.find((k) => k.key === p.kind)!;
@@ -126,7 +135,7 @@ export default async function SpecMappingReviewPage({ searchParams }: { searchPa
           </nav>
 
           {!canDecide ? <p className="text-sm text-muted-foreground">{COPY.readOnlyNote}</p> : null}
-          <MappingReviewList key={mappingHref(p)} items={res.data.items} canDecide={canDecide} groupBy={kind.groupBy} />
+          <MappingReviewList key={mappingHref(p)} items={res.data.items} links={links} canDecide={canDecide} groupBy={kind.groupBy} />
         </>
       )}
     </div>
