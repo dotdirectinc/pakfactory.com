@@ -20,15 +20,70 @@ export type WwwLinkHrefInput = {
 /** @deprecated Prefer {@link WwwLinkHrefInput}. */
 export type SectionLinkHrefInput = WwwLinkHrefInput;
 
+/** Apex form so `www.pakfactory.com` and `pakfactory.com` match. */
+function apexHost(hostname: string): string {
+  return hostname.replace(/^www\./i, '').toLowerCase();
+}
+
+function isPakfactoryWwwHost(hostname: string): boolean {
+  return apexHost(hostname) === 'pakfactory.com';
+}
+
+/**
+ * Marketing pages live on this www app. Absolute production URLs must become
+ * root-relative so localhost / staging stay on the current host. Blog is a
+ * separate surface — keep those absolute.
+ */
+function sameSiteMarketingPath(absoluteUrl: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(absoluteUrl);
+  } catch {
+    return null;
+  }
+  if (!isPakfactoryWwwHost(url.hostname)) return null;
+  const path = `${url.pathname}${url.search}${url.hash}` || '/';
+  if (path === '/blog' || path.startsWith('/blog/')) return null;
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
 function stripWwwOrigin(href: string): ResolvedWwwHref {
-  const origin = getWwwUrl().replace(/\/+$/, '');
-  if (href.startsWith(origin)) {
-    const path = href.slice(origin.length) || '/';
+  const configured = getWwwUrl().replace(/\/+$/, '');
+  let configuredHost = '';
+  try {
+    configuredHost = apexHost(new URL(configured).hostname);
+  } catch {
+    configuredHost = '';
+  }
+
+  try {
+    const url = new URL(href);
+    if (
+      configuredHost &&
+      isPakfactoryWwwHost(url.hostname) &&
+      apexHost(url.hostname) === configuredHost
+    ) {
+      const path = `${url.pathname}${url.search}${url.hash}` || '/';
+      return {
+        href: path.startsWith('/') ? path : `/${path}`,
+        external: false,
+      };
+    }
+  } catch {
+    // fall through
+  }
+
+  if (href.startsWith(configured)) {
+    const path = href.slice(configured.length) || '/';
     return {
       href: path.startsWith('/') ? path : `/${path}`,
       external: false,
     };
   }
+
+  const marketing = sameSiteMarketingPath(href);
+  if (marketing) return {href: marketing, external: false};
+
   return {href, external: href.startsWith('http')};
 }
 
@@ -52,10 +107,14 @@ export function normalizeSitePath(
 
 /**
  * Resolve a Studio linkTarget (internal | path | external) for www chrome
- * and in-section card links. External URLs stay absolute (editors chose
- * External — including pakfactory.com/blog). Internal CMS hrefs that resolve
- * onto the www origin become root-relative for Next Link. Site path stays
- * root-relative so the browser uses the current host.
+ * and in-section card links.
+ *
+ * - Site path → root-relative (current host).
+ * - External blog URLs (pakfactory.com/blog…) stay absolute.
+ * - External marketing URLs on pakfactory.com / www.pakfactory.com become
+ *   root-relative so local and staging do not jump to production.
+ * - Other external URLs stay absolute.
+ * - Internal CMS hrefs that resolve onto the www origin become root-relative.
  */
 export function resolveWwwNavHref(
   raw: WwwLinkHrefInput | null | undefined,
@@ -71,6 +130,8 @@ export function resolveWwwNavHref(
   if (raw.linkType === 'external') {
     const url = raw.externalUrl?.trim();
     if (!url) return null;
+    const marketing = sameSiteMarketingPath(url);
+    if (marketing) return {href: marketing, external: false};
     return {href: url, external: true};
   }
 

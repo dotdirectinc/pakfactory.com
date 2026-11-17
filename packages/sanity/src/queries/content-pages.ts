@@ -7,6 +7,9 @@
  * have no slug — the www route maps `privacy-policy` / `terms-of-service` /
  * `cookies-preference` to the pinned ids `privacyPage` / `termsPage` /
  * `cookiesPage`.
+ *
+ * Contact hub copy lives on a `contactDirectory` section (see sections.ts),
+ * not on Content-tab fields.
  */
 
 import {PAGE_SECTIONS_PROJECTION, type PageSectionDoc} from './sections'
@@ -20,6 +23,14 @@ export const CONTENT_PAGE_PINNED_IDS = [
 ] as const
 
 export type ContentPagePinnedId = (typeof CONTENT_PAGE_PINNED_IDS)[number]
+
+export type {
+  ContactChannelDoc,
+  ContactChannelLink,
+  ContactEnquiryChoice,
+  ContactEnquiryField,
+  ContactEnquiryScreen,
+} from './contact-channels'
 
 export type ContentPageDoc = {
   _id: string

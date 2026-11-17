@@ -158,7 +158,21 @@ Token: `--spacing-grid-unit` (8px) in `@pakfactory/ui/globals.css`. Prefer `gap-
 - **Prefer the roomier even step** when a surface feels cramped at `lg+` (e.g. choose `px-8` / `gap-6` over `px-4` / `gap-4`).
 - **Card meta:** left- and center-aligned catalog tiles share the same airy inset (`px-8` / `pb-8` / internal `gap-4`) unless a density variant is explicitly documented.
 - **Do not** use off-grid / fractional steps that yield 6/10/12/14/20px (`gap-1.5`, `gap-2.5`, `gap-3`, `gap-5`, `top-3`, `py-2.5`, `mt-1.5`, `space-y-1.5`).
-- Form rhythm: label+description `gap-1` → control `gap-2` → between fields `gap-4`.
+- Form rhythm: label+description `gap-1` → control `gap-2` → between fields `gap-4`. Between field **groups** (e.g. enquiry screen blocks): `gap-8` or `gap-10`.
+
+### Form fields (binding)
+
+Marketing and request forms use the same field type scale. Do not invent larger labels on one surface and smaller on another.
+
+| Part | Classes | Notes |
+| --- | --- | --- |
+| Field label | `text-xs font-medium` on `FormLabel` / form `Label` | Overrides `@pakfactory/ui` `Label` default (`text-sm`) — leave the primitive alone |
+| Optional / locked suffix | `font-normal text-muted-foreground` | e.g. `(optional)`, “from your account” |
+| Single-line control | `h-11 rounded-sm bg-background text-sm` | Text, email, tel, select trigger |
+| Textarea / value text | `text-sm` | Match input value size |
+| Errors | `FormMessage` | Kit default |
+
+Reference: request intake Contact (`FIELD_CLASS` + `text-xs` labels). Contact enquiry and brief-builder contact fields follow the same table.
 
 ### Blog dieline gutters
 

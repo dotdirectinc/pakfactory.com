@@ -40,6 +40,7 @@ export const SECTION_ENTITY = {
   faqSection: 'layout',
   testimonialsRow: 'layout',
   benefits: 'layout',
+  contactDirectory: 'layout',
   generalCta: 'cta',
   newsletterCta: 'cta',
   linkCards: 'cta',

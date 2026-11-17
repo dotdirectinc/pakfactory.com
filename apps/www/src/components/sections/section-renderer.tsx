@@ -47,7 +47,10 @@ export function SectionRenderer({sections, components}: SectionRendererProps) {
                     ) : null;
                 }
 
-                if (section._type === 'testimonialsRow') {
+                if (
+                    section._type === 'testimonialsRow' ||
+                    section._type === 'contactDirectory'
+                ) {
                     return (
                         <Suspense key={section._key} fallback={null}>
                             <Component {...section} />

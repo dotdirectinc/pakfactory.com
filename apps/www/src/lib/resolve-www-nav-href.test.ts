@@ -68,15 +68,36 @@ describe('resolveWwwNavHref', () => {
       }),
       {href: 'https://pakfactory.com/blog', external: true},
     );
+    assert.deepEqual(
+      resolveWwwNavHref({
+        linkType: 'external',
+        externalUrl: 'https://www.pakfactory.com/blog/post',
+      }),
+      {href: 'https://www.pakfactory.com/blog/post', external: true},
+    );
   });
 
-  it('keeps same-site marketing external URLs absolute', () => {
+  it('rewrites same-site marketing external URLs to root-relative', () => {
     assert.deepEqual(
       resolveWwwNavHref({
         linkType: 'external',
         externalUrl: 'https://pakfactory.com/products',
       }),
-      {href: 'https://pakfactory.com/products', external: true},
+      {href: '/products', external: false},
+    );
+    assert.deepEqual(
+      resolveWwwNavHref({
+        linkType: 'external',
+        externalUrl: 'https://www.pakfactory.com/contact',
+      }),
+      {href: '/contact', external: false},
+    );
+    assert.deepEqual(
+      resolveWwwNavHref({
+        linkType: 'external',
+        externalUrl: 'https://www.pakfactory.com/contact-us',
+      }),
+      {href: '/contact-us', external: false},
     );
   });
 });

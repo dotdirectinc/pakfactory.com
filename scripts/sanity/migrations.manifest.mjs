@@ -708,6 +708,7 @@ export const TASKS = [
   { task: 'seed:home-page', pkg: '@pakfactory/studio', why: 'idempotent Home layout seed (PROD-2666); stable seed-hero-*/seed-home-* keys, picks real docs' },
   { task: 'seed:website-footer', pkg: '@pakfactory/studio', why: 'idempotent websiteNavigation.columns launch footer; Products=lines, Solutions=groupings, Expertise=stages; reuses links by label; Terms path-only' },
   { task: 'seed:static-pages', pkg: '@pakfactory/studio', why: 'create-if-missing About/Contact/Privacy/Terms/Sustainability + reserved search/404 stubs (PROD-2658); never overwrites existing docs' },
+  { task: 'seed:contact-page', pkg: '@pakfactory/studio', why: 'idempotent Contact Page Content seed (headline, intro, six channels); replaces Content fields only; leaves Global Settings alone' },
   { task: 'seed:catalog-page-copy', pkg: '@pakfactory/studio', why: 'idempotent Product/Customization Catalog Page hero+SEO+UI copy (PROD-3001)' },
   { task: 'seed:cdp-detail-pages', pkg: '@pakfactory/studio', why: 'create-only CDP layout stubs (PROD-3112 / PROD-3127); skips existing docs; single customizationOverview rail' },
   { task: 'migrate:cdp-overview-layout', pkg: '@pakfactory/studio', why: 'rewrite legacy CDP overview _types onto customizationOverview and unset layout (PROD-3127)' },

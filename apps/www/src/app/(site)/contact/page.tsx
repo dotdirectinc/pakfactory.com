@@ -1,10 +1,8 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
-import {ContactDetailsBlock} from '@/components/content/contact-details-block';
 import {ContentPageView} from '@/components/content/content-page-view';
 import {contentPageMetadata} from '@/lib/content-page-metadata';
 import {getContentPageById} from '@/lib/content-pages';
-import {fetchWwwGlobalSettings} from '@/lib/www-global-settings';
 
 export const revalidate = 60;
 
@@ -17,15 +15,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactPage() {
-    const [page, settings] = await Promise.all([
-        getContentPageById('contactPage'),
-        fetchWwwGlobalSettings(),
-    ]);
+    const page = await getContentPageById('contactPage');
     if (!page) notFound();
-    return (
-        <ContentPageView
-            page={page}
-            afterSections={<ContactDetailsBlock settings={settings} />}
-        />
-    );
+
+    // Hub lives in a `contactDirectory` section (Sections tab). Other bands
+    // (FAQ, CTA, …) follow in the same sections array.
+    return <ContentPageView page={page} />;
 }

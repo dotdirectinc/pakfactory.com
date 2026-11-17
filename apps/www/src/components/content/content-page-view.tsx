@@ -19,7 +19,7 @@ export function ContentPageView({page, afterSections}: ContentPageViewProps) {
     const hasSections = sections.length > 0;
 
     return (
-        <main className="min-h-screen bg-background">
+        <main className="bg-background">
             {hasSections ? null : <PageHeadingSection title={title} />}
             <SectionRenderer sections={sections} />
             {afterSections}
