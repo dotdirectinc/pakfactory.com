@@ -11,7 +11,7 @@ import { Textarea } from "@pakfactory/ui/components/textarea";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { decideMappingsAction } from "@/app/(admin)/spec/mapping/actions";
 import { WARNING_BADGE } from "@/components/spec/library/spec-value";
-import { groupMappings, isOpenState, MAP_LABELS, targetHref } from "@/lib/spec/mapping-review";
+import { groupMappings, isOpenState, MAP_LABELS, settingText, targetHref } from "@/lib/spec/mapping-review";
 import type { LibraryDecision, LibraryReviewState, MappingItem, MappingLabel } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_MAPPING_COPY as COPY } from "@/lib/copy/spec-mapping";
 
@@ -161,7 +161,7 @@ function MappingRow({ m, canDecide, checked, onCheck, disabled }: { m: MappingIt
           {m.targets.map((t) => (
             <Link key={`${t.kind}/${t.sourceId}`} href={targetHref(t)} className="inline-flex items-baseline gap-1 rounded-md border border-border px-2 py-0.5 hover:bg-muted" title={`${t.sourceId} · v${t.version}`}>
               <span>{t.name ?? t.sourceId}</span>
-              {t.setting ? <span className="text-muted-foreground">= {t.setting}</span> : null}
+              {t.setting ? <span className="text-muted-foreground">{settingText(t.setting)}</span> : null}
             </Link>
           ))}
         </div>

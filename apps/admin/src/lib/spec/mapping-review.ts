@@ -73,3 +73,8 @@ export function groupMappings(items: MappingItem[]): { key: string; title: strin
   }
   return [...out.values()].sort((a, b) => (a.title === null ? 1 : b.title === null ? -1 : 0));
 }
+
+/** A target's setting as shown after its name: "= Outside only", or as written when it names its own field ("Grade = Anti-static"). */
+export function settingText(setting: string): string {
+  return setting.includes("=") ? setting : `= ${setting}`;
+}
