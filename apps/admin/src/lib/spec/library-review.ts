@@ -34,6 +34,66 @@ export const STATE_FILTERS: readonly { key: LibraryReviewState | "all"; label: s
 
 export const PAGE_SIZE = 100;
 
+/**
+ * Product lines (Spec Library categories). Folding carton is the line closest to finished (Justin
+ * Chow, 2026-11-17), so it is the default; "all" shows every record. A record shared by several lines
+ * shows under each and is approved once for the whole library.
+ */
+export const LINES = [
+  { key: "CAT-FC", label: "Folding Cartons" },
+  { key: "CAT-CB", label: "Corrugated Boxes" },
+  { key: "CAT-RB", label: "Rigid Boxes" },
+  { key: "CAT-FP", label: "Flexible Packaging" },
+  { key: "CAT-PB", label: "Paper Bags" },
+  { key: "CAT-MB", label: "Mailer Bags" },
+  { key: "CAT-LS", label: "Labels and Stickers" },
+  { key: "CAT-DP", label: "Displays and POP" },
+  { key: "CAT-IN", label: "Packaging Inserts" },
+  { key: "CAT-SP", label: "Specialty Packaging" },
+  { key: "all", label: "All lines" },
+] as const;
+export type LineKey = (typeof LINES)[number]["key"];
+export const DEFAULT_LINE: LineKey = "CAT-FC";
+
+export function lineOf(v: unknown): LineKey {
+  return LINES.some((l) => l.key === v) ? (v as LineKey) : DEFAULT_LINE;
+}
+
+/** The line as the API takes it: undefined for every line. */
+export function apiLine(line: LineKey): string | undefined {
+  return line === "all" ? undefined : line;
+}
+
+export const CHANGE_FILTERS = [
+  { key: "waiting", label: "Waiting" },
+  { key: "defer", label: "Deferred" },
+  { key: "reject", label: "Rejected" },
+  { key: "approve", label: "Approved" },
+  { key: "all", label: "All" },
+] as const;
+export type ChangeFilter = (typeof CHANGE_FILTERS)[number]["key"];
+
+export function changeFilterOf(v: unknown): ChangeFilter {
+  return CHANGE_FILTERS.some((s) => s.key === v) ? (v as ChangeFilter) : "waiting";
+}
+
+/** Export collections (held changes, history) → the review list's collection keys. */
+const EXPORT_TO_REVIEW: Record<string, string> = {
+  regions: "region", categories: "category", productTypes: "product_type", capabilityGroups: "capability_group",
+  capabilities: "capability", sections: "section", fields: "field", templates: "template", rules: "rule",
+  examples: "rule_test", equivalencies: "material_equivalence",
+};
+
+export function reviewCollectionOf(exportCollection: string): string {
+  return EXPORT_TO_REVIEW[exportCollection] ?? exportCollection;
+}
+
+/** The top-level keys whose values differ between two records (absent ≠ null), sorted. */
+export function changedKeys(a: Record<string, unknown>, b: Record<string, unknown>): string[] {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  return [...keys].filter((k) => !(k in a) || !(k in b) || JSON.stringify(a[k]) !== JSON.stringify(b[k])).sort();
+}
+
 export function isCollection(v: unknown): v is LibraryCollection {
   return LIBRARY_COLLECTIONS.some((c) => c.key === v);
 }
@@ -51,7 +111,7 @@ export function pageOf(v: unknown): number {
   return Number.isInteger(n) && n >= 1 && n <= 10_000 ? n : 1;
 }
 
-/** Totals over every collection of a version. "Open" = what still blocks approval: pending + deferred. */
+/** Totals over every collection of a version. "Open" = still to decide: pending + deferred. */
 export function totals(collections: readonly LibraryCollectionProgress[]) {
   const t = { total: 0, pending: 0, approve: 0, reject: 0, defer: 0 };
   for (const c of collections) {
@@ -70,8 +130,9 @@ export function noteRequired(decision: "approve" | "reject" | "defer"): boolean 
 }
 
 /** A query string for the review list, keeping only what differs from the defaults. */
-export function listHref(q: { version: number; collection: string; state?: string; search?: string; page?: number }): string {
+export function listHref(q: { version: number; collection: string; state?: string; search?: string; page?: number; line?: LineKey }): string {
   const p = new URLSearchParams({ version: String(q.version), collection: q.collection });
+  if (q.line && q.line !== DEFAULT_LINE) p.set("line", q.line);
   if (q.state && q.state !== "pending") p.set("state", q.state);
   if (q.search) p.set("search", q.search);
   if (q.page && q.page > 1) p.set("page", String(q.page));

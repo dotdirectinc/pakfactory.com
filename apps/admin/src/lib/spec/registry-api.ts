@@ -575,9 +575,11 @@ export async function getFrameOverrides(id: string) {
   return call<FrameOverride[]>(`/api/v1/changesets/${encodeURIComponent(id)}/overrides`);
 }
 
-// ── Spec Library review (PFP-124) ─────────────────────────────────────────────
-// An imported Spec Library version in spec_production, reviewed record by record and then
-// approved. Reads need a registry grant; decisions and approval need `spec.review`.
+// ── Spec Library review (PFP-124 / PLAT-51, PLAT-81) ──────────────────────────
+// spec_production, reviewed and approved record by record (there is no whole-version approval since
+// 2026-11-17). A version lists the records it last changed. Changes a new export makes to APPROVED
+// records are held until decided. Reads need a registry grant; decisions need `spec.review`.
+// `line` is a category id (CAT-FC = folding carton).
 
 export type LibraryReviewState = "pending" | "approve" | "reject" | "defer";
 export type LibraryDecision = Exclude<LibraryReviewState, "pending">;
@@ -591,13 +593,22 @@ export type LibraryCollectionProgress = {
   defer: number;
 };
 
+export type LibraryImportSummary = {
+  new: number;
+  updated: number;
+  held: number;
+  omitted: number;
+  unchanged: number;
+  diff: number;
+  rejectedBefore?: number;
+};
+
 export type LibraryVersion = {
   number: number;
   sourceExportedAt: string;
   importedAt: string;
-  approvedAt: string | null;
-  approvedBy: string | null;
-  approvedByName: string | null;
+  /** Null for version 1, which was loaded before imports went through spec_workflow. */
+  importSummary: LibraryImportSummary | null;
   collections: LibraryCollectionProgress[];
 };
 
@@ -618,16 +629,17 @@ export type LibraryRecord = {
   history: { decision: LibraryDecision; note: string | null; decidedBy: string; decidedByName: string | null; decidedAt: string }[];
 };
 
-export async function listLibraryVersions() {
-  return call<LibraryVersion[]>("/api/v1/library-versions");
+export async function listLibraryVersions(line?: string) {
+  return call<LibraryVersion[]>(`/api/v1/library-versions${line ? `?line=${encodeURIComponent(line)}` : ""}`);
 }
 
 export async function listLibraryItems(
   version: number,
-  q: { collection: string; state?: LibraryReviewState; search?: string; limit: number; offset: number },
+  q: { collection: string; state?: LibraryReviewState; search?: string; line?: string; limit: number; offset: number },
 ) {
   const p = new URLSearchParams({ collection: q.collection, limit: String(q.limit), offset: String(q.offset) });
   if (q.state) p.set("state", q.state);
+  if (q.line) p.set("line", q.line);
   if (q.search) p.set("search", q.search);
   return call<{ total: number; items: LibraryItem[] }>(`/api/v1/library-versions/${version}/items?${p}`);
 }
@@ -650,6 +662,44 @@ export async function decideLibraryItems(
   });
 }
 
-export async function approveLibraryVersion(version: number) {
-  return call<{ version: number; approved: boolean }>(`/api/v1/library-versions/${version}/approve`, { method: "POST" });
+export type LibraryChangeState = "waiting" | LibraryDecision;
+
+/** A change a new export makes to an approved record, held until decided. */
+export type LibraryChange = {
+  item: number;
+  /** Export collection: capabilities, rules, fields, … */
+  collection: string;
+  sourceId: string;
+  state: LibraryChangeState;
+  note: string | null;
+  decidedBy: string | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  current: Record<string, unknown>;
+  proposed: Record<string, unknown>;
+};
+
+export type LibraryDifference = {
+  collection: string;
+  sourceId: string;
+  reason: "waiting" | "deferred" | "rejected" | "omitted" | "differs";
+  item: number | null;
+};
+
+export async function listLibraryChanges(q: { state?: LibraryChangeState; line?: string } = {}) {
+  const p = new URLSearchParams();
+  if (q.state) p.set("state", q.state);
+  if (q.line) p.set("line", q.line);
+  return call<{ version: number | null; items: LibraryChange[] }>(`/api/v1/library-changes${p.size ? `?${p}` : ""}`);
+}
+
+export async function decideLibraryChange(item: number, decision: LibraryDecision, note: string | null) {
+  return call<{ item: number; decision: LibraryDecision; version: number }>(`/api/v1/library-changes/${item}/decision`, {
+    method: "POST",
+    body: { decision, note },
+  });
+}
+
+export async function listLibraryDifferences() {
+  return call<LibraryDifference[]>("/api/v1/library-differences");
 }

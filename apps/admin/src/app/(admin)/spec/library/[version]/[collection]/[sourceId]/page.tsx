@@ -4,7 +4,7 @@ import { LocalTime } from "@pakfactory/ui/components/local-time";
 import { PageHeader } from "@/components/ui/page-header";
 import { LibraryDecisionForm } from "@/components/spec/library/library-decision-form";
 import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
-import { getLibraryRecord, listLibraryVersions } from "@/lib/spec/registry-api";
+import { getLibraryRecord } from "@/lib/spec/registry-api";
 import { collectionLabel, displayValue, isCollection, listHref } from "@/lib/spec/library-review";
 import { ADMIN_SPEC_LIBRARY_COPY as COPY } from "@/lib/copy/spec-library";
 
@@ -27,17 +27,12 @@ export default async function SpecLibraryRecordPage({
   if (!Number.isInteger(version) || version < 1 || !isCollection(collection)) notFound();
   const sourceId = decodeURIComponent(rawId);
 
-  const [me, res, versionsRes] = await Promise.all([
-    requireRegistryGrant(),
-    getLibraryRecord(version, collection, sourceId),
-    listLibraryVersions(),
-  ]);
+  const [me, res] = await Promise.all([requireRegistryGrant(), getLibraryRecord(version, collection, sourceId)]);
   if (!res.ok) {
     if (res.status === 404) notFound();
     return <p role="alert" className="p-4 text-sm text-destructive">{COPY.unreachable} ({res.error})</p>;
   }
   const { record, children, history } = res.data;
-  const approved = versionsRes.ok ? Boolean(versionsRes.data.find((x) => x.number === version)?.approvedAt) : false;
   const latest = history[0];
   const keys = [
     ...LEAD_FIELDS.filter((k) => k in record),
@@ -56,9 +51,7 @@ export default async function SpecLibraryRecordPage({
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">{COPY.decideHeading}</h2>
-        {approved ? (
-          <p className="text-sm text-muted-foreground">{COPY.versionApproved}</p>
-        ) : canReviewLibrary(me) ? (
+        {canReviewLibrary(me) ? (
           <LibraryDecisionForm version={version} items={[{ collection, sourceId }]} />
         ) : (
           <p className="text-sm text-muted-foreground">{COPY.readOnlyNote}</p>
