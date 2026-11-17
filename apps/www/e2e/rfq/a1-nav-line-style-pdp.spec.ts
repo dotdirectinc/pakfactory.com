@@ -2,6 +2,7 @@ import {expect, test} from '@playwright/test';
 import {LINE, STYLE, STYLE_PRODUCT, TEST_ENTRY} from '../support/fixtures';
 import {addCurrentPdpToRequest, openMegaMenu, quoteRequestLink} from '../support/pdp';
 import {completeProductRequest, startRequestFromPool} from '../support/request';
+import {openStyleCard} from '../support/styles';
 
 /**
  * A1 — Home → nav Products → line → Explore styles → style → PDP → request.
@@ -19,7 +20,7 @@ test('A1: navbar Products → line → style → PDP → product request', async
 
     await test.step('line landing → Explore styles → style', async () => {
         await page.getByRole('link', {name: 'Explore styles'}).click();
-        await page.getByRole('link', {name: new RegExp(`^${STYLE.title}\\b`)}).first().click();
+        await openStyleCard(page, STYLE.title);
         await expect(page).toHaveURL(new RegExp(`/products/${LINE.slug}/${STYLE.slug}$`));
         await expect(page.getByRole('heading', {level: 1, name: STYLE.title})).toBeVisible();
     });

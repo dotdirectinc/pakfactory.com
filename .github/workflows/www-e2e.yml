@@ -145,4 +145,5 @@ jobs:
           path: |
             apps/www/e2e/.report
             apps/www/e2e/.results
+          include-hidden-files: true
           retention-days: 7

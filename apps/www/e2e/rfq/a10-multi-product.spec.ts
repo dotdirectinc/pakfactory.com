@@ -2,6 +2,7 @@ import {expect, test} from '@playwright/test';
 import {LINE, SOLUTION, STYLE, STYLE_PRODUCT} from '../support/fixtures';
 import {addCurrentPdpToRequest, openMegaMenu, quoteRequestLink} from '../support/pdp';
 import {completeProductRequest, startRequestFromPool} from '../support/request';
+import {openStyleCard} from '../support/styles';
 
 /** A product tile in the Coffee solution hero; opens a preview dialog. */
 const SOLUTION_PRODUCT = 'Custom Coffee Boxes';
@@ -20,7 +21,7 @@ test('A10: three products from three entrances → one product request', async (
     await test.step('1 · nav Products → line → style → PDP', async () => {
         await (await openMegaMenu(page, 'Products', LINE.title)).click();
         await page.getByRole('link', {name: 'Explore styles'}).click();
-        await page.getByRole('link', {name: new RegExp(`^${STYLE.title}\\b`)}).first().click();
+        await openStyleCard(page, STYLE.title);
         await page.getByRole('link', {name: STYLE_PRODUCT.title, exact: true}).first().click();
         await addCurrentPdpToRequest(page);
         await expect(quoteRequestLink(page)).toHaveAccessibleName('Quote request, 1 item');
