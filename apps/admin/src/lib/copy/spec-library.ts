@@ -1,18 +1,21 @@
-/** Spec Library review (PFP-124, PakFactory Spec build plan step 3.1). */
+import type { LibraryImportSummary } from "@/lib/spec/registry-api";
+
+/** Spec Library review (PFP-124 / PLAT-51, PLAT-81). */
 export const ADMIN_SPEC_LIBRARY_COPY = {
   title: "Library review",
   lead:
-    "Justin Chow's Spec Library as imported into the production spec. Review each record — approve, reject or defer it — then approve the version. Nothing here reaches the website or Sanity.",
+    "Justin Chow's Spec Library as imported into the production spec. Approve, reject or defer each record; an approved record changes only through Held changes. Nothing here reaches the website or Sanity.",
   noVersions: "No Spec Library version has been imported yet.",
   unreachable: "The registry API is not reachable",
   version: (n: number) => `Version ${n}`,
   exportedAt: "Exported",
   importedAt: "Imported",
-  approvedBadge: "Approved",
-  pendingBadge: "In review",
-  approvedBy: (who: string) => `Approved by ${who}`,
   progress: (decided: number, total: number) => `${decided} of ${total} decided`,
   open: (n: number) => (n === 1 ? "1 record still to review or deferred" : `${n} records still to review or deferred`),
+  importSummary: (s: LibraryImportSummary) =>
+    `This import: ${s.new} new · ${s.updated} updated · ${s.held} held · ${s.omitted} omitted`,
+  lineHeading: "Product line",
+  heldChangesLink: (n: number) => (n === 0 ? "Held changes" : `Held changes (${n} waiting)`),
   collectionsHeading: "Collections",
   columns: { collection: "Collection", total: "Records", pending: "To review", approve: "Approved", reject: "Rejected", defer: "Deferred" },
   itemColumns: { id: "ID", label: "Name", state: "State", note: "Note", by: "Decided by" },
@@ -32,18 +35,26 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
   deciding: "Saving…",
   recorded: (n: number, d: string) => `${d} recorded for ${n === 1 ? "1 record" : `${n} records`}.`,
   readOnlyNote: "You can read this review. Deciding needs the Spec review permission (approver or admin).",
-  approveVersion: "Approve version",
-  approveVersionConfirm: (n: number) =>
-    `Approve version ${n}? Every record has been approved or rejected. Rejected records are fixed in a later version. This cannot be undone.`,
-  approveVersionBlocked: "The version can be approved once nothing is left to review or deferred.",
-  approving: "Approving…",
-  cancel: "Cancel",
-  confirm: "Approve",
   back: "Back to the list",
   recordHeading: "As stored",
   childrenHeading: "Reviewed with it",
   historyHeading: "Decisions",
   noHistory: "No decision yet.",
   decideHeading: "Decide",
-  versionApproved: "This version is approved; its decisions are final.",
+  changes: {
+    title: "Held changes",
+    lead:
+      "Changes the latest export makes to records someone already approved. Approve applies the change (the old values stay in the record's history); reject keeps the approved values; defer leaves it for the next import.",
+    back: "Back to the review",
+    none: "No held changes match.",
+    noImport: "No export has been imported through the workflow yet.",
+    version: (n: number) => `From library version ${n}`,
+    states: { waiting: "Waiting", approve: "Approved", reject: "Rejected", defer: "Deferred" } as Record<string, string>,
+    field: "Field",
+    current: "Approved now",
+    proposed: "In the export",
+    noFieldChange: "No top-level field differs; the change is in nested rows.",
+    decidedBy: (who: string) => `by ${who}`,
+    finalNote: "Approve and reject are final. A deferred change can still be decided until the next import.",
+  },
 } as const;
