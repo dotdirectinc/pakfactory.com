@@ -4,6 +4,9 @@ import { LocalTime } from "@pakfactory/ui/components/local-time";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { LibraryChangeDecision } from "@/components/spec/library/library-change-decision";
+import { RuleLogic } from "@/components/spec/library/rule-logic";
+import { SpecValue } from "@/components/spec/library/spec-value";
+import { SYSTEM_KEYS, labelOf, titleOf, type SpecRefs } from "@/lib/spec/library-display";
 import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { listLibraryChanges, type LibraryChange } from "@/lib/spec/registry-api";
 import {
@@ -14,7 +17,6 @@ import {
   changeFilterOf,
   changedKeys,
   collectionLabel,
-  displayValue,
   lineOf,
   reviewCollectionOf,
   type LineKey,
@@ -102,7 +104,7 @@ export default async function SpecLibraryChangesPage({ searchParams }: { searchP
           ) : (
             <ul className="flex flex-col gap-4">
               {res.data.items.map((c) => (
-                <ChangeCard key={c.item} change={c} canDecide={canDecide} />
+                <ChangeCard key={c.item} change={c} canDecide={canDecide} refs={res.data.refs} />
               ))}
             </ul>
           )}
@@ -112,9 +114,11 @@ export default async function SpecLibraryChangesPage({ searchParams }: { searchP
   );
 }
 
-function ChangeCard({ change: c, canDecide }: { change: LibraryChange; canDecide: boolean }) {
-  const keys = changedKeys(c.current ?? {}, c.proposed ?? {});
-  const name = (c.proposed?.name ?? c.current?.name ?? c.proposed?.label ?? c.current?.label) as string | undefined;
+function ChangeCard({ change: c, canDecide, refs }: { change: LibraryChange; canDecide: boolean; refs?: SpecRefs }) {
+  const all = changedKeys(c.current ?? {}, c.proposed ?? {});
+  const keys = all.filter((k) => !SYSTEM_KEYS.has(k));
+  const bookkeeping = all.filter((k) => SYSTEM_KEYS.has(k));
+  const name = titleOf(c.proposed ?? c.current ?? {}, c.sourceId);
   const open = c.state === "waiting" || c.state === "defer";
   return (
     <li className="flex flex-col gap-3 rounded-md border border-border p-4">
@@ -122,10 +126,9 @@ function ChangeCard({ change: c, canDecide }: { change: LibraryChange; canDecide
         <Badge variant={c.state === "reject" ? "destructive" : c.state === "approve" ? "default" : "outline"}>
           {COPY.changes.states[c.state]}
         </Badge>
-        <span className="font-medium">{name ?? c.sourceId}</span>
-        <span className="text-sm text-muted-foreground">
-          {collectionLabel(reviewCollectionOf(c.collection))} · {c.sourceId}
-        </span>
+        <span className="font-medium">{name}</span>
+        <span className="text-sm text-muted-foreground">{collectionLabel(reviewCollectionOf(c.collection))}</span>
+        <span className="font-mono text-xs text-muted-foreground">{c.sourceId}</span>
         {c.decidedAt ? (
           <span className="text-sm text-muted-foreground">
             {COPY.changes.decidedBy(c.decidedByName ?? c.decidedBy ?? "—")} · <LocalTime iso={c.decidedAt} preset="dateTime" />
@@ -135,26 +138,26 @@ function ChangeCard({ change: c, canDecide }: { change: LibraryChange; canDecide
       {c.note ? <p className="text-sm">— {c.note}</p> : null}
 
       {keys.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{COPY.changes.noFieldChange}</p>
+        <p className="text-sm text-muted-foreground">{bookkeeping.length ? COPY.changes.onlyBookkeeping : COPY.changes.noFieldChange}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-md border border-border">
+          <table className="w-full table-fixed text-sm">
             <thead>
-              <tr className="text-left text-xs text-muted-foreground">
-                <th className="w-40 py-1 pr-3 font-medium">{COPY.changes.field}</th>
-                <th className="py-1 pr-3 font-medium">{COPY.changes.current}</th>
-                <th className="py-1 font-medium">{COPY.changes.proposed}</th>
+              <tr className="bg-muted/40 text-left text-xs text-muted-foreground">
+                <th className="w-40 px-3 py-2 font-medium">{COPY.changes.field}</th>
+                <th className="w-1/2 px-3 py-2 font-medium">{COPY.changes.current}</th>
+                <th className="w-1/2 px-3 py-2 font-medium">{COPY.changes.proposed}</th>
               </tr>
             </thead>
             <tbody>
               {keys.map((k) => (
                 <tr key={k} className="border-t border-border align-top">
-                  <td className="py-1 pr-3 font-mono text-xs text-muted-foreground">{k}</td>
-                  <td className="max-w-md py-1 pr-3">
-                    <pre className="whitespace-pre-wrap break-words font-sans">{displayValue(c.current?.[k])}</pre>
+                  <td className="px-3 py-2 text-muted-foreground">{labelOf(k)}</td>
+                  <td className="bg-destructive/5 px-3 py-2">
+                    <ChangeValue field={k} value={c.current?.[k]} refs={refs} />
                   </td>
-                  <td className="max-w-md py-1">
-                    <pre className="whitespace-pre-wrap break-words font-sans">{displayValue(c.proposed?.[k])}</pre>
+                  <td className="bg-emerald-500/5 px-3 py-2">
+                    <ChangeValue field={k} value={c.proposed?.[k]} refs={refs} />
                   </td>
                 </tr>
               ))}
@@ -163,7 +166,19 @@ function ChangeCard({ change: c, canDecide }: { change: LibraryChange; canDecide
         </div>
       )}
 
+      {bookkeeping.length > 0 && keys.length > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {COPY.changes.bookkeeping(bookkeeping.length)}: {bookkeeping.map(labelOf).join(", ")}
+        </p>
+      ) : null}
+
       {canDecide && open ? <LibraryChangeDecision item={c.item} /> : null}
     </li>
   );
+}
+
+/** One side of a changed field; a rule's logic (`when`) reads as sentences. */
+function ChangeValue({ field, value, refs }: { field: string; value: unknown; refs?: SpecRefs }) {
+  if (field === "when") return <RuleLogic body={{ when: value }} refs={refs} />;
+  return <SpecValue value={value} refs={refs} />;
 }

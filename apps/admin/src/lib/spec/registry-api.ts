@@ -1,4 +1,5 @@
 import { cache } from "react";
+import type { SpecRefs } from "@/lib/spec/library-display";
 import { createClient } from "@pakfactory/supabase/server";
 
 /**
@@ -627,6 +628,8 @@ export type LibraryRecord = {
   record: Record<string, unknown>;
   children: Record<string, unknown[]>;
   history: { decision: LibraryDecision; note: string | null; decidedBy: string; decidedByName: string | null; decidedAt: string }[];
+  /** Ids and codes in the record, resolved (backend 20261117220000; absent before it is applied). */
+  refs?: SpecRefs;
 };
 
 export async function listLibraryVersions(line?: string) {
@@ -690,7 +693,7 @@ export async function listLibraryChanges(q: { state?: LibraryChangeState; line?:
   const p = new URLSearchParams();
   if (q.state) p.set("state", q.state);
   if (q.line) p.set("line", q.line);
-  return call<{ version: number | null; items: LibraryChange[] }>(`/api/v1/library-changes${p.size ? `?${p}` : ""}`);
+  return call<{ version: number | null; items: LibraryChange[]; refs?: SpecRefs }>(`/api/v1/library-changes${p.size ? `?${p}` : ""}`);
 }
 
 export async function decideLibraryChange(item: number, decision: LibraryDecision, note: string | null) {

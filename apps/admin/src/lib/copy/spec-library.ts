@@ -41,6 +41,13 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
   historyHeading: "Decisions",
   noHistory: "No decision yet.",
   decideHeading: "Decide",
+  record: {
+    messageLabel: "Message shown",
+    logic: "Logic",
+    details: "Details",
+    emptyFields: (n: number) => (n === 1 ? "1 empty field" : `${n} empty fields`),
+    system: "Source and system",
+  },
   changes: {
     title: "Held changes",
     lead:
@@ -54,6 +61,8 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
     current: "Approved now",
     proposed: "In the export",
     noFieldChange: "No top-level field differs; the change is in nested rows.",
+    onlyBookkeeping: "Only bookkeeping changed (version, dates).",
+    bookkeeping: (n: number) => (n === 1 ? "1 bookkeeping change" : `${n} bookkeeping changes`),
     decidedBy: (who: string) => `by ${who}`,
     finalNote: "Approve and reject are final. A deferred change can still be decided until the next import.",
   },
