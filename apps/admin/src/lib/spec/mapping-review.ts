@@ -1,0 +1,75 @@
+import type { LibraryReviewState, MappingItem, MappingKind, MappingLabel, MappingTarget } from "@/lib/spec/registry-api";
+import { DEFAULT_LINE, LINES, type LineKey } from "@/lib/spec/library-review";
+
+/** Mapping review (PLAT-52): query parameters, links and grouping for the review page. */
+
+export const KINDS: { key: MappingKind; label: string; groupBy: string }[] = [
+  { key: "product", label: "Products", groupBy: "style" },
+  { key: "option", label: "Options", groupBy: "category · type" },
+  { key: "property_value", label: "Property values", groupBy: "property" },
+];
+
+export const MAP_STATES = [
+  { key: "open", label: "To review" },
+  { key: "approve", label: "Approved" },
+  { key: "reject", label: "Rejected" },
+  { key: "all", label: "All" },
+] as const;
+export type MapStateFilter = (typeof MAP_STATES)[number]["key"];
+
+export const MAP_LABELS: { key: MappingLabel; label: string; hint: string }[] = [
+  { key: "mapped", label: "Mapped", hint: "One clear production record; nothing extra to set." },
+  { key: "mapped_with_preset", label: "Mapped with preset", hint: "Production record found; the website product also fixes some production values." },
+  { key: "catch_all", label: "Catch-all", hint: "Only the line's custom structure fits: works for quoting, a dedicated type is needed for templates and vendor routing." },
+  { key: "no_equivalent", label: "No equivalent", hint: "Nothing in the production library makes this today." },
+];
+
+export type MappingParams = { kind: MappingKind; line: LineKey; state: MapStateFilter; label: MappingLabel | null; search: string | null };
+
+export function mappingParams(sp: { kind?: string; line?: string; state?: string; label?: string; search?: string }): MappingParams {
+  return {
+    kind: KINDS.some((k) => k.key === sp.kind) ? (sp.kind as MappingKind) : "product",
+    // No "all lines" here: maps are loaded a line at a time.
+    line: LINES.some((l) => l.key === sp.line && l.key !== "all") ? (sp.line as LineKey) : DEFAULT_LINE,
+    state: MAP_STATES.some((s) => s.key === sp.state) ? (sp.state as MapStateFilter) : "open",
+    label: MAP_LABELS.some((l) => l.key === sp.label) ? (sp.label as MappingLabel) : null,
+    search: sp.search?.trim().slice(0, 100) || null,
+  };
+}
+
+/** The page's URL, keeping only what differs from the defaults. */
+export function mappingHref(p: Partial<MappingParams>): string {
+  const q = new URLSearchParams();
+  if (p.kind && p.kind !== "product") q.set("kind", p.kind);
+  if (p.line && p.line !== DEFAULT_LINE) q.set("line", p.line);
+  if (p.state && p.state !== "open") q.set("state", p.state);
+  if (p.label) q.set("label", p.label);
+  if (p.search) q.set("search", p.search);
+  const s = q.toString();
+  return s ? `/spec/mapping?${s}` : "/spec/mapping";
+}
+
+/** The state filter as the API takes it. */
+export function apiState(s: MapStateFilter): string | undefined {
+  return s === "all" ? undefined : s;
+}
+
+/** A production target's library record page. */
+export function targetHref(t: Pick<MappingTarget, "kind" | "sourceId" | "version">): string {
+  return `/spec/library/${t.version}/${t.kind}/${encodeURIComponent(t.sourceId)}`;
+}
+
+export function isOpenState(s: LibraryReviewState): boolean {
+  return s === "pending" || s === "defer";
+}
+
+/** Items grouped in the order the API sorted them (group, then name); a missing group comes last. */
+export function groupMappings(items: MappingItem[]): { key: string; title: string | null; items: MappingItem[] }[] {
+  const out = new Map<string, { key: string; title: string | null; items: MappingItem[] }>();
+  for (const i of items) {
+    const key = i.group ?? "";
+    if (!out.has(key)) out.set(key, { key: key || "—", title: i.group, items: [] });
+    out.get(key)!.items.push(i);
+  }
+  return [...out.values()].sort((a, b) => (a.title === null ? 1 : b.title === null ? -1 : 0));
+}
