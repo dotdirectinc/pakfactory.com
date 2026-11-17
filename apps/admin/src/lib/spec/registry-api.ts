@@ -734,3 +734,56 @@ export async function decideLibraryChange(item: number, decision: LibraryDecisio
 export async function listLibraryDifferences() {
   return call<LibraryDifference[]>("/api/v1/library-differences");
 }
+
+// ── Mapping review (PLAT-52) ─────────────────────────────────────────────────────
+
+export type MappingKind = "product" | "option" | "property_value";
+export type MappingLabel = "mapped" | "mapped_with_preset" | "catch_all" | "no_equivalent";
+export type MappingTarget = { kind: "product_type" | "capability" | "field"; sourceId: string; name: string | null; setting: string | null; version: number };
+export type MappingPreset = { label: string; value: string | null; sourceId: string | null; version: number | null };
+
+/** One customer → production map, with its derived label and latest decision. */
+export type MappingItem = {
+  id: number;
+  subjectKind: MappingKind;
+  subjectId: string;
+  subjectCode: string;
+  subjectName: string | null;
+  /** What a reviewer works by: the product's style, the option's category · type, the value's property. */
+  group: string | null;
+  line: string;
+  label: MappingLabel;
+  targets: MappingTarget[];
+  presets: MappingPreset[];
+  presetsNeedingCode: number;
+  confidence: "high" | "medium" | "low" | null;
+  draftStatus: string | null;
+  draftTarget: string | null;
+  draftNotes: string | null;
+  noEquivalentReason: string | null;
+  state: LibraryReviewState;
+  note: string | null;
+  decidedAt: string | null;
+  decidedByName: string | null;
+};
+
+export type MappingList = {
+  kind: MappingKind;
+  total: number;
+  states: Partial<Record<LibraryReviewState, number>> | null;
+  labels: Partial<Record<MappingLabel, number>> | null;
+  items: MappingItem[];
+};
+
+export async function listSpecMappings(q: { kind: MappingKind; line?: string; state?: string; label?: string; search?: string }) {
+  const p = new URLSearchParams({ kind: q.kind });
+  for (const k of ["line", "state", "label", "search"] as const) if (q[k]) p.set(k, q[k]!);
+  return call<MappingList>(`/api/v1/spec-mappings?${p}`);
+}
+
+export async function decideSpecMappings(decision: LibraryDecision, note: string | null, ids: number[]) {
+  return call<{ recorded: number; decision: LibraryDecision }>("/api/v1/spec-mappings/decisions", {
+    method: "POST",
+    body: { decision, note, ids },
+  });
+}

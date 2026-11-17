@@ -81,7 +81,8 @@ const NAV: readonly NavEntry[] = [
         href: "/spec/map",
         // Short inside the Spec System group; outside it the name keeps its prefix ("Spec Map") — Richard, 2026-10-14.
         label: "Map",
-        match: (path) => path.startsWith("/spec/map"),
+        // Not "/spec/mapping" (Mapping review), which shares the prefix.
+        match: (path) => path === "/spec/map" || path.startsWith("/spec/map/"),
       },
       // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing —
       // properties & values included, as the fourth level of the Products and Customizations streams.
@@ -101,7 +102,7 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map", "/spec/library"].some((p) =>
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map", "/spec/library", "/spec/mapping"].some((p) =>
               path.startsWith(p),
             )),
       },
@@ -110,6 +111,12 @@ const NAV: readonly NavEntry[] = [
         href: "/spec/library",
         label: "Library review",
         match: (path) => path.startsWith("/spec/library"),
+      },
+      // Mapping review (PLAT-52): website products, options and property values → the production spec.
+      {
+        href: "/spec/mapping",
+        label: "Mapping review",
+        match: (path) => path.startsWith("/spec/mapping"),
       },
       {
         href: "/spec/rules",
