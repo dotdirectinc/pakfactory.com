@@ -2,6 +2,7 @@ import type {ComponentType} from 'react';
 import type {
     PageSectionBenefitsDoc,
     PageSectionCaseStudiesRowDoc,
+    PageSectionContactDirectoryDoc,
     PageSectionDoc,
     PageSectionExpertiseSequenceDoc,
     PageSectionFaqSectionDoc,
@@ -35,6 +36,7 @@ import {
     CustomizationWorksWithFromSanity,
 } from '@/components/sections/customization-detail-sections';
 import {ExpertiseRow} from '@/components/sections/expertise-row';
+import {ContactDirectorySection} from '@/components/sections/contact-directory-section';
 import {FaqSection} from '@/components/sections/faq-section';
 import {HeroFinder} from '@/components/sections/hero-finder';
 import {HeroFinderFullscreen} from '@/components/sections/hero-finder-fullscreen';
@@ -55,6 +57,7 @@ import {TextWithImage} from '@/components/ui/text-with-image';
 import {mapBenefits} from '@/lib/sections/map-benefits';
 import {getGooglePlaceReviews} from '@/lib/places/reviews';
 import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
+import {mapContactDirectory} from '@/lib/sections/map-contact-directory';
 import {mapExpertiseSequence} from '@/lib/sections/map-expertise-sequence';
 import {mapFaqSection} from '@/lib/sections/map-faq-section';
 import {mapGeneralCta} from '@/lib/sections/map-general-cta';
@@ -74,6 +77,7 @@ import {
 } from '@/lib/sections/map-catalog-rows';
 import {mapTestimonialsRow} from '@/lib/sections/map-testimonials-row';
 import {mapVideoCaseStudiesRow} from '@/lib/sections/map-video-case-studies-row';
+import {fetchWwwGlobalSettings} from '@/lib/www-global-settings';
 
 /**
  * www page-sections registry — maps Sanity `_type` → React (ADR-015).
@@ -97,6 +101,20 @@ function FaqSectionFromSanity(section: PageSectionFaqSectionDoc) {
             borderTop={mapped.borderTop}
             borderBottom={mapped.borderBottom}
             cta={mapped.cta}
+        />
+    );
+}
+
+async function ContactDirectoryFromSanity(
+    section: PageSectionContactDirectoryDoc,
+) {
+    const mapped = mapContactDirectory(section);
+    const settings = await fetchWwwGlobalSettings();
+    return (
+        <ContactDirectorySection
+            sectionId={`section-contact-directory-${section._key}`}
+            settings={settings}
+            {...mapped}
         />
     );
 }
@@ -350,6 +368,8 @@ export const SECTION_COMPONENTS: Record<
     heroFinderFullscreen:
         HeroFinderFullscreenFromSanity as ComponentType<PageSection>,
     faqSection: FaqSectionFromSanity as ComponentType<PageSection>,
+    contactDirectory:
+        ContactDirectoryFromSanity as ComponentType<PageSection>,
     logoWall: LogoWallFromSanity as ComponentType<PageSection>,
     mediaFeature: MediaFeatureFromSanity as ComponentType<PageSection>,
     expertiseSequence:

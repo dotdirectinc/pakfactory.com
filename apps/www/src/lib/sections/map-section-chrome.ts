@@ -34,8 +34,10 @@ export function mapSectionPaddingBlock(
 ): PageDielinePaddingBlock {
     const paddingBlock = stegaClean(rawPaddingBlock);
     if (
+        paddingBlock === 'none' ||
         paddingBlock === 'xs' ||
         paddingBlock === 'sm' ||
+        paddingBlock === 'md' ||
         paddingBlock === 'lg'
     ) {
         return paddingBlock;

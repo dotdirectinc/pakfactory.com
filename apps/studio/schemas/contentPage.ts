@@ -1,9 +1,9 @@
-import { defineField, defineType } from 'sanity'
-import { DocumentTextIcon } from '@sanity/icons'
-import { groupsFor, GROUPS } from '../lib/field-groups'
-import { seoFields, socialFields } from '../lib/seo-fields'
-import { MEDIA_TAG } from '../lib/media-tags'
-import { pageSectionsField, SECTION_ALLOW } from './sections'
+import {defineField, defineType} from 'sanity'
+import {DocumentTextIcon} from '@sanity/icons'
+import {groupsFor, GROUPS} from '../lib/field-groups'
+import {seoFields, socialFields} from '../lib/seo-fields'
+import {MEDIA_TAG} from '../lib/media-tags'
+import {pageSectionsField, SECTION_ALLOW} from './sections'
 
 /**
  * Content Page — a standing page that isn't a listing and isn't the homepage:
@@ -14,10 +14,9 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
  * The four launch pages are pinned by semantic ID (`aboutPage`, `contactPage`,
  * `searchPage`, `notFoundPage`); new pages use `slug`.
  *
- * 🔴 Contact stores NO address, email or phone — they live in Global Settings and
- * render from there. The page is a headline, some copy and a form section.
- * No catalogue sections available here — the section picker is scoped per page
- * family. `sections` lands with the inventory (PROD-2292 pt 2).
+ * Contact stores NO address, email or phone — they live in Global Settings and
+ * render from there. The Contact hub (headline, intro, ways to reach us) is a
+ * `contactDirectory` section on the Sections tab — not Content-tab fields.
  */
 export const contentPage = defineType({
   name: 'contentPage',
@@ -42,17 +41,18 @@ export const contentPage = defineType({
       description:
         'Required for new pages. The four launch pages — about, contact, search and 404 — ' +
         'sit at fixed URLs, so their slug can be empty.',
-      options: { source: 'title' },
+      options: {source: 'title'},
     }),
     // Content + proof + conversion sections — no catalogue (scoped per §2.4).
+    // Contact Page: add a Contact directory section for the hub.
     pageSectionsField(SECTION_ALLOW.content),
-    ...seoFields({ group: GROUPS.seo, canonical: true, indexDefault: true }),
-    ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
+    ...seoFields({group: GROUPS.seo, canonical: true, indexDefault: true}),
+    ...socialFields({group: GROUPS.social, channel: MEDIA_TAG.website}),
   ],
   preview: {
-    select: { title: 'title', slug: 'slug.current' },
-    prepare({ title, slug }) {
-      return { title: title || 'Content page', subtitle: slug ? `/${slug}` : 'pinned by ID' }
+    select: {title: 'title', slug: 'slug.current'},
+    prepare({title, slug}) {
+      return {title: title || 'Content page', subtitle: slug ? `/${slug}` : 'pinned by ID'}
     },
   },
 })

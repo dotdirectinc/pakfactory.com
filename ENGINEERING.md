@@ -81,6 +81,8 @@ New **forms** (credential screens, RFQ contact, email capture, profile dialogs, 
 2. **`react-hook-form`** + **`zodResolver`** — prefer `mode: 'onBlur'` (revalidate on change after first error)
 3. **`@pakfactory/ui` Form kit** — `Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormDescription`, `FormMessage` (`role="alert"`)
 
+Field label and control **sizes** follow [`DESIGN.md`](DESIGN.md) § Form fields (`text-xs` labels, `h-11` / `text-sm` inputs) — do not invent `text-sm` labels on marketing forms.
+
 Do **not** invent a second Form kit, hand-roll per-field error markup, or gate Submit only with silent readiness and no field feedback. Domain schemas stay with the domain (auth → `@pakfactory/auth-ui`; www request → `apps/www/src/lib/request/schemas/`). Draft-backed RFQ keeps `RequestDraft` + `onPatch` as persistence and syncs field groups into RHF. Out of scope: search boxes, sign-out buttons, customization `PropertyController` rails. Detail for www: [`apps/www/CLAUDE.md`](apps/www/CLAUDE.md) § Forms & validation.
 
 ---

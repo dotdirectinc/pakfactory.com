@@ -25,6 +25,10 @@ import {
   SECOND_PRODUCT_IMAGE_ALT,
   SECOND_PRODUCT_IMAGE_SRC,
 } from './catalog-media';
+import {
+  CONTACT_CHANNEL_PROJECTION,
+  type ContactChannelDoc,
+} from './contact-channels';
 
 export {FEATURED_VIDEO_URL_FIELD};
 
@@ -623,6 +627,11 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   },
   _type == "contactForm" => {
     ${SECTION_CHROME}
+  },
+  _type == "contactDirectory" => {
+    ${SECTION_CHROME},
+    showLiveSupport,
+    "channels": channels[] ${CONTACT_CHANNEL_PROJECTION}
   }
 }`;
 
@@ -882,6 +891,14 @@ export type PageSectionStepsDoc = PageSectionChromeFields & {
     _type: 'steps';
     _key: string;
     items?: PageSectionStepDoc[] | null;
+};
+
+/** Contact hub — live-support rail + ways-to-reach-us rows (Content Pages). */
+export type PageSectionContactDirectoryDoc = PageSectionChromeFields & {
+    _type: 'contactDirectory';
+    _key: string;
+    showLiveSupport?: boolean | null;
+    channels?: ContactChannelDoc[] | null;
 };
 
 /** General CTA band (heading + body + button link); theme/align/padding/borders Studio-controlled. */
@@ -1183,6 +1200,7 @@ export type PageSectionDoc =
     | PageSectionBenefitsDoc
     | PageSectionGeneralCtaDoc
     | PageSectionStepsDoc
+    | PageSectionContactDirectoryDoc
     | PageSectionPressReleasesRowDoc
     | PageSectionCustomizationDetailDoc
     | PageSectionStubDoc;

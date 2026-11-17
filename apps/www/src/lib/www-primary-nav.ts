@@ -18,6 +18,7 @@ import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { getWwwUrl } from "@/lib/site";
 import { BLOG_NAV_FALLBACK, BLOG_URL } from "@/lib/www-nav";
+import { WWW_ROUTES } from "@/lib/www-routes";
 
 export const DEFAULT_WWW_HEADER_CTA_LABEL = "Contact Us";
 
@@ -86,12 +87,12 @@ function normalizeOrigin(origin: string): string {
   return origin.replace(/\/+$/, "");
 }
 
-function getDefaultWwwPrimaryNavHeader(wwwUrl: string): PrimaryNavHeader {
+function getDefaultWwwPrimaryNavHeader(_wwwUrl: string): PrimaryNavHeader {
   return {
     cta: {
       label: DEFAULT_WWW_HEADER_CTA_LABEL,
-      href: 'https://www.pakfactory.com/contact-us',
-      external: true,
+      href: WWW_ROUTES.contact,
+      external: false,
     },
   };
 }

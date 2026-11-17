@@ -3,6 +3,7 @@ import type { GroupName } from '../../lib/field-groups'
 import { sectionPreviewUrl } from './section-preview'
 import { SECTION_ENTITY_TITLE } from './section-entity'
 import { contentSections } from './content-sections'
+import { contactDirectory } from './contact-directory'
 import { rowSections } from './row-sections'
 import { conversionSections } from './conversion-sections'
 import { customizationsCatalog } from './customizations-catalog'
@@ -48,6 +49,7 @@ export {
 export const websiteSections = [
   ...heroSections,
   ...contentSections,
+  contactDirectory,
   ...rowSections,
   inspirationsGrid,
   inspirationIndustry,
@@ -116,7 +118,12 @@ const INSERT_GROUPS: SectionInsertGroup[] = [
   { name: 'resource', title: SECTION_ENTITY_TITLE.resource, of: [...FAMILY.resource] },
   { name: 'newsroom', title: SECTION_ENTITY_TITLE.newsroom, of: [...FAMILY.newsroom] },
   { name: 'client', title: SECTION_ENTITY_TITLE.client, of: [...FAMILY.client] },
-  { name: 'layout', title: SECTION_ENTITY_TITLE.layout, of: [...FAMILY.layout] },
+  {
+    name: 'layout',
+    title: SECTION_ENTITY_TITLE.layout,
+    // contactDirectory is Content-page-only (SECTION_ALLOW.content), not in FAMILY.layout.
+    of: [...FAMILY.layout, 'contactDirectory'],
+  },
   { name: 'cta', title: SECTION_ENTITY_TITLE.cta, of: [...FAMILY.cta] },
 ]
 
@@ -183,8 +190,10 @@ export const SECTION_ALLOW = {
     ...FAMILY.cta,
   ],
   // Company pages: layout · proof-ish rows · CTAs — NO catalogue product strips.
+  // contactDirectory is Contact-hub only; kept off other page families.
   content: [
     ...FAMILY.layout,
+    'contactDirectory',
     ...FAMILY.caseStudy,
     ...FAMILY.client,
     ...FAMILY.cta,

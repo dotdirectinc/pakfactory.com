@@ -54,6 +54,7 @@ import { blogPage } from './blogPage'
 import { homePage } from './homePage'
 import { listingPage } from './listingPage'
 import { contentPage } from './contentPage'
+import { contactChannel } from './contactChannel'
 import { legalPage } from './legalPage'
 import { websiteSections } from './sections'
 import { websiteNavigation } from './websiteNavigation'
@@ -129,6 +130,7 @@ export const schemaTypes = [
   homePage,
   listingPage,
   contentPage,
+  contactChannel,
   legalPage,
 
   // Website section inventory (PROD-2292 pt 2) — presentation-free page sections
