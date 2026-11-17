@@ -1,4 +1,5 @@
 import { cache } from "react";
+import type { SpecRefs } from "@/lib/spec/library-display";
 import { createClient } from "@pakfactory/supabase/server";
 
 /**
@@ -627,6 +628,8 @@ export type LibraryRecord = {
   record: Record<string, unknown>;
   children: Record<string, unknown[]>;
   history: { decision: LibraryDecision; note: string | null; decidedBy: string; decidedByName: string | null; decidedAt: string }[];
+  /** Ids and codes in the record, resolved (backend 20261117220000; absent before it is applied). */
+  refs?: SpecRefs;
 };
 
 export async function listLibraryVersions(line?: string) {
@@ -648,6 +651,34 @@ export async function getLibraryRecord(version: number, collection: string, sour
   return call<LibraryRecord>(
     `/api/v1/library-versions/${version}/items/${encodeURIComponent(collection)}/${encodeURIComponent(sourceId)}`,
   );
+}
+
+/** One record in a product type's review group (backend app.spec_review_bundle, PLAT-81). */
+export type LibraryBundleItem = {
+  collection: "product_type" | "template" | "capability";
+  sourceId: string;
+  label: string | null;
+  version: number;
+  state: LibraryReviewState;
+  note: string | null;
+  decidedAt: string | null;
+  decidedByName: string | null;
+  /** How many product types this record applies to; more than 1 = shared. */
+  sharedBy: number;
+  level?: "global" | "category" | "type";
+  entries?: number;
+  group?: { sourceId: string | null; name: string | null; sort: number | null };
+};
+
+export type LibraryBundle = {
+  productType: { sourceId: string; name: string; version: number; line: string; lineName: string };
+  productTypesInLine: number;
+  productTypesTotal: number;
+  items: LibraryBundleItem[];
+};
+
+export async function getLibraryProductTypeReview(sourceId: string) {
+  return call<LibraryBundle>(`/api/v1/library-product-types/${encodeURIComponent(sourceId)}/review`);
 }
 
 export async function decideLibraryItems(
@@ -690,7 +721,7 @@ export async function listLibraryChanges(q: { state?: LibraryChangeState; line?:
   const p = new URLSearchParams();
   if (q.state) p.set("state", q.state);
   if (q.line) p.set("line", q.line);
-  return call<{ version: number | null; items: LibraryChange[] }>(`/api/v1/library-changes${p.size ? `?${p}` : ""}`);
+  return call<{ version: number | null; items: LibraryChange[]; refs?: SpecRefs }>(`/api/v1/library-changes${p.size ? `?${p}` : ""}`);
 }
 
 export async function decideLibraryChange(item: number, decision: LibraryDecision, note: string | null) {

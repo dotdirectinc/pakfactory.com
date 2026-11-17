@@ -19,12 +19,16 @@ import {
   pageOf,
   stateOf,
   totals,
+  type LineKey,
 } from "@/lib/spec/library-review";
+import { productTypesHref, viewOf } from "@/lib/spec/library-usage";
+import { productTypeProgress, productTypesByLine } from "@/lib/spec/library-usage-data";
+import { LibraryProductTypeList, type ProductTypeRow } from "@/components/spec/library/library-product-type-list";
 import { ADMIN_SPEC_LIBRARY_COPY as COPY } from "@/lib/copy/spec-library";
 
 export const metadata = { title: "Library review" };
 
-type SP = { version?: string; collection?: string; state?: string; search?: string; page?: string; line?: string };
+type SP = { view?: string; version?: string; collection?: string; state?: string; search?: string; page?: string; line?: string };
 
 /**
  * Spec Library review (PFP-124 / PLAT-51, PLAT-81). Records are approved one by one; there is no
@@ -69,14 +73,25 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
   const t = totals(version.collections);
   const progressOf = (key: string) => version.collections.find((c) => c.collection === key);
 
-  const itemsRes = await listLibraryItems(version.number, {
-    collection,
-    state: state === "all" ? undefined : state,
-    search,
-    line: apiLine(line),
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE,
-  });
+  const view = viewOf(sp);
+  // Links that keep the current tab: the line pills and the version buttons.
+  const hrefFor = (q: { version: number; line: LineKey }) =>
+    view === "product-types" ? productTypesHref(q) : listHref({ ...q, collection });
+
+  const [itemsRes, productTypeRows] =
+    view === "records"
+      ? [
+          await listLibraryItems(version.number, {
+            collection,
+            state: state === "all" ? undefined : state,
+            search,
+            line: apiLine(line),
+            limit: PAGE_SIZE,
+            offset: (page - 1) * PAGE_SIZE,
+          }),
+          null,
+        ]
+      : [null, await productTypeRowsOf(version.number, line)];
 
   return (
     <Shell
@@ -92,7 +107,7 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
         {LINES.map((l) => (
           <Link
             key={l.key}
-            href={listHref({ version: version.number, collection, line: l.key })}
+            href={hrefFor({ version: version.number, line: l.key })}
             aria-current={l.key === line ? "page" : undefined}
             className={cn(
               "rounded-md px-2.5 py-1",
@@ -109,7 +124,7 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
           {versions.map((v) => (
             <Link
               key={v.number}
-              href={listHref({ version: v.number, collection, line })}
+              href={hrefFor({ version: v.number, line })}
               className={cn(
                 "rounded-md border px-3 py-1",
                 v.number === version.number ? "border-primary font-medium" : "border-border text-muted-foreground",
@@ -130,6 +145,40 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
       </section>
       {!canDecide ? <p className="text-sm text-muted-foreground">{COPY.readOnlyNote}</p> : null}
 
+      {/* Two ways in: by product type (default) and every record by collection. */}
+      <nav aria-label={COPY.title} className="flex gap-1 border-b border-border text-sm">
+        {(
+          [
+            ["product-types", COPY.views.productTypes, productTypesHref({ version: version.number, line })],
+            ["records", COPY.views.records, listHref({ version: version.number, collection, line })],
+          ] as const
+        ).map(([key, label, href]) => (
+          <Link
+            key={key}
+            href={href}
+            aria-current={view === key ? "page" : undefined}
+            className={cn(
+              "-mb-px border-b-2 px-3 py-2",
+              view === key ? "border-primary font-medium" : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+
+      {view === "product-types" ? (
+        <section className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">{COPY.productTypeList.lead}</p>
+          {productTypeRows ? (
+            <LibraryProductTypeList rows={productTypeRows} showLine={line === "all"} />
+          ) : (
+            <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">
+              {COPY.unreachable}
+            </p>
+          )}
+        </section>
+      ) : (
       <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
         {/* Collections with their counts: the reviewer's checklist. */}
         <nav aria-label={COPY.collectionsHeading} className="flex flex-col gap-1">
@@ -185,7 +234,7 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
             </form>
           </div>
 
-          {itemsRes.ok ? (
+          {itemsRes?.ok ? (
             <>
               <LibraryItemsTable
                 key={`${line}/${version.number}/${collection}/${state}/${search ?? ""}/${page}`}
@@ -202,13 +251,30 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
             </>
           ) : (
             <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">
-              {COPY.unreachable} ({itemsRes.error})
+              {COPY.unreachable}{itemsRes ? ` (${itemsRes.error})` : ""}
             </p>
           )}
         </section>
       </div>
+      )}
     </Shell>
   );
+}
+
+/** "By product type": the line's product types (every line's, labelled, for "All lines") with progress. */
+async function productTypeRowsOf(version: number, line: LineKey): Promise<ProductTypeRow[] | null> {
+  let rows: ProductTypeRow[];
+  if (line === "all") {
+    const groups = await productTypesByLine([version]);
+    if (!groups) return null;
+    rows = groups.flatMap((g) => g.items.map((item) => ({ item, line: g.label, progress: null })));
+  } else {
+    const res = await listLibraryItems(version, { collection: "product_type", line, limit: 100, offset: 0 });
+    if (!res.ok) return null;
+    rows = res.data.items.map((item) => ({ item, progress: null }));
+  }
+  const progress = await productTypeProgress(rows.map((r) => r.item.sourceId));
+  return rows.map((r) => ({ ...r, progress: progress.get(r.item.sourceId) ?? null }));
 }
 
 function Shell({ children, badge, aside }: { children: React.ReactNode; badge?: React.ReactNode; aside?: React.ReactNode }) {

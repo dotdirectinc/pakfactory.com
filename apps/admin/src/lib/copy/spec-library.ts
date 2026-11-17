@@ -15,6 +15,21 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
   importSummary: (s: LibraryImportSummary) =>
     `This import: ${s.new} new · ${s.updated} updated · ${s.held} held · ${s.omitted} omitted`,
   lineHeading: "Product line",
+  views: { productTypes: "By product type", records: "All records" },
+  productTypeList: {
+    lead:
+      "Each product type with the records it is built from: its templates and its line's capabilities. Materials, fields and rules are reviewed under All records.",
+    columns: { productType: "Product type", line: "Line", own: "Its decision", progress: "Its records approved", open: "Open" },
+    progress: (approved: number, total: number) => `${approved} of ${total}`,
+    unreadable: "—",
+    empty: "No product types in this line.",
+  },
+  usedBy: {
+    heading: (n: number) => (n === 1 ? "Applies to 1 product type" : `Applies to ${n} product types`),
+    lead: (n: number) =>
+      n === 1 ? "Approving this record approves it for this product type." : `Approving this record approves it for all ${n}.`,
+    unknown: "Could not work out which product types use this record.",
+  },
   heldChangesLink: (n: number) => (n === 0 ? "Held changes" : `Held changes (${n} waiting)`),
   collectionsHeading: "Collections",
   columns: { collection: "Collection", total: "Records", pending: "To review", approve: "Approved", reject: "Rejected", defer: "Deferred" },
@@ -41,6 +56,47 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
   historyHeading: "Decisions",
   noHistory: "No decision yet.",
   decideHeading: "Decide",
+  record: {
+    messageLabel: "Message shown",
+    logic: "Logic",
+    details: "Details",
+    emptyFields: (n: number) => (n === 1 ? "1 empty field" : `${n} empty fields`),
+    system: "Source and system",
+  },
+  productType: {
+    reviewTogether: "Review with its templates and capabilities",
+    lead: (code: string, line: string) => `${code} in ${line}`,
+    progress: (approved: number, total: number) => `${approved} of ${total} approved`,
+    approve: (n: number) => (n === 0 ? "Approve…" : `Approve… (${n} open)`),
+    nothingOpen: "Every record here is decided.",
+    productTypeHeading: "Product type",
+    templateHeading: "Specification template",
+    templateLead:
+      "Fields are inherited down this chain: all products, then the product line, then this product type.",
+    templateColumns: { level: "Level", template: "Template", entries: "Entries", version: "Version", state: "State", shared: "Applies to" },
+    capabilitiesHeading: "Applicable capabilities",
+    capabilitiesCount: (n: number, line: string) => `${n} capabilities apply to ${line}`,
+    sharedBy: (n: number) => (n <= 1 ? "This product type only" : `${n} product types`),
+    legend: "Outline colour shows the decision.",
+    dialog: {
+      title: (name: string) => `Approve records for ${name}`,
+      lead:
+        "Each ticked record gets its own approval. Records shared with other product types start unticked: approving one here approves it for all of them.",
+      selectAll: "Tick all",
+      selectNone: "Untick all",
+      selectOwned: "Only this product type's",
+      shared: (n: number) => `Shared · ${n} product types`,
+      own: "This product type only",
+      version: (n: number) => `v${n}`,
+      deferred: "Deferred",
+      note: "Note (optional)",
+      confirm: (n: number) => (n === 1 ? "Approve 1 record" : `Approve ${n} records`),
+      cancel: "Cancel",
+      summary: (parts: string) => `You are approving ${parts}.`,
+      done: (n: number) => (n === 1 ? "Approved 1 record." : `Approved ${n} records.`),
+      rejectHint: "To reject or defer, open the record: each needs its own note.",
+    },
+  },
   changes: {
     title: "Held changes",
     lead:
@@ -54,6 +110,8 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
     current: "Approved now",
     proposed: "In the export",
     noFieldChange: "No top-level field differs; the change is in nested rows.",
+    onlyBookkeeping: "Only bookkeeping changed (version, dates).",
+    bookkeeping: (n: number) => (n === 1 ? "1 bookkeeping change" : `${n} bookkeeping changes`),
     decidedBy: (who: string) => `by ${who}`,
     finalNote: "Approve and reject are final. A deferred change can still be decided until the next import.",
   },
