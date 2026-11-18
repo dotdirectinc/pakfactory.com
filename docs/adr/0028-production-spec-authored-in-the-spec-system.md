@@ -1,6 +1,6 @@
 # ADR-028: The production spec moves into the Spec System one collection at a time, on Justin's engine and design
 
-**Status:** proposed. Decided by Richard Qin on 2026-11-18, after the [production and dev meeting with Justin Chow](https://dotdirect.atlassian.net/wiki/spaces/Pakfactory/pages/437813249) the same day. Revised the same day after a design challenge (revision 2). Accept after Justin Chow (production spec owner) and Alex Pan have reviewed it.
+**Status:** accepted (2026-11-18). Decided and owned by Richard Qin, after the [production and dev meeting with Justin Chow](https://dotdirect.atlassian.net/wiki/spaces/Pakfactory/pages/437813249) the same day, and revised the same day after a design challenge (revision 2). Justin Chow (production spec owner) confirmed his Spec Library code may be reused.
 **Date:** 2026-11-18
 **Owner:** Richard Qin
 **Jira:** under [PLAT-30](https://dotdirect.atlassian.net/browse/PLAT-30) (PakFactory Spec DB). Built in [PLAT-84](https://dotdirect.atlassian.net/browse/PLAT-84) (Registry API), [PLAT-85](https://dotdirect.atlassian.net/browse/PLAT-85) (library review), [PLAT-86](https://dotdirect.atlassian.net/browse/PLAT-86) (mapping editing) and [PLAT-87](https://dotdirect.atlassian.net/browse/PLAT-87) (shared spec engine). It changes [PLAT-51](https://dotdirect.atlassian.net/browse/PLAT-51), [PLAT-52](https://dotdirect.atlassian.net/browse/PLAT-52) and [PLAT-81](https://dotdirect.atlassian.net/browse/PLAT-81). Related: [PLAT-19](https://dotdirect.atlassian.net/browse/PLAT-19) (vendor product onboarding), [PLAT-83](https://dotdirect.atlassian.net/browse/PLAT-83) (job specs).
@@ -61,7 +61,7 @@ His logic moves into a typed shared package, `spec-engine`, with as few changes 
 - on the server (Registry API), to check every write, whoever or whatever makes it;
 - in the browser, for previews and instant feedback.
 
-Later it also builds job specs (PLAT-83). Nothing else reimplements this logic. Before any code is copied, we need confirmation that Justin's code (shared from outside our organization) may be reused.
+Later it also builds job specs (PLAT-83). Nothing else reimplements this logic. Justin confirmed on 2026-11-18 that his code may be reused.
 
 ### D3: Ownership moves one collection at a time
 
@@ -153,8 +153,9 @@ Folding cartons only until Justin has approved them (meeting decision Q7).
 
 ## Open items
 
-- Confirm that Justin's Spec Library code may be reused (D2). Owner: Richard, with Justin.
 - Where the `spec-engine` package lives so that both admin and the Registry API can use it (PLAT-87).
+
+Resolved 2026-11-18: Justin confirmed his Spec Library code may be reused (D2).
 
 ## References
 
