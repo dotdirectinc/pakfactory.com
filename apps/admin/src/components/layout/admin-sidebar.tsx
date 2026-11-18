@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -20,6 +20,8 @@ type NavCounts = { pendingFrames: number };
 type NavChild = {
   href: string;
   label: string;
+  /** A heading shown above the first entry of each section (Spec System: one per kind of spec). */
+  section?: string;
   /** When above zero: the label turns bold and a pill shows the number. */
   count?: keyof NavCounts;
   match: (path: string) => boolean;
@@ -74,15 +76,17 @@ const NAV: readonly NavEntry[] = [
     requiresRegistryGrant: true,
     label: "Spec System",
     icon: FileText,
-    // Order (Richard, 2026-10-09): the map first, the catalog beside it, then the work queue, the rules, help.
+    // Grouped by the three kinds of spec (Richard, 2026-11-18): Job specs (one customer job, quoted and
+    // made by a vendor) first, as what the system is for; then Website specs (what customers choose,
+    // Crystal), Production specs (what the factory makes, Justin), and the Mapping between them. Help
+    // last. URLs are unchanged from the 2026-10-09 order (map, catalog, registry, rules, help).
     children: [
-      // The catalog as a diagram (PROD-2960): three streams, levels as columns, read-only.
+      // Job specs → Readiness: could a job spec be built from each website spec with approved data only.
       {
-        href: "/spec/map",
-        // Short inside the Spec System group; outside it the name keeps its prefix ("Spec Map") — Richard, 2026-10-14.
-        label: "Map",
-        // Not "/spec/mapping" (Mapping review), which shares the prefix.
-        match: (path) => path === "/spec/map" || path.startsWith("/spec/map/"),
+        href: "/spec/readiness",
+        section: "Job specs",
+        label: "Readiness",
+        match: (path) => path.startsWith("/spec/readiness"),
       },
       // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing —
       // properties & values included, as the fourth level of the Products and Customizations streams.
@@ -90,42 +94,55 @@ const NAV: readonly NavEntry[] = [
       // of it, so they light this entry; the retired list URLs redirect into it.
       {
         href: "/spec/catalog",
+        section: "Website specs",
         label: "Catalog",
         match: (path) =>
           ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions", "/spec/properties"].some((p) => path.startsWith(p)),
       },
+      // The catalog as a diagram (PROD-2960): three streams, levels as columns, read-only.
+      {
+        href: "/spec/map",
+        label: "Catalog map",
+        // Not "/spec/mapping" (Mapping review), which shares the prefix.
+        match: (path) => path === "/spec/map" || path.startsWith("/spec/map/"),
+      },
       {
         href: "/spec",
-        // The registry's change desk: syncs, frames waiting (the count) and decided ones (Richard, 2026-10-14).
-        label: "Registry",
+        // The website specs' change desk: syncs, frames waiting (the count) and decided ones (Richard,
+        // 2026-10-14). Called "Registry" until 2026-11-18; the registry is the database, not the job.
+        label: "Changes",
         count: "pendingFrames",
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map", "/spec/library", "/spec/mapping"].some((p) =>
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map", "/spec/library", "/spec/mapping", "/spec/readiness"].some((p) =>
               path.startsWith(p),
             )),
       },
-      // Spec Library review (PFP-124): an imported library version, reviewed record by record and approved.
+      // The website's compatibility rules (Crystal), not the production library's feasibility rules.
+      {
+        href: "/spec/rules",
+        label: "Compatibility rules",
+        match: (path) => path === "/spec/rules" || path.startsWith("/spec/rules/"),
+      },
+      // Spec Library review (PFP-124): imported production records, reviewed and approved record by record.
       {
         href: "/spec/library",
+        section: "Production specs",
         label: "Library review",
         match: (path) => path.startsWith("/spec/library"),
       },
       // Mapping review (PLAT-52): website products, options and property values → the production spec.
       {
         href: "/spec/mapping",
+        section: "Mapping",
         label: "Mapping review",
         match: (path) => path.startsWith("/spec/mapping"),
       },
-      {
-        href: "/spec/rules",
-        label: "Rules",
-        match: (path) => path === "/spec/rules" || path.startsWith("/spec/rules/"),
-      },
-      // What each page and button does, the catalog structure, syncing and registry codes (PROD-2771).
+      // What each page and button does, the three kinds of spec, syncing and registry codes (PROD-2771).
       {
         href: "/spec/help",
+        section: "",
         label: "Help",
         match: (path) => path.startsWith("/spec/help"),
       },
@@ -207,7 +224,7 @@ function NavGroup({
           {item.children.map((child) => {
             const active = child.match(pathname);
             const n = child.count ? counts[child.count] : 0;
-            return (
+            const link = (
               <Link
                 key={child.href}
                 href={child.href}
@@ -232,6 +249,20 @@ function NavGroup({
                   </span>
                 ) : null}
               </Link>
+            );
+            // A section starts a group of entries: a small heading ("" = a gap with no heading, e.g. Help).
+            if (child.section === undefined) return link;
+            return (
+              <Fragment key={child.href}>
+                {child.section ? (
+                  <span className="px-2 pt-2.5 pb-0.5 text-[11px] font-medium tracking-wide text-muted-foreground/80 uppercase">
+                    {child.section}
+                  </span>
+                ) : (
+                  <span aria-hidden className="pt-1.5" />
+                )}
+                {link}
+              </Fragment>
             );
           })}
         </div>

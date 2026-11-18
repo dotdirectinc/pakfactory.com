@@ -1,5 +1,5 @@
 export const ADMIN_SPEC_COPY = {
-  listTitle: "Spec registry",
+  listTitle: "Website spec changes",
   listLead:
     "Changes to the spec registry: rule edits from the Spec System, and changes found by Sync Changes (Sanity) and Sync Notion. Nothing here is live until it is approved.",
   editsTitle: "Recent Spec System edits",
@@ -57,9 +57,9 @@ export const ADMIN_SPEC_COPY = {
 
 /** Current rules (PROD-2560): read from Sanity, computed by the shared rules package. */
 export const ADMIN_SPEC_RULES_COPY = {
-  title: "Spec rules",
+  title: "Compatibility rules",
   lead:
-    "What the rules say right now, computed by the same code the storefront and Studio use. To change a rule, open its record (\"edit\" on any row) — or select it on the Map — and use Edit rules; approved changes show here on the next load.",
+    "What the rules say right now, computed by the same code the storefront and Studio use. To change a rule, open its record (\"edit\" on any row) — or select it on the Catalog map — and use Edit rules; approved changes show here on the next load.",
   edit: "edit",
   editTitle: (name: string) => `Edit the rules of ${name}`,
   datasetNote: (dataset: string) => `Sanity dataset: ${dataset}`,
@@ -354,7 +354,7 @@ export const ADMIN_SPEC_TABLES_COPY = {
   count: (shown: number, total: number) => (shown === total ? `${total} records` : `${shown} of ${total} records`),
   image: "Image",
   noImage: "No image",
-  showOnMap: (title: string) => `Show ${title} on the Spec Map`,
+  showOnMap: (title: string) => `Show ${title} on the Catalog map`,
   headerHint: "Drag to move · click for sort and hide",
   sortAsc: "Sort ascending",
   sortDesc: "Sort descending",
@@ -379,14 +379,14 @@ export const ADMIN_SPEC_FUTURE_COPY = {
 export const ADMIN_SPEC_HELP_COPY = {
   title: "Spec System help",
   lead:
-    "The Spec System is where the catalog's registry is read and where synced changes are approved. The registry holds every product, customization, rule and property with a permanent ID, shared by the website, Sanity, Notion and requests. Names, status and content Sanity owns are copied in automatically; relations change only when someone approves a frame.",
+    "The Spec System holds three kinds of spec: website specs (what customers choose), production specs (what the factory makes) and the maps between them, which together make job specs (what one customer job is quoted and made from). Website specs have a permanent registry ID, shared by the website, Sanity, Notion and requests; names, status and content Sanity owns are copied in automatically, and relations change only when someone approves a frame.",
 } as const;
 
 export const ADMIN_SPEC_RECORD_COPY = {
   unreachable: "The record could not be loaded.",
   rules: "Rules view",
   showOnMap: "Show on Map",
-  showOnMapTitle: "Open the Spec Map on this record: its relations, and where its rules and parents are edited.",
+  showOnMapTitle: "Open the Catalog map on this record: its relations, and where its rules and parents are edited.",
   readOnly: (dataset: string) => `Read-only, from Sanity (${dataset}) — edit in Studio.`,
   /** A record that can be moved (PROD-3007): its parents here, the rest in Studio. */
   movable: (dataset: string) => `From Sanity (${dataset}). Its parents and children change here with Move; everything else in Studio.`,
@@ -520,7 +520,7 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
 
 /** Spec Map (PROD-2960): the catalog as a read-only diagram. */
 export const ADMIN_SPEC_MAP_COPY = {
-  title: "Spec Map",
+  title: "Catalog map",
   /** Moving records (PROD-3007). */
   moveRecords: "Move records",
   /** The edit modes, together and visible (Richard, 2026-10-15: "Move records" was too hidden). */
@@ -591,7 +591,7 @@ export const ADMIN_SPEC_MAP_COPY = {
   otherType: "No type",
   loading: "Loading…",
   notFound: "This record is no longer published.",
-  unreachable: "The Spec Map could not be loaded.",
+  unreachable: "The Catalog map could not be loaded.",
 } as const;
 
 /** Rule editing in the Spec System (PROD-2962, ADR-025). */

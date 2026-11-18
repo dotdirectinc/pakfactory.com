@@ -16,7 +16,7 @@ import {
 import { RegistryTabLink } from "@/components/spec/registry/registry-tab-link";
 import { PageHeader } from "@/components/ui/page-header";
 
-export const metadata = { title: "Spec registry" };
+export const metadata = { title: "Website spec changes" };
 
 const VIEWS = ["overview", "history", "settings"] as const;
 type View = (typeof VIEWS)[number];

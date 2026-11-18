@@ -30,6 +30,7 @@ function Term({ name, children }: { name: string; children: ReactNode }) {
 }
 
 const TOC = [
+  ["kinds", "Three kinds of spec"],
   ["pages", "The pages"],
   ["sync", "Syncing and approving"],
   ["owners", "Who owns what"],
@@ -54,21 +55,65 @@ export default async function SpecHelpPage() {
         </nav>
       </div>
 
+      <Section id="kinds" title="Three kinds of spec">
+        <p>
+          The Spec System holds three kinds of spec, each named after who uses it. The menu is grouped the same way.
+        </p>
+        <dl className="flex flex-col gap-3">
+          <Term name="Job spec">
+            The spec of one customer job: what the customer asked for, in their own words and choices, and what will be
+            made, in production terms. Sales, estimating and vendors work from it; requests, quotes and purchase orders link
+            to it. It is released to a vendor only when every map and production record it uses is approved. Job specs
+            themselves are not built yet; <em>Readiness</em> shows how close each website spec is.
+          </Term>
+          <Term name="Website spec">
+            What customers choose on the website: product lines, styles, products, customization options, properties and
+            values, and the rules for what goes with what. Curated by the catalog team (Crystal) in Studio and Notion,
+            with a permanent registry ID each.
+          </Term>
+          <Term name="Production spec">
+            What the factory makes and how: product types, templates, capabilities, fields, materials, grades, stock and
+            feasibility rules. Curated by production (Justin) in the Spec Library and imported as library versions;
+            each record is approved on its own.
+          </Term>
+          <Term name="Map">
+            Which production spec a website spec means: a website product → a product type (sometimes with presets), an
+            option → a capability or field value. Reviewed on <em>Mapping review</em>. A map is not part of the job spec;
+            it is how a job spec is worked out.
+          </Term>
+        </dl>
+      </Section>
+
       <Section id="pages" title="The pages">
         <dl className="flex flex-col gap-3">
-          <Term name="Rules">
-            What the rules say right now (page title <em>Spec rules</em>). Tabs: <em>By type</em> and <em>By option</em> (what goes with
+          <Term name="Readiness">
+            <strong>Job specs.</strong> For each website spec in a product line: its map and decision, the production
+            records the map uses with their decisions, and a status — <em>Ready</em>, <em>Waiting on mapping</em>,{" "}
+            <em>Waiting on library</em> or <em>Gap</em> (no production equivalent, or the map was rejected). Read only;
+            decisions are made on the two review pages.
+          </Term>
+          <Term name="Library review">
+            <strong>Production specs.</strong> The production records imported from the Spec Library, by product type or
+            as a full list per collection, each approved, rejected or deferred on its own. <em>Held changes</em> lists
+            what a newer export would change in a record already approved; nothing approved changes without a decision.
+          </Term>
+          <Term name="Mapping review">
+            <strong>Mapping.</strong> Each row reads left to right: website spec → kind of match → production spec →
+            decision. Hover either side for a preview, click to open it. Approve, reject or defer one map or a whole group.
+          </Term>
+          <Term name="Compatibility rules">
+            <strong>Website specs.</strong> What the rules say right now (page title <em>Compatibility rules</em>). Tabs: <em>By type</em> and <em>By option</em> (what goes with
             what), <em>Product exceptions</em> (where one product differs from its line), <em>Needs attention</em>
             (rules that look wrong or incomplete), and <em>Old explorer rules</em> (the old explorer's hand-written rules
-            and where each stands). To change a rule, use <em>edit</em> on its row or select the record on the <em>Map</em>,
+            and where each stands). To change a rule, use <em>edit</em> on its row or select the record on the <em>Catalog map</em>,
             then <em>Edit rules</em>; changes go through the Registry for approval.
           </Term>
-          <Term name="Registry">
-            Proposed changes waiting for a decision (the number next to it), plus the <strong>Sync</strong> panel and recent syncs. A frame is one group of
+          <Term name="Changes">
+            <strong>Website specs.</strong> Proposed changes waiting for a decision (the number next to it), plus the <strong>Sync</strong> panel and recent syncs. A frame is one group of
             related changes; open it to see every row as a sentence.
           </Term>
           <Term name="Catalog">
-            Every record as a table, in three tabs — <em>Products</em>, <em>Customizations</em>, <em>Solutions</em> — with
+            <strong>Website specs.</strong> Every record as a table, in three tabs — <em>Products</em>, <em>Customizations</em>, <em>Solutions</em> — with
             a <em>Show</em> picker for the level: product lines → styles → standard products → product properties &amp; values;
             categories → types → options → option properties &amp; values; solutions → solution styles → inspiration
             products. Properties and their values are one shared list; each stream shows the ones it uses, and how many

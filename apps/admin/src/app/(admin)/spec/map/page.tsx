@@ -6,7 +6,7 @@ import { ADMIN_SPEC_MAP_COPY as COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/s
 import { parseMapFocus } from "@/lib/spec/map-href";
 import { PageHeader } from "@/components/ui/page-header";
 
-export const metadata = { title: "Spec Map" };
+export const metadata = { title: "Catalog map" };
 
 /** Spec Map (PROD-2960): the catalog's structure as a diagram — read-only. */
 export default async function SpecMapPage({ searchParams }: { searchParams: Promise<{ focus?: string | string[] }> }) {
