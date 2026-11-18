@@ -332,6 +332,9 @@ describe('toWireSubmission — optional contents and ship-to N/A fallbacks', () 
         } as RequestDraft;
         const wire = toWireSubmission(servicesOnly, [], 'sub-svc-na');
         assert.equal(wire.requirements.notes, WIRE_PLACEHOLDER);
+        assert.equal(wire.requirements.packagingContents, WIRE_PLACEHOLDER);
+        assert.equal(wire.requirements.expressQuantity, 100);
+        assert.deepEqual(wire.requirements.expressQuantities, [100]);
         assert.equal(wire.contact.firstName, WIRE_PLACEHOLDER);
         assert.equal(wire.contact.lastName, WIRE_PLACEHOLDER);
         assert.equal(wire.contact.email, WIRE_EMAIL_PLACEHOLDER);

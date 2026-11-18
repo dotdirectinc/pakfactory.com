@@ -7,9 +7,9 @@ import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
 import {
     canSubmitRequest,
     isContactReady,
-    isContentsReady,
     isExpressQuantityReady,
     isNotesReady,
+    isServicesOnlyRequest,
     isShippingReady,
     type RequestFormRules,
 } from '@/lib/request/validation';
@@ -97,11 +97,12 @@ export async function submitRequest(
     // Client-side gate first, so an incomplete draft never becomes a network
     // round trip. These messages name the specific field; the server's 422s are
     // still the authority, and are surfaced below when the two disagree.
-    if (!isNotesReady(draft, lines, rules)) {
+    //
+    // Services-only: picking a service is enough. Wire fills N/A for empty brief /
+    // contact / contents — do not reject with packaging-contents copy (PROD-3320).
+    const servicesOnly = isServicesOnlyRequest(draft);
+    if (!servicesOnly && !isNotesReady(draft, lines, rules)) {
         return {ok: false, error: 'Tell us what you\'re packaging before submitting.'};
-    }
-    if (!isContentsReady(draft, lines)) {
-        return {ok: false, error: 'Say what you\'re packaging.'};
     }
     if (!isExpressQuantityReady(draft, lines)) {
         return {ok: false, error: 'Add a quantity in multiples of 100.'};
@@ -109,7 +110,7 @@ export async function submitRequest(
     if (!isShippingReady(draft)) {
         return {ok: false, error: 'Add a shipping location.'};
     }
-    if (!isContactReady(draft, rules)) {
+    if (!servicesOnly && !isContactReady(draft, rules)) {
         return {ok: false, error: 'Add your name and work email.'};
     }
     if (!canSubmitRequest(draft, lines, rules)) {
