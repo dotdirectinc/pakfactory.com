@@ -72,7 +72,7 @@ A collection (product types, capabilities and values, fields, templates, rules, 
 - **An admin's edit** (Registry role admin) counts as approved when it is saved.
 - **Everything else is a proposal** that waits for an admin to approve, reject or defer it, using the existing changeset path:
   - edits by other roles (for example approvers);
-  - records created from a map (D7);
+  - records created from a map (D8);
   - vendor submissions (PLAT-19).
 
 Every save and every decision goes into history, in the same transaction as the change, so a change can't be saved without its history.
