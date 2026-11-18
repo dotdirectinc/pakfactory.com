@@ -6,6 +6,7 @@ import { SpecFutureAction } from "@/components/spec/spec-future-action";
 import { ADMIN_SPEC_FUTURE_COPY, ADMIN_SPEC_TABLES_COPY as COPY } from "@/lib/copy/spec";
 import { PageHeader } from "@/components/ui/page-header";
 import { CatalogModeTabs } from "@/components/spec/spec-section-tabs";
+import { RulesHealthLine } from "@/components/spec/rules-health-line";
 
 export const metadata = { title: "Catalog" };
 
@@ -21,6 +22,7 @@ export default async function SpecCatalogPage({ searchParams }: { searchParams: 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
       <CatalogModeTabs active="table" />
+      <RulesHealthLine />
       <PageHeader title={COPY.title} lead={COPY.lead} aside={<SpecFutureAction label={ADMIN_SPEC_FUTURE_COPY.addEntity(entity)} />} />
 
       <SpecCatalogNav groups={TABLE_GROUPS} group={group} level={level} />

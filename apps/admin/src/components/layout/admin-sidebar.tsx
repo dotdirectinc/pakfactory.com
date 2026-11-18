@@ -75,7 +75,7 @@ const NAV: readonly NavEntry[] = [
     label: "Spec System",
     icon: FileText,
     // By what you came to do (Richard, 2026-11-18, replacing the same day's grouping by kind of spec):
-    // check readiness, browse website specs, read the compatibility rules, review, get help. Pages that
+    // check readiness, browse website specs (with their compatibility rules), review, get help. Pages that
     // answer the same question share one entry and switch with tabs (Table | Map; the review workflows).
     // URLs are unchanged.
     children: [
@@ -86,20 +86,16 @@ const NAV: readonly NavEntry[] = [
         match: (path) => path.startsWith("/spec/readiness"),
       },
       // Website specs: the catalog as tables (PROD-2926) or as a map (PROD-2960), one entry with a Table |
-      // Map switch. The record pages its tables link to and the retired list URLs light it too.
+      // Map switch. The record pages its tables link to, the retired list URLs and the compatibility rules
+      // overview (reached from a line under the tabs; rules are edited on records, 2026-11-18) light it too.
       {
         href: "/spec/catalog",
         label: "Website specs",
         match: (path) =>
           ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions", "/spec/properties"].some((p) => path.startsWith(p)) ||
           path === "/spec/map" ||
-          path.startsWith("/spec/map/"),
-      },
-      // The website's compatibility rules (Crystal), not the production library's feasibility rules.
-      {
-        href: "/spec/rules",
-        label: "Compatibility rules",
-        match: (path) => path === "/spec/rules" || path.startsWith("/spec/rules/"),
+          path.startsWith("/spec/map/") ||
+          path.startsWith("/spec/rules"),
       },
       // Review: website changes (frames, syncs — the old Registry desk at /spec), the production library
       // (PFP-124), held changes and mapping (PLAT-52), switched with tabs. The count is what arrives and

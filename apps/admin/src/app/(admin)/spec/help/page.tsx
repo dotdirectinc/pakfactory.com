@@ -115,7 +115,8 @@ export default async function SpecHelpPage() {
             </ul>
           </Term>
           <Term name="Compatibility rules">
-            What the website's rules say right now (page title <em>Compatibility rules</em>). Tabs: <em>By type</em> and <em>By option</em> (what goes with
+            Part of <em>Website specs</em>: the line under the Table | Map tabs gives their health and opens the
+            overview. What the website's rules say right now (page title <em>Compatibility rules</em>). Tabs: <em>By type</em> and <em>By option</em> (what goes with
             what), <em>Product exceptions</em> (where one product differs from its line), <em>Needs attention</em>
             (rules that look wrong or incomplete), and <em>Old explorer rules</em> (the old explorer's hand-written rules
             and where each stands). To change a rule, use <em>edit</em> on its row or select the record on the <em>Catalog map</em>,
