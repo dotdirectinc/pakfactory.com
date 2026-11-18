@@ -5,7 +5,7 @@ import { SpecFutureAction } from "@/components/spec/spec-future-action";
 import { ADMIN_SPEC_FUTURE_COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
 import { PageHeader } from "@/components/ui/page-header";
 
-export const metadata = { title: "Spec rules" };
+export const metadata = { title: "Compatibility rules" };
 
 export default async function SpecRulesPage() {
   // Same gate as the rest of /spec: 404 without a registry grant.
