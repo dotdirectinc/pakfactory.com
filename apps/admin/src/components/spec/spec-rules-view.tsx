@@ -15,6 +15,7 @@ import {
   LEGACY_RULE_COVERAGE,
   LEGACY_STATUS_LABEL,
 } from "@/lib/copy/spec";
+import { rulesAttentionCount } from "@/lib/spec/rules-attention";
 
 /**
  * The current rules at three levels: per type (the statements), per option (its pairs,
@@ -37,12 +38,7 @@ export function SpecRulesView({ rules }: { rules: CurrentRules }) {
     router.replace(sp.size ? `${pathname}?${sp}` : pathname, { scroll: false });
   };
 
-  const attentionCount =
-    rules.attention.missingReferences.length +
-    rules.attention.siblingPairs.length +
-    rules.attention.referencePairs.length +
-    rules.attention.unknownDependencyReferences.length +
-    rules.options.filter((o) => o.unmetRequirements.length > 0).length;
+  const attentionCount = rulesAttentionCount(rules);
 
   return (
     <div className="flex flex-col gap-4">

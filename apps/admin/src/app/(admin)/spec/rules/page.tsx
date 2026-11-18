@@ -2,7 +2,7 @@ import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { getCurrentRules } from "@/lib/spec/current-rules";
 import { SpecRulesView } from "@/components/spec/spec-rules-view";
 import { SpecFutureAction } from "@/components/spec/spec-future-action";
-import { ADMIN_SPEC_FUTURE_COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
+import { ADMIN_SPEC_FUTURE_COPY, ADMIN_SPEC_RULES_COPY, ADMIN_SPEC_RULES_HEALTH_COPY } from "@/lib/copy/spec";
 import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata = { title: "Compatibility rules" };
@@ -18,6 +18,7 @@ export default async function SpecRulesPage() {
         title={ADMIN_SPEC_RULES_COPY.title}
         lead={ADMIN_SPEC_RULES_COPY.lead}
         leadClassName="max-w-2xl"
+        back={{ href: "/spec/catalog", label: ADMIN_SPEC_RULES_HEALTH_COPY.back }}
         aside={<SpecFutureAction label={ADMIN_SPEC_FUTURE_COPY.addRule} />}
       />
 

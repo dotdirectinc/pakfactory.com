@@ -946,3 +946,13 @@ export const ADMIN_SPEC_SECTION_TABS_COPY = {
   },
   catalog: { label: "View", table: "Table", map: "Map" },
 } as const;
+
+/** Website specs: the compatibility rules' health, linking to their overview (2026-11-18). */
+export const ADMIN_SPEC_RULES_HEALTH_COPY = {
+  label: "Compatibility rules",
+  pairs: (n: number) => `${n.toLocaleString("en-US")} compatible pairs`,
+  exceptions: (n: number) => (n === 1 ? "1 product exception" : `${n.toLocaleString("en-US")} product exceptions`),
+  attention: (n: number) => (n === 1 ? "1 needs attention" : `${n} need attention`),
+  open: "Open the rules overview",
+  back: "Website specs",
+} as const;
