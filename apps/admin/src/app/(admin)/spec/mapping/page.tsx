@@ -10,6 +10,7 @@ import { websiteLinks } from "@/lib/spec/mapping-links";
 import { LINES } from "@/lib/spec/library-review";
 import { apiState, KINDS, MAP_LABELS, MAP_STATES, mappingHref, mappingParams } from "@/lib/spec/mapping-review";
 import { ADMIN_SPEC_MAPPING_COPY as COPY } from "@/lib/copy/spec-mapping";
+import { ReviewTabs } from "@/components/spec/spec-section-tabs";
 
 export const metadata = { title: "Mapping review" };
 
@@ -40,6 +41,7 @@ export default async function SpecMappingReviewPage({ searchParams }: { searchPa
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+      <ReviewTabs active="mapping" />
       <PageHeader title={COPY.title} lead={COPY.lead} />
 
       <nav aria-label={COPY.lineHeading} className="flex flex-wrap items-center gap-1 text-sm">

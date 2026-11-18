@@ -5,6 +5,7 @@ import { SpecMap } from "@/components/spec/spec-map";
 import { ADMIN_SPEC_MAP_COPY as COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
 import { parseMapFocus } from "@/lib/spec/map-href";
 import { PageHeader } from "@/components/ui/page-header";
+import { CatalogModeTabs } from "@/components/spec/spec-section-tabs";
 
 export const metadata = { title: "Catalog map" };
 
@@ -17,6 +18,7 @@ export default async function SpecMapPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="flex h-[calc(100dvh-7rem)] w-full flex-col gap-4">
+      <CatalogModeTabs active="map" />
       <PageHeader
         title={COPY.title}
         lead={COPY.lead}

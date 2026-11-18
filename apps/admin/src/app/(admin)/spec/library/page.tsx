@@ -25,6 +25,7 @@ import { productTypesHref, viewOf } from "@/lib/spec/library-usage";
 import { productTypeProgress, productTypesByLine } from "@/lib/spec/library-usage-data";
 import { LibraryProductTypeList, type ProductTypeRow } from "@/components/spec/library/library-product-type-list";
 import { ADMIN_SPEC_LIBRARY_COPY as COPY } from "@/lib/copy/spec-library";
+import { ReviewTabs } from "@/components/spec/spec-section-tabs";
 
 export const metadata = { title: "Library review" };
 
@@ -280,6 +281,7 @@ async function productTypeRowsOf(version: number, line: LineKey): Promise<Produc
 function Shell({ children, badge, aside }: { children: React.ReactNode; badge?: React.ReactNode; aside?: React.ReactNode }) {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+      <ReviewTabs active="library" />
       <PageHeader title={COPY.title} lead={COPY.lead} badge={badge} aside={aside} />
       {children}
     </div>

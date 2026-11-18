@@ -15,6 +15,7 @@ import {
 } from "@/components/spec/registry/registry-sections";
 import { RegistryTabLink } from "@/components/spec/registry/registry-tab-link";
 import { PageHeader } from "@/components/ui/page-header";
+import { ReviewTabs } from "@/components/spec/spec-section-tabs";
 
 export const metadata = { title: "Website spec changes" };
 
@@ -37,6 +38,7 @@ export default async function SpecPage({ searchParams }: { searchParams: Promise
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+      <ReviewTabs active="website" />
       <PageHeader
         title={ADMIN_SPEC_COPY.listTitle}
         lead={COPY.lead}
