@@ -934,3 +934,15 @@ export const ADMIN_SPEC_MNEMONIC_KIND_COPY = {
     next: "Its types can be registered once its code is written to Studio.",
   },
 } as const;
+
+/** Tab bars joining pages under one menu entry (2026-11-18). */
+export const ADMIN_SPEC_SECTION_TABS_COPY = {
+  review: {
+    label: "Review",
+    website: "Website changes",
+    library: "Production library",
+    held: "Held changes",
+    mapping: "Mapping",
+  },
+  catalog: { label: "View", table: "Table", map: "Map" },
+} as const;

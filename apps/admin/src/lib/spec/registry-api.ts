@@ -724,6 +724,12 @@ export async function listLibraryChanges(q: { state?: LibraryChangeState; line?:
   return call<{ version: number | null; items: LibraryChange[]; refs?: SpecRefs }>(`/api/v1/library-changes${p.size ? `?${p}` : ""}`);
 }
 
+/** Held changes still waiting for a decision, for the menu and the Review tabs. Unreachable: 0, not an error. */
+export const countWaitingLibraryChanges = cache(async (): Promise<number> => {
+  const res = await listLibraryChanges({ state: "waiting" });
+  return res.ok ? res.data.items.length : 0;
+});
+
 export async function decideLibraryChange(item: number, decision: LibraryDecision, note: string | null) {
   return call<{ item: number; decision: LibraryDecision; version: number }>(`/api/v1/library-changes/${item}/decision`, {
     method: "POST",

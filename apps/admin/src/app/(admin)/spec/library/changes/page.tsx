@@ -22,6 +22,7 @@ import {
   type LineKey,
 } from "@/lib/spec/library-review";
 import { ADMIN_SPEC_LIBRARY_COPY as COPY } from "@/lib/copy/spec-library";
+import { ReviewTabs } from "@/components/spec/spec-section-tabs";
 
 export const metadata = { title: "Held changes" };
 
@@ -51,7 +52,8 @@ export default async function SpecLibraryChangesPage({ searchParams }: { searchP
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-      <PageHeader title={COPY.changes.title} lead={COPY.changes.lead} back={{ href: "/spec/library", label: COPY.changes.back }} />
+      <ReviewTabs active="held" />
+      <PageHeader title={COPY.changes.title} lead={COPY.changes.lead} />
 
       <nav aria-label={COPY.lineHeading} className="flex flex-wrap items-center gap-1 text-sm">
         <span className="mr-1 text-muted-foreground">{COPY.lineHeading}</span>

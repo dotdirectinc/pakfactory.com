@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -15,13 +15,11 @@ import { cn } from "@pakfactory/ui/lib/utils";
 type NavIcon = typeof Inbox;
 
 /** Counts the layout passes in, for entries that show how much is waiting. */
-type NavCounts = { pendingFrames: number };
+type NavCounts = { review: number };
 
 type NavChild = {
   href: string;
   label: string;
-  /** A heading shown above the first entry of each section (Spec System: one per kind of spec). */
-  section?: string;
   /** When above zero: the label turns bold and a pill shows the number. */
   count?: keyof NavCounts;
   match: (path: string) => boolean;
@@ -76,48 +74,26 @@ const NAV: readonly NavEntry[] = [
     requiresRegistryGrant: true,
     label: "Spec System",
     icon: FileText,
-    // Grouped by the three kinds of spec (Richard, 2026-11-18): Job specs (one customer job, quoted and
-    // made by a vendor) first, as what the system is for; then Website specs (what customers choose,
-    // Crystal), Production specs (what the factory makes, Justin), and the Mapping between them. Help
-    // last. URLs are unchanged from the 2026-10-09 order (map, catalog, registry, rules, help).
+    // By what you came to do (Richard, 2026-11-18, replacing the same day's grouping by kind of spec):
+    // check readiness, browse website specs, read the compatibility rules, review, get help. Pages that
+    // answer the same question share one entry and switch with tabs (Table | Map; the review workflows).
+    // URLs are unchanged.
     children: [
       // Job specs → Readiness: could a job spec be built from each website spec with approved data only.
       {
         href: "/spec/readiness",
-        section: "Job specs",
         label: "Readiness",
         match: (path) => path.startsWith("/spec/readiness"),
       },
-      // The catalog: every record type as a table (PROD-2926), 2026-10-08 the one entry for browsing —
-      // properties & values included, as the fourth level of the Products and Customizations streams.
-      // The rules views its tables link to (/spec/products/<id>, /spec/customizations/<id>) are part
-      // of it, so they light this entry; the retired list URLs redirect into it.
+      // Website specs: the catalog as tables (PROD-2926) or as a map (PROD-2960), one entry with a Table |
+      // Map switch. The record pages its tables link to and the retired list URLs light it too.
       {
         href: "/spec/catalog",
-        section: "Website specs",
-        label: "Catalog",
+        label: "Website specs",
         match: (path) =>
-          ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions", "/spec/properties"].some((p) => path.startsWith(p)),
-      },
-      // The catalog as a diagram (PROD-2960): three streams, levels as columns, read-only.
-      {
-        href: "/spec/map",
-        label: "Catalog map",
-        // Not "/spec/mapping" (Mapping review), which shares the prefix.
-        match: (path) => path === "/spec/map" || path.startsWith("/spec/map/"),
-      },
-      {
-        href: "/spec",
-        // The website specs' change desk: syncs, frames waiting (the count) and decided ones (Richard,
-        // 2026-10-14). Called "Registry" until 2026-11-18; the registry is the database, not the job.
-        label: "Changes",
-        count: "pendingFrames",
-        match: (path) =>
-          path === "/spec" ||
-          (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map", "/spec/library", "/spec/mapping", "/spec/readiness"].some((p) =>
-              path.startsWith(p),
-            )),
+          ["/spec/catalog", "/spec/products", "/spec/customizations", "/spec/solutions", "/spec/properties"].some((p) => path.startsWith(p)) ||
+          path === "/spec/map" ||
+          path.startsWith("/spec/map/"),
       },
       // The website's compatibility rules (Crystal), not the production library's feasibility rules.
       {
@@ -125,24 +101,25 @@ const NAV: readonly NavEntry[] = [
         label: "Compatibility rules",
         match: (path) => path === "/spec/rules" || path.startsWith("/spec/rules/"),
       },
-      // Spec Library review (PFP-124): imported production records, reviewed and approved record by record.
+      // Review: website changes (frames, syncs — the old Registry desk at /spec), the production library
+      // (PFP-124), held changes and mapping (PLAT-52), switched with tabs. The count is what arrives and
+      // waits — frames and held changes — not the review backlogs, which show as progress on their pages.
       {
-        href: "/spec/library",
-        section: "Production specs",
-        label: "Library review",
-        match: (path) => path.startsWith("/spec/library"),
-      },
-      // Mapping review (PLAT-52): website products, options and property values → the production spec.
-      {
-        href: "/spec/mapping",
-        section: "Mapping",
-        label: "Mapping review",
-        match: (path) => path.startsWith("/spec/mapping"),
+        href: "/spec",
+        label: "Review",
+        count: "review",
+        match: (path) =>
+          path === "/spec" ||
+          path.startsWith("/spec/library") ||
+          path.startsWith("/spec/mapping") ||
+          (path.startsWith("/spec/") &&
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions", "/spec/help", "/spec/catalog", "/spec/map", "/spec/readiness"].some((p) =>
+              path.startsWith(p),
+            )),
       },
       // What each page and button does, the three kinds of spec, syncing and registry codes (PROD-2771).
       {
         href: "/spec/help",
-        section: "",
         label: "Help",
         match: (path) => path.startsWith("/spec/help"),
       },
@@ -224,7 +201,7 @@ function NavGroup({
           {item.children.map((child) => {
             const active = child.match(pathname);
             const n = child.count ? counts[child.count] : 0;
-            const link = (
+            return (
               <Link
                 key={child.href}
                 href={child.href}
@@ -250,20 +227,6 @@ function NavGroup({
                 ) : null}
               </Link>
             );
-            // A section starts a group of entries: a small heading ("" = a gap with no heading, e.g. Help).
-            if (child.section === undefined) return link;
-            return (
-              <Fragment key={child.href}>
-                {child.section ? (
-                  <span className="px-2 pt-2.5 pb-0.5 text-[11px] font-medium tracking-wide text-muted-foreground/80 uppercase">
-                    {child.section}
-                  </span>
-                ) : (
-                  <span aria-hidden className="pt-1.5" />
-                )}
-                {link}
-              </Fragment>
-            );
           })}
         </div>
       ) : null}
@@ -273,10 +236,11 @@ function NavGroup({
 
 export function AdminSidebar({
   specAccess,
-  pendingFrames,
+  reviewCount,
 }: {
   specAccess: boolean;
-  pendingFrames: number;
+  /** Frames waiting plus held changes waiting (Review). */
+  reviewCount: number;
 }) {
   const pathname = usePathname();
   const nav = NAV.filter(
@@ -294,7 +258,7 @@ export function AdminSidebar({
               key={entry.id}
               item={entry}
               pathname={pathname}
-              counts={{ pendingFrames }}
+              counts={{ review: reviewCount }}
             />
           ),
         )}
