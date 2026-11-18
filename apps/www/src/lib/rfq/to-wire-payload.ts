@@ -67,6 +67,8 @@ export type WireSubmission = {
         notes: string;
         timeline?: string;
         packagingContents?: string;
+        /** Legacy singular; still required by some backend validators. */
+        expressQuantity?: number;
         expressQuantities?: number[];
         annualSpendBand?: string;
         /** Integer dollars when the buyer entered a yearly budget. */
@@ -310,20 +312,32 @@ export function toWireSubmission(
             notes: trimmed(draft.notes) ?? WIRE_PLACEHOLDER,
             ...(trimmed(draft.timeline) ? {timeline: draft.timeline.trim()} : {}),
             // Packaging contents optional in UI; send N/A so the server does not 422.
+            // Services-only has no contents field — still send N/A (PROD-3320).
             ...(draft.express && hasNeed(draft, NEED_PACKAGING)
                 ? {
                       packagingContents:
                           trimmed(draft.packagingContents) ?? WIRE_PLACEHOLDER,
                   }
-                : trimmed(draft.packagingContents)
-                  ? {packagingContents: draft.packagingContents.trim()}
-                  : {}),
+                : draft.entryKind === 'services'
+                  ? {
+                        packagingContents:
+                            trimmed(draft.packagingContents) ?? WIRE_PLACEHOLDER,
+                    }
+                  : trimmed(draft.packagingContents)
+                    ? {packagingContents: draft.packagingContents.trim()}
+                    : {}),
             // ALL tiers, not just the first. The express step lets a buyer add
             // several, and the contract was widened to carry them
             // (pakfactory.com-server#87) rather than have this drop the rest.
             ...(draft.expressQuantities.length
-                ? {expressQuantities: [...draft.expressQuantities]}
-                : {}),
+                ? {
+                      expressQuantity: draft.expressQuantities[0],
+                      expressQuantities: [...draft.expressQuantities],
+                  }
+                : draft.entryKind === 'services'
+                  ? // Backend still requires a singular quantity even for services-only.
+                    {expressQuantity: 100, expressQuantities: [100]}
+                  : {}),
             ...annualSpendRequirements(draft),
         },
         shipTo: toWireShipTo(draft.shippingAddress),
