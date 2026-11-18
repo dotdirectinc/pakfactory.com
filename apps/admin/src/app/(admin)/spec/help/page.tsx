@@ -64,7 +64,7 @@ export default async function SpecHelpPage() {
             The spec of one customer job: what the customer asked for, in their own words and choices, and what will be
             made, in production terms. Sales, estimating and vendors work from it; requests, quotes and purchase orders link
             to it. It is released to a vendor only when every map and production record it uses is approved. Job specs
-            themselves are not built yet; <em>Readiness</em> shows how close each website spec is.
+            themselves are not built yet; <em>Job specs</em> shows how close each website spec is.
           </Term>
           <Term name="Website spec">
             What customers choose on the website: product lines, styles, products, customization options, properties and
@@ -86,10 +86,10 @@ export default async function SpecHelpPage() {
 
       <Section id="pages" title="The pages">
         <dl className="flex flex-col gap-3">
-          <Term name="Readiness">
-            For each website spec in a product line: its map and decision, the production records the map uses with
+          <Term name="Job specs">
+            None exist yet. Until they do: for each website spec in a product line: its map and decision, the production records the map uses with
             their decisions, and a status — <em>Ready</em>, <em>Waiting on mapping</em>, <em>Waiting on library</em>{" "}
-            or <em>Gap</em> (no production equivalent, or the map was rejected). This is how close each website spec is
+            or <em>No production equivalent</em> (nothing in the production library makes it, or the map was rejected). This is how close each website spec is
             to a job spec. Read only; decisions are made under <em>Review</em>.
           </Term>
           <Term name="Review">

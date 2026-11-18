@@ -19,7 +19,7 @@ import { loadReadiness } from "@/lib/spec/readiness-data";
 import type { LibraryReviewState } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_READINESS_COPY as COPY } from "@/lib/copy/spec-readiness";
 
-export const metadata = { title: "Readiness" };
+export const metadata = { title: "Job specs" };
 
 type SP = { kind?: string; line?: string; status?: string };
 

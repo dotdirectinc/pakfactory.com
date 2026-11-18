@@ -28,16 +28,16 @@ export const READINESS_STATUSES: {
   {
     key: "mapping",
     label: "Waiting on mapping",
-    hint: "The map has not been approved yet (Mapping review).",
+    hint: "The map has not been approved yet (Review → Mapping).",
   },
   {
     key: "library",
     label: "Waiting on library",
-    hint: "The map is approved, but some production records it uses are not, or a preset has no production record yet (Library review).",
+    hint: "The map is approved, but some production records it uses are not, or a preset has no production record yet (Review → Production library).",
   },
   {
     key: "gap",
-    label: "Gap",
+    label: "No production equivalent",
     hint: "No production equivalent, or the map was rejected: no job spec can be built from it today.",
   },
 ];

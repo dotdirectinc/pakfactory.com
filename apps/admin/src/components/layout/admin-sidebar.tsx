@@ -75,14 +75,15 @@ const NAV: readonly NavEntry[] = [
     label: "Spec System",
     icon: FileText,
     // By what you came to do (Richard, 2026-11-18, replacing the same day's grouping by kind of spec):
-    // check readiness, browse website specs (with their compatibility rules), review, get help. Pages that
+    // job specs (for now: how close each website spec is to one), website specs (with their compatibility rules), review, help. Pages that
     // answer the same question share one entry and switch with tabs (Table | Map; the review workflows).
     // URLs are unchanged.
     children: [
-      // Job specs → Readiness: could a job spec be built from each website spec with approved data only.
+      // Job specs (Richard, 2026-11-18). None exist yet; until they do, the page shows whether one could be
+      // built from each website spec with approved data only. URL kept: /spec/readiness.
       {
         href: "/spec/readiness",
-        label: "Readiness",
+        label: "Job specs",
         match: (path) => path.startsWith("/spec/readiness"),
       },
       // Website specs: the catalog as tables (PROD-2926) or as a map (PROD-2960), one entry with a Table |
