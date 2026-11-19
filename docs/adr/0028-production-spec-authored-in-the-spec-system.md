@@ -1,10 +1,10 @@
 # ADR-028: The production spec moves into the Spec System one collection at a time, on Justin's engine and design
 
-**Status:** accepted (2026-11-18). Decided and owned by Richard Qin, after the [production and dev meeting with Justin Chow](https://dotdirect.atlassian.net/wiki/spaces/Pakfactory/pages/437813249) the same day, and revised the same day after a design challenge (revision 2). Justin Chow (production spec owner) confirmed his Spec Library code may be reused.
+**Status:** accepted (2026-11-18). Decided and owned by Richard Qin, after the [production and dev meeting with Justin Chow](https://dotdirect.atlassian.net/wiki/spaces/Pakfactory/pages/437813249) the same day, and revised the same day after a design challenge (revision 2). D2 amended 2026-11-19: the engine runs in the Registry API only. Justin Chow (production spec owner) confirmed his Spec Library code may be reused.
 **Date:** 2026-11-18
 **Owner:** Richard Qin
-**Jira:** under [PLAT-30](https://dotdirect.atlassian.net/browse/PLAT-30) (PakFactory Spec DB). Built in [PLAT-84](https://dotdirect.atlassian.net/browse/PLAT-84) (Registry API), [PLAT-85](https://dotdirect.atlassian.net/browse/PLAT-85) (library review), [PLAT-86](https://dotdirect.atlassian.net/browse/PLAT-86) (mapping editing) and [PLAT-87](https://dotdirect.atlassian.net/browse/PLAT-87) (shared spec engine). It changes [PLAT-51](https://dotdirect.atlassian.net/browse/PLAT-51), [PLAT-52](https://dotdirect.atlassian.net/browse/PLAT-52) and [PLAT-81](https://dotdirect.atlassian.net/browse/PLAT-81). Related: [PLAT-19](https://dotdirect.atlassian.net/browse/PLAT-19) (vendor product onboarding), [PLAT-83](https://dotdirect.atlassian.net/browse/PLAT-83) (job specs).
-**Applies to:** `admin` · a new shared package (`spec-engine`) · Spec registry (`pakfactory.com-server`; Registry DB schemas `spec_production`, `spec_workflow`, `spec_mapping`)
+**Jira:** under [PLAT-30](https://dotdirect.atlassian.net/browse/PLAT-30) (PakFactory Spec DB). Built in [PLAT-84](https://dotdirect.atlassian.net/browse/PLAT-84) (Registry API), [PLAT-85](https://dotdirect.atlassian.net/browse/PLAT-85) (library review), [PLAT-86](https://dotdirect.atlassian.net/browse/PLAT-86) (mapping editing) and [PLAT-87](https://dotdirect.atlassian.net/browse/PLAT-87) (spec engine). It changes [PLAT-51](https://dotdirect.atlassian.net/browse/PLAT-51), [PLAT-52](https://dotdirect.atlassian.net/browse/PLAT-52) and [PLAT-81](https://dotdirect.atlassian.net/browse/PLAT-81). Related: [PLAT-19](https://dotdirect.atlassian.net/browse/PLAT-19) (vendor product onboarding), [PLAT-83](https://dotdirect.atlassian.net/browse/PLAT-83) (job specs).
+**Applies to:** `admin` · the spec engine in `pakfactory.com-server` · Spec registry (`pakfactory.com-server`; Registry DB schemas `spec_production`, `spec_workflow`, `spec_mapping`)
 
 **Numbering note:** first drafted on 2026-11-18 as platform ADR-0021 (vault and Confluence). It was moved here the same day because it is a Spec System decision, like [ADR-025](0025-spec-system-owns-catalog-relations.md) and [ADR-026](0026-spec-system-owns-catalog-structure.md). Platform ADR-0021 is withdrawn, and that number is free again.
 
@@ -55,13 +55,15 @@
 
 Justin's Spec Library is the design specification: its collections, fields, workflows and checks say what the Spec System must do. Development rebuilds it on the platform's own stack and may combine, simplify or re-arrange it where that serves the same workflow. Justin signs off each rebuilt screen against his tool before that screen replaces it.
 
-### D2: Reuse his logic as a shared, tested engine
+### D2: Reuse his logic as one tested engine, in the Registry API
 
-His logic moves into a typed shared package, `spec-engine`, with as few changes as possible. His validation-suite test cases become the package's automated tests, so it keeps doing what he expects. The same engine runs:
-- on the server (Registry API), to check every write, whoever or whatever makes it;
-- in the browser, for previews and instant feedback.
+His logic becomes a typed, tested engine with as few changes as possible. His validation-suite test cases become its automated tests, so it keeps doing what he expects. The engine runs in the Registry API (`pakfactory.com-server`):
+- to check every write, whoever or whatever makes it;
+- to answer the admin's previews and checks. The admin calls the API (`/v1/spec-library/*`) and holds no copy of the logic.
 
 Later it also builds job specs (PLAT-83). Nothing else reimplements this logic. Justin confirmed on 2026-11-18 that his code may be reused.
+
+**Amended 2026-11-19 (Richard Qin).** Revision 2 also ran the engine in the browser, which needs a copy of it in this repository. This repository is public, so that copy would publish Justin's logic, and that cannot be undone. The engine now stays in the private server repository, and the browser asks the API instead. Access control is unaffected either way: it protects actions and data, not source code. The cost is a network round trip per check. The engine itself takes about 3 ms for a folding-carton spec, so editors still get feedback while they type. The browser copy can be added later without undoing anything, if Justin agrees to publish it.
 
 ### D3: Ownership moves one collection at a time
 
@@ -109,7 +111,7 @@ Every save and every decision goes into history, in the same transaction as the 
 
 1. **Quick wins** (meeting notes 2, 5, 6): the preview image on map rows, structured navigation, a clearer approval view.
 2. **Foundations:**
-   - the `spec-engine` package with his tests (PLAT-87);
+   - the spec engine with his tests, in the Registry API (PLAT-87);
    - the Registry migration and API for revisions, history, proposals, retiring and collection ownership (PLAT-84).
 3. **Library review and mapping editing** (PLAT-85, PLAT-86). Ownership of product types and capabilities with their values moves (notes 3, 4).
 4. **The rest of the editors, one collection at a time** with Justin's sign-off (fields, templates, rules, regional materials, equivalencies), then the spec preview and the validation suite on the engine.
@@ -129,7 +131,7 @@ Folding cartons only until Justin has approved them (meeting decision Q7).
 - **Negative:**
   - The screens are rebuilt, not reused. That takes longer than hosting his tool, and each screen needs Justin's sign-off.
   - Until all collections have moved, two sources exist side by side: owned collections are edited in the Spec System, the others arrive by export. Each collection has exactly one owner at a time, though.
-  - The engine package must be shared between the admin (pakfactory.com) and the Registry API (pakfactory.com-server), which are separate repositories (see PLAT-87).
+  - Every preview and check in the admin is a call to the API, so it needs the network and a signed-in registry user (D2, amended 2026-11-19).
 - **Changes to open tickets:**
   - PLAT-81: imports continue for collections not yet owned, and stop per collection.
   - PLAT-51: decisions stay per record, now grouped by product type with a baseline.
@@ -148,14 +150,16 @@ Folding cartons only until Justin has approved them (meeting decision Q7).
 - **Switch every collection to the Spec System at once** (revision 1 of this ADR). Rejected: rules, templates and materials would have had no editor anywhere until the last phase.
 - **Saving approves for every editor, and records created from maps are approved** (revision 1). Rejected: it removes the check that vendor onboarding and the release gate rely on.
 - **Approve per product type** (revision 1). Rejected: most records are shared by a whole line, so approving one product type would approve records for the others unseen.
+- **Share the engine with the browser** (revision 2: a copy in this repository kept identical by a CI check, or a private npm package). Rejected on 2026-11-19: this repository is public, so a copy here publishes Justin's logic for good. A private package would need registry tokens in Vercel and in both CIs, plus a release step for every change.
 - **Edit in both places and sync both ways.** Rejected: costly, and the copies drift.
 - **Hard delete.** Rejected: maps and job specs point to records, and the history must stay whole.
 
 ## Open items
 
-- Where the `spec-engine` package lives so that both admin and the Registry API can use it (PLAT-87).
+None.
 
 Resolved 2026-11-18: Justin confirmed his Spec Library code may be reused (D2).
+Resolved 2026-11-19: the engine lives in the Registry API only, and the admin calls it (D2 amendment, PLAT-87).
 
 ## References
 
