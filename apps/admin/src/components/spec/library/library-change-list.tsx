@@ -84,9 +84,12 @@ export function LibraryChangeList({ productType, groups, me }: { productType: st
               {COPY.status[s]} <span className="font-normal text-muted-foreground">{groups[s].length}</span>
             </h3>
             <ul className="divide-y divide-border rounded-md border border-border">
-              {groups[s].map((r) => (
-                <ChangeRowItem key={`${r.collection}/${r.sourceId}`} row={r} me={me} />
-              ))}
+              {groups[s].map((r, i) => {
+                const heading = r.group && r.group !== groups[s][i - 1]?.group ? r.group : null;
+                return (
+                  <ChangeRowItem key={`${r.collection}/${r.sourceId}`} row={r} me={me} heading={heading} />
+                );
+              })}
             </ul>
           </section>
         ),
@@ -95,11 +98,12 @@ export function LibraryChangeList({ productType, groups, me }: { productType: st
   );
 }
 
-function ChangeRowItem({ row, me }: { row: ChangeRow; me: Me }) {
+function ChangeRowItem({ row, me, heading }: { row: ChangeRow; me: Me; heading: string | null }) {
   const decidable = canDecideRow(row.route, me);
   const [open, setOpen] = useState(false);
   return (
     <li className="flex flex-col gap-2 px-3 py-2 text-sm">
+      {heading ? <p className="-mx-3 -mt-2 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">{heading}</p> : null}
       <div className="flex flex-wrap items-center gap-2">
         {row.recordHref ? (
           <Link href={row.recordHref} className="font-medium underline-offset-4 hover:underline">

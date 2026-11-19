@@ -33,7 +33,15 @@ export function routeOf(item: ProductTypeChangeItem, bundle: Map<string, Library
 
 export const bundleIndex = (items: LibraryBundleItem[]) => new Map(items.map((i) => [keyOf(i.collection, i.sourceId), i]));
 
-export type ChangeRow = ProductTypeChangeItem & { route: ChangeRoute | null; recordHref: string | null };
+export type ChangeRow = ProductTypeChangeItem & {
+  route: ChangeRoute | null;
+  recordHref: string | null;
+  /** The capability's group (as on the Advanced view), for ordering and a heading. */
+  group: string | null;
+};
+
+const KIND_ORDER: Record<ProductTypeChangeItem["collection"], number> = { productTypes: 0, templates: 1, capabilities: 2 };
+const LEVEL_ORDER: Record<string, number> = { global: 0, category: 1, type: 2 };
 
 export type ChangeGroups = Record<ProductTypeChangeItem["status"], ChangeRow[]>;
 
@@ -41,12 +49,28 @@ export type ChangeGroups = Record<ProductTypeChangeItem["status"], ChangeRow[]>;
 export function changeGroups(items: ProductTypeChangeItem[], bundle: LibraryBundleItem[]): ChangeGroups {
   const index = bundleIndex(bundle);
   const out: ChangeGroups = { new: [], changed: [], removed: [] };
+  const sortKey = new Map<ChangeRow, [number, number, string, string]>();
   for (const i of items) {
     const b = index.get(keyOf(BUNDLE[i.collection], i.sourceId));
-    out[i.status].push({
+    const row: ChangeRow = {
       ...i,
       route: routeOf(i, index),
       recordHref: b ? `/spec/library/${b.version}/${b.collection}/${encodeURIComponent(b.sourceId)}` : null,
+      group: i.collection === "capabilities" ? (b?.group?.name ?? null) : null,
+    };
+    // The product type, then its templates (all products → line → type), then capabilities by group.
+    sortKey.set(row, [
+      KIND_ORDER[i.collection],
+      i.collection === "templates" ? (LEVEL_ORDER[b?.level ?? ""] ?? 9) : (b?.group?.sort ?? 999),
+      row.group ?? "",
+      (i.label ?? i.sourceId).toLocaleLowerCase(),
+    ]);
+    out[i.status].push(row);
+  }
+  for (const list of Object.values(out)) {
+    list.sort((a, z) => {
+      const x = sortKey.get(a)!, y = sortKey.get(z)!;
+      return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2]) || x[3].localeCompare(y[3]);
     });
   }
   return out;

@@ -32,10 +32,10 @@ test("a proposal goes to the edit, a held change to its item, the rest to the re
 
 test("grouped new / changed / removed, with a record page where the bundle has the record", () => {
   const g = changeGroups(items, bundle);
-  assert.deepEqual(g.new.map((r) => r.sourceId), ["CAP-A", "TPL-FC-RTE", "CAP-GONE"]);
+  assert.deepEqual(g.new.map((r) => r.sourceId), ["TPL-FC-RTE", "CAP-A", "CAP-GONE"]); // templates before capabilities
   assert.deepEqual(g.changed.map((r) => r.sourceId), ["CAP-B", "CAP-C"]);
   assert.deepEqual(g.removed.map((r) => r.sourceId), ["CAP-D"]);
-  assert.equal(g.new[1]!.recordHref, "/spec/library/2/template/TPL-FC-RTE");
+  assert.equal(g.new.find((r) => r.sourceId === "TPL-FC-RTE")!.recordHref, "/spec/library/2/template/TPL-FC-RTE");
   assert.equal(g.removed[0]!.recordHref, null);
 });
 
@@ -72,4 +72,20 @@ test("record decisions batch by version; proposals and held changes are not batc
     { version: 1, items: [{ collection: "capability", sourceId: "CAP-A" }] },
     { version: 2, items: [{ collection: "template", sourceId: "TPL-FC-RTE" }] },
   ]);
+});
+
+test("ordered: product type, templates by level, capabilities by group then name", () => {
+  const withMeta: LibraryBundleItem[] = [
+    { ...b("product_type", "PT-X"), label: "X" },
+    { ...b("template", "TPL-X"), level: "type" },
+    { ...b("template", "TPL-GLOBAL"), level: "global" },
+    { ...b("capability", "CAP-Z"), label: "Zeta", group: { sourceId: "GRP-A", name: "Adhesives", sort: 1 } },
+    { ...b("capability", "CAP-Y"), label: "Alpha", group: { sourceId: "GRP-F", name: "Finishes", sort: 2 } },
+    { ...b("capability", "CAP-W"), label: "Beta", group: { sourceId: "GRP-A", name: "Adhesives", sort: 1 } },
+  ];
+  const list = [c("capabilities", "CAP-Y", "new"), c("capabilities", "CAP-Z", "new"), c("templates", "TPL-X", "new"),
+    c("capabilities", "CAP-W", "new"), c("productTypes", "PT-X", "new"), c("templates", "TPL-GLOBAL", "new")];
+  const g = changeGroups(list, withMeta);
+  assert.deepEqual(g.new.map((r) => r.sourceId), ["PT-X", "TPL-GLOBAL", "TPL-X", "CAP-W", "CAP-Z", "CAP-Y"]);
+  assert.deepEqual(g.new.map((r) => r.group), [null, null, null, "Adhesives", "Adhesives", "Finishes"]);
 });
