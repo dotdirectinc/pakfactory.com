@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { decideLibraryChange, decideLibraryItems, type LibraryDecision } from "@/lib/spec/registry-api";
+import {
+  decideLibraryChange, decideLibraryItems, decideSpecEdit, setProductTypeBaseline, type LibraryDecision,
+} from "@/lib/spec/registry-api";
+import { recordBatches, type ChangeRoute } from "@/lib/spec/library-changes";
 
 export type LibraryActionResult = { ok: true; recorded?: number } | { ok: false; error: string };
 
@@ -57,4 +60,45 @@ export async function approveBundleAction(
   }
   revalidatePath("/spec/library", "layout");
   return { ok: true, recorded };
+}
+
+/**
+ * Decide records listed on a product type's changes (PLAT-85), each where it belongs: a proposal on the
+ * proposal (admin only; the backend answers 403 otherwise), a held change on the held change, anything
+ * else as a review decision on its library version. One call per proposal or held change and one per
+ * version, so every record still gets its own decision row. Stops at the first refusal.
+ */
+export async function decideChangesAction(
+  routes: ChangeRoute[],
+  decision: LibraryDecision,
+  note: string | null,
+): Promise<LibraryActionResult> {
+  let recorded = 0;
+  const fail = (error: string): LibraryActionResult => {
+    revalidatePath("/spec/library", "layout");
+    return { ok: false, error: recorded > 0 ? `${error} (${recorded} already recorded)` : error };
+  };
+  for (const r of routes) {
+    if (r.kind === "record") continue;
+    const res = r.kind === "edit" ? await decideSpecEdit(r.edit, decision, note) : await decideLibraryChange(r.item, decision, note);
+    if (!res.ok) return fail(res.error);
+    recorded += 1;
+  }
+  for (const b of recordBatches(routes)) {
+    const res = await decideLibraryItems(b.version, decision, note, b.items);
+    if (!res.ok) return fail(res.error);
+    recorded += res.data.recorded;
+  }
+  revalidatePath("/spec/library", "layout");
+  return { ok: true, recorded };
+}
+
+/** Set as baseline for one product type (ADR-028 D7, admin only). */
+export async function setBaselineAction(
+  productType: string,
+): Promise<{ ok: true; records: number; shared: number; skipped: number } | { ok: false; error: string }> {
+  const res = await setProductTypeBaseline(productType);
+  revalidatePath("/spec/library", "layout");
+  if (!res.ok) return { ok: false, error: res.error };
+  return { ok: true, records: res.data.records, shared: res.data.shared, skipped: res.data.skipped };
 }
