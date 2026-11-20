@@ -219,6 +219,7 @@ export function PageSkeleton({
   tabs = false,
   action = false,
   header,
+  above,
 }: {
   variant: PageSkeletonVariant;
   width?: Width;
@@ -231,12 +232,15 @@ export function PageSkeleton({
    * of grey bars, so the description — usually the page's largest text — paints with the first frame.
    */
   header?: ReactNode;
+  /** A real element above the header, e.g. the Review tab bar, so it does not flicker between tabs. */
+  above?: ReactNode;
 }) {
   const fill = variant === "map";
   return (
     <Busy
       className={`mx-auto flex w-full flex-col gap-4 ${WIDTH[width]} ${fill ? "h-[calc(100dvh-7rem)]" : ""}`}
     >
+      {above}
       {header ?? <HeaderSkeleton action={action} />}
       {tabs ? <TabsSkeleton /> : null}
       {variant === "table" ? <TableSkeleton /> : null}

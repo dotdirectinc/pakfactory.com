@@ -34,9 +34,9 @@ export default async function SpecProposalsPage() {
   const items = res.ok ? res.data.items.filter((e) => e.subject === "record") : [];
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <PageHeader title={COPY.title} lead={`${COPY.lead} ${admin ? COPY.leadAdmin : COPY.leadOther}`} />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
       <ReviewTabs active="proposals" />
+      <PageHeader title={COPY.title} lead={`${COPY.lead} ${admin ? COPY.leadAdmin : COPY.leadOther}`} />
       {!res.ok ? (
         <p role="alert" className="text-sm text-destructive">{ADMIN_SPEC_LIBRARY_COPY.unreachable} ({res.error})</p>
       ) : items.length === 0 ? (

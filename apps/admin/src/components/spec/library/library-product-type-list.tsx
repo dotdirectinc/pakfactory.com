@@ -15,7 +15,16 @@ export type ProductTypeRow = { item: LibraryItem; line?: string; progress: Produ
  * changed or removed since they were last approved, its own decision, and how many of the records it is
  * built from are approved. A row opens the product type's review page.
  */
-export function LibraryProductTypeList({ rows, showLine }: { rows: ProductTypeRow[]; showLine: boolean }) {
+/** A grey bar where a count is still loading (the counts stream in after the list, PLAT-85). */
+function Pending({ w = "w-16" }: { w?: string }) {
+  return <span aria-hidden className={cn("inline-block h-3.5 animate-pulse rounded bg-foreground/10 align-middle", w)} />;
+}
+
+/**
+ * The product types of a line. `loading`: the names are known and the counts are still on their way,
+ * so the count columns show grey bars instead of "unreadable".
+ */
+export function LibraryProductTypeList({ rows, showLine, loading = false }: { rows: ProductTypeRow[]; showLine: boolean; loading?: boolean }) {
   if (rows.length === 0) {
     return <p className="rounded-md border border-border p-4 text-sm text-muted-foreground">{COPY.empty}</p>;
   }
@@ -45,7 +54,7 @@ export function LibraryProductTypeList({ rows, showLine }: { rows: ProductTypeRo
                 </td>
                 {showLine ? <td className="px-3 py-2 text-muted-foreground">{line}</td> : null}
                 <td className="px-3 py-2 tabular-nums">
-                  {changes ? (
+                  {loading ? <Pending /> : changes ? (
                     <span className={cn(changes.new + changes.changed + changes.removed === 0 && "text-muted-foreground")}>
                       {changes.new} · {changes.changed} · {changes.removed}
                     </span>
@@ -59,7 +68,7 @@ export function LibraryProductTypeList({ rows, showLine }: { rows: ProductTypeRo
                   </Badge>
                 </td>
                 <td className="px-3 py-2">
-                  {progress ? (
+                  {loading ? <Pending w="w-32" /> : progress ? (
                     <span className="flex items-center gap-2">
                       <span className="h-1.5 w-24 overflow-hidden rounded-full bg-muted" aria-hidden>
                         <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
@@ -71,7 +80,7 @@ export function LibraryProductTypeList({ rows, showLine }: { rows: ProductTypeRo
                   )}
                 </td>
                 <td className={cn("px-3 py-2 text-right tabular-nums", progress && progress.open > 0 ? "" : "text-muted-foreground")}>
-                  {progress ? progress.open : COPY.unreadable}
+                  {loading ? <Pending w="w-6" /> : progress ? progress.open : COPY.unreadable}
                 </td>
               </tr>
             );
