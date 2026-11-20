@@ -59,6 +59,7 @@ export const ADMIN_SPEC_MAPPING_COPY = {
     unknownBase: "unknown base",
     baseMapsTo: "Base maps to",
     baseNotMapped: "The base product has no map.",
+    borrowedImage: (base: string) => `Website image of an inspiration product based on ${base}`,
     baseOf: (n: number) => (n === 1 ? "Base of 1 inspiration product" : `Base of ${n} inspiration products`),
     baseOfHint: "Customers choose these inspiration products on the website; this product is their base. Opens them in the Inspiration products tab.",
     drift: "Out of date",
