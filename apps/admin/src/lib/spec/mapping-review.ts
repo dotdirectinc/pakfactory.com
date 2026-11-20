@@ -77,8 +77,9 @@ const RANK: Record<Visibility, number> = { website: 0, internal: 1, other: 2 };
 
 /**
  * Items grouped in the order the API sorted them (group, then name); a missing group comes last.
- * Within a group, records on the website come first, then internal ones, then the rest (PLAT-86
- * follow-up, 2026-11-20); the API's order is kept among equals.
+ * Records on the website come first, then internal ones, then the rest (2026-11-20): within a group,
+ * and between groups (a group sorts by its best record, so an all-internal group follows the groups
+ * customers can choose from). The API's order is kept among equals.
  */
 export function groupMappings(
   items: MappingItem[],
@@ -95,7 +96,13 @@ export function groupMappings(
     // Stable: equal ranks keep the API's order.
     g.items = g.items.map((i, n) => ({ i, n })).sort((a, b) => rank(a.i) - rank(b.i) || a.n - b.n).map((x) => x.i);
   }
-  return [...out.values()].sort((a, b) => (a.title === null ? 1 : b.title === null ? -1 : 0));
+  // Groups: a group with any record on the website before one that is all internal, and so on
+  // (its best rank); the API's order among equals; a missing group still last.
+  const best = (g: { items: MappingItem[] }) => Math.min(...g.items.map(rank));
+  return [...out.values()]
+    .map((g, n) => ({ g, n, r: best(g) }))
+    .sort((a, b) => (a.g.title === null ? 1 : 0) - (b.g.title === null ? 1 : 0) || a.r - b.r || a.n - b.n)
+    .map((x) => x.g);
 }
 
 /** A target's setting as shown after its name: "= Outside only", or as written when it names its own field ("Grade = Anti-static"). */

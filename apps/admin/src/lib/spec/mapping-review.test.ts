@@ -35,13 +35,16 @@ test("a setting that names its own field is shown as written", () => {
   assert.equal(settingText("Grade = Anti-static"), "Grade = Anti-static");
 });
 
-test("within a group: on the website first, then internal, then the rest; group order unchanged", () => {
+test("on the website first, then internal, then the rest: within groups and between them", () => {
   const status: Record<number, string> = { 1: "active-internal", 2: "active", 3: "not-active", 4: "active", 5: "active-internal" };
   const groups = groupMappings(
     [item(1, "Tuck End Boxes"), item(2, "Tuck End Boxes"), item(3, "Tuck End Boxes"), item(4, "Tuck End Boxes"), item(5, "Lock Bottom Cartons")],
     (i) => status[i.id],
   );
   assert.deepEqual(groups.map((g) => g.title), ["Tuck End Boxes", "Lock Bottom Cartons"]);
+  // An all-internal group listed first by the API moves after a group with a record on the website.
+  const moved = groupMappings([item(5, "Carrier Cartons"), item(2, "Tuck End Boxes"), item(6, null)], (i) => status[i.id]);
+  assert.deepEqual(moved.map((g) => g.title), ["Tuck End Boxes", "Carrier Cartons", null]);
   assert.deepEqual(groups[0]!.items.map((i) => i.id), [2, 4, 1, 3]);
   assert.equal(visibilityOf("active-internal"), "internal");
   assert.equal(visibilityOf(null), null);
