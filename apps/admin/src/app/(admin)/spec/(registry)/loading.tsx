@@ -1,5 +1,6 @@
 import { ActionSkeleton, PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { ReviewTabsStatic } from "@/components/spec/spec-section-tabs";
 import { ADMIN_SPEC_COPY, ADMIN_SPEC_REGISTRY_COPY as COPY } from "@/lib/copy/spec";
 
 /**
@@ -13,6 +14,7 @@ export default function Loading() {
       variant="sections"
       width="6xl"
       tabs
+      above={<ReviewTabsStatic active="website" />}
       header={
         <PageHeader
           title={ADMIN_SPEC_COPY.listTitle}

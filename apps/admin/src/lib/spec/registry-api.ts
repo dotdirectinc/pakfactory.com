@@ -843,8 +843,9 @@ export async function listSpecEdits(q: { state?: "open" | "all" | "waiting"; col
 
 /** Proposals waiting for an admin, for the menu and the Review tabs. Unreachable: 0, not an error. */
 export const countWaitingSpecEdits = cache(async (): Promise<number> => {
-  const res = await listSpecEdits({ state: "waiting", limit: 500 });
-  return res.ok ? res.data.items.filter((e) => e.subject === "record").length : 0;
+  // One row is enough: the API returns the total. (Map proposals, once PLAT-86 adds them, count too.)
+  const res = await listSpecEdits({ state: "waiting", limit: 1 });
+  return res.ok ? res.data.total : 0;
 });
 
 /** Decide a proposal (admin only). A reject or defer needs a note. */

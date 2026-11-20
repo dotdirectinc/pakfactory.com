@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { Button } from "@pakfactory/ui/components/button";
 import { Input } from "@pakfactory/ui/components/input";
@@ -92,7 +93,7 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
           }),
           null,
         ]
-      : [null, await productTypeRowsOf(version.number, line)];
+      : [null, await productTypeNamesOf(version.number, line)];
 
   return (
     <Shell
@@ -172,7 +173,11 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
         <section className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">{COPY.productTypeList.lead}</p>
           {productTypeRows ? (
-            <LibraryProductTypeList rows={productTypeRows} showLine={line === "all"} />
+            // The names show at once; New · Changed · Removed and progress (two calls per product type, the
+            // slow part of this tab) stream in behind grey bars.
+            <Suspense fallback={<LibraryProductTypeList rows={productTypeRows} showLine={line === "all"} loading />}>
+              <ProductTypeListWithCounts rows={productTypeRows} showLine={line === "all"} />
+            </Suspense>
           ) : (
             <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">
               {COPY.unreachable}
@@ -263,7 +268,8 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
 }
 
 /** "By product type": the line's product types (every line's, labelled, for "All lines") with progress. */
-async function productTypeRowsOf(version: number, line: LineKey): Promise<ProductTypeRow[] | null> {
+/** The product types of a line, without their counts (one call). */
+async function productTypeNamesOf(version: number, line: LineKey): Promise<ProductTypeRow[] | null> {
   let rows: ProductTypeRow[];
   if (line === "all") {
     const groups = await productTypesByLine([version]);
@@ -274,8 +280,12 @@ async function productTypeRowsOf(version: number, line: LineKey): Promise<Produc
     if (!res.ok) return null;
     rows = res.data.items.map((item) => ({ item, progress: null }));
   }
+  return rows;
+}
+
+/** The list with each product type's New / Changed / Removed and progress (PLAT-85): two calls each. */
+async function ProductTypeListWithCounts({ rows, showLine }: { rows: ProductTypeRow[]; showLine: boolean }) {
   const ids = rows.map((r) => r.item.sourceId);
-  // PLAT-85: New / Changed / Removed per product type, one change-list call each (9 for Folding Cartons).
   const [progress, changes] = await Promise.all([
     productTypeProgress(ids),
     Promise.all(ids.map(async (id) => {
@@ -283,7 +293,8 @@ async function productTypeRowsOf(version: number, line: LineKey): Promise<Produc
       return [id, res.ok ? res.data.counts : null] as const;
     })).then((pairs) => new Map(pairs)),
   ]);
-  return rows.map((r) => ({ ...r, progress: progress.get(r.item.sourceId) ?? null, changes: changes.get(r.item.sourceId) ?? null }));
+  const full = rows.map((r) => ({ ...r, progress: progress.get(r.item.sourceId) ?? null, changes: changes.get(r.item.sourceId) ?? null }));
+  return <LibraryProductTypeList rows={full} showLine={showLine} />;
 }
 
 function Shell({ children, badge, aside }: { children: React.ReactNode; badge?: React.ReactNode; aside?: React.ReactNode }) {
