@@ -146,3 +146,21 @@ export function displayValue(v: unknown): string {
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   return JSON.stringify(v, null, 2);
 }
+
+/** The whole-library search on the review page (all collections, any state). */
+export function findHref(q: { version: number; line?: LineKey; find?: string | null }): string {
+  const p = new URLSearchParams({ version: String(q.version) });
+  if (q.line && q.line !== DEFAULT_LINE) p.set("line", q.line);
+  if (q.find) p.set("find", q.find);
+  return `/spec/library?${p}`;
+}
+
+/** A library record's page. */
+export function recordPageHref(version: number, collection: string, sourceId: string): string {
+  return `/spec/library/${version}/${collection}/${encodeURIComponent(sourceId)}`;
+}
+
+/** The search text from the URL: trimmed, at most 100 characters, or null. */
+export function findOf(s: string | undefined): string | null {
+  return s?.trim().slice(0, 100) || null;
+}
