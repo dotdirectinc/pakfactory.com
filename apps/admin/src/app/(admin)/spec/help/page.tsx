@@ -33,6 +33,7 @@ const TOC = [
   ["kinds", "Three kinds of spec"],
   ["pages", "The pages"],
   ["sync", "Syncing and approving"],
+  ["production-edit", "Editing the production spec"],
   ["owners", "Who owns what"],
   ["structure", "How the catalog is structured"],
   ["status", "Status"],
@@ -74,7 +75,8 @@ export default async function SpecHelpPage() {
           <Term name="Production spec">
             What the factory makes and how: product types, templates, capabilities, fields, materials, grades, stock and
             feasibility rules. Curated by production (Justin) in the Spec Library and imported as library versions;
-            each record is approved on its own.
+            each record is approved on its own. Collections move to the Spec System one at a time; from then on they are
+            edited here (see <a href="#production-edit" className="text-foreground underline underline-offset-2">Editing the production spec</a>).
           </Term>
           <Term name="Map">
             Which production spec a website spec means: a website product → a product type (sometimes with presets), an
@@ -93,16 +95,28 @@ export default async function SpecHelpPage() {
             to a job spec. Read only; decisions are made under <em>Review</em>.
           </Term>
           <Term name="Review">
-            Everything waiting for a decision, in four tabs. The number in the menu counts website changes and held
-            changes waiting — what arrives — not the records still to review.
+            Everything waiting for a decision, in five tabs. The number in the menu counts website changes, proposals
+            and held changes waiting — what arrives — not the records still to review.
             <ul className="mt-1 list-disc pl-5">
               <li>
                 <em>Website changes</em> — proposed changes to website specs, plus the <strong>Sync</strong> panel and
                 recent syncs. A frame is one group of related changes; open it to see every row as a sentence.
               </li>
               <li>
-                <em>Production library</em> — the production records imported from the Spec Library, by product type or
-                as a full list per collection, each approved, rejected or deferred on its own.
+                <em>Production library</em> — one row per product type of the chosen line, with how many of its records
+                are new, changed or removed since they were last approved. Open one: <em>Changes since the last
+                approval</em> lists those records (the type, its templates, then its capabilities by group); unchanged ones
+                are left out. <strong>Decide…</strong> approves, rejects or defers one record; a record shared by several
+                product types (&ldquo;Used by N&rdquo;) is decided once, for all of them. <strong>Approve all listed</strong>{" "}
+                names how many records, and how many shared ones, it covers. <strong>Set as baseline…</strong> (admins,
+                once per product type) approves everything listed after a check, so a first review does not list every
+                record as new. <strong>Edit…</strong> opens the editor (see <a href="#production-edit" className="text-foreground underline underline-offset-2">Editing the production spec</a>).
+                Every record, as before, is under <em>Advanced</em>.
+              </li>
+              <li>
+                <em>Proposals</em> — production spec changes sent by people who are not admins, each with who sent it,
+                its note and what it would change. Admins approve, reject (with a note) or defer them here; nothing
+                changes until one is approved.
               </li>
               <li>
                 <em>Held changes</em> — what a newer Spec Library export would change in a record already approved;
@@ -219,6 +233,37 @@ export default async function SpecHelpPage() {
           the same kind <strong>re-checks</strong> it: <em>all fields still match</em> means the change landed and holds;
           otherwise it names the rows that no longer match — not written, or changed again since.
         </p>
+      </Section>
+
+      <Section id="production-edit" title="Editing the production spec">
+        <p>
+          A production collection — product types, capabilities, templates, fields, rules, … — is edited in one place.
+          While the Spec Library owns it, it arrives by export and is reviewed under <em>Review</em>; there is nothing to
+          edit here. Once it has moved to the Spec System, exports no longer change it and it is edited in the admin.
+        </p>
+        <dl className="flex flex-col gap-3">
+          <Term name="Edit…">
+            On a product type page, for approvers and admins, and only when the Spec System owns product types or
+            capabilities. The editor changes the product type&apos;s name, description and order, and the capabilities of
+            its line: <strong>Edit</strong> (name, description, values; a number must stay a number),{" "}
+            <strong>Remove…</strong>, <strong>Retire…</strong> (needs a note; a retired record is never offered and can be
+            restored) and <strong>Add capability…</strong>. Every change is shown as a before/after table before it is saved.
+          </Term>
+          <Term name="Remove…">
+            A capability belongs to a line. Remove it from <em>this product type only</em> (its own template stops
+            offering it) or from <em>the whole line</em> (every product type of the line loses it; the choice names them).
+            Both are previewed; what blocks one is shown and it cannot be picked.
+          </Term>
+          <Term name="Who decides">
+            An admin&apos;s save is approved at once. Anyone else&apos;s is sent as a proposal — the save step says so and the
+            button reads <em>Send as proposal</em> — and waits under <em>Review → Proposals</em>. Records added from a
+            map (coming with mapping edits) and vendor submissions will arrive as proposals too.
+          </Term>
+          <Term name="History">
+            <em>Recent changes</em> in the editor lists every change to the product type, its template and its line&apos;s
+            capabilities: when, who, what, and whether it is approved, waiting, rejected or deferred.
+          </Term>
+        </dl>
       </Section>
 
       <Section id="owners" title="Who owns what">
@@ -415,6 +460,17 @@ export default async function SpecHelpPage() {
           <Term name="…my Studio edit take a few minutes to show here?">
             Automatic runs check every 10 minutes. Names, status and content arrive with the next one; rules and parents
             arrive as a frame to approve. To bring it in now, run <strong>Sync Changes</strong>.
+          </Term>
+          <Term name="…my production spec save become a proposal?">
+            Only an admin&apos;s save is approved at once. Yours waits under <em>Review → Proposals</em> for an admin.
+          </Term>
+          <Term name="…a product type have no Edit… button?">
+            Its collections still come from the Spec Library export, or your role cannot edit. See{" "}
+            <a href="#production-edit" className="text-foreground underline underline-offset-2">Editing the production spec</a>.
+          </Term>
+          <Term name="…my save say someone changed the record?">
+            Someone saved it after you opened it. Click <strong>Reload</strong> and make your change again, so theirs is
+            not overwritten.
           </Term>
           <Term name="…a sync propose nothing?">
             Everything that differs has already been decided, or both sides already agree.
