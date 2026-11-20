@@ -17,6 +17,7 @@ import {
   MAP_LABELS,
   settingText,
   targetHref,
+  visibilityOf,
 } from "@/lib/spec/mapping-review";
 import {
   previewProductionAction,
@@ -74,7 +75,7 @@ export function MappingReviewList({
   admin: boolean;
   groupBy: string;
 }) {
-  const groups = useMemo(() => groupMappings(items), [items]);
+  const groups = useMemo(() => groupMappings(items, (i) => links[i.subjectId]?.status), [items, links]);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [folded, setFolded] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -302,7 +303,7 @@ export function MappingReviewList({
   );
 }
 
-export type WebsiteLink = { href: string; table: string; id: string; image: string | null };
+export type WebsiteLink = { href: string; table: string; id: string; image: string | null; status: string | null };
 
 const KIND_NOUN: Record<MappingItem["subjectKind"], string> = {
   product: "Website product",
@@ -395,8 +396,9 @@ function MappingRow({
           />
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col rounded-md border border-border bg-background px-2.5 py-1.5">
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          <span className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
             {KIND_NOUN[m.subjectKind]}
+            <VisibilityBadge status={link?.status} />
           </span>
           <SpecHoverLink
             side="website"
@@ -560,5 +562,23 @@ function MappingRow({
         {canEdit ? <MapEditor m={m} admin={admin} canDecide={canDecide} /> : null}
       </div>
     </li>
+  );
+}
+
+/** On the website, internal (no page, can't be chosen), or another status, from the catalog. */
+function VisibilityBadge({ status }: { status: string | null | undefined }) {
+  const v = visibilityOf(status);
+  if (!v) return null;
+  return (
+    <Badge
+      variant="outline"
+      title={COPY.visibility.hint[v]}
+      className={cn(
+        "px-1.5 py-0 text-[10px] font-normal normal-case tracking-normal",
+        v === "website" ? "border-emerald-600/40 text-emerald-900 dark:text-emerald-200" : v === "internal" ? WARNING_BADGE : "border-border",
+      )}
+    >
+      {v === "other" ? COPY.visibility.other(status!) : COPY.visibility[v]}
+    </Badge>
   );
 }

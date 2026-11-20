@@ -32,7 +32,7 @@ export default async function SpecMappingReviewPage({ searchParams }: { searchPa
   const links = Object.fromEntries(
     (res.ok ? res.data.items : []).flatMap((i) => {
       const l = linkMap.get(i.subjectId);
-      return l ? [[i.subjectId, { href: l.href, table: l.table, id: l.id, image: l.image }]] : [];
+      return l ? [[i.subjectId, { href: l.href, table: l.table, id: l.id, image: l.image, status: l.status }]] : [];
     }),
   );
   const canDecide = canReviewLibrary(me);

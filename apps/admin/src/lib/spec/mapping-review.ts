@@ -63,13 +63,37 @@ export function isOpenState(s: LibraryReviewState): boolean {
   return s === "pending" || s === "defer";
 }
 
-/** Items grouped in the order the API sorted them (group, then name); a missing group comes last. */
-export function groupMappings(items: MappingItem[]): { key: string; title: string | null; items: MappingItem[] }[] {
+/**
+ * Where a website record stands for customers, from its catalog status: on the website (active),
+ * internal (active-internal: no page, can't be chosen, may still be the base of an inspiration
+ * product), or anything else (not active, discontinued). Null when the catalog has no record.
+ */
+export type Visibility = "website" | "internal" | "other";
+export function visibilityOf(status: string | null | undefined): Visibility | null {
+  if (!status) return null;
+  return status === "active" ? "website" : status === "active-internal" ? "internal" : "other";
+}
+const RANK: Record<Visibility, number> = { website: 0, internal: 1, other: 2 };
+
+/**
+ * Items grouped in the order the API sorted them (group, then name); a missing group comes last.
+ * Within a group, records on the website come first, then internal ones, then the rest (PLAT-86
+ * follow-up, 2026-11-20); the API's order is kept among equals.
+ */
+export function groupMappings(
+  items: MappingItem[],
+  statusOf: (i: MappingItem) => string | null | undefined = () => null,
+): { key: string; title: string | null; items: MappingItem[] }[] {
   const out = new Map<string, { key: string; title: string | null; items: MappingItem[] }>();
   for (const i of items) {
     const key = i.group ?? "";
     if (!out.has(key)) out.set(key, { key: key || "—", title: i.group, items: [] });
     out.get(key)!.items.push(i);
+  }
+  const rank = (i: MappingItem) => { const v = visibilityOf(statusOf(i)); return v ? RANK[v] : 0; };
+  for (const g of out.values()) {
+    // Stable: equal ranks keep the API's order.
+    g.items = g.items.map((i, n) => ({ i, n })).sort((a, b) => rank(a.i) - rank(b.i) || a.n - b.n).map((x) => x.i);
   }
   return [...out.values()].sort((a, b) => (a.title === null ? 1 : b.title === null ? -1 : 0));
 }

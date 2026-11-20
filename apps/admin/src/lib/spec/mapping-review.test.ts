@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { groupMappings, mappingHref, mappingParams, settingText, targetHref } from "./mapping-review";
+import { groupMappings, visibilityOf, mappingHref, mappingParams, settingText, targetHref } from "./mapping-review";
 import type { MappingItem } from "./registry-api";
 
 const item = (id: number, group: string | null): MappingItem =>
@@ -33,4 +33,16 @@ test("groups keep the API order and put items without a group last", () => {
 test("a setting that names its own field is shown as written", () => {
   assert.equal(settingText("Outside only"), "= Outside only");
   assert.equal(settingText("Grade = Anti-static"), "Grade = Anti-static");
+});
+
+test("within a group: on the website first, then internal, then the rest; group order unchanged", () => {
+  const status: Record<number, string> = { 1: "active-internal", 2: "active", 3: "not-active", 4: "active", 5: "active-internal" };
+  const groups = groupMappings(
+    [item(1, "Tuck End Boxes"), item(2, "Tuck End Boxes"), item(3, "Tuck End Boxes"), item(4, "Tuck End Boxes"), item(5, "Lock Bottom Cartons")],
+    (i) => status[i.id],
+  );
+  assert.deepEqual(groups.map((g) => g.title), ["Tuck End Boxes", "Lock Bottom Cartons"]);
+  assert.deepEqual(groups[0]!.items.map((i) => i.id), [2, 4, 1, 3]);
+  assert.equal(visibilityOf("active-internal"), "internal");
+  assert.equal(visibilityOf(null), null);
 });
