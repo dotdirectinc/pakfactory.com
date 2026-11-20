@@ -915,7 +915,13 @@ export async function listLibraryDifferences() {
 
 // ── Mapping review (PLAT-52) ─────────────────────────────────────────────────────
 
-export type MappingKind = "product" | "option" | "property_value";
+export type MappingKind = "product" | "option" | "property_value" | "inspiration";
+/** An inspiration map's warnings (PLAT-99), live from its base and pre-selected options. Information only. */
+export type MappingFlag =
+  | { kind: "base_not_mapped" | "no_preselections" }
+  | { kind: "option_without_map" | "option_not_mapped"; code?: string }
+  | { kind: "conflict"; target: string; base?: string; option?: { code: string; value: string | null }; options?: { code: string; value: string | null }[]; resolved: "option" | null }
+  | { kind: "different_product_type"; productType: string; base: string };
 export type MappingLabel = "mapped" | "mapped_with_preset" | "catch_all" | "no_equivalent";
 export type MappingTarget = { kind: "product_type" | "capability" | "field"; sourceId: string; name: string | null; setting: string | null; version: number };
 export type MappingPreset = { label: string; value: string | null; sourceId: string | null; version: number | null };
@@ -943,6 +949,15 @@ export type MappingItem = {
   note: string | null;
   decidedAt: string | null;
   decidedByName: string | null;
+  /** Product rows: active inspiration products built on this product (PLAT-99). */
+  inspirationCount?: number;
+  /** Inspiration rows (PLAT-99): the base product, warnings, out of date, and where each preset came from. */
+  baseCode?: string | null;
+  baseName?: string | null;
+  flags?: MappingFlag[];
+  drift?: boolean;
+  /** Parallel to `presets`: "base", "option:<code>", or null when added by hand. */
+  presetSources?: (string | null)[];
 };
 
 export type MappingList = {

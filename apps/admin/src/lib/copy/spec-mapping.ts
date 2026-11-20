@@ -1,4 +1,4 @@
-import type { MappingKind } from "@/lib/spec/registry-api";
+import type { MappingFlag, MappingKind } from "@/lib/spec/registry-api";
 
 /** Mapping review (PLAT-52). */
 export const ADMIN_SPEC_MAPPING_COPY = {
@@ -53,6 +53,40 @@ export const ADMIN_SPEC_MAPPING_COPY = {
   },
   deciding: "Saving…",
   image: (name: string) => `Website image of ${name}`,
+  inspiration: {
+    notAvailable: "Inspiration maps aren't available yet: the server change that adds them hasn't been applied.",
+    basedOn: "Based on",
+    unknownBase: "unknown base",
+    baseMapsTo: "Base maps to",
+    baseNotMapped: "The base product has no map.",
+    baseOf: (n: number) => (n === 1 ? "Base of 1 inspiration product" : `Base of ${n} inspiration products`),
+    baseOfHint: "Customers choose these inspiration products on the website; this product is their base. Opens them in the Inspiration products tab.",
+    drift: "Out of date",
+    driftHint: "The base or an option map changed since this map was filled. Edit map… → Re-fill to take the current values.",
+    from: { base: "from base", hand: "added" } as Record<"base" | "hand", string>,
+    fromOption: (code: string) => `from ${code}`,
+    sourceHint: "Where this preset came from: the base product's map, a pre-selected option's map, or added by hand.",
+    flags: {
+      base_not_mapped: "Base not mapped",
+      option_without_map: "Option has no map",
+      option_not_mapped: "Option maps to nothing",
+      no_preselections: "No pre-selections",
+      conflict: "Conflict",
+      different_product_type: "Different product type from its base",
+    } as Record<MappingFlag["kind"], string>,
+    flagHints: {
+      base_not_mapped: "The base product has no map, so nothing was filled from it.",
+      option_without_map: "A pre-selected option has no map, so it adds no preset.",
+      option_not_mapped: "A pre-selected option's map has no capability or field, so it adds no preset.",
+      no_preselections: "This inspiration product pre-selects no options: its map is the base's.",
+      conflict: "",
+      different_product_type: "",
+    } as Record<MappingFlag["kind"], string>,
+    conflictResolved: (target: string, base: string, code: string, value: string) =>
+      `${target}: the base sets "${base}", the pre-selected option ${code} sets "${value}". The option wins; check it.`,
+    conflictOpen: (target: string, options: string[]) => `${target}: pre-selected options disagree (${options.join("; ")}). Choose one.`,
+    differentType: (mine: string, base: string) => `This map uses ${mine}; its base uses ${base}. Information only: it can be right.`,
+  },
   visibility: {
     website: "On website",
     internal: "Internal",
@@ -64,6 +98,9 @@ export const ADMIN_SPEC_MAPPING_COPY = {
     },
   },
   editor: {
+    refill: "Re-fill from base and options",
+    refillHint: "This inspiration product's map was filled from its base product and pre-selected options. Re-fill replaces the targets and presets below with what they give today; review the change before saving.",
+    refillDrift: "Out of date: the base or an option map changed since this map was filled. Re-fill to take the current values, then review and save.",
     open: "Edit map…",
     title: (name: string) => `Map: ${name}`,
     lead: "Pick the production records this website item maps to. The change is shown before it is saved.",
@@ -113,5 +150,5 @@ export const ADMIN_SPEC_MAPPING_COPY = {
     retired: "retired",
     kinds: { productType: "Product type", capability: "Capability", field: "Field" } as Record<string, string>,
   },
-  kindNoun: { product: "products", option: "options", property_value: "property values" } satisfies Record<MappingKind, string>,
+  kindNoun: { product: "products", option: "options", property_value: "property values", inspiration: "inspiration products" } satisfies Record<MappingKind, string>,
 };

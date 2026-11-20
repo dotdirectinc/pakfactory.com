@@ -1,4 +1,4 @@
-import type { MappingItem, MappingKind } from "@/lib/spec/registry-api";
+import type { MappingFlag, MappingItem, MappingKind } from "@/lib/spec/registry-api";
 
 /**
  * The map editor in Mapping review (PLAT-86, ADR-028 D4, D8). Pure; the panel and actions fetch.
@@ -15,7 +15,15 @@ export type Ref = { kind: RefKind; sourceId: string; name: string | null };
 /** The map as the server stores it (`GET /spec-maps/:id/production`). */
 export type MapDocTarget = { productType?: string; capability?: string; field?: string; setting?: string; revision?: number };
 export type MapDocPreset = { label: string; value?: string; capability?: string; field?: string; raw?: string; revision?: number };
-export type MapDoc = { targets: MapDocTarget[]; presets: MapDocPreset[]; revision: number };
+export type MapDoc = {
+  targets: MapDocTarget[];
+  presets: MapDocPreset[];
+  revision: number;
+  /** Inspiration maps (PLAT-99): what the base and pre-selected options give today, ready to save. */
+  derived?: { targets: MapDocTarget[]; presets: MapDocPreset[] };
+  drift?: boolean;
+  flags?: MappingFlag[];
+};
 
 export type DraftTarget = { ref: Ref; setting: string };
 /** `ref` null: stored only as text ("needs a production code"); `raw` is that text. */
@@ -33,7 +41,25 @@ export const LIBRARY_COLLECTION: Record<RefKind, "product_type" | "capability" |
 
 /** What a map's main target may be: a website product maps to a product type; options and values to a capability or field. */
 export function targetKinds(kind: MappingKind): RefKind[] {
-  return kind === "product" ? ["productType"] : ["capability", "field"];
+  return isProductLike(kind) ? ["productType"] : ["capability", "field"];
+}
+
+/** Standard and inspiration products both map to one product type. */
+export function isProductLike(kind: MappingKind): boolean {
+  return kind === "product" || kind === "inspiration";
+}
+
+/** The draft a re-fill gives: the derived map, named from the list where it can be. */
+export function refillDraft(doc: MapDoc, item: Pick<MappingItem, "targets" | "presets">): MapDraft | null {
+  return doc.derived ? draftOf({ ...doc.derived, revision: doc.revision }, item) : null;
+}
+
+/** Where an inspiration preset came from, from `presetSources`. */
+export type PresetSource = { from: "base" } | { from: "option"; code: string } | { from: "hand" };
+export function presetSourceOf(s: string | null | undefined): PresetSource {
+  if (s === "base") return { from: "base" };
+  if (s?.startsWith("option:")) return { from: "option", code: s.slice("option:".length) };
+  return { from: "hand" };
 }
 
 function refOf(x: { productType?: string; capability?: string; field?: string }, names: Map<string, string | null>): Ref | null {
@@ -86,7 +112,7 @@ export function draftErrors(d: MapDraft, kind: MappingKind): Record<string, stri
   d.targets.forEach((t, i) => {
     if (!allowed.includes(t.ref.kind)) errors[`target ${i + 1}`] = `must be a ${allowed.map(nounOf).join(" or ")}`;
   });
-  if (kind === "product" && d.targets.filter((t) => t.ref.kind === "productType").length > 1)
+  if (isProductLike(kind) && d.targets.filter((t) => t.ref.kind === "productType").length > 1)
     errors.targets = "a website product maps to one product type";
   d.presets.forEach((p, i) => {
     if (blank(p.label)) errors[`preset ${i + 1}`] = "needs a label";

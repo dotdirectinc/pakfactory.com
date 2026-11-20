@@ -15,6 +15,7 @@ import {
   groupMappings,
   isOpenState,
   MAP_LABELS,
+  mappingHref,
   settingText,
   targetHref,
   visibilityOf,
@@ -26,9 +27,11 @@ import {
 } from "@/app/(admin)/spec/mapping/preview-actions";
 import { SpecHoverLink } from "@/components/spec/mapping/spec-hover-link";
 import { MapEditor } from "@/components/spec/mapping/map-editor";
+import { presetSourceOf } from "@/lib/spec/map-editor";
 import type {
   LibraryDecision,
   LibraryReviewState,
+  MappingFlag,
   MappingItem,
   MappingLabel,
   MappingTarget,
@@ -62,6 +65,7 @@ const labelName = (l: MappingLabel) =>
 export function MappingReviewList({
   items,
   links,
+  bases = {},
   canDecide,
   canEdit,
   admin,
@@ -69,6 +73,8 @@ export function MappingReviewList({
 }: {
   items: MappingItem[];
   links: Record<string, WebsiteLink>;
+  /** Inspiration tab (PLAT-99): each base product's own map, by its code. */
+  bases?: Record<string, BaseMap>;
   canDecide: boolean;
   /** Approver or admin: may edit maps (PLAT-86); an admin's save approves the map. */
   canEdit: boolean;
@@ -229,6 +235,7 @@ export function MappingReviewList({
                       key={m.id}
                       m={m}
                       link={links[m.subjectId]}
+                      base={m.baseCode ? bases[m.baseCode] : undefined}
                       canDecide={canDecide}
                       canEdit={canEdit}
                       admin={admin}
@@ -303,12 +310,25 @@ export function MappingReviewList({
   );
 }
 
-export type WebsiteLink = { href: string; table: string; id: string; image: string | null; status: string | null };
+export type WebsiteLink = {
+  href: string | null;
+  table: string | null;
+  id: string | null;
+  image: string | null;
+  status: string | null;
+  /** Internal bases (PLAT-99): images of their inspiration products. */
+  borrowed?: string[];
+  /** How many active inspiration products the catalog lists on this base. */
+  borrowedCount?: number;
+};
+/** An inspiration row's base product and its map, as the Products tab has it. */
+export type BaseMap = { id: number; name: string | null; state: LibraryReviewState; productType: MappingTarget | null; image: string | null };
 
 const KIND_NOUN: Record<MappingItem["subjectKind"], string> = {
   product: "Website product",
   option: "Website option",
   property_value: "Website property value",
+  inspiration: "Inspiration product",
 };
 const TARGET_NOUN: Record<MappingTarget["kind"], string> = {
   product_type: "Product type",
@@ -330,7 +350,9 @@ function staticPreview(m: MappingItem): PreviewResult {
         ? "Style"
         : m.subjectKind === "option"
           ? "Category · type"
-          : "Property",
+          : m.subjectKind === "inspiration"
+            ? "Based on"
+            : "Property",
       m.group,
     ]);
   return {
@@ -349,6 +371,7 @@ function staticPreview(m: MappingItem): PreviewResult {
 function MappingRow({
   m,
   link,
+  base,
   canDecide,
   canEdit,
   admin,
@@ -358,6 +381,7 @@ function MappingRow({
 }: {
   m: MappingItem;
   link: WebsiteLink | undefined;
+  base: BaseMap | undefined;
   canDecide: boolean;
   canEdit: boolean;
   admin: boolean;
@@ -404,7 +428,7 @@ function MappingRow({
             side="website"
             href={link?.href ?? null}
             load={() =>
-              link
+              link?.table && link.id
                 ? previewWebsiteAction(link.table, link.id)
                 : Promise.resolve(staticPreview(m))
             }
@@ -415,6 +439,10 @@ function MappingRow({
           <span className="font-mono text-xs text-muted-foreground">
             {m.subjectCode}
           </span>
+          {m.subjectKind === "inspiration" ? <BaseLine m={m} base={base} /> : null}
+          {(m.inspirationCount ?? link?.borrowedCount) ? (
+            <InspirationsLine m={m} count={m.inspirationCount ?? link?.borrowedCount ?? 0} images={link?.borrowed ?? []} />
+          ) : null}
         </div>
       </div>
 
@@ -441,6 +469,21 @@ function MappingRow({
             {COPY.confidence[m.confidence]}
           </span>
         ) : null}
+        {m.drift ? (
+          <Badge variant="outline" className={cn("whitespace-normal text-center text-[10px] font-normal", WARNING_BADGE)} title={COPY.inspiration.driftHint}>
+            {COPY.inspiration.drift}
+          </Badge>
+        ) : null}
+        {(m.flags ?? []).map((f, n) => (
+          <Badge
+            key={n}
+            variant="outline"
+            className={cn("whitespace-normal text-center text-[10px] font-normal", f.kind === "different_product_type" ? "border-border" : WARNING_BADGE)}
+            title={flagHint(f)}
+          >
+            {COPY.inspiration.flags[f.kind]}
+          </Badge>
+        ))}
       </div>
 
       {/* Production spec */}
@@ -503,6 +546,7 @@ function MappingRow({
                     {p.label}
                     {p.value ? ` = ${p.value}` : ""}
                   </span>
+                  {m.presetSources ? <PresetSourceTag source={m.presetSources[n]} /> : null}
                   {p.sourceId && p.version ? (
                     <SpecHoverLink
                       side="production"
@@ -581,4 +625,91 @@ function VisibilityBadge({ status }: { status: string | null | undefined }) {
       {v === "other" ? COPY.visibility.other(status!) : COPY.visibility[v]}
     </Badge>
   );
+}
+
+/** Inspiration row (PLAT-99): its base product and the base's map, so the reviewer can compare without switching tabs. */
+function BaseLine({ m, base }: { m: MappingItem; base: BaseMap | undefined }) {
+  const pt = base?.productType;
+  return (
+    <div className="mt-1.5 flex flex-col gap-0.5 border-t border-border pt-1.5 text-xs">
+      <span className="text-muted-foreground">
+        {COPY.inspiration.basedOn}{" "}
+        <a
+          href={mappingHref({ kind: "product", line: m.line as never, state: "all", search: m.baseCode ?? m.baseName ?? null })}
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-foreground underline-offset-2 hover:underline"
+        >
+          {m.baseName ?? m.baseCode ?? COPY.inspiration.unknownBase}
+        </a>
+        {m.baseCode ? <span className="font-mono"> · {m.baseCode}</span> : null}
+      </span>
+      {base ? (
+        <span className="text-muted-foreground">
+          {COPY.inspiration.baseMapsTo}{" "}
+          {pt ? (
+            <>
+              <span className="text-foreground">{pt.name ?? pt.sourceId}</span> <span className="font-mono">{pt.sourceId}</span>
+            </>
+          ) : (
+            COPY.noTarget
+          )}{" "}
+          · {COPY.states[base.state]}
+        </span>
+      ) : (
+        <span className="text-muted-foreground">{COPY.inspiration.baseNotMapped}</span>
+      )}
+    </div>
+  );
+}
+
+/** Product row (PLAT-99): how many inspiration products are built on it, with a few of their images. */
+function InspirationsLine({ m, count, images }: { m: MappingItem; count: number; images: string[] }) {
+  return (
+    <a
+      href={mappingHref({ kind: "inspiration", line: m.line as never, state: "all", search: m.subjectName ?? m.subjectCode })}
+      target="_blank"
+      rel="noreferrer"
+      className="mt-1.5 flex items-center gap-1.5 border-t border-border pt-1.5 text-xs text-muted-foreground hover:text-foreground"
+      title={COPY.inspiration.baseOfHint}
+    >
+      {images.map((src) => (
+        <img
+          key={src}
+          src={`${src}?w=64&h=64&fit=crop&auto=format`}
+          alt=""
+          width={32}
+          height={32}
+          loading="lazy"
+          className="size-8 shrink-0 rounded border border-border object-cover"
+        />
+      ))}
+      <span>{COPY.inspiration.baseOf(count)}</span>
+    </a>
+  );
+}
+
+function PresetSourceTag({ source }: { source: string | null | undefined }) {
+  const s = presetSourceOf(source);
+  return (
+    <span className="rounded bg-background px-1 text-[10px] text-muted-foreground" title={COPY.inspiration.sourceHint}>
+      {s.from === "option" ? COPY.inspiration.fromOption(s.code) : COPY.inspiration.from[s.from]}
+    </span>
+  );
+}
+
+function flagHint(f: MappingFlag): string {
+  switch (f.kind) {
+    case "conflict":
+      return f.resolved === "option" && f.option
+        ? COPY.inspiration.conflictResolved(f.target, f.base ?? "", f.option.code, f.option.value ?? "")
+        : COPY.inspiration.conflictOpen(f.target, (f.options ?? []).map((o) => `${o.code} = ${o.value ?? ""}`));
+    case "different_product_type":
+      return COPY.inspiration.differentType(f.productType, f.base);
+    case "option_without_map":
+    case "option_not_mapped":
+      return COPY.inspiration.flagHints[f.kind] + (f.code ? ` (${f.code})` : "");
+    default:
+      return COPY.inspiration.flagHints[f.kind];
+  }
 }

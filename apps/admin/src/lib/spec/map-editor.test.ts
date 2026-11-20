@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { draftErrors, draftOf, mapChanges, newProductType, productionOf, type MapDoc } from "./map-editor";
+import { draftErrors, draftOf, mapChanges, newProductType, presetSourceOf, productionOf, refillDraft, targetKinds, type MapDoc } from "./map-editor";
 
 const doc: MapDoc = {
   revision: 3,
@@ -66,4 +66,23 @@ test("a new product type in export shape", () => {
   assert.equal(t.code, "SLV");
   assert.equal(t.name, "Sleeve");
   assert.equal(t.categoryId, "CAT-FC");
+});
+
+test("inspiration maps (PLAT-99): one product type like a product; re-fill takes the derived map", () => {
+  assert.deepEqual(targetKinds("inspiration"), ["productType"]);
+  const d = draftOf(doc, item);
+  d.targets.push({ ref: { kind: "productType", sourceId: "PT-FC-RTE", name: null }, setting: "" });
+  assert.ok(draftErrors(d, "inspiration").targets);
+  assert.equal(refillDraft(doc, item), null);
+  const derived = { ...doc, derived: { targets: [{ productType: "PT-FC-ABL" }], presets: [{ label: "Coating", value: "Matte", capability: "CAP-MATTE" }] } };
+  const r = refillDraft(derived, item)!;
+  assert.deepEqual(productionOf(r), derived.derived);
+  assert.equal(r.targets[0]!.ref.name, "Auto Bottom");
+  assert.deepEqual(mapChanges(draftOf(doc, item), r).map((c) => c.kind), ["changed", "changed", "changed", "removed"]);
+});
+
+test("preset sources", () => {
+  assert.deepEqual(presetSourceOf("base"), { from: "base" });
+  assert.deepEqual(presetSourceOf("option:OPT-ADD-0004-D"), { from: "option", code: "OPT-ADD-0004-D" });
+  assert.deepEqual(presetSourceOf(null), { from: "hand" });
 });

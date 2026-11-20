@@ -16,7 +16,7 @@ import {
 } from "@/app/(admin)/spec/mapping/edit-actions";
 import { suggestIdAction } from "@/app/(admin)/spec/library/editor-actions";
 import {
-  draftErrors, draftOf, mapChanges, newProductType, nounOf, productionOf, targetKinds,
+  draftErrors, draftOf, isProductLike, mapChanges, newProductType, nounOf, productionOf, refillDraft, targetKinds,
   type DraftPreset, type MapDraft, type Ref, type RefKind,
 } from "@/lib/spec/map-editor";
 import { idParts, newCapability } from "@/lib/spec/type-editor";
@@ -113,6 +113,16 @@ function EditorBody({ m, admin, canDecide, onDone }: { m: MappingItem; admin: bo
 
   return (
     <div className="flex flex-col gap-6 px-4 pb-6 text-sm">
+      {data.doc.derived ? (
+        <section className={cn("flex flex-col gap-2 rounded-md border px-3 py-2", data.doc.drift ? WARNING_BADGE : "border-border")}>
+          <p className="text-xs">{data.doc.drift ? COPY.refillDrift : COPY.refillHint}</p>
+          <div>
+            <Button size="sm" variant="outline" onClick={() => set((d) => void Object.assign(d, refillDraft(data.doc, m)!))}>
+              {COPY.refill}
+            </Button>
+          </div>
+        </section>
+      ) : null}
       <section className="flex flex-col gap-2">
         <h3 className="font-medium">{COPY.targets}</h3>
         {draft.targets.map((t, i) => (
@@ -136,10 +146,10 @@ function EditorBody({ m, admin, canDecide, onDone }: { m: MappingItem; admin: bo
         ))}
         {errors.targets ? <p className="text-xs text-destructive">{errors.targets}</p> : null}
         <div className="flex flex-wrap items-center gap-2">
-          {m.subjectKind !== "product" || draft.targets.length === 0 ? (
+          {!isProductLike(m.subjectKind) || draft.targets.length === 0 ? (
             <Picker kinds={kinds} line={m.line} label={COPY.addTarget} onPick={(r) => set((d) => void d.targets.push({ ref: r, setting: "" }))} />
           ) : null}
-          {m.subjectKind === "product" ? (
+          {isProductLike(m.subjectKind) ? (
             <AddNew
               what="productTypes"
               open={data.addable.productTypes}
