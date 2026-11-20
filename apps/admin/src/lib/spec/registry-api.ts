@@ -790,7 +790,7 @@ export async function suggestSpecSourceId(collection: SpecCollection, parts: str
 export async function editSpecRecord(
   collection: SpecCollection,
   sourceId: string,
-  body: { action: SpecEditAction; record?: Record<string, unknown>; baseRevision?: number | null; note?: string | null },
+  body: { action: SpecEditAction; record?: Record<string, unknown>; baseRevision?: number | null; note?: string | null; viaMap?: number },
 ) {
   return call<SpecEditResult>(`/api/v1/spec-records/${collection}/${encodeURIComponent(sourceId)}/edits`, {
     method: "POST",
@@ -843,7 +843,7 @@ export async function listSpecEdits(q: { state?: "open" | "all" | "waiting"; col
 
 /** Proposals waiting for an admin, for the menu and the Review tabs. Unreachable: 0, not an error. */
 export const countWaitingSpecEdits = cache(async (): Promise<number> => {
-  // One row is enough: the API returns the total. (Map proposals, once PLAT-86 adds them, count too.)
+  // One row is enough: the API returns the total. Map proposals (PLAT-86) count too.
   const res = await listSpecEdits({ state: "waiting", limit: 1 });
   return res.ok ? res.data.total : 0;
 });
@@ -964,4 +964,21 @@ export async function decideSpecMappings(decision: LibraryDecision, note: string
     method: "POST",
     body: { decision, note, ids },
   });
+}
+
+// ── Map edits (PLAT-86) ──────────────────────────────────────────────────────
+
+/** A map's production side as stored, with the revision an edit must start from. */
+export async function getSpecMapProduction(map: number) {
+  return call<import("@/lib/spec/map-editor").MapDoc>(`/api/v1/spec-maps/${map}/production`);
+}
+
+export type SpecMapEditResult = { edit: number; mode: "applied" | "proposed"; state: string; map: number; revision: number };
+
+/**
+ * Save a whole map at baseRevision. An admin's save is applied and approves the map; another role's
+ * change to an approved map waits as a proposal (a change to a map nobody approved yet is applied).
+ */
+export async function editSpecMap(map: number, body: { production: { targets: unknown[]; presets: unknown[] }; baseRevision: number; note: string | null }) {
+  return call<SpecMapEditResult>(`/api/v1/spec-maps/${map}/edits`, { method: "POST", body });
 }

@@ -1,3 +1,5 @@
+import { draftOf, mapChanges, type MapDoc } from "@/lib/spec/map-editor";
+import { ADMIN_SPEC_MAPPING_COPY } from "@/lib/copy/spec-mapping";
 import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { LocalTime } from "@pakfactory/ui/components/local-time";
@@ -31,7 +33,8 @@ function productTypeOf(e: SpecEdit): string | null {
 export default async function SpecProposalsPage() {
   const [me, res] = await Promise.all([requireRegistryGrant(), listSpecEdits({ state: "waiting", limit: 500 })]);
   const admin = canAdminSpec(me);
-  const items = res.ok ? res.data.items.filter((e) => e.subject === "record") : [];
+  // Record edits and map edits (PLAT-86) wait in the same queue; an admin decides both here.
+  const items = res.ok ? res.data.items : [];
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
@@ -46,13 +49,20 @@ export default async function SpecProposalsPage() {
           {items.map((e) => {
             const pt = productTypeOf(e);
             const changes =
-              e.action === "update" || e.action === "create" ? recordChanges(e.current ?? null, e.proposed ?? {}) : [];
+              e.subject === "map"
+                ? mapEditChanges(e.current ?? null, e.proposed ?? null)
+                : e.action === "update" || e.action === "create" ? recordChanges(e.current ?? null, e.proposed ?? {}) : [];
             return (
               <li key={e.id} className="flex flex-col gap-3 rounded-md border border-border p-4 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="font-normal">{EDITOR.actions[e.action] ?? e.action}</Badge>
-                  <span className="font-medium">{String(e.proposed?.name ?? e.current?.name ?? e.sourceId)}</span>
-                  <span className="font-mono text-xs text-muted-foreground">{e.sourceId} · #{e.id}</span>
+                  <Badge variant="outline" className="font-normal">{e.subject === "map" ? COPY.mapEdit : (EDITOR.actions[e.action] ?? e.action)}</Badge>
+                  <span className="font-medium">{e.subject === "map" ? COPY.mapEditWhat : String(e.proposed?.name ?? e.current?.name ?? e.sourceId)}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{e.subject === "map" ? `#${e.id}` : `${e.sourceId} · #${e.id}`}</span>
+                  {e.subject === "map" ? (
+                    <Link className="ml-auto text-xs underline underline-offset-2" href="/spec/mapping?state=all">
+                      {COPY.openMapping}
+                    </Link>
+                  ) : null}
                   {pt ? (
                     <Link className="ml-auto text-xs underline underline-offset-2" href={`/spec/library/product-types/${encodeURIComponent(pt)}`}>
                       {COPY.openType}
@@ -76,4 +86,17 @@ export default async function SpecProposalsPage() {
       )}
     </div>
   );
+}
+
+/** A map edit's difference, in the change table's shape (targets and presets in words). */
+const MAP_EDITOR = ADMIN_SPEC_MAPPING_COPY.editor;
+
+function mapEditChanges(current: Record<string, unknown> | null, proposed: Record<string, unknown> | null) {
+  const asDraft = (d: Record<string, unknown> | null) =>
+    draftOf({ targets: [], presets: [], ...(d ?? {}), revision: 0 } as MapDoc, { targets: [], presets: [] });
+  return mapChanges(asDraft(current), asDraft(proposed)).map((c) => ({
+    key: `${MAP_EDITOR.changeKind[c.kind]}: ${c.what}`,
+    before: c.before ?? null,
+    after: c.after ?? null,
+  }));
 }

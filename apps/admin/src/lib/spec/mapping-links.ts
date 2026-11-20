@@ -11,21 +11,25 @@ import { typeidToUuid } from "./typeid";
  * of every published product, option and property value that has a Registry id, cached like the
  * other Spec views (60 s).
  */
-type Row = { _id: string; _type: string; kind?: string | null; entityId: string };
+type Row = { _id: string; _type: string; kind?: string | null; entityId: string; image?: string | null };
 
-async function fetchIds(): Promise<Loaded<[string, { table: TableKey; id: string }][]>> {
+async function fetchIds(): Promise<Loaded<[string, { table: TableKey; id: string; image: string | null }][]>> {
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
   const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });
   try {
     const rows = await client.fetch<Row[]>(
-      `*[_type in ["product", "customizationOption", "propertyValue"] && defined(entityId)]{ _id, _type, kind, entityId }`,
+      `*[_type in ["product", "customizationOption", "propertyValue"] && defined(entityId)]{
+        _id, _type, kind, entityId,
+        // The first still, as catalog-record.ts picks it (PLAT-86 scope 6).
+        "image": coalesce(coalesce(images[primary == true][0], images[0]).asset->url, featuredImage.asset->url, image.asset->url)
+      }`,
     );
-    const out: [string, { table: TableKey; id: string }][] = [];
+    const out: [string, { table: TableKey; id: string; image: string | null }][] = [];
     for (const r of rows) {
       const uuid = typeidToUuid(r.entityId)?.uuid;
       const table = tableOfDoc(r._type, r.kind);
-      if (uuid && table) out.push([uuid, { table, id: r._id }]);
+      if (uuid && table) out.push([uuid, { table, id: r._id, image: r.image ?? null }]);
     }
     return { ok: true, data: out };
   } catch (err) {
@@ -33,10 +37,10 @@ async function fetchIds(): Promise<Loaded<[string, { table: TableKey; id: string
   }
 }
 
-const cachedIds = cachedSpec("mapping-registry-ids-v1", fetchIds);
+const cachedIds = cachedSpec("mapping-registry-ids-v2", fetchIds);
 
 /** Registry uuid → its catalog page and table; an empty lookup when Sanity cannot be read (links are a convenience). */
-export async function websiteLinks(): Promise<Map<string, { href: string; table: TableKey; id: string }>> {
+export async function websiteLinks(): Promise<Map<string, { href: string; table: TableKey; id: string; image: string | null }>> {
   const res = await cachedIds();
   if (!res.ok) return new Map();
   return new Map(res.data.map(([uuid, x]) => [uuid, { ...x, href: recordHref(x.table, x.id) }]));

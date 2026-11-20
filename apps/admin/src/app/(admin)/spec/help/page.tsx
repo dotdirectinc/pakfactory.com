@@ -256,8 +256,22 @@ export default async function SpecHelpPage() {
           </Term>
           <Term name="Who decides">
             An admin&apos;s save is approved at once. Anyone else&apos;s is sent as a proposal — the save step says so and the
-            button reads <em>Send as proposal</em> — and waits under <em>Review → Proposals</em>. Records added from a
-            map (coming with mapping edits) and vendor submissions will arrive as proposals too.
+            button reads <em>Send as proposal</em> — and waits under <em>Review → Proposals</em>. Vendor submissions will
+            arrive as proposals too.
+          </Term>
+          <Term name="Edit map…">
+            On each row of <em>Review → Mapping</em>, for approvers and admins. Pick the production record the website item
+            maps to (a product type for a product; a capability or field for an option or value) and its preset values. A
+            preset that <em>needs a code</em> is stored only as text: pick a capability or field for it. The change is shown
+            before saving. An admin&apos;s save also approves the map; another role&apos;s change to an approved map is sent as a
+            proposal (a map nobody has approved yet simply changes and stays to review). <em>Defer</em> and{" "}
+            <em>Reject</em> need a note.
+          </Term>
+          <Term name="+ Add new">
+            In the map editor, <em>+ Add new product…</em> and <em>+ Add new preset…</em> create a product type or a
+            capability and select it. The new record is saved but never approved by the map: it is listed as new under{" "}
+            <em>Review → Production library</em> until an admin approves it there. Only offered once the Spec System owns
+            that collection.
           </Term>
           <Term name="History">
             <em>Recent changes</em> in the editor lists every change to the product type, its template and its line&apos;s
