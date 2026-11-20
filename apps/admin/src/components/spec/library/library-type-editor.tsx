@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { createContext, useContext, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
@@ -16,6 +16,9 @@ import { ADMIN_SPEC_LIBRARY_COPY } from "@/lib/copy/spec-library";
 
 const COPY = ADMIN_SPEC_LIBRARY_COPY.editor;
 
+/** True when the signed-in person is not an admin: every save becomes a proposal (ADR-028 D4). */
+const ProposalMode = createContext(false);
+
 export type EditorCapability = { sourceId: string; label: string | null; group: { sourceId: string; name: string } | null };
 
 type Props = {
@@ -26,6 +29,8 @@ type Props = {
   rights: { productTypes: boolean; capabilities: boolean };
   edits: SpecEdit[];
   labels: Record<string, string>;
+  /** An admin's saves are approved at once; anyone else's are sent as proposals. */
+  admin: boolean;
 };
 
 /**
@@ -37,6 +42,7 @@ export function LibraryTypeEditor(p: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const done = (r: SpecEditResult) => setMessage(COPY.saved(r.state, r.edit));
   return (
+    <ProposalMode.Provider value={!p.admin}>
     <div className="flex flex-col gap-8">
       {message ? <p role="status" className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">{message}</p> : null}
 
@@ -73,6 +79,7 @@ export function LibraryTypeEditor(p: Props) {
         <History edits={p.edits} labels={p.labels} />
       </section>
     </div>
+    </ProposalMode.Provider>
   );
 }
 
@@ -210,10 +217,16 @@ function SaveStep(props: {
   const [note, setNote] = useState("");
   const [error, setError] = useState<{ text: string; fields?: Record<string, string>; stale?: boolean } | null>(null);
   const [pending, start] = useTransition();
+  const proposal = useContext(ProposalMode);
   if (props.changes.length === 0 && !props.noteRequired && !props.always) return <p className="text-muted-foreground">{COPY.noChange}</p>;
   return (
     <div className="flex flex-col gap-2 rounded-md bg-muted/30 p-3">
       {props.changes.length ? <ChangeTable changes={props.changes} /> : null}
+      {proposal ? (
+        <p role="note" className="rounded-md border border-amber-500/50 bg-amber-500/10 px-2 py-1 text-amber-900 dark:text-amber-200">
+          {COPY.proposalWarning}
+        </p>
+      ) : null}
       <Textarea value={note} rows={1} maxLength={2000} placeholder={props.noteLabel ?? COPY.note} aria-label={props.noteLabel ?? COPY.note}
         onChange={(e) => setNote(e.target.value)} disabled={pending} />
       <div className="flex gap-2">
@@ -224,7 +237,7 @@ function SaveStep(props: {
             setError(null);
             props.onSaved(res.data);
           })}>
-          {pending ? COPY.saving : (props.confirm ?? COPY.save)}
+          {pending ? COPY.saving : proposal ? COPY.sendProposal : (props.confirm ?? COPY.save)}
         </Button>
         {error?.stale && props.onStale ? <Button size="sm" variant="outline" onClick={props.onStale}>{COPY.reload}</Button> : null}
       </div>
@@ -242,7 +255,7 @@ function SaveStep(props: {
   );
 }
 
-function show(v: unknown): string {
+export function show(v: unknown): string {
   if (v === undefined || v === null || v === "") return "—";
   if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
   if (Array.isArray(v) && v.every((x) => typeof x === "string")) return v.length ? v.join(", ") : "—";
@@ -253,7 +266,7 @@ function show(v: unknown): string {
   return s.length > 300 ? `${s.slice(0, 300)}…` : s;
 }
 
-function ChangeTable({ changes }: { changes: FieldChange[] }) {
+export function ChangeTable({ changes }: { changes: FieldChange[] }) {
   return (
     <div className="flex flex-col gap-1">
       <p className="font-medium">{COPY.changeHeading}</p>

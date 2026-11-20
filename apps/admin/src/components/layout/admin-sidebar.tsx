@@ -100,7 +100,7 @@ const NAV: readonly NavEntry[] = [
       },
       // Review: website changes (frames, syncs — the old Registry desk at /spec), the production library
       // (PFP-124), held changes and mapping (PLAT-52), switched with tabs. The count is what arrives and
-      // waits — frames and held changes — not the review backlogs, which show as progress on their pages.
+      // waits — frames, held changes and proposals — not the review backlogs, which show as progress on their pages.
       {
         href: "/spec",
         label: "Review",
@@ -236,7 +236,7 @@ export function AdminSidebar({
   reviewCount,
 }: {
   specAccess: boolean;
-  /** Frames waiting plus held changes waiting (Review). */
+  /** Frames, held changes and proposals waiting (Review). */
   reviewCount: number;
 }) {
   const pathname = usePathname();

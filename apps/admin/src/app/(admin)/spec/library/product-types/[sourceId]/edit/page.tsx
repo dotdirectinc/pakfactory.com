@@ -72,6 +72,7 @@ export default async function EditProductTypePage({ params }: { params: Promise<
           rights={{ productTypes: rights.productTypes, capabilities: rights.capabilities }}
           edits={history}
           labels={labels}
+          admin={canAdminSpec(me)}
         />
       )}
     </div>

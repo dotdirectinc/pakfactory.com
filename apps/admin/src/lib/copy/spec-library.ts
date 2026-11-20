@@ -120,6 +120,9 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
     note: "Note (optional)",
     retireNote: "Why retire it? (needed)",
     save: "Save",
+    sendProposal: "Send as proposal",
+    proposalWarning:
+      "You are not an admin, so this is sent as a proposal. Nothing changes until an admin approves it on Review → Proposals.",
     saving: "Saving…",
     cancel: "Cancel",
     edit: "Edit",
@@ -168,6 +171,18 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
     historyColumns: { when: "When", who: "Who", what: "What", record: "Record", state: "State" } as Record<string, string>,
     actions: { create: "Added", update: "Changed", retire: "Retired", restore: "Restored" } as Record<string, string>,
     states: { applied: "Saved, to review", approved: "Approved", waiting: "Waiting for an admin", defer: "Deferred", reject: "Rejected" } as Record<string, string>,
+  },
+  proposals: {
+    title: "Proposals",
+    lead: "Changes to the production spec sent by people who are not admins. Nothing changes until an admin approves one; a rejected or deferred proposal keeps its note.",
+    leadAdmin: "Approve, reject (with a note) or defer each one. Approving applies it at once.",
+    leadOther: "Only an admin can decide these.",
+    none: "No proposals waiting.",
+    by: (who: string | null, when: string) => `${who ?? "Someone"} · ${when}`,
+    openType: "Open the product type",
+    waitingAdmin: "Waiting for an admin",
+    retire: "Retire this record",
+    restore: "Restore this record",
   },
   typeChanges: {
     heading: "Changes since the last approval",

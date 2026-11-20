@@ -761,6 +761,9 @@ export type SpecEdit = {
   note: string | null;
   createdByName: string | null;
   createdAt: string;
+  /** The record before the edit (null for a create) and the record it proposes or applied. */
+  current?: Record<string, unknown> | null;
+  proposed?: Record<string, unknown> | null;
   decisionNote: string | null;
   decidedAt: string | null;
 };
@@ -832,11 +835,17 @@ export async function confirmCapabilityRemoval(capability: string, from: Removal
 }
 
 /** Edits, newest first. state "all" includes applied, approved, rejected and open ones. */
-export async function listSpecEdits(q: { state?: "open" | "all"; collection?: SpecCollection; limit?: number } = {}) {
+export async function listSpecEdits(q: { state?: "open" | "all" | "waiting"; collection?: SpecCollection; limit?: number } = {}) {
   const p = new URLSearchParams({ state: q.state ?? "all", limit: String(q.limit ?? 500) });
   if (q.collection) p.set("collection", q.collection);
   return call<{ total: number; items: SpecEdit[] }>(`/api/v1/spec-edits?${p}`);
 }
+
+/** Proposals waiting for an admin, for the menu and the Review tabs. Unreachable: 0, not an error. */
+export const countWaitingSpecEdits = cache(async (): Promise<number> => {
+  const res = await listSpecEdits({ state: "waiting", limit: 500 });
+  return res.ok ? res.data.items.filter((e) => e.subject === "record").length : 0;
+});
 
 /** Decide a proposal (admin only). A reject or defer needs a note. */
 export async function decideSpecEdit(edit: number, decision: LibraryDecision, note: string | null) {

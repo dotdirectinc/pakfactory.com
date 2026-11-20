@@ -134,7 +134,7 @@ function ChangeRowItem({ row, me, heading }: { row: ChangeRow; me: Me; heading: 
   );
 }
 
-function RowDecision({ route, onDone }: { route: ChangeRoute; onDone: () => void }) {
+export function RowDecision({ route, onDone }: { route: ChangeRoute; onDone?: () => void }) {
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -152,7 +152,7 @@ function RowDecision({ route, onDone }: { route: ChangeRoute; onDone: () => void
         setError(res.error);
         return;
       }
-      onDone();
+      onDone?.();
       router.refresh();
     });
   }
