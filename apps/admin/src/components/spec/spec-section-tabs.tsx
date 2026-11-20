@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cn } from "@pakfactory/ui/lib/utils";
 import {
   countWaitingLibraryChanges,
+  countWaitingSpecEdits,
   listDraftChangesets,
 } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SECTION_TABS_COPY as COPY } from "@/lib/copy/spec";
@@ -51,7 +52,7 @@ function Tabs({
   );
 }
 
-export type ReviewTab = "website" | "library" | "held" | "mapping";
+export type ReviewTab = "website" | "library" | "proposals" | "held" | "mapping";
 
 /**
  * Review: website changes (frames), the production library, held changes and mapping. Only what
@@ -59,9 +60,10 @@ export type ReviewTab = "website" | "library" | "held" | "mapping";
  * their own pages, so a count of 1,400 records to review does not drown the rest.
  */
 export async function ReviewTabs({ active }: { active: ReviewTab }) {
-  const [frames, held] = await Promise.all([
+  const [frames, held, proposals] = await Promise.all([
     listDraftChangesets(),
     countWaitingLibraryChanges(),
+    countWaitingSpecEdits(),
   ]);
   const tabs: Tab[] = [
     {
@@ -71,6 +73,8 @@ export async function ReviewTabs({ active }: { active: ReviewTab }) {
       count: frames.ok ? frames.data.length : 0,
     },
     { key: "library", label: COPY.review.library, href: "/spec/library" },
+    // PLAT-85: edits by non-admins (later map additions and vendors) waiting for an admin (ADR-028 D4).
+    { key: "proposals", label: COPY.review.proposals, href: "/spec/library/proposals", count: proposals },
     {
       key: "held",
       label: COPY.review.held,

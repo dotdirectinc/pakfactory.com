@@ -6,7 +6,7 @@ import {
 import { AdminShell } from "@/components/layout/admin-shell";
 import { isAdminDevBypassEnabled } from "@/lib/auth/dev-bypass";
 import { requireInternalUser } from "@/lib/auth/require-internal-user";
-import { countWaitingLibraryChanges, fetchSpecMe, listDraftChangesets } from "@/lib/spec/registry-api";
+import { countWaitingLibraryChanges, countWaitingSpecEdits, fetchSpecMe, listDraftChangesets } from "@/lib/spec/registry-api";
 import { startTiming } from "@/lib/perf/timing";
 
 export default async function AdminShellLayout({
@@ -20,17 +20,19 @@ export default async function AdminShellLayout({
   // nothing; their results are only used once it has. All three are memoised per request, so the page
   // below reuses them.
   const t = startTiming("layout");
-  const [{ user }, me, drafts, held] = await Promise.all([
+  const [{ user }, me, drafts, held, proposals] = await Promise.all([
     t.step("user", requireInternalUser("/")),
     t.step("specMe", fetchSpecMe()),
     t.step("drafts", listDraftChangesets()),
     t.step("held", countWaitingLibraryChanges()),
+    t.step("proposals", countWaitingSpecEdits()),
   ]);
   t.done();
   const specAccess = Boolean(me?.authenticated && me.role);
-  // What waits in Review, for the sidebar's count: frames waiting for approval plus held library changes
-  // (not the review backlogs). No access or unreachable registry: no count, not an error.
-  const reviewCount = specAccess ? (drafts.ok ? drafts.data.length : 0) + held : 0;
+  // What waits in Review, for the sidebar's count: frames waiting for approval, held library changes and
+  // proposals waiting for an admin (not the review backlogs). No access or unreachable registry: no
+  // count, not an error.
+  const reviewCount = specAccess ? (drafts.ok ? drafts.data.length : 0) + held + proposals : 0;
 
   return (
     <AdminShell

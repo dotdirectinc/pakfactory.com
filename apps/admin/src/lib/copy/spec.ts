@@ -941,6 +941,7 @@ export const ADMIN_SPEC_SECTION_TABS_COPY = {
     label: "Review",
     website: "Website changes",
     library: "Production library",
+    proposals: "Proposals",
     held: "Held changes",
     mapping: "Mapping",
   },
