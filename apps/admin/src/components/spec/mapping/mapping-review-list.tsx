@@ -27,6 +27,7 @@ import {
 } from "@/app/(admin)/spec/mapping/preview-actions";
 import { SpecHoverLink } from "@/components/spec/mapping/spec-hover-link";
 import { MapEditor } from "@/components/spec/mapping/map-editor";
+import { ImageZoom } from "@/components/spec/mapping/image-zoom";
 import { presetSourceOf } from "@/lib/spec/map-editor";
 import type {
   LibraryDecision,
@@ -410,14 +411,7 @@ function MappingRow({
           />
         ) : null}
         {link?.image ? (
-          <img
-            src={`${link.image}?w=96&h=96&fit=crop&auto=format`}
-            alt={COPY.image(m.subjectName ?? m.subjectCode)}
-            width={48}
-            height={48}
-            loading="lazy"
-            className="mt-0.5 size-12 shrink-0 rounded-md border border-border object-cover"
-          />
+          <ImageZoom src={link.image} alt={COPY.image(m.subjectName ?? m.subjectCode)} size={48} className="mt-0.5 size-12" />
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col rounded-md border border-border bg-background px-2.5 py-1.5">
           <span className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -674,15 +668,7 @@ function InspirationsLine({ m, count, images }: { m: MappingItem; count: number;
       title={COPY.inspiration.baseOfHint}
     >
       {images.map((src) => (
-        <img
-          key={src}
-          src={`${src}?w=64&h=64&fit=crop&auto=format`}
-          alt=""
-          width={32}
-          height={32}
-          loading="lazy"
-          className="size-8 shrink-0 rounded border border-border object-cover"
-        />
+        <ImageZoom key={src} src={src} alt={COPY.inspiration.borrowedImage(m.subjectName ?? m.subjectCode)} size={32} className="size-8 rounded" />
       ))}
       <span>{COPY.inspiration.baseOf(count)}</span>
     </a>
