@@ -7,12 +7,16 @@ import { cn } from "@pakfactory/ui/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { LibraryItemsTable } from "@/components/spec/library/library-items-table";
 import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
-import { getProductTypeChanges, listLibraryChanges, listLibraryItems, listLibraryVersions } from "@/lib/spec/registry-api";
+import { getProductTypeChanges, listLibraryChanges, listLibraryItems, listLibraryVersions, type LibraryItem } from "@/lib/spec/registry-api";
+import { Badge } from "@pakfactory/ui/components/badge";
 import {
   LIBRARY_COLLECTIONS,
   LINES,
   PAGE_SIZE,
   apiLine,
+  findHref,
+  findOf,
+  recordPageHref,
   STATE_FILTERS,
   isCollection,
   lineOf,
@@ -30,7 +34,7 @@ import { ReviewTabs } from "@/components/spec/spec-section-tabs";
 
 export const metadata = { title: "Library review" };
 
-type SP = { view?: string; version?: string; collection?: string; state?: string; search?: string; page?: string; line?: string };
+type SP = { view?: string; version?: string; collection?: string; state?: string; search?: string; page?: string; line?: string; find?: string };
 
 /**
  * Spec Library review (PFP-124 / PLAT-51, PLAT-81). Records are approved one by one; there is no
@@ -76,12 +80,15 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
   const progressOf = (key: string) => version.collections.find((c) => c.collection === key);
 
   const view = viewOf(sp);
+  const find = findOf(sp.find);
   // Links that keep the current tab: the line pills and the version buttons.
   const hrefFor = (q: { version: number; line: LineKey }) =>
     view === "product-types" ? productTypesHref(q) : listHref({ ...q, collection });
 
   const [itemsRes, productTypeRows] =
-    view === "records"
+    find
+      ? [null, null]
+      : view === "records"
       ? [
           await listLibraryItems(version.number, {
             collection,
@@ -147,6 +154,24 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
       </section>
       {!canDecide ? <p className="text-sm text-muted-foreground">{COPY.readOnlyNote}</p> : null}
 
+      {/* Find any record of this version and line, in every collection and state. */}
+      <form action="/spec/library" className="flex flex-wrap items-center gap-2" title={COPY.find.hint}>
+        <input type="hidden" name="version" value={version.number} />
+        {line !== "CAT-FC" ? <input type="hidden" name="line" value={line} /> : null}
+        <label htmlFor="library-find" className="text-sm text-muted-foreground">
+          {COPY.find.label}
+        </label>
+        <Input id="library-find" name="find" defaultValue={find ?? ""} placeholder={COPY.find.placeholder} className="h-8 w-80" />
+        <Button size="sm" variant="outline" type="submit">
+          {COPY.find.button}
+        </Button>
+        {find ? (
+          <Link href={findHref({ version: version.number, line })} className="text-sm text-primary hover:underline">
+            {COPY.find.clear}
+          </Link>
+        ) : null}
+      </form>
+
       {/* Two ways in: by product type (default) and every record by collection. */}
       <nav aria-label={COPY.title} className="flex gap-1 border-b border-border text-sm">
         {(
@@ -169,7 +194,9 @@ export default async function SpecLibraryReviewPage({ searchParams }: { searchPa
         ))}
       </nav>
 
-      {view === "product-types" ? (
+      {find ? (
+        <FindResults version={version.number} line={line} find={find} />
+      ) : view === "product-types" ? (
         <section className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">{COPY.productTypeList.lead}</p>
           {productTypeRows ? (
@@ -295,6 +322,59 @@ async function ProductTypeListWithCounts({ rows, showLine }: { rows: ProductType
   ]);
   const full = rows.map((r) => ({ ...r, progress: progress.get(r.item.sourceId) ?? null, changes: changes.get(r.item.sourceId) ?? null }));
   return <LibraryProductTypeList rows={full} showLine={showLine} />;
+}
+
+const FIND_LIMIT = 10;
+
+/** Matches in every collection, a few per collection, each linking to its record page. */
+async function FindResults({ version, line, find }: { version: number; line: LineKey; find: string }) {
+  const results = await Promise.all(
+    LIBRARY_COLLECTIONS.map(async (c) => {
+      const res = await listLibraryItems(version, { collection: c.key, search: find, line: apiLine(line), limit: FIND_LIMIT, offset: 0 });
+      return { c, items: res.ok ? res.data.items : ([] as LibraryItem[]), total: res.ok ? res.data.total : 0, error: res.ok ? null : res.error };
+    }),
+  );
+  const hits = results.filter((r) => r.total > 0);
+  const total = hits.reduce((n, r) => n + r.total, 0);
+  const failed = results.find((r) => r.error);
+  return (
+    <section className="flex flex-col gap-4">
+      {failed ? (
+        <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">
+          {COPY.unreachable} ({failed.error})
+        </p>
+      ) : null}
+      <p className="text-sm font-medium">{total ? COPY.find.heading(find, total) : COPY.find.none(find)}</p>
+      {hits.map(({ c, items, total: n }) => (
+        <div key={c.key} className="rounded-lg border border-border">
+          <h3 className="border-b border-border bg-muted/30 px-3 py-2 text-sm font-medium">
+            {c.label} <span className="font-normal text-muted-foreground">{n}</span>
+          </h3>
+          <ul className="divide-y divide-border">
+            {items.map((i) => (
+              <li key={i.sourceId}>
+                <Link href={recordPageHref(version, c.key, i.sourceId)} className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/40">
+                  <span className="w-48 shrink-0 font-mono text-xs text-muted-foreground">{i.sourceId}</span>
+                  <span className="min-w-0 flex-1 truncate">{i.label ?? "—"}</span>
+                  <Badge variant="outline" className="font-normal">
+                    {COPY.states[i.state]}
+                  </Badge>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {n > items.length ? (
+            <Link
+              href={listHref({ version, collection: c.key, state: "all", search: find, line })}
+              className="block border-t border-border px-3 py-2 text-xs text-primary hover:underline"
+            >
+              {COPY.find.more(n - items.length, c.label)}
+            </Link>
+          ) : null}
+        </div>
+      ))}
+    </section>
+  );
 }
 
 function Shell({ children, badge, aside }: { children: React.ReactNode; badge?: React.ReactNode; aside?: React.ReactNode }) {

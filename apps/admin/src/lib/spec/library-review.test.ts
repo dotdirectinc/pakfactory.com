@@ -16,6 +16,9 @@ import {
   totals,
   LIBRARY_COLLECTIONS,
   LINES,
+  findHref,
+  findOf,
+  recordPageHref,
 } from "./library-review";
 
 test("14 collections, matching the backend's", () => {
@@ -73,4 +76,12 @@ test("held changes: filter default, collection names, changed fields", () => {
   assert.equal(reviewCollectionOf("examples"), "rule_test");
   assert.deepEqual(changedKeys({ a: 1, b: [1, 2], c: null }, { a: 1, b: [1, 3], d: 2 }), ["b", "c", "d"]);
   assert.deepEqual(changedKeys({ a: { x: 1 } }, { a: { x: 1 } }), []);
+});
+
+test("find across the library: URL and search text", () => {
+  assert.equal(findHref({ version: 3, line: "CAT-FC", find: "SLB" }), "/spec/library?version=3&find=SLB");
+  assert.equal(findHref({ version: 3 }), "/spec/library?version=3");
+  assert.equal(findOf("  window  "), "window");
+  assert.equal(findOf("   "), null);
+  assert.equal(recordPageHref(1, "product_type", "PT-FC-SLB"), "/spec/library/1/product_type/PT-FC-SLB");
 });

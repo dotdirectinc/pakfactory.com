@@ -27,6 +27,7 @@ import {
 } from "@/app/(admin)/spec/mapping/preview-actions";
 import { SpecHoverLink } from "@/components/spec/mapping/spec-hover-link";
 import { MapEditor } from "@/components/spec/mapping/map-editor";
+import { ImageZoom } from "@/components/spec/mapping/image-zoom";
 import { presetSourceOf } from "@/lib/spec/map-editor";
 import type {
   LibraryDecision,
@@ -82,6 +83,7 @@ export function MappingReviewList({
   groupBy: string;
 }) {
   const groups = useMemo(() => groupMappings(items, (i) => links[i.subjectId]?.status), [items, links]);
+  const stateById = useMemo(() => new Map(items.map((i) => [i.id, i.state])), [items]);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [folded, setFolded] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -106,17 +108,25 @@ export function MappingReviewList({
       setError(COPY.bar.noteNeeded);
       return;
     }
+    // Maps already at this decision are skipped: repeating it only adds a duplicate history row.
+    const todo = [...picked].filter((m) => stateById.get(m) !== decision);
+    const skipped = picked.size - todo.length;
+    if (todo.length === 0) {
+      setError(COPY.bar.allAlready(COPY.bar.decided[decision]!));
+      return;
+    }
     setError(null);
     start(async () => {
-      const res = await decideMappingsAction(decision, note.trim() || null, [
-        ...picked,
-      ]);
+      const res = await decideMappingsAction(decision, note.trim() || null, todo);
       if (!res.ok) {
         setError(res.error);
         router.refresh();
         return;
       }
-      toast.success(COPY.bar.done(res.recorded, COPY.bar.decided[decision]!));
+      toast.success(
+        COPY.bar.done(res.recorded, COPY.bar.decided[decision]!) +
+          (skipped > 0 ? ` ${COPY.bar.skipped(skipped, COPY.bar.decided[decision]!)}` : ""),
+      );
       setPicked(new Set());
       setNote("");
       router.refresh();
@@ -410,14 +420,7 @@ function MappingRow({
           />
         ) : null}
         {link?.image ? (
-          <img
-            src={`${link.image}?w=96&h=96&fit=crop&auto=format`}
-            alt={COPY.image(m.subjectName ?? m.subjectCode)}
-            width={48}
-            height={48}
-            loading="lazy"
-            className="mt-0.5 size-12 shrink-0 rounded-md border border-border object-cover"
-          />
+          <ImageZoom src={link.image} alt={COPY.image(m.subjectName ?? m.subjectCode)} size={48} className="mt-0.5 size-12" />
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col rounded-md border border-border bg-background px-2.5 py-1.5">
           <span className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -674,15 +677,7 @@ function InspirationsLine({ m, count, images }: { m: MappingItem; count: number;
       title={COPY.inspiration.baseOfHint}
     >
       {images.map((src) => (
-        <img
-          key={src}
-          src={`${src}?w=64&h=64&fit=crop&auto=format`}
-          alt=""
-          width={32}
-          height={32}
-          loading="lazy"
-          className="size-8 shrink-0 rounded border border-border object-cover"
-        />
+        <ImageZoom key={src} src={src} alt={COPY.inspiration.borrowedImage(m.subjectName ?? m.subjectCode)} size={32} className="size-8 rounded" />
       ))}
       <span>{COPY.inspiration.baseOf(count)}</span>
     </a>
