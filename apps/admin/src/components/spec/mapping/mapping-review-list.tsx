@@ -24,6 +24,7 @@ import {
   type PreviewResult,
 } from "@/app/(admin)/spec/mapping/preview-actions";
 import { SpecHoverLink } from "@/components/spec/mapping/spec-hover-link";
+import { MapEditor } from "@/components/spec/mapping/map-editor";
 import type {
   LibraryDecision,
   LibraryReviewState,
@@ -61,11 +62,16 @@ export function MappingReviewList({
   items,
   links,
   canDecide,
+  canEdit,
+  admin,
   groupBy,
 }: {
   items: MappingItem[];
   links: Record<string, WebsiteLink>;
   canDecide: boolean;
+  /** Approver or admin: may edit maps (PLAT-86); an admin's save approves the map. */
+  canEdit: boolean;
+  admin: boolean;
   groupBy: string;
 }) {
   const groups = useMemo(() => groupMappings(items), [items]);
@@ -223,6 +229,8 @@ export function MappingReviewList({
                       m={m}
                       link={links[m.subjectId]}
                       canDecide={canDecide}
+                      canEdit={canEdit}
+                      admin={admin}
                       checked={picked.has(m.id)}
                       onCheck={(on) => set([m.id], on)}
                       disabled={pending}
@@ -294,7 +302,7 @@ export function MappingReviewList({
   );
 }
 
-export type WebsiteLink = { href: string; table: string; id: string };
+export type WebsiteLink = { href: string; table: string; id: string; image: string | null };
 
 const KIND_NOUN: Record<MappingItem["subjectKind"], string> = {
   product: "Website product",
@@ -341,6 +349,8 @@ function MappingRow({
   m,
   link,
   canDecide,
+  canEdit,
+  admin,
   checked,
   onCheck,
   disabled,
@@ -348,6 +358,8 @@ function MappingRow({
   m: MappingItem;
   link: WebsiteLink | undefined;
   canDecide: boolean;
+  canEdit: boolean;
+  admin: boolean;
   checked: boolean;
   onCheck: (on: boolean) => void;
   disabled: boolean;
@@ -370,6 +382,16 @@ function MappingRow({
             onCheckedChange={(v) => onCheck(v === true)}
             disabled={disabled}
             aria-label={COPY.selectMap(m.subjectName ?? m.subjectCode)}
+          />
+        ) : null}
+        {link?.image ? (
+          <img
+            src={`${link.image}?w=96&h=96&fit=crop&auto=format`}
+            alt={COPY.image(m.subjectName ?? m.subjectCode)}
+            width={48}
+            height={48}
+            loading="lazy"
+            className="mt-0.5 size-12 shrink-0 rounded-md border border-border object-cover"
           />
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col rounded-md border border-border bg-background px-2.5 py-1.5">
@@ -535,6 +557,7 @@ function MappingRow({
             {m.decidedByName}
           </span>
         ) : null}
+        {canEdit ? <MapEditor m={m} admin={admin} canDecide={canDecide} /> : null}
       </div>
     </li>
   );

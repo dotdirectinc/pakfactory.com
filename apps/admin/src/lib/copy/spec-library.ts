@@ -183,6 +183,9 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
     waitingAdmin: "Waiting for an admin",
     retire: "Retire this record",
     restore: "Restore this record",
+    mapEdit: "Map edit",
+    mapEditWhat: "A change to an approved map",
+    openMapping: "Open Mapping review",
   },
   typeChanges: {
     heading: "Changes since the last approval",

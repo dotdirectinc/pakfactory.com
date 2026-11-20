@@ -4,7 +4,7 @@ import { Input } from "@pakfactory/ui/components/input";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { MappingReviewList } from "@/components/spec/mapping/mapping-review-list";
-import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
+import { canAdminSpec, canEditSpec, canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { listSpecMappings } from "@/lib/spec/registry-api";
 import { websiteLinks } from "@/lib/spec/mapping-links";
 import { LINES } from "@/lib/spec/library-review";
@@ -32,10 +32,12 @@ export default async function SpecMappingReviewPage({ searchParams }: { searchPa
   const links = Object.fromEntries(
     (res.ok ? res.data.items : []).flatMap((i) => {
       const l = linkMap.get(i.subjectId);
-      return l ? [[i.subjectId, { href: l.href, table: l.table, id: l.id }]] : [];
+      return l ? [[i.subjectId, { href: l.href, table: l.table, id: l.id, image: l.image }]] : [];
     }),
   );
   const canDecide = canReviewLibrary(me);
+  const canEdit = canEditSpec(me);
+  const admin = canAdminSpec(me);
   const lineName = LINES.find((l) => l.key === p.line)?.label ?? p.line;
   const kind = KINDS.find((k) => k.key === p.kind)!;
 
@@ -137,7 +139,7 @@ export default async function SpecMappingReviewPage({ searchParams }: { searchPa
           </nav>
 
           {!canDecide ? <p className="text-sm text-muted-foreground">{COPY.readOnlyNote}</p> : null}
-          <MappingReviewList key={mappingHref(p)} items={res.data.items} links={links} canDecide={canDecide} groupBy={kind.groupBy} />
+          <MappingReviewList key={mappingHref(p)} items={res.data.items} links={links} canDecide={canDecide} canEdit={canEdit} admin={admin} groupBy={kind.groupBy} />
         </>
       )}
     </div>
