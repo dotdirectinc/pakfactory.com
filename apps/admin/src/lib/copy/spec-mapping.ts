@@ -53,6 +53,16 @@ export const ADMIN_SPEC_MAPPING_COPY = {
   },
   deciding: "Saving…",
   image: (name: string) => `Website image of ${name}`,
+  visibility: {
+    website: "On website",
+    internal: "Internal",
+    other: (status: string) => status.replace(/-/g, " "),
+    hint: {
+      website: "Active: on the website, customers can choose it.",
+      internal: "Active (internal): no page on the website, customers can't choose it. It may still be the base of an inspiration product.",
+      other: "Not on the website.",
+    },
+  },
   editor: {
     open: "Edit map…",
     title: (name: string) => `Map: ${name}`,
