@@ -5,6 +5,9 @@ import { DEFAULT_LINE, LINES, type LineKey } from "@/lib/spec/library-review";
 
 export const KINDS: { key: MappingKind; label: string; groupBy: string }[] = [
   { key: "product", label: "Products", groupBy: "style" },
+  // PLAT-99: a tab of its own so every row shows its own website image (Justin reviews by image; the
+  // internal bases have none). The base is shown on each row. Merging into Products may come later.
+  { key: "inspiration", label: "Inspiration products", groupBy: "base product" },
   { key: "option", label: "Options", groupBy: "category · type" },
   { key: "property_value", label: "Property values", groupBy: "property" },
 ];
@@ -108,4 +111,20 @@ export function groupMappings(
 /** A target's setting as shown after its name: "= Outside only", or as written when it names its own field ("Grade = Anti-static"). */
 export function settingText(setting: string): string {
   return setting.includes("=") ? setting : `= ${setting}`;
+}
+
+/**
+ * Images an internal base can borrow (PLAT-99): base product uuid → up to `max` images of its active
+ * inspiration products. Internal products have no website photos; their inspiration products do.
+ */
+export function borrowedImages(links: Iterable<{ base: string | null; status: string | null; image: string | null }>, max = 3): Map<string, { images: string[]; count: number }> {
+  const out = new Map<string, { images: string[]; count: number }>();
+  for (const x of links) {
+    if (!x.base || x.status !== "active") continue;
+    const b = out.get(x.base) ?? { images: [], count: 0 };
+    b.count++;
+    if (x.image && b.images.length < max) b.images.push(x.image);
+    out.set(x.base, b);
+  }
+  return out;
 }

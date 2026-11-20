@@ -8,7 +8,8 @@ import { canAdminSpec, canEditSpec, canReviewLibrary, requireRegistryGrant } fro
 import { listSpecMappings } from "@/lib/spec/registry-api";
 import { websiteLinks } from "@/lib/spec/mapping-links";
 import { LINES } from "@/lib/spec/library-review";
-import { apiState, KINDS, MAP_LABELS, MAP_STATES, mappingHref, mappingParams } from "@/lib/spec/mapping-review";
+import { apiState, borrowedImages, KINDS, MAP_LABELS, MAP_STATES, mappingHref, mappingParams } from "@/lib/spec/mapping-review";
+import type { BaseMap } from "@/components/spec/mapping/mapping-review-list";
 import { ADMIN_SPEC_MAPPING_COPY as COPY } from "@/lib/copy/spec-mapping";
 import { ReviewTabs } from "@/components/spec/spec-section-tabs";
 
@@ -23,17 +24,31 @@ type SP = { kind?: string; line?: string; state?: string; label?: string; search
  */
 export default async function SpecMappingReviewPage({ searchParams }: { searchParams: Promise<SP> }) {
   const p = mappingParams(await searchParams);
-  const [me, res, linkMap] = await Promise.all([
+  const inspiration = p.kind === "inspiration";
+  const [me, res, linkMap, baseList] = await Promise.all([
     requireRegistryGrant(),
     listSpecMappings({ kind: p.kind, line: p.line, state: apiState(p.state), label: p.label ?? undefined, search: p.search ?? undefined }),
     websiteLinks(),
+    // Inspiration rows show their base's map (PLAT-99), so the reviewer need not switch tabs.
+    inspiration ? listSpecMappings({ kind: "product", line: p.line }) : null,
   ]);
+  // Internal bases have no website images; they borrow their inspiration products' (PLAT-99).
+  const borrowed = p.kind === "product" ? borrowedImages(linkMap.values()) : new Map<string, { images: string[]; count: number }>();
   // Only the links this page shows go to the client.
   const links = Object.fromEntries(
     (res.ok ? res.data.items : []).flatMap((i) => {
       const l = linkMap.get(i.subjectId);
-      return l ? [[i.subjectId, { href: l.href, table: l.table, id: l.id, image: l.image, status: l.status }]] : [];
+      const b = borrowed.get(i.subjectId);
+      return l || b
+        ? [[i.subjectId, { href: l?.href ?? null, table: l?.table ?? null, id: l?.id ?? null, image: l?.image ?? null, status: l?.status ?? null, borrowed: b?.images ?? [], borrowedCount: b?.count ?? 0 }]]
+        : [];
     }),
+  );
+  const bases: Record<string, BaseMap> = Object.fromEntries(
+    (baseList?.ok ? baseList.data.items : []).map((b) => [
+      b.subjectCode,
+      { id: b.id, name: b.subjectName, state: b.state, productType: b.targets.find((t) => t.kind === "product_type") ?? null, image: linkMap.get(b.subjectId)?.image ?? null },
+    ]),
   );
   const canDecide = canReviewLibrary(me);
   const canEdit = canEditSpec(me);
@@ -73,7 +88,11 @@ export default async function SpecMappingReviewPage({ searchParams }: { searchPa
         ))}
       </nav>
 
-      {!res.ok ? (
+      {!res.ok && inspiration ? (
+        <p role="status" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+          {COPY.inspiration.notAvailable} ({res.error})
+        </p>
+      ) : !res.ok ? (
         <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">
           {COPY.unreachable} ({res.error})
         </p>
@@ -139,7 +158,7 @@ export default async function SpecMappingReviewPage({ searchParams }: { searchPa
           </nav>
 
           {!canDecide ? <p className="text-sm text-muted-foreground">{COPY.readOnlyNote}</p> : null}
-          <MappingReviewList key={mappingHref(p)} items={res.data.items} links={links} canDecide={canDecide} canEdit={canEdit} admin={admin} groupBy={kind.groupBy} />
+          <MappingReviewList key={mappingHref(p)} items={res.data.items} links={links} bases={bases} canDecide={canDecide} canEdit={canEdit} admin={admin} groupBy={kind.groupBy} />
         </>
       )}
     </div>

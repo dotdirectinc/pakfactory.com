@@ -11,9 +11,10 @@ import { typeidToUuid } from "./typeid";
  * of every published product, option and property value that has a Registry id, cached like the
  * other Spec views (60 s).
  */
-type Row = { _id: string; _type: string; kind?: string | null; entityId: string; image?: string | null; status?: string | null };
+type Row = { _id: string; _type: string; kind?: string | null; entityId: string; image?: string | null; status?: string | null; base?: string | null };
+export type WebsiteRecord = { table: TableKey; id: string; image: string | null; status: string | null; base: string | null };
 
-async function fetchIds(): Promise<Loaded<[string, { table: TableKey; id: string; image: string | null; status: string | null }][]>> {
+async function fetchIds(): Promise<Loaded<[string, WebsiteRecord][]>> {
   const projectId = getSanityProjectId();
   if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
   const client = createClient({ projectId, dataset: RULES_DATASET, apiVersion: getSanityApiVersion(), useCdn: true, perspective: "published" });
@@ -21,15 +22,18 @@ async function fetchIds(): Promise<Loaded<[string, { table: TableKey; id: string
     const rows = await client.fetch<Row[]>(
       `*[_type in ["product", "customizationOption", "propertyValue"] && defined(entityId)]{
         _id, _type, kind, entityId, status,
+        // Inspiration products: the base standard product (PLAT-99), to borrow images for internal bases.
+        "base": basedOn->entityId,
         // The first still, as catalog-record.ts picks it (PLAT-86 scope 6).
         "image": coalesce(coalesce(images[primary == true][0], images[0]).asset->url, featuredImage.asset->url, image.asset->url)
       }`,
     );
-    const out: [string, { table: TableKey; id: string; image: string | null; status: string | null }][] = [];
+    const out: [string, WebsiteRecord][] = [];
     for (const r of rows) {
       const uuid = typeidToUuid(r.entityId)?.uuid;
       const table = tableOfDoc(r._type, r.kind);
-      if (uuid && table) out.push([uuid, { table, id: r._id, image: r.image ?? null, status: r.status ?? null }]);
+      const base = r.base ? (typeidToUuid(r.base)?.uuid ?? null) : null;
+      if (uuid && table) out.push([uuid, { table, id: r._id, image: r.image ?? null, status: r.status ?? null, base }]);
     }
     return { ok: true, data: out };
   } catch (err) {
@@ -37,11 +41,12 @@ async function fetchIds(): Promise<Loaded<[string, { table: TableKey; id: string
   }
 }
 
-const cachedIds = cachedSpec("mapping-registry-ids-v3", fetchIds);
+const cachedIds = cachedSpec("mapping-registry-ids-v4", fetchIds);
 
 /** Registry uuid → its catalog page and table; an empty lookup when Sanity cannot be read (links are a convenience). */
-export async function websiteLinks(): Promise<Map<string, { href: string; table: TableKey; id: string; image: string | null; status: string | null }>> {
+export async function websiteLinks(): Promise<Map<string, WebsiteRecord & { href: string }>> {
   const res = await cachedIds();
   if (!res.ok) return new Map();
   return new Map(res.data.map(([uuid, x]) => [uuid, { ...x, href: recordHref(x.table, x.id) }]));
 }
+

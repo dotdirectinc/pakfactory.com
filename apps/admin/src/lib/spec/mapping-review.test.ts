@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { groupMappings, visibilityOf, mappingHref, mappingParams, settingText, targetHref } from "./mapping-review";
+import { borrowedImages, groupMappings, visibilityOf, mappingHref, mappingParams, settingText, targetHref } from "./mapping-review";
 import type { MappingItem } from "./registry-api";
 
 const item = (id: number, group: string | null): MappingItem =>
@@ -48,4 +48,18 @@ test("on the website first, then internal, then the rest: within groups and betw
   assert.deepEqual(groups[0]!.items.map((i) => i.id), [2, 4, 1, 3]);
   assert.equal(visibilityOf("active-internal"), "internal");
   assert.equal(visibilityOf(null), null);
+});
+
+test("internal bases borrow up to 3 images from their active inspiration products (PLAT-99)", () => {
+  const rows = [
+    { base: "b1", status: "active", image: "i1" },
+    { base: "b1", status: "active", image: null },
+    { base: "b1", status: "active", image: "i2" },
+    { base: "b1", status: "active", image: "i3" },
+    { base: "b1", status: "active", image: "i4" },
+    { base: "b1", status: "not-active", image: "x" },
+    { base: null, status: "active", image: "s" },
+  ];
+  assert.deepEqual(borrowedImages(rows).get("b1"), { images: ["i1", "i2", "i3"], count: 5 });
+  assert.equal(borrowedImages(rows).size, 1);
 });

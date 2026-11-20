@@ -20,6 +20,7 @@ const COLLECTIONS: Record<MappingKind, string[]> = {
   product: ["product_type", "template", "capability"],
   option: ["capability", "field"],
   property_value: ["field", "capability"],
+  inspiration: ["product_type", "template", "capability"],
 };
 
 const PAGE = 500;
