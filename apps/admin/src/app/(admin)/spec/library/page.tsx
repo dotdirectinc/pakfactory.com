@@ -6,7 +6,7 @@ import { cn } from "@pakfactory/ui/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { LibraryItemsTable } from "@/components/spec/library/library-items-table";
 import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
-import { listLibraryChanges, listLibraryItems, listLibraryVersions } from "@/lib/spec/registry-api";
+import { getProductTypeChanges, listLibraryChanges, listLibraryItems, listLibraryVersions } from "@/lib/spec/registry-api";
 import {
   LIBRARY_COLLECTIONS,
   LINES,
@@ -274,8 +274,16 @@ async function productTypeRowsOf(version: number, line: LineKey): Promise<Produc
     if (!res.ok) return null;
     rows = res.data.items.map((item) => ({ item, progress: null }));
   }
-  const progress = await productTypeProgress(rows.map((r) => r.item.sourceId));
-  return rows.map((r) => ({ ...r, progress: progress.get(r.item.sourceId) ?? null }));
+  const ids = rows.map((r) => r.item.sourceId);
+  // PLAT-85: New / Changed / Removed per product type, one change-list call each (9 for Folding Cartons).
+  const [progress, changes] = await Promise.all([
+    productTypeProgress(ids),
+    Promise.all(ids.map(async (id) => {
+      const res = await getProductTypeChanges(id);
+      return [id, res.ok ? res.data.counts : null] as const;
+    })).then((pairs) => new Map(pairs)),
+  ]);
+  return rows.map((r) => ({ ...r, progress: progress.get(r.item.sourceId) ?? null, changes: changes.get(r.item.sourceId) ?? null }));
 }
 
 function Shell({ children, badge, aside }: { children: React.ReactNode; badge?: React.ReactNode; aside?: React.ReactNode }) {

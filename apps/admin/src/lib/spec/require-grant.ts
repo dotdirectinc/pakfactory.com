@@ -40,3 +40,8 @@ export function canApprove(me: SpecMe): boolean {
 export function canReviewLibrary(me: SpecMe): boolean {
   return me.capabilities.includes("spec.review");
 }
+
+/** Whether this person is a Spec System admin: decides proposals, sets baselines (ADR-028 D4, D7). */
+export function canAdminSpec(me: SpecMe): boolean {
+  return me.capabilities.includes("spec.admin");
+}

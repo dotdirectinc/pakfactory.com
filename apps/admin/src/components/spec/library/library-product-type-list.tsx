@@ -7,11 +7,13 @@ import { ADMIN_SPEC_LIBRARY_COPY } from "@/lib/copy/spec-library";
 
 const COPY = ADMIN_SPEC_LIBRARY_COPY.productTypeList;
 
-export type ProductTypeRow = { item: LibraryItem; line?: string; progress: ProductTypeProgress | null };
+export type ChangeCounts = { new: number; changed: number; removed: number };
+export type ProductTypeRow = { item: LibraryItem; line?: string; progress: ProductTypeProgress | null; changes?: ChangeCounts | null };
 
 /**
- * "By product type" (PLAT-81): one row per product type with its own decision and how many of the
- * records it is built from are approved. A row opens the product type's review page.
+ * "By product type" (PLAT-81, PLAT-85): one row per product type with how many of its records are new,
+ * changed or removed since they were last approved, its own decision, and how many of the records it is
+ * built from are approved. A row opens the product type's review page.
  */
 export function LibraryProductTypeList({ rows, showLine }: { rows: ProductTypeRow[]; showLine: boolean }) {
   if (rows.length === 0) {
@@ -24,13 +26,14 @@ export function LibraryProductTypeList({ rows, showLine }: { rows: ProductTypeRo
           <tr>
             <th className="px-3 py-2 font-medium">{COPY.columns.productType}</th>
             {showLine ? <th className="px-3 py-2 font-medium">{COPY.columns.line}</th> : null}
+            <th className="px-3 py-2 font-medium">{ADMIN_SPEC_LIBRARY_COPY.typeChanges.countsColumn}</th>
             <th className="px-3 py-2 font-medium">{COPY.columns.own}</th>
             <th className="px-3 py-2 font-medium">{COPY.columns.progress}</th>
             <th className="px-3 py-2 text-right font-medium">{COPY.columns.open}</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ item, line, progress }) => {
+          {rows.map(({ item, line, progress, changes }) => {
             const pct = progress && progress.total > 0 ? Math.round((progress.approve / progress.total) * 100) : 0;
             return (
               <tr key={item.sourceId} className="border-t border-border">
@@ -41,6 +44,15 @@ export function LibraryProductTypeList({ rows, showLine }: { rows: ProductTypeRo
                   <span className="font-mono text-xs text-muted-foreground">{item.sourceId}</span>
                 </td>
                 {showLine ? <td className="px-3 py-2 text-muted-foreground">{line}</td> : null}
+                <td className="px-3 py-2 tabular-nums">
+                  {changes ? (
+                    <span className={cn(changes.new + changes.changed + changes.removed === 0 && "text-muted-foreground")}>
+                      {changes.new} · {changes.changed} · {changes.removed}
+                    </span>
+                  ) : (
+                    COPY.unreadable
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   <Badge variant={item.state === "reject" ? "destructive" : item.state === "approve" ? "default" : "outline"} className="font-normal">
                     {ADMIN_SPEC_LIBRARY_COPY.states[item.state]}

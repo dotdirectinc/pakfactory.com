@@ -6,8 +6,10 @@ import { cn } from "@pakfactory/ui/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { LibraryBundleApprove } from "@/components/spec/library/library-bundle-approve";
 import { WARNING_BADGE } from "@/components/spec/library/spec-value";
-import { canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
-import { getLibraryProductTypeReview, type LibraryBundleItem, type LibraryReviewState } from "@/lib/spec/registry-api";
+import { canAdminSpec, canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
+import { getLibraryProductTypeReview, getProductTypeChanges, type LibraryBundleItem, type LibraryReviewState } from "@/lib/spec/registry-api";
+import { changeGroups } from "@/lib/spec/library-changes";
+import { LibraryChangeList } from "@/components/spec/library/library-change-list";
 import { bundleSections, sortBundle, stateCounts, templateLevelLabel } from "@/lib/spec/library-bundle";
 import { lineOf } from "@/lib/spec/library-review";
 import { productTypesHref } from "@/lib/spec/library-usage";
@@ -16,6 +18,7 @@ import { ADMIN_SPEC_LIBRARY_COPY } from "@/lib/copy/spec-library";
 export const metadata = { title: "Product type review" };
 
 const COPY = ADMIN_SPEC_LIBRARY_COPY.productType;
+const CHANGES = ADMIN_SPEC_LIBRARY_COPY.typeChanges;
 
 /** Outline colour per decision: to review, approved, rejected, deferred. */
 const STATE_TONE: Record<LibraryReviewState, string> = {
@@ -46,7 +49,11 @@ export default async function SpecLibraryProductTypePage({ params }: { params: P
   const sourceId = decodeURIComponent(raw);
   if (!/^PT-[A-Z0-9][A-Z0-9-]{0,80}$/.test(sourceId)) notFound();
 
-  const [me, res] = await Promise.all([requireRegistryGrant(), getLibraryProductTypeReview(sourceId)]);
+  const [me, res, changesRes] = await Promise.all([
+    requireRegistryGrant(),
+    getLibraryProductTypeReview(sourceId),
+    getProductTypeChanges(sourceId),
+  ]);
   if (!res.ok) {
     if (res.status === 404) notFound();
     return (
@@ -89,6 +96,31 @@ export default async function SpecLibraryProductTypePage({ params }: { params: P
         }
       />
 
+      {/* PLAT-85: what changed since the last approval, decided record by record. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{CHANGES.heading}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">{CHANGES.lead}</p>
+          {changesRes.ok ? (
+            <LibraryChangeList
+              productType={pt.sourceId}
+              groups={changeGroups(changesRes.data.items, items)}
+              me={{ review: canReviewLibrary(me), admin: canAdminSpec(me) }}
+            />
+          ) : (
+            <p role="alert" className="text-sm text-destructive">
+              {CHANGES.unreadable} ({changesRes.error})
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Every record of the product type, by decision state (PLAT-81): kept, behind Advanced. */}
+      <details className="flex flex-col gap-6 [&[open]>summary]:mb-6">
+        <summary className="cursor-pointer text-sm font-medium text-primary">{CHANGES.advanced}</summary>
+        <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {(["pending", "approve", "defer", "reject"] as const).map((s) => (
           <span key={s} className={cn("rounded-md border px-2 py-0.5", STATE_TONE[s])}>
@@ -188,6 +220,8 @@ export default async function SpecLibraryProductTypePage({ params }: { params: P
           ))}
         </CardContent>
       </Card>
+        </div>
+      </details>
     </div>
   );
 }

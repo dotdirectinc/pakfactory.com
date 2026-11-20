@@ -15,10 +15,10 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
   importSummary: (s: LibraryImportSummary) =>
     `This import: ${s.new} new · ${s.updated} updated · ${s.held} held · ${s.omitted} omitted`,
   lineHeading: "Product line",
-  views: { productTypes: "By product type", records: "All records" },
+  views: { productTypes: "By product type", records: "Advanced: all records" },
   productTypeList: {
     lead:
-      "Each product type with the records it is built from: its templates and its line's capabilities. Materials, fields and rules are reviewed under All records.",
+      "Each product type with how many of its records are new, changed or removed since they were last approved. Open one to decide them. Materials, fields and rules are reviewed under Advanced: all records.",
     columns: { productType: "Product type", line: "Line", own: "Its decision", progress: "Its records approved", open: "Open" },
     progress: (approved: number, total: number) => `${approved} of ${total}`,
     unreadable: "—",
@@ -96,6 +96,45 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
       done: (n: number) => (n === 1 ? "Approved 1 record." : `Approved ${n} records.`),
       rejectHint: "To reject or defer, open the record: each needs its own note.",
     },
+  },
+  typeChanges: {
+    heading: "Changes since the last approval",
+    lead:
+      "Records of this product type that are new, changed or removed since they were last approved. Each is decided on its own; a shared record is decided once, for every product type that uses it. Unchanged records are not listed.",
+    status: { new: "New", changed: "Changed", removed: "Removed" } as Record<string, string>,
+    collection: { productTypes: "Product type", templates: "Template", capabilities: "Capability" } as Record<string, string>,
+    usedBy: (n: number) => `Used by ${n} product types`,
+    proposal: (n: number) => `Proposal #${n}`,
+    held: "Held change from the export",
+    decide: "Decide…",
+    close: "Close",
+    adminDecides: "An admin decides proposals",
+    readOnly: "Read only",
+    noRoute: "Open it under Advanced",
+    none: "Nothing new, changed or removed.",
+    unreadable: "The change list could not be read",
+    approveAll: (n: number, shared: number) => `Approve all listed (${n}${shared ? ` · ${shared} shared` : ""})`,
+    approveAllLead: (n: number, shared: number) =>
+      `This approves ${n === 1 ? "1 record" : `${n} records`}, each with its own decision.` +
+      (shared ? ` ${shared === 1 ? "1 is" : `${shared} are`} shared, so ${shared === 1 ? "it is" : "they are"} approved for every product type that uses ${shared === 1 ? "it" : "them"}.` : ""),
+    approveAllConfirm: (n: number) => (n === 1 ? "Approve 1 record" : `Approve ${n} records`),
+    recorded: (n: number) => (n === 1 ? "Approved 1 record." : `Approved ${n} records.`),
+    noteOptional: "Note (optional)",
+    cancel: "Cancel",
+    baseline: {
+      button: "Set as baseline…",
+      lead: (records: number, shared: number, skipped: number) =>
+        `Set as baseline approves, as they are now, the ${records === 1 ? "1 record" : `${records} records`} listed here with nothing open` +
+        (shared ? ` (${shared} shared with other product types, approved for them too)` : "") +
+        "." +
+        (skipped ? ` ${skipped === 1 ? "1 proposal or held change stays" : `${skipped} proposals and held changes stay`} listed for its own decision.` : "") +
+        " Use it once, after checking this product type, so later reviews list only what changes.",
+      confirm: (n: number) => (n === 1 ? "Approve 1 record as the baseline" : `Approve ${n} records as the baseline`),
+      done: (records: number, skipped: number) =>
+        `Baseline set: ${records === 1 ? "1 record" : `${records} records`} approved${skipped ? `, ${skipped} left for their own decision` : ""}.`,
+    },
+    advanced: "Advanced: every record of this product type",
+    countsColumn: "New · Changed · Removed",
   },
   changes: {
     title: "Held changes",

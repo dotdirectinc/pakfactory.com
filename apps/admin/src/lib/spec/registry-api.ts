@@ -681,6 +681,46 @@ export async function getLibraryProductTypeReview(sourceId: string) {
   return call<LibraryBundle>(`/api/v1/library-product-types/${encodeURIComponent(sourceId)}/review`);
 }
 
+// ── Product type changes and proposals (PLAT-84 API, PLAT-85) ─────────────────────
+
+/** One record of a product type that changed since it was approved (backend spec_workflow.product_type_changes). */
+export type ProductTypeChangeItem = {
+  collection: "productTypes" | "templates" | "capabilities";
+  sourceId: string;
+  label: string | null;
+  status: "new" | "changed" | "removed";
+  /** How many product types use it; more than 1 = shared, decided once for all. */
+  sharedBy: number;
+  /** An open proposal (PLAT-84), decided by an admin. */
+  edit?: number;
+  /** An open held change from an export (PLAT-81). */
+  changesetItem?: number;
+  revision: number;
+};
+
+export type ProductTypeChanges = {
+  productType: { sourceId: string; name: string; line?: string; lineName?: string };
+  counts: { new: number; changed: number; removed: number; unchanged: number };
+  items: ProductTypeChangeItem[];
+};
+
+export async function getProductTypeChanges(sourceId: string) {
+  return call<ProductTypeChanges>(`/api/v1/library-product-types/${encodeURIComponent(sourceId)}/changes`);
+}
+
+/** Set as baseline (ADR-028 D7, admin only): approves every new or changed record with nothing open. */
+export async function setProductTypeBaseline(sourceId: string) {
+  return call<{ productType: string; records: number; shared: number; parts: number; skipped: number }>(
+    `/api/v1/library-product-types/${encodeURIComponent(sourceId)}/baseline`,
+    { method: "POST", body: {} },
+  );
+}
+
+/** Decide a proposal (admin only). A reject or defer needs a note. */
+export async function decideSpecEdit(edit: number, decision: LibraryDecision, note: string | null) {
+  return call<Record<string, unknown>>(`/api/v1/spec-edits/${edit}/decision`, { method: "POST", body: { decision, note } });
+}
+
 export async function decideLibraryItems(
   version: number,
   decision: LibraryDecision,
