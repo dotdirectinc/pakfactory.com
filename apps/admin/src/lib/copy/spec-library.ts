@@ -47,6 +47,7 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
   decisions: { approve: "Approve", reject: "Reject", defer: "Defer" } as Record<string, string>,
   notePlaceholder: "Note (needed to reject or defer)",
   noteNeeded: "Add a note to reject or defer.",
+  currentDecision: (state: string) => `Currently ${state}. Choose another decision to change it.`,
   deciding: "Saving…",
   recorded: (n: number, d: string) => `${d} recorded for ${n === 1 ? "1 record" : `${n} records`}.`,
   readOnlyNote: "You can read this review. Deciding needs the Spec review permission (approver or admin).",

@@ -15,6 +15,11 @@ type Props = {
   /** Called after a decision is recorded (the list clears its selection). */
   onDone?: () => void;
   compact?: boolean;
+  /**
+   * The record's latest decision, on a single-record form. Its button is disabled: repeating the
+   * decision adds a duplicate history entry and changes nothing. The other two stay available.
+   */
+  current?: LibraryDecision | null;
 };
 
 /**
@@ -22,7 +27,7 @@ type Props = {
  * the button asks for it here, and the backend refuses one without. Decisions are append-only, so
  * changing one later is just another decision — no confirm step.
  */
-export function LibraryDecisionForm({ version, items, onDone, compact = false }: Props) {
+export function LibraryDecisionForm({ version, items, onDone, compact = false, current = null }: Props) {
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -31,6 +36,7 @@ export function LibraryDecisionForm({ version, items, onDone, compact = false }:
 
   function decide(decision: LibraryDecision) {
     setMessage(null);
+    if (decision === current) return;
     if (noteRequired(decision) && !note.trim()) {
       setError(COPY.noteNeeded);
       return;
@@ -61,17 +67,18 @@ export function LibraryDecisionForm({ version, items, onDone, compact = false }:
         aria-label={COPY.notePlaceholder}
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={() => decide("approve")} disabled={pending || items.length === 0}>
+        <Button size="sm" onClick={() => decide("approve")} disabled={pending || items.length === 0 || current === "approve"}>
           {pending ? COPY.deciding : COPY.decisions.approve}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => decide("defer")} disabled={pending || items.length === 0}>
+        <Button size="sm" variant="outline" onClick={() => decide("defer")} disabled={pending || items.length === 0 || current === "defer"}>
           {COPY.decisions.defer}
         </Button>
-        <Button size="sm" variant="destructive" onClick={() => decide("reject")} disabled={pending || items.length === 0}>
+        <Button size="sm" variant="destructive" onClick={() => decide("reject")} disabled={pending || items.length === 0 || current === "reject"}>
           {COPY.decisions.reject}
         </Button>
         {message ? <span role="status" className="text-sm text-muted-foreground">{message}</span> : null}
       </div>
+      {current ? <p className="text-sm text-muted-foreground">{COPY.currentDecision(COPY.states[current]!.toLowerCase())}</p> : null}
       {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
     </div>
   );

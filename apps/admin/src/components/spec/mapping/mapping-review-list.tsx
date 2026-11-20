@@ -82,6 +82,7 @@ export function MappingReviewList({
   groupBy: string;
 }) {
   const groups = useMemo(() => groupMappings(items, (i) => links[i.subjectId]?.status), [items, links]);
+  const stateById = useMemo(() => new Map(items.map((i) => [i.id, i.state])), [items]);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [folded, setFolded] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -106,17 +107,25 @@ export function MappingReviewList({
       setError(COPY.bar.noteNeeded);
       return;
     }
+    // Maps already at this decision are skipped: repeating it only adds a duplicate history row.
+    const todo = [...picked].filter((m) => stateById.get(m) !== decision);
+    const skipped = picked.size - todo.length;
+    if (todo.length === 0) {
+      setError(COPY.bar.allAlready(COPY.bar.decided[decision]!));
+      return;
+    }
     setError(null);
     start(async () => {
-      const res = await decideMappingsAction(decision, note.trim() || null, [
-        ...picked,
-      ]);
+      const res = await decideMappingsAction(decision, note.trim() || null, todo);
       if (!res.ok) {
         setError(res.error);
         router.refresh();
         return;
       }
-      toast.success(COPY.bar.done(res.recorded, COPY.bar.decided[decision]!));
+      toast.success(
+        COPY.bar.done(res.recorded, COPY.bar.decided[decision]!) +
+          (skipped > 0 ? ` ${COPY.bar.skipped(skipped, COPY.bar.decided[decision]!)}` : ""),
+      );
       setPicked(new Set());
       setNote("");
       router.refresh();

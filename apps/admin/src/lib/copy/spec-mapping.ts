@@ -50,6 +50,8 @@ export const ADMIN_SPEC_MAPPING_COPY = {
     noteNeeded: "A reject or defer needs a note.",
     done: (n: number, what: string) => (n === 1 ? `1 map ${what}` : `${n} maps ${what}`),
     decided: { approve: "approved", reject: "rejected", defer: "deferred" } as Record<string, string>,
+    allAlready: (what: string) => `Every selected map is already ${what}. Nothing to record.`,
+    skipped: (n: number, what: string) => (n === 1 ? `(1 already ${what}, skipped.)` : `(${n} already ${what}, skipped.)`),
   },
   deciding: "Saving…",
   image: (name: string) => `Website image of ${name}`,

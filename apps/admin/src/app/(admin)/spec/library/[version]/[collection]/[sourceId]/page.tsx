@@ -180,7 +180,7 @@ export default async function SpecLibraryRecordPage({
             </CardHeader>
             <CardContent>
               {canReviewLibrary(me) ? (
-                <LibraryDecisionForm version={version} items={[{ collection, sourceId }]} />
+                <LibraryDecisionForm version={version} items={[{ collection, sourceId }]} current={latest?.decision ?? null} />
               ) : (
                 <p className="text-sm text-muted-foreground">{COPY.readOnlyNote}</p>
               )}
