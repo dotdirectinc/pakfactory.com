@@ -198,6 +198,8 @@ function RecordForm(props: {
 /** The change, a note, and Save. A 409 offers Reload; field refusals are listed. */
 function SaveStep(props: {
   changes: FieldChange[];
+  /** Show the save step even with no field changes (a removal, a retire). */
+  always?: boolean;
   noteRequired?: boolean;
   noteLabel?: string;
   confirm?: string;
@@ -208,7 +210,7 @@ function SaveStep(props: {
   const [note, setNote] = useState("");
   const [error, setError] = useState<{ text: string; fields?: Record<string, string>; stale?: boolean } | null>(null);
   const [pending, start] = useTransition();
-  if (props.changes.length === 0 && !props.noteRequired) return <p className="text-muted-foreground">{COPY.noChange}</p>;
+  if (props.changes.length === 0 && !props.noteRequired && !props.always) return <p className="text-muted-foreground">{COPY.noChange}</p>;
   return (
     <div className="flex flex-col gap-2 rounded-md bg-muted/30 p-3">
       {props.changes.length ? <ChangeTable changes={props.changes} /> : null}
@@ -243,6 +245,7 @@ function SaveStep(props: {
 function show(v: unknown): string {
   if (v === undefined || v === null || v === "") return "—";
   if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+  if (Array.isArray(v) && v.every((x) => typeof x === "string")) return v.length ? v.join(", ") : "—";
   if (Array.isArray(v) && v.every((x) => x && typeof x === "object" && "key" in x)) {
     return (v as Parameter[]).map((x) => `${x.label ?? x.key}: ${x.value ?? "—"}${x.unit ? ` ${x.unit}` : ""}`).join("; ") || "—";
   }
@@ -370,8 +373,8 @@ function RemovePanel(props: { cap: EditorCapability; productType: Props["product
       {chosen?.ok && from ? (
         <SaveStep
           key={choice}
-          changes={[]}
-          noteRequired={false}
+          changes={removalChanges(chosen.data)}
+          always
           confirm={COPY.removal.confirm}
           run={(note) => confirmRemovalAction(cap.sourceId, from, chosen.data.baseRevision, note)}
           onSaved={props.onSaved}
@@ -379,6 +382,18 @@ function RemovePanel(props: { cap: EditorCapability; productType: Props["product
       ) : <p className="text-xs text-muted-foreground">{COPY.removal.choose}</p>}
     </div>
   );
+}
+
+/** What a removal changes, for the save step: a field's capability list, or the capability's lines. */
+function removalChanges(d: RemovalPreview): FieldChange[] {
+  if (d.kind === "line") {
+    return [{ key: COPY.removal.linesKey, before: d.categories?.before ?? COPY.removal.everyLine, after: d.categories?.after ?? [] }];
+  }
+  return (d.fields ?? []).map((f) => ({
+    key: f.label ?? f.fieldId,
+    before: f.before ?? COPY.removal.everyMatching,
+    after: f.after,
+  }));
 }
 
 function RemovalSummary({ res }: { res: EditorResult<RemovalPreview> }) {

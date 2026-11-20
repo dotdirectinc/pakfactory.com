@@ -149,6 +149,9 @@ export const ADMIN_SPEC_LIBRARY_COPY = {
       notOwned: (collection: string) => `Not editable yet: ${collection} still come from the Spec Library export.`,
       confirm: "Remove",
       choose: "Choose one",
+      linesKey: "Lines",
+      everyLine: "every line",
+      everyMatching: "every matching capability",
     },
     add: {
       heading: "Add a capability to this line",
