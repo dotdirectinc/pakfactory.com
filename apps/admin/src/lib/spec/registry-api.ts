@@ -81,7 +81,7 @@ async function accessToken(): Promise<string | null> {
 async function call<T>(
   path: string,
   init?: { method?: string; body?: unknown },
-): Promise<{ ok: true; data: T; page?: { has_more: boolean } } | { ok: false; status: number; error: string; code?: string; errors?: string[]; skusNeeded?: SkuNeeded[] }> {
+): Promise<{ ok: true; data: T; page?: { has_more: boolean } } | { ok: false; status: number; error: string; code?: string; errors?: string[]; skusNeeded?: SkuNeeded[]; fields?: Record<string, string> }> {
   const started = performance.now();
   const token = await accessToken();
   const tokenMs = Math.round(performance.now() - started);
@@ -107,7 +107,7 @@ async function call<T>(
   // PROD-3116: each registry call's time (token lookup + request), in the server logs.
   console.info(`[timing] api ${init?.method ?? "GET"} ${path.split("?")[0]} ${res.status} ${Math.round(performance.now() - started)}ms (token ${tokenMs})`);
   const body = (await res.json().catch(() => null)) as
-    | { data?: T; page?: { has_more: boolean }; error?: string | { code?: string; message?: string; errors?: string[]; skusNeeded?: SkuNeeded[] }; code?: string }
+    | { data?: T; page?: { has_more: boolean }; error?: string | { code?: string; message?: string; errors?: string[]; skusNeeded?: SkuNeeded[] }; code?: string; fields?: Record<string, string> }
     | null;
 
   if (!res.ok) {
@@ -120,6 +120,8 @@ async function call<T>(
       code: typeof err === "object" && err ? err.code : body?.code,
       ...(typeof err === "object" && err?.errors ? { errors: err.errors } : {}),
       ...(typeof err === "object" && err?.skusNeeded?.length ? { skusNeeded: err.skusNeeded } : {}),
+      // A refused spec record edit (PLAT-84) names the fields it refused: { error, code, fields }.
+      ...(body?.fields && typeof body.fields === "object" ? { fields: body.fields } : {}),
     };
   }
   return { ok: true, data: (body?.data ?? body) as T, page: body?.page };
@@ -714,6 +716,126 @@ export async function setProductTypeBaseline(sourceId: string) {
     `/api/v1/library-product-types/${encodeURIComponent(sourceId)}/baseline`,
     { method: "POST", body: {} },
   );
+}
+
+// ── Spec record authoring (PLAT-84 API, PLAT-85 editor; ADR-028 D3, D5, D6) ──────────────────────
+
+/** Export collection names the Spec System can author. */
+export type SpecCollection =
+  | "regions" | "categories" | "productTypes" | "capabilityGroups" | "capabilities" | "sections"
+  | "fields" | "templates" | "rules" | "examples" | "equivalencies";
+export type SpecOwner = "spec_library" | "spec_system";
+
+/** A record as it is now, in export shape, with the revision an edit must start from. */
+export type SpecRecordState = {
+  collection: SpecCollection;
+  sourceId: string;
+  record: Record<string, unknown>;
+  revision: number;
+  lifecycle: "active" | "retired";
+  approved: boolean;
+  owner: SpecOwner;
+  openEdits: number[];
+};
+
+export type SpecEditAction = "create" | "update" | "retire" | "restore";
+/** applied = saved (an admin's edit is also approved); proposed = waiting for an admin. */
+export type SpecEditResult = {
+  edit: number;
+  mode: "applied" | "proposed";
+  state: string;
+  revision: number;
+  sourceId: string;
+  collection: SpecCollection;
+};
+
+export type SpecEdit = {
+  id: number;
+  subject: "record" | "map";
+  action: SpecEditAction;
+  collection: SpecCollection | null;
+  sourceId: string | null;
+  mode: "applied" | "proposed";
+  state: "applied" | "approved" | "waiting" | "defer" | "reject";
+  source: string;
+  note: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  decisionNote: string | null;
+  decidedAt: string | null;
+};
+
+export async function getSpecCollectionOwners() {
+  return call<Record<SpecCollection, SpecOwner>>("/api/v1/spec-collections");
+}
+
+export async function getSpecRecord(collection: SpecCollection, sourceId: string) {
+  return call<SpecRecordState>(`/api/v1/spec-records/${collection}/${encodeURIComponent(sourceId)}`);
+}
+
+/** The next free id for a new record, from words of its name (e.g. ["gloss", "foil"] → CAP-GLOSSFOI). */
+export async function suggestSpecSourceId(collection: SpecCollection, parts: string[]) {
+  return call<{ sourceId: string }>(
+    `/api/v1/spec-records/${collection}/suggest-id?parts=${encodeURIComponent(parts.join(","))}`,
+  );
+}
+
+/**
+ * Save one record edit. The server checks it against the library first (422 with `fields`), refuses a
+ * stale baseRevision (409), then applies it (admin) or holds it as a proposal (other roles).
+ */
+export async function editSpecRecord(
+  collection: SpecCollection,
+  sourceId: string,
+  body: { action: SpecEditAction; record?: Record<string, unknown>; baseRevision?: number | null; note?: string | null },
+) {
+  return call<SpecEditResult>(`/api/v1/spec-records/${collection}/${encodeURIComponent(sourceId)}/edits`, {
+    method: "POST",
+    body,
+  });
+}
+
+export type RemovalFrom = { productType: string } | { line: string };
+export type RemovalBlocker = { productType: string; fieldId: string; reason: string };
+/** Matches pakfactory.com-server removeCapability.ts (TypeRemoval | LineRemoval) plus the preview fields. */
+export type RemovalPreview = {
+  preview: true;
+  kind: "productType" | "line";
+  capability: string;
+  blockers: RemovalBlocker[];
+  /** From a product type: the fields that offered it there, before and after. */
+  fields?: { fieldId: string; label: string | null; before: string[] | null; after: string[] }[];
+  status?: { before: string; after: string };
+  /** From a line: the product types of that line that lose it. */
+  affected?: { productType: string; name: string | null; fields: string[] }[];
+  categories?: { before: string[] | null; after: string[] };
+  edit: { collection: "templates" | "capabilities"; sourceId: string; action: "create" | "update"; record: Record<string, unknown> } | null;
+  baseRevision: number | null;
+  owner: SpecOwner;
+  writable: boolean;
+};
+
+/** Preview removing a capability from a product type or a line (writes nothing). */
+export async function previewCapabilityRemoval(capability: string, from: RemovalFrom) {
+  return call<RemovalPreview>(`/api/v1/spec-records/capabilities/${encodeURIComponent(capability)}/removals`, {
+    method: "POST",
+    body: { from },
+  });
+}
+
+/** Confirm a removal previewed at baseRevision (null when it creates the type's own template). */
+export async function confirmCapabilityRemoval(capability: string, from: RemovalFrom, baseRevision: number | null, note: string | null) {
+  return call<SpecEditResult>(`/api/v1/spec-records/capabilities/${encodeURIComponent(capability)}/removals`, {
+    method: "POST",
+    body: { from, confirm: true, baseRevision, note },
+  });
+}
+
+/** Edits, newest first. state "all" includes applied, approved, rejected and open ones. */
+export async function listSpecEdits(q: { state?: "open" | "all"; collection?: SpecCollection; limit?: number } = {}) {
+  const p = new URLSearchParams({ state: q.state ?? "all", limit: String(q.limit ?? 500) });
+  if (q.collection) p.set("collection", q.collection);
+  return call<{ total: number; items: SpecEdit[] }>(`/api/v1/spec-edits?${p}`);
 }
 
 /** Decide a proposal (admin only). A reject or defer needs a note. */

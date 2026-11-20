@@ -45,3 +45,8 @@ export function canReviewLibrary(me: SpecMe): boolean {
 export function canAdminSpec(me: SpecMe): boolean {
   return me.capabilities.includes("spec.admin");
 }
+
+/** Whether this person may try to edit the production spec (approver or admin; ADR-028 D4). */
+export function canEditSpec(me: SpecMe): boolean {
+  return me.capabilities.includes("spec.edit");
+}

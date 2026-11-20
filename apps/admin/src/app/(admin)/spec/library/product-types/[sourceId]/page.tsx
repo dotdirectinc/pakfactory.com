@@ -6,8 +6,10 @@ import { cn } from "@pakfactory/ui/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { LibraryBundleApprove } from "@/components/spec/library/library-bundle-approve";
 import { WARNING_BADGE } from "@/components/spec/library/spec-value";
-import { canAdminSpec, canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
-import { getLibraryProductTypeReview, getProductTypeChanges, type LibraryBundleItem, type LibraryReviewState } from "@/lib/spec/registry-api";
+import { canAdminSpec, canEditSpec, canReviewLibrary, requireRegistryGrant } from "@/lib/spec/require-grant";
+import { editRights } from "@/lib/spec/type-editor";
+import { Button } from "@pakfactory/ui/components/button";
+import { getLibraryProductTypeReview, getProductTypeChanges, getSpecCollectionOwners, type LibraryBundleItem, type LibraryReviewState } from "@/lib/spec/registry-api";
 import { changeGroups } from "@/lib/spec/library-changes";
 import { LibraryChangeList } from "@/components/spec/library/library-change-list";
 import { bundleSections, sortBundle, stateCounts, templateLevelLabel } from "@/lib/spec/library-bundle";
@@ -49,10 +51,11 @@ export default async function SpecLibraryProductTypePage({ params }: { params: P
   const sourceId = decodeURIComponent(raw);
   if (!/^PT-[A-Z0-9][A-Z0-9-]{0,80}$/.test(sourceId)) notFound();
 
-  const [me, res, changesRes] = await Promise.all([
+  const [me, res, changesRes, ownersRes] = await Promise.all([
     requireRegistryGrant(),
     getLibraryProductTypeReview(sourceId),
     getProductTypeChanges(sourceId),
+    getSpecCollectionOwners(),
   ]);
   if (!res.ok) {
     if (res.status === 404) notFound();
@@ -88,11 +91,21 @@ export default async function SpecLibraryProductTypePage({ params }: { params: P
         }}
         badge={self ? <StateBadge state={self.state} /> : undefined}
         aside={
-          canReviewLibrary(me) ? (
-            <LibraryBundleApprove name={pt.name} items={items} />
-          ) : (
-            <span className="text-sm text-muted-foreground">{ADMIN_SPEC_LIBRARY_COPY.readOnlyNote}</span>
-          )
+          <span className="flex flex-wrap items-center gap-2">
+            {/* PLAT-85 AC 6: Edit only for a collection the Spec System owns, for someone who may edit. */}
+            {editRights(ownersRes.ok ? ownersRes.data : null, canEditSpec(me)).any ? (
+              <Button asChild variant="outline">
+                <Link href={`/spec/library/product-types/${encodeURIComponent(pt.sourceId)}/edit`}>
+                  {ADMIN_SPEC_LIBRARY_COPY.editor.open}
+                </Link>
+              </Button>
+            ) : null}
+            {canReviewLibrary(me) ? (
+              <LibraryBundleApprove name={pt.name} items={items} />
+            ) : (
+              <span className="text-sm text-muted-foreground">{ADMIN_SPEC_LIBRARY_COPY.readOnlyNote}</span>
+            )}
+          </span>
         }
       />
 
